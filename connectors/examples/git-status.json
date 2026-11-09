@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "example.git",
+  "displayName": "Git",
+  "platforms": ["macos"],
+  "executable": "/usr/bin/git",
+  "actions": [
+    {
+      "id": "status",
+      "title": "查看状态",
+      "argv": ["status", "--short"],
+      "inputSchema": {"type": "object", "properties": {}, "required": [], "additionalProperties": false},
+      "output": "text",
+      "permission": "read",
+      "timeoutMs": 15000
+    },
+    {
+      "id": "show-branch",
+      "title": "查看分支",
+      "argv": ["branch", "--show-current"],
+      "inputSchema": {"type": "object", "properties": {}, "required": [], "additionalProperties": false},
+      "output": "text",
+      "permission": "read",
+      "timeoutMs": 15000
+    }
+  ]
+}

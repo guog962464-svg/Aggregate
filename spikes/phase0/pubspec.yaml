@@ -1,0 +1,17 @@
+name: phase0
+description: A simple command-line application.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.13.7
+resolution: workspace
+
+# Add regular dependencies here.
+dependencies:
+  flutter_pty2: ^3.0.0
+  mcp_dart: ^2.4.3
+  # path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0

@@ -1,0 +1,12 @@
+name: aggregate_runtime
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.13.7
+resolution: workspace
+dependencies:
+  aggregate_contracts: ^0.1.0
+  aggregate_domain: ^0.1.0
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

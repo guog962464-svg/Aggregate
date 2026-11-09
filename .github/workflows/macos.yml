@@ -1,0 +1,30 @@
+name: macOS checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.8
+      - name: Resolve locked workspace
+        run: flutter pub get --enforce-lockfile
+      - name: Check format
+        run: dart format --output=none --set-exit-if-changed app/lib app/test packages spikes/phase0/bin
+      - name: Analyze
+        run: flutter analyze
+      - name: Check public boundary
+        run: sh spikes/phase0/check_boundary.sh
+      - name: Test shared packages
+        run: dart test packages/aggregate_contracts/test packages/aggregate_domain/test packages/aggregate_connectors/test packages/aggregate_runtime/test
+      - name: Test Flutter UI
+        run: flutter test app/test
+      - name: Build macOS app
+        working-directory: app
+        run: flutter build macos --debug

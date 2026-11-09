@@ -1,0 +1,11 @@
+name: aggregate_workspace
+publish_to: none
+environment:
+  sdk: ^3.13.7
+workspace:
+  - app
+  - packages/aggregate_contracts
+  - packages/aggregate_domain
+  - packages/aggregate_connectors
+  - packages/aggregate_runtime
+  - spikes/phase0
