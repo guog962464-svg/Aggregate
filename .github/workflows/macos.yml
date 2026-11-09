@@ -3,6 +3,10 @@ name: macOS checks
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+env:
+  PUB_HOSTED_URL: https://pub.flutter-io.cn
 
 jobs:
   verify:
