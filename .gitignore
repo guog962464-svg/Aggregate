@@ -3,3 +3,6 @@
 **/build/
 **/.venv/
 **/*.iml
+/app/tool/failures/
+/work/*
+!/work/ui-review/

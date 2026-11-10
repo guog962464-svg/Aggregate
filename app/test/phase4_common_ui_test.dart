@@ -6,6 +6,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate_runtime/aggregate_runtime.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -59,7 +60,7 @@ void main() {
     await tester.pumpWidget(AggregateApp(runtime: runtime));
     await tester.pumpAndSettle();
     expect(find.text('添加连接'), findsNothing);
-    await tester.tap(find.text('连接').first);
+    await tester.tap(find.text('管理连接').first);
     await tester.pumpAndSettle();
     expect(find.text('添加连接'), findsNothing);
   });
@@ -94,12 +95,20 @@ void main() {
     try {
       await tester.pumpWidget(AggregateApp(runtime: createPreviewRuntime()));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('所有功能').first);
+      await tester.pumpAndSettle();
       expect(find.text('Ctrl+K'), findsOneWidget);
       await tester.enterText(find.byKey(const Key('global-search')), 'Git');
       await tester.pumpAndSettle();
       await tester.tap(find.text('查看 Git 状态'));
       await tester.pumpAndSettle();
       expect(find.text('运行快捷键  Ctrl+Enter'), findsOneWidget);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      final search = find.byKey(const Key('global-search'));
+      expect(Focus.of(tester.element(search)).hasFocus, isTrue);
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
