@@ -7,6 +7,7 @@ import '../../widgets/page_frame.dart';
 import 'music_mini_player.dart';
 import 'music_search_results.dart';
 import 'music_session.dart';
+import 'music_account_control.dart';
 
 /// A connection home selected by music presentation metadata. All commands
 /// still run through RuntimePort; this widget owns only search and layout.
@@ -17,12 +18,14 @@ class MusicPlayerPage extends StatefulWidget {
     required this.capabilities,
     required this.runtime,
     required this.session,
+    this.onAccountChanged,
   });
 
   final Connection connection;
   final List<Capability> capabilities;
   final RuntimePort runtime;
   final MusicSession session;
+  final VoidCallback? onAccountChanged;
 
   @override
   State<MusicPlayerPage> createState() => _MusicPlayerPageState();
@@ -63,6 +66,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
         return;
       }
       if (!widget.runtime.isPreview &&
+          widget.session.accountState != AccountState.signedOut &&
           widget.session.actions.containsKey('music.state')) {
         unawaited(widget.session.execute('state'));
       }
@@ -96,6 +100,10 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     final action = searchAction;
     if (keyword.isEmpty) {
       queryFocus.requestFocus();
+      return;
+    }
+    if (widget.session.accountState == AccountState.signedOut) {
+      setState(() => searchError = '请先登录网易云音乐账号。');
       return;
     }
     if (action == null || searching || confirmingSearch) return;
@@ -248,10 +256,62 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     });
   }
 
+  Future<void> _beforeAccountChange() async {
+    if (widget.session.visible &&
+        widget.session.playing != false &&
+        widget.session.actions.containsKey('music.stop')) {
+      try {
+        await widget.session
+            .execute('stop')
+            .timeout(const Duration(seconds: 5));
+      } on TimeoutException {
+        // Account changes must not wait indefinitely for a player daemon.
+      }
+    }
+  }
+
+  void _accountStatus(AccountSnapshot snapshot) {
+    if (!mounted) return;
+    if (snapshot.state == AccountState.signedOut &&
+        widget.session.accountState != AccountState.signedOut) {
+      _accountChanged(snapshot);
+      return;
+    }
+    widget.session.accountState = snapshot.state;
+  }
+
+  void _accountChanged(AccountSnapshot snapshot) {
+    if (!mounted) return;
+    searchGeneration++;
+    if (searchRun case final run?) unawaited(widget.runtime.cancel(run));
+    unawaited(searchSubscription?.cancel());
+    searchSubscription = null;
+    searchRun = null;
+    query.clear();
+    widget.session.resetForAccountChange(snapshot.state);
+    setState(() {
+      songs = const [];
+      searched = false;
+      searching = false;
+      searchError = null;
+    });
+    widget.onAccountChanged?.call();
+  }
+
   @override
   Widget build(BuildContext context) => PageFrame(
     title: widget.connection.label,
     subtitle: '音乐播放器',
+    trailing: widget.runtime is ConnectionAccountPort
+        ? MusicAccountControl(
+            connection: widget.connection,
+            runtime: widget.runtime,
+            accounts: widget.runtime as ConnectionAccountPort,
+            beforeChange: _beforeAccountChange,
+            onChanged: _accountChanged,
+            onStatus: _accountStatus,
+          )
+        : null,
     children: [
       LayoutBuilder(
         builder: (context, constraints) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -115,6 +117,15 @@ class AppShellState extends State<AppShell> {
         if (selectInitial) selected = Section.workspace;
       });
     }
+  }
+
+  Future<void> refreshAfterAccountChange(ConnectionId id) async {
+    try {
+      await widget.runtime.refreshConnection(id);
+    } catch (_) {
+      // A removed connection will be reflected by the following reload.
+    }
+    if (mounted) await reloadConnectionHomes();
   }
 
   Connection? get activeConnection {
@@ -322,6 +333,9 @@ class AppShellState extends State<AppShell> {
                           runtime: widget.runtime,
                           musicSession: widget.musicSession,
                           onOpen: openCapability,
+                          onAccountChanged: () {
+                            unawaited(refreshAfterAccountChange(connection.id));
+                          },
                         )
                       else if (homesLoading)
                         const Center(child: CircularProgressIndicator())

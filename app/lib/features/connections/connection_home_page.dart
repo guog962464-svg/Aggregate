@@ -15,6 +15,7 @@ class ConnectionHomePage extends StatelessWidget {
     required this.runtime,
     required this.musicSession,
     required this.onOpen,
+    this.onAccountChanged,
   });
 
   final Connection connection;
@@ -22,6 +23,7 @@ class ConnectionHomePage extends StatelessWidget {
   final RuntimePort runtime;
   final MusicSession musicSession;
   final ValueChanged<Capability> onOpen;
+  final VoidCallback? onAccountChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class ConnectionHomePage extends StatelessWidget {
         capabilities: own,
         runtime: runtime,
         session: musicSession,
+        onAccountChanged: onAccountChanged,
       );
     }
     return _GenericConnectionHome(

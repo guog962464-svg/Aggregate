@@ -20,6 +20,7 @@ final class MusicSession extends ChangeNotifier {
   bool busy = false;
   bool searchAuthorized = false;
   bool controlsAuthorized = false;
+  AccountState? accountState;
   bool? playing;
   String playbackStatus = '状态未知';
   int queueLength = 0;
@@ -29,6 +30,7 @@ final class MusicSession extends ChangeNotifier {
   bool _disposed = false;
   int _verification = 0;
   int _attachment = 0;
+  int _accountGeneration = 0;
   String? _playbackCommandIssue;
 
   void _notify() {
@@ -59,6 +61,7 @@ final class MusicSession extends ChangeNotifier {
       currentIndex = 0;
       searchAuthorized = false;
       controlsAuthorized = false;
+      accountState = null;
     }
     connection = target;
     final catalog = await runtime.searchCapabilities(const SearchQuery(''));
@@ -253,9 +256,31 @@ final class MusicSession extends ChangeNotifier {
     _notify();
   }
 
+  void resetForAccountChange(AccountState state) {
+    _accountGeneration++;
+    _verification++;
+    title = '播放状态待读取';
+    artist = null;
+    detail = '';
+    visible = false;
+    busy = false;
+    playing = null;
+    playbackStatus = '状态未知';
+    queueLength = 0;
+    currentIndex = 0;
+    searchAuthorized = false;
+    controlsAuthorized = false;
+    accountState = state;
+    _playbackCommandIssue = null;
+    _notify();
+  }
+
   Future<void> _refreshAfterControl() async {
+    final accountGeneration = _accountGeneration;
     await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!_disposed) await execute('state');
+    if (!_disposed && accountGeneration == _accountGeneration) {
+      await execute('state');
+    }
   }
 
   Future<void> _verifyTrackSwitch(
@@ -304,6 +329,7 @@ final class MusicSession extends ChangeNotifier {
   Future<void> execute(String role, [JsonMap arguments = const {}]) async {
     final capability = actions['music.$role'];
     if (capability == null || busy) return;
+    final accountGeneration = _accountGeneration;
     busy = true;
     _notify();
     try {
@@ -312,7 +338,12 @@ final class MusicSession extends ChangeNotifier {
         arguments,
         permissionGranted: true,
       );
+      if (accountGeneration != _accountGeneration) {
+        await runtime.cancel(handle.id);
+        return;
+      }
       await for (final event in runtime.watchRun(handle.id)) {
+        if (accountGeneration != _accountGeneration) break;
         if ({
           RunState.succeeded,
           RunState.failed,
@@ -325,10 +356,12 @@ final class MusicSession extends ChangeNotifier {
         }
       }
     } catch (cause) {
-      detail = '$cause';
+      if (accountGeneration == _accountGeneration) detail = '$cause';
     } finally {
-      busy = false;
-      _notify();
+      if (accountGeneration == _accountGeneration) {
+        busy = false;
+        _notify();
+      }
     }
   }
 

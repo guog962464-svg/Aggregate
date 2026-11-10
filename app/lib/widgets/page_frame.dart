@@ -5,10 +5,12 @@ class PageFrame extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.trailing,
     required this.children,
   });
   final String title;
   final String? subtitle;
+  final Widget? trailing;
   final List<Widget> children;
 
   @override
@@ -27,11 +29,33 @@ class PageFrame extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              if (subtitle != null) ...[
-                const SizedBox(height: 8),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
-              ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitle!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (trailing case final action?) ...[
+                    const SizedBox(width: 12),
+                    action,
+                  ],
+                ],
+              ),
               const SizedBox(height: 24),
               ...children,
             ],
