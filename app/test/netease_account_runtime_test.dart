@@ -45,7 +45,8 @@ void main() {
           .timeout(const Duration(seconds: 5));
       expect(event.failure?.code, RuntimeErrorCode.connectionFailed);
       expect(event.failure?.message, contains('未加载搜索命令'));
-      expect(event.failure?.message, contains('开放平台接口权限'));
+      expect(event.failure?.message, contains('开放平台应用的接口权限'));
+      expect(event.failure?.message, contains('当前账号能否使用该应用'));
       expect(
         event.blocks.map((block) => '${block.value}').join(),
         isNot(contains("unknown command 'search'")),

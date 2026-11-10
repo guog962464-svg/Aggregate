@@ -1164,7 +1164,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
           blocks: blocks,
           failure: const RuntimeFailure(
             RuntimeErrorCode.connectionFailed,
-            'ncm-cli 未加载搜索命令。请检查当前账号的网易云开放平台接口权限，或切回此前可搜索的账号，然后重试。',
+            'ncm-cli 未加载搜索命令。已登录不代表搜索接口可用；请核对 CLI 所用开放平台应用的接口权限，以及当前账号能否使用该应用，然后重试。',
             phase: 'execution',
           ),
         );
