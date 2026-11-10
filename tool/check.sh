@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
+export PUB_HOSTED_URL=https://pub.dev
 flutter pub get --enforce-lockfile
 dart format --output=none --set-exit-if-changed app/lib app/test packages spikes/phase0/bin
 flutter analyze

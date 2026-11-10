@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  PUB_HOSTED_URL: https://pub.flutter-io.cn
+  PUB_HOSTED_URL: https://pub.dev
 
 jobs:
   verify:
