@@ -18,6 +18,9 @@ final class LocalRuntimePort
   @override
   List<ConnectionAdapter> get connectionAdapters => _setup.connectionAdapters;
   @override
+  Future<String?> detectExecutable(String adapterId) =>
+      _setup.detectExecutable(adapterId);
+  @override
   Future<ConnectionSetupReport> testConnectionSetup(
     ConnectionSetupDraft draft,
   ) => _setup.testConnectionSetup(draft);

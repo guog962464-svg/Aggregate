@@ -29,6 +29,7 @@ final class ConnectionAdapter {
     this.defaultLabel,
     this.description,
     this.showGenericCliFields = true,
+    this.autoDetectExecutable = false,
   });
 
   final String id;
@@ -38,6 +39,7 @@ final class ConnectionAdapter {
   final String? defaultLabel;
   final String? description;
   final bool showGenericCliFields;
+  final bool autoDetectExecutable;
 }
 
 /// In-memory only. Values can contain secrets and must never be serialized.
@@ -78,6 +80,7 @@ final class ConnectionSetupReport {
 /// Tests a draft before it appears in the saved connection list.
 abstract interface class ConnectionSetupPort {
   List<ConnectionAdapter> get connectionAdapters;
+  Future<String?> detectExecutable(String adapterId);
   Future<ConnectionSetupReport> testConnectionSetup(ConnectionSetupDraft draft);
   Future<Connection> saveConnectionSetup(String draftId);
   Future<void> discardConnectionSetup(String draftId);

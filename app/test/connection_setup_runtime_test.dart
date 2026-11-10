@@ -93,6 +93,11 @@ esac
         final tested = await runtime.testConnectionSetup(draft());
         final connection = await runtime.saveConnectionSetup(tested.draftId);
         expect(connection.status, ConnectionStatus.ready);
+        expect(
+          await runtime.detectExecutable('netease-music'),
+          executable.path,
+        );
+        expect(await runtime.detectExecutable('cli'), isNull);
         final saved = await File('${root.path}/data/connections.json')
             .readAsString();
         expect(saved, contains(tested.draftId));

@@ -4,14 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final class _SetupFixture implements ConnectionSetupPort {
-  _SetupFixture({this.withField = false});
+  _SetupFixture({this.withField = false, this.autoDetect = false});
   final bool withField;
+  final bool autoDetect;
   int tests = 0;
   final discarded = <String>[];
   ConnectionSetupDraft? latest;
 
   @override
-  List<ConnectionAdapter> get connectionAdapters => withField
+  List<ConnectionAdapter> get connectionAdapters => autoDetect
+      ? const [
+          ConnectionAdapter(
+            id: 'detectable',
+            label: '可检测程序',
+            kind: ConnectionKind.cli,
+            autoDetectExecutable: true,
+          ),
+        ]
+      : withField
       ? const [
           ConnectionAdapter(
             id: 'special',
@@ -35,6 +45,10 @@ final class _SetupFixture implements ConnectionSetupPort {
             kind: ConnectionKind.cli,
           ),
         ];
+
+  @override
+  Future<String?> detectExecutable(String adapterId) async =>
+      autoDetect ? '/usr/bin/printf' : null;
 
   @override
   Future<ConnectionSetupReport> testConnectionSetup(
@@ -146,4 +160,38 @@ void main() {
     expect(setup.latest?.values['secret'], 'fixture-secret');
     expect(tester.widget<TextField>(secret).controller?.text, isEmpty);
   });
+
+  testWidgets(
+    'detectable adapter fills its program path and keeps manual edits',
+    (tester) async {
+      final setup = _SetupFixture(autoDetect: true);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showDialog<Connection>(
+                  context: context,
+                  builder: (_) => ConnectionSetupDialog(setup: setup),
+                ),
+                child: const Text('打开'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('打开'));
+      await tester.pumpAndSettle();
+      final field = find.widgetWithText(TextField, '程序绝对路径');
+      expect(
+        tester.widget<TextField>(field).controller?.text,
+        '/usr/bin/printf',
+      );
+      expect(find.text('已自动找到官方程序'), findsOneWidget);
+      await tester.enterText(field, '/usr/bin/env');
+      await tester.tap(find.byTooltip('自动检测程序'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(field).controller?.text, '/usr/bin/env');
+    },
+  );
 }

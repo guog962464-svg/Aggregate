@@ -360,6 +360,7 @@ final class MacRuntime
       defaultLabel: '网易云音乐',
       description: '先测试本机配置；保存后在播放器内扫码登录，系统会继续显示搜索权限状态。',
       showGenericCliFields: false,
+      autoDetectExecutable: true,
       fields: [
         SetupField(key: 'appId', label: '开放平台 App ID'),
         SetupField(
@@ -383,6 +384,33 @@ final class MacRuntime
       kind: ConnectionKind.mcpHttp,
     ),
   ];
+
+  @override
+  Future<String?> detectExecutable(String adapterId) async {
+    if (adapterId != 'netease-music') return null;
+    final paths = <String>{
+      for (final entry in _entries.values)
+        if (entry.spec.kind == ConnectionKind.cli &&
+            entry.spec.executable != null)
+          entry.spec.executable!,
+      for (final directory in _environment()['PATH']!.split(':'))
+        '$directory/ncm-cli',
+    };
+    for (final path in paths) {
+      if (!path.startsWith('/')) continue;
+      try {
+        final stat = await File(path).stat();
+        if (stat.type == FileSystemEntityType.file &&
+            stat.mode & 0x49 != 0 &&
+            await isNeteaseCliPackage(path)) {
+          return path;
+        }
+      } on FileSystemException {
+        // Continue to the next installation location.
+      }
+    }
+    return null;
+  }
 
   Directory _setupProfile(String id) {
     if (!RegExp(r'^setup-[0-9]+-[0-9]+$').hasMatch(id)) {

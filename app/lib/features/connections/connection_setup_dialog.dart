@@ -40,6 +40,10 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
   String? error;
   bool busy = false;
   int generation = 0;
+  int detectionRequest = 0;
+  bool detectingExecutable = false;
+  String? executableHint;
+  String? autoDetectedPath;
 
   @override
   void initState() {
@@ -57,7 +61,11 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     for (final controller in _controllers) {
       controller.addListener(_changed);
     }
+    executable.addListener(_executableChanged);
     if (adapter.defaultLabel case final value?) label.text = value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_detectExecutable());
+    });
   }
 
   List<TextEditingController> get _controllers => [
@@ -82,8 +90,52 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     if (mounted) setState(() {});
   }
 
+  void _executableChanged() {
+    if (executable.text != autoDetectedPath) {
+      autoDetectedPath = null;
+      executableHint = null;
+    }
+  }
+
+  Future<void> _detectExecutable() async {
+    if (!adapter.autoDetectExecutable) return;
+    final adapterId = adapter.id;
+    final original = executable.text;
+    final request = ++detectionRequest;
+    setState(() {
+      detectingExecutable = true;
+      executableHint = '正在查找已安装的程序…';
+    });
+    try {
+      final path = await widget.setup.detectExecutable(adapterId);
+      if (!mounted || request != detectionRequest || adapter.id != adapterId) {
+        return;
+      }
+      if (path != null && path.startsWith('/')) {
+        if (executable.text == original && original.isEmpty) {
+          autoDetectedPath = path;
+          executable.text = path;
+        }
+        setState(
+          () => executableHint = executable.text == path ? '已自动找到官方程序' : null,
+        );
+      } else {
+        setState(() => executableHint = '未找到官方程序，请手动选择');
+      }
+    } catch (_) {
+      if (mounted && request == detectionRequest) {
+        setState(() => executableHint = '自动检测失败，请手动选择');
+      }
+    } finally {
+      if (mounted && request == detectionRequest) {
+        setState(() => detectingExecutable = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
+    detectionRequest++;
     if (report?.canSave == true) {
       unawaited(widget.setup.discardConnectionSetup(report!.draftId));
     }
@@ -225,6 +277,7 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     int lines = 1,
     String? hint,
     VoidCallback? choose,
+    VoidCallback? detect,
   }) => Padding(
     padding: const EdgeInsets.only(top: 16),
     child: TextField(
@@ -235,11 +288,23 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
         labelText: title,
         helperText: hint,
         alignLabelWithHint: lines > 1,
-        suffixIcon: file || choose != null
-            ? IconButton(
-                tooltip: '选择$title',
-                onPressed: choose ?? () => _choose(controller),
-                icon: const Icon(Icons.folder_open_outlined),
+        suffixIcon: file || choose != null || detect != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (detect != null)
+                    IconButton(
+                      tooltip: '自动检测程序',
+                      onPressed: detect,
+                      icon: const Icon(Icons.manage_search_outlined),
+                    ),
+                  if (file || choose != null)
+                    IconButton(
+                      tooltip: '选择$title',
+                      onPressed: choose ?? () => _choose(controller),
+                      icon: const Icon(Icons.folder_open_outlined),
+                    ),
+                ],
               )
             : null,
       ),
@@ -271,6 +336,13 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                     ? null
                     : (value) {
                         if (value == null) return;
+                        detectionRequest++;
+                        detectingExecutable = false;
+                        executableHint = null;
+                        if (executable.text == autoDetectedPath) {
+                          executable.clear();
+                        }
+                        autoDetectedPath = null;
                         final previousDefault = adapter.defaultLabel;
                         if (previousDefault != null &&
                             label.text == previousDefault) {
@@ -285,6 +357,7 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                         if (adapter.defaultLabel case final value?) {
                           if (label.text.isEmpty) label.text = value;
                         }
+                        unawaited(_detectExecutable());
                       },
               ),
               _field(label, '名称'),
@@ -297,7 +370,15 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                   hint: '测试时使用，保存后写入当前设备的安全存储。',
                 ),
               ] else ...[
-                _field(executable, '程序绝对路径', file: true),
+                _field(
+                  executable,
+                  '程序绝对路径',
+                  file: true,
+                  hint: adapter.autoDetectExecutable ? executableHint : null,
+                  detect: adapter.autoDetectExecutable && !detectingExecutable
+                      ? () => unawaited(_detectExecutable())
+                      : null,
+                ),
                 if (adapter.showGenericCliFields) ...[
                   _field(arguments, '启动参数 JSON 数组'),
                   _field(directory, '工作目录（可选）'),
@@ -381,7 +462,7 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
           child: const Text('取消'),
         ),
         OutlinedButton(
-          onPressed: busy ? null : _test,
+          onPressed: busy || detectingExecutable ? null : _test,
           child: const Text('测试连接'),
         ),
         FilledButton(
