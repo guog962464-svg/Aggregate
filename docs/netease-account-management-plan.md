@@ -2,6 +2,8 @@
 
 > 2026-11-10 · SkillPilot 规划复核 · 当前版本只实施 macOS，公共契约保持跨端可复用。
 
+**实施记录：** 已加入共用 `ConnectionAccountPort`、经 npm 包身份核验的 macOS 账号适配器、播放器账号面板、退出/切换确认、扫码 PTY 视图，以及账号变化后的音乐状态清理。模拟 CLI 与 Widget 测试、原生 PTY fixture 已覆盖主要流程；真实账号退出和换号扫码仍需在当前 App 中完成验收，不能由 fixture 结果替代。
+
 ## 目标与边界
 
 在 Aggregate 的网易云音乐连接首页显示当前账号，并提供扫码登录、退出登录和切换账号。这里管理的是 `@music163/ncm-cli` 使用的网易云音乐账号，不是 npm 仓库的 `npm login`。不要求用户把手机号、密码、Cookie、App ID 或 Private Key 输入 Aggregate。
