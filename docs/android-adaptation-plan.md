@@ -3,6 +3,17 @@
 > 规划日期：2026-11-10。状态：方案与技术探针计划，尚未实现或在 Android 真机验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
+**统一开发原则：仍然只有一套 Flutter/Dart App。** macOS 和 Android 共同使用 `app/lib/` 中的 `AggregateApp`、路由、页面、Widget、主题、领域模型及 `RuntimePort` 契约；按窗口宽度和输入方式调整同一套 Widget 的布局。`app/android/` 只承载 Flutter 的 Android 宿主、构建配置和确有必要的系统桥接代码，不另写一套 Kotlin/Compose 页面。Android 的 Kotlin/C++/JNI 只负责 Node 共享库、Service、凭证/文件等平台能力，结果经 Dart 适配器返回现有 Flutter 界面。macOS 继续使用现有原生适配层。
+
+~~~text
+同一套 Flutter 页面 / 主题 / 交互
+             ↓ RuntimePort（Dart 契约）
+   macOS 适配器          Android 适配器（Dart）
+   现有 MacRuntime       ├─ HTTP MCP（Dart）
+                       ├─ Node 系统桥（Kotlin/C++，仅运行能力）
+                       └─ Mac Host 客户端（Dart）
+~~~
+
 ## 1. 先明确“在手机上运行 CLI”的三个层次
 
 | 层次 | 例子 | Android 首版建议 |
@@ -15,7 +26,7 @@
 
 ## 2. `nodejs-mobile` + JNI/FFI 的判断
 
-**结论：可作为“内嵌 JS 运行器”的验证路线，不能直接作为“完整 npm/CLI 环境”的交付方案。** `nodejs-mobile` 官方提供 Android `libnode.so`，原生示例通过 JNI 调用 `node::Start`。Android 侧建议用 Kotlin/Java 负责生命周期和平台通道、C++ JNI 薄层调用 Node；Dart FFI 只有在导出稳定的 C ABI 后才接入，不直接绑定 C++ `node::Start`。优先在独立的 Android `:node` Service 进程中运行，以隔离 Node 崩溃和单实例限制，再通过 Binder/平台通道向 `AndroidRuntimePort` 传递请求与事件；是否需要本机回环服务留给探针比较。
+**结论：可作为“内嵌 JS 运行器”的验证路线，不能直接作为“完整 npm/CLI 环境”的交付方案。** `nodejs-mobile` 官方提供 Android `libnode.so`，原生示例通过 JNI 调用 `node::Start`。Android 原生层仅承担运行时桥接：用 Kotlin/Java 负责生命周期和平台通道、C++ JNI 薄层调用 Node；Dart FFI 只有在导出稳定的 C ABI 后才接入，不直接绑定 C++ `node::Start`。优先在独立的 Android `:node` Service 进程中运行，以隔离 Node 崩溃和单实例限制，再通过 Binder/平台通道向 Dart `AndroidRuntimePort` 传递请求与事件，最终仍由共用 Flutter 页面呈现；是否需要本机回环服务留给探针比较。
 
 对原设想的修正：
 
@@ -42,15 +53,14 @@
 ## 4. 阶段关系与交付边界
 
 ~~~text
-A0 范围与基线 ─→ A1 契约、Android 壳和手机导航 ─→ A2 Android HTTP MCP
-                         │                                  │
-                         ├─→ A3 Node 原生桥探针 ─→ A4 npm/CLI 兼容性门槛
-                         │                                  │
-                         └─→ A5 macOS Host ──────────────→ A6 Android 执行路由与终端
-                                                              │
-                                     A4 通过的本地能力 ──────→ A6
-                                                              ↓
-                                                A7 UI/网易云整合 ─→ A8 发布验收
+A0 范围与基线 → A1 Flutter Android 宿主与共享导航
+                    ├→ A2 Android HTTP MCP ─────────────┐
+                    ├→ A3 Node 原生桥 → A4 npm/CLI 门槛 ─┤（A4 通过的本地能力才接入）
+                    └→ A5 macOS Host ───────────────────┤
+                                                       ↓
+                                          A6 Android 执行路由与终端
+                                                       ↓
+                                          A7 共享 UI/网易云整合 → A8 发布验收
 ~~~
 
 A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可以在 A3 进行时开始。A4 未通过时，A6 仍可交付 Host 功能。若产品验收条件是“任意 npm CLI 都必须脱离 Host 在手机运行”，而 A4 无法证明该能力，**Android 版本不能按此条件验收**，需要重新确定产品范围或继续研究本地执行环境。
@@ -69,17 +79,17 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 **交付物：**能力矩阵、样本清单、设备/版本矩阵、Android 首版范围与不支持项。**通过门槛：**每项能力有负责人层（Dart、Android 原生、Node 或 Host）与可观察的验收结果；未知项保留为未知。
 
-### A1：契约和 Android App 骨架
+### A1：契约和 Flutter Android 宿主
 
 **依赖：**A0。此阶段只建立 Android 入口与可浏览的页面，不把假数据当系统能力。
 
-- [ ] A1.1 创建 Flutter Android 工程；在 `app/lib/main.dart` 改为平台工厂接线，macOS 继续使用当前 `LocalRuntimePort`，Android 接新适配器。
+- [ ] A1.1 给现有 Flutter App 创建 `app/android/` 宿主工程；在 `app/lib/main.dart` 改为平台工厂接线，macOS 继续使用当前 `LocalRuntimePort`，Android 接新 Dart 适配器。继续只有一个 `AggregateApp` 和一套路由。
 - [ ] A1.2 确定多运行端模型：连接/能力保存执行目标与 Host 身份；调用、权限、终端、活动记录沿用同一目标。现有全局 `RuntimeFeatures` 继续表示当前运行端能力；若 Android 要同时展示手机与 Host 能力，增加每连接可用能力或路由层，不能用一个全局布尔值掩盖差异。
 - [ ] A1.3 建 `AndroidRuntimePort` 的明确未支持响应与预览数据；本地 CLI、stdio、终端、文件定位在未实现前不出现在可操作入口。
-- [ ] A1.4 复用主题、连接首页、所有功能、运行页、连接管理、活动和设置；手机单栏导航基于可用窗口宽度，保留宽屏侧栏分支。
+- [ ] A1.4 在现有 `app/lib/` Widget 中复用主题、连接首页、所有功能、运行页、连接管理、活动和设置；为手机加入基于可用窗口宽度的单栏布局，保留宽屏侧栏分支，不创建 Android 专用页面树。
 - [ ] A1.5 完成 Android 返回行为、状态栏/手势导航栏安全区、输入法遮挡、触控目标和最基本的 TalkBack 名称检查。
 
-**交付物：**可安装的 Android 开发包、平台工厂、执行目标契约草案、手机导航骨架。**通过门槛：**真机可启动并浏览各页，返回/键盘不造成死路或遮挡；公共包与通用 Widget 保持平台无关；macOS 构建与现有主流程回归通过。
+**交付物：**同一 Flutter App 的 Android 开发包、平台工厂、执行目标契约草案、共用 Widget 的手机布局。**通过门槛：**真机可启动并浏览同一套路由与页面，返回/键盘不造成死路或遮挡；公共包与通用 Widget 保持平台无关；macOS 构建与现有主流程回归通过。
 
 ### A2：Android 本地基础运行端与 HTTP MCP
 
@@ -142,11 +152,11 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 **交付物：**Android 上统一展示手机与 Host 连接的功能包。**通过门槛：**真机可调用本地 HTTP MCP、Host 普通 CLI、Host TUI 和 Host stdio MCP；取消、断线、重连和执行位置显示正确。
 
-### A7：手机 UI 完整适配与网易云示例
+### A7：共用 Flutter UI 的手机适配与网易云示例
 
 **依赖：**A2、A6；本地音乐分支还依赖 A4 的单独验证。
 
-- [ ] A7.1 保持“连接即首页”：窄屏单栏、当前连接切换、所有功能、连接管理、活动和设置；按可用窗口宽度切换侧栏/底部或抽屉导航，不按设备名判断。
+- [ ] A7.1 在共用 `AppShell` 和功能 Widget 中保持“连接即首页”：窄屏单栏、当前连接切换、所有功能、连接管理、活动和设置；按可用窗口宽度切换侧栏/底部或抽屉导航，不按设备名判断，也不复制一套 Android 页面。
 - [ ] A7.2 运行页把来源、权限、表单、进度和结果按手机阅读顺序排列；复杂 JSON、长输出和终端用全屏视图。运行中、取消中、失败和结果待确认状态可见。
 - [ ] A7.3 调整播放器与迷你播放器，避免底部导航、输入法和手势条互相遮挡；手机本地播放若未通过 A4，不显示“在手机播放”的承诺。
 - [ ] A7.4 网易云 Host 模式沿用现有真实登录/搜索/播控能力，并核查声音实际由 Mac 输出；若要声音从手机输出，另接 Android Media3/MediaSession 路径，验证授权、音频来源和后台播控，单列验收。
