@@ -28,10 +28,10 @@ void main() {
     expect(find.text('工作台'), findsWidgets);
     await tester.tap(find.text('连接').first);
     await tester.pumpAndSettle();
-    expect(find.text('示例 Git CLI'), findsOneWidget);
+    expect(find.text('示例 Git CLI'), findsWidgets);
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
-    expect(find.text('跟随 macOS 系统'), findsOneWidget);
+    expect(find.text('跟随系统'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -80,7 +80,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('活动').first);
     await tester.pumpAndSettle();
-    expect(find.text('add'), findsOneWidget);
+    expect(find.text('add'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 

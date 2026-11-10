@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +14,9 @@ class SchemaFormState extends State<SchemaForm> {
   final formKey = GlobalKey<FormState>();
   final controllers = <String, TextEditingController>{};
   final booleans = <String, bool>{};
+  final selections = <String, String>{};
+  final summaryFocus = FocusNode();
+  bool showSummary = false;
 
   Map<String, Object?> get properties {
     final raw = widget.schema['properties'];
@@ -28,10 +33,20 @@ class SchemaFormState extends State<SchemaForm> {
     for (final controller in controllers.values) {
       controller.dispose();
     }
+    summaryFocus.dispose();
     super.dispose();
   }
 
-  bool validate() => formKey.currentState?.validate() ?? true;
+  bool validate() {
+    final valid = formKey.currentState?.validate() ?? true;
+    setState(() => showSummary = !valid);
+    if (!valid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) summaryFocus.requestFocus();
+      });
+    }
+    return valid;
+  }
 
   JsonMap arguments() {
     final values = <String, Object?>{};
@@ -42,11 +57,16 @@ class SchemaFormState extends State<SchemaForm> {
         values[entry.key] = booleans[entry.key] ?? false;
         continue;
       }
+      if (selections.containsKey(entry.key)) {
+        values[entry.key] = selections[entry.key];
+        continue;
+      }
       final raw = controllers[entry.key]?.text.trim() ?? '';
       if (raw.isEmpty && !requiredFields.contains(entry.key)) continue;
       values[entry.key] = switch (type) {
         'integer' => int.parse(raw),
         'number' => num.parse(raw),
+        'array' || 'object' => jsonDecode(raw),
         _ => raw,
       };
     }
@@ -59,6 +79,16 @@ class SchemaFormState extends State<SchemaForm> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (showSummary) ...[
+          Focus(
+            focusNode: summaryFocus,
+            child: Text(
+              '请检查标红字段后重试。',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (properties.isEmpty) const Text('此功能不需要参数。'),
         for (final entry in properties.entries) ...[
           Builder(
@@ -76,14 +106,54 @@ class SchemaFormState extends State<SchemaForm> {
                       setState(() => booleans[entry.key] = value),
                 );
               }
+              final options = spec['enum'];
+              if (type == 'string' &&
+                  options is List &&
+                  options.every((item) => item is String)) {
+                return DropdownButtonFormField<String>(
+                  key: Key('field-${entry.key}'),
+                  initialValue: selections[entry.key],
+                  decoration: InputDecoration(labelText: label),
+                  items: [
+                    for (final option in options.cast<String>())
+                      DropdownMenuItem(value: option, child: Text(option)),
+                  ],
+                  onChanged: (value) => setState(() {
+                    if (value == null) {
+                      selections.remove(entry.key);
+                    } else {
+                      selections[entry.key] = value;
+                    }
+                  }),
+                  validator: (value) =>
+                      requiredFields.contains(entry.key) && value == null
+                      ? '请选择$label'
+                      : null,
+                );
+              }
               final controller = controllers.putIfAbsent(
                 entry.key,
-                TextEditingController.new,
+                () => TextEditingController(
+                  text: type == 'array'
+                      ? '[]'
+                      : type == 'object'
+                      ? '{}'
+                      : '',
+                ),
               );
               return TextFormField(
                 key: Key('field-${entry.key}'),
                 controller: controller,
-                decoration: InputDecoration(labelText: label),
+                decoration: InputDecoration(
+                  labelText: label,
+                  helperText: type == 'array' || type == 'object'
+                      ? '输入 JSON ${type == 'array' ? '数组' : '对象'}'
+                      : spec['enum'] is List
+                      ? '可选：${(spec['enum'] as List).join('、')}'
+                      : null,
+                ),
+                maxLines: type == 'array' || type == 'object' ? 4 : 1,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: type == 'integer' || type == 'number'
                     ? TextInputType.number
                     : null,
@@ -99,6 +169,21 @@ class SchemaFormState extends State<SchemaForm> {
                   }
                   if (type == 'number' && num.tryParse(text) == null) {
                     return '请输入数字';
+                  }
+                  if (type == 'array' || type == 'object') {
+                    try {
+                      final parsed = jsonDecode(text);
+                      if (type == 'array' && parsed is! List ||
+                          type == 'object' && parsed is! Map) {
+                        return 'JSON 类型不正确';
+                      }
+                    } on FormatException {
+                      return '请输入有效 JSON';
+                    }
+                  }
+                  if (spec['enum'] is List &&
+                      !(spec['enum'] as List).contains(text)) {
+                    return '请输入列出的选项';
                   }
                   return null;
                 },

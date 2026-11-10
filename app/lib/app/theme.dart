@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 
 abstract final class AggregateTheme {
-  static ThemeData light = _build(
+  static final ThemeData light = _build(
     const Color(0xFFF5F7F8),
     const Color(0xFFFFFFFF),
     const Color(0xFF1B2833),
+    const Color(0xFF546270),
     const Color(0xFF245F89),
+    const Color(0xFF2F7EA9),
     Brightness.light,
   );
-  static ThemeData dark = _build(
+  static final ThemeData dark = _build(
     const Color(0xFF151B20),
     const Color(0xFF1C252B),
     const Color(0xFFE8F0F3),
+    const Color(0xFFA8B8C1),
     const Color(0xFF78B7DF),
+    const Color(0xFF88C8EA),
     Brightness.dark,
   );
 
@@ -20,7 +24,9 @@ abstract final class AggregateTheme {
     Color background,
     Color surface,
     Color foreground,
+    Color secondary,
     Color accent,
+    Color focus,
     Brightness brightness,
   ) {
     final scheme = ColorScheme.fromSeed(
@@ -28,18 +34,65 @@ abstract final class AggregateTheme {
       brightness: brightness,
       surface: surface,
       onSurface: foreground,
+      onSurfaceVariant: secondary,
+      primary: accent,
+      outline: secondary.withValues(alpha: 0.42),
     );
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
-      appBarTheme: AppBarTheme(backgroundColor: background),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
+      visualDensity: VisualDensity.compact,
+      appBarTheme: AppBarTheme(
+        backgroundColor: background,
+        foregroundColor: foreground,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: false,
       ),
-      listTileTheme: const ListTileThemeData(
-        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+      textTheme: TextTheme(
+        headlineMedium: TextStyle(
+          color: foreground,
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          height: 1.25,
+        ),
+        titleMedium: TextStyle(
+          color: foreground,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyMedium: TextStyle(color: foreground, fontSize: 14, height: 1.45),
+        bodySmall: TextStyle(color: secondary, fontSize: 12, height: 1.4),
+      ),
+      dividerColor: secondary.withValues(alpha: 0.18),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: scheme.outline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: focus, width: 2),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        iconColor: secondary,
+        titleTextStyle: TextStyle(color: foreground, fontSize: 14),
+        subtitleTextStyle: TextStyle(color: secondary, fontSize: 12),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surface,
+        side: BorderSide(color: scheme.outline),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }

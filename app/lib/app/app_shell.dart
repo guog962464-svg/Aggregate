@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
@@ -27,6 +29,23 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   Section selected = Section.workspace;
   int activityRevision = 0;
+  UserPreferences preferences = const UserPreferences();
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadPreferences());
+  }
+
+  Future<void> _loadPreferences() async {
+    final loaded = await widget.runtime.loadPreferences();
+    if (mounted) setState(() => preferences = loaded);
+  }
+
+  Future<void> _savePreferences(UserPreferences value) async {
+    setState(() => preferences = value);
+    await widget.runtime.savePreferences(value);
+  }
 
   void select(Section section) => setState(() => selected = section);
 
@@ -94,14 +113,39 @@ class _AppShellState extends State<AppShell> {
                   WorkspacePage(
                     runtime: widget.runtime,
                     onOpen: openCapability,
+                    onAddConnection: (_) => select(Section.connections),
+                    favoriteKeys: preferences.favoriteCapabilityKeys,
+                    onFavoriteChanged: (capability, value) {
+                      final keys = [...preferences.favoriteCapabilityKeys];
+                      if (value) {
+                        if (!keys.contains(capability.id.key)) {
+                          keys.add(capability.id.key);
+                        }
+                      } else {
+                        keys.remove(capability.id.key);
+                      }
+                      unawaited(
+                        _savePreferences(
+                          preferences.copyWith(favoriteCapabilityKeys: keys),
+                        ),
+                      );
+                    },
                   ),
-                  ConnectionsPage(runtime: widget.runtime),
+                  ConnectionsPage(
+                    runtime: widget.runtime,
+                    onOpen: openCapability,
+                  ),
                   ActivityPage(
                     key: ValueKey(activityRevision),
                     runtime: widget.runtime,
                     onOpen: openCapability,
                   ),
-                  const SettingsPage(),
+                  SettingsPage(
+                    preferences: preferences,
+                    onPreferencesChanged: (value) =>
+                        unawaited(_savePreferences(value)),
+                    onClearActivity: widget.runtime.clearActivity,
+                  ),
                 ],
               ),
             ),
