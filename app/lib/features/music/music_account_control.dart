@@ -373,7 +373,7 @@ class _AccountDialogState extends State<_AccountDialog> {
     final scanning = phase == _AccountPhase.scanning;
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 540),
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 600),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
@@ -426,11 +426,15 @@ class _AccountDialogState extends State<_AccountDialog> {
                 const Text('使用网易云音乐 App 扫描下方二维码并在手机上确认。'),
                 const SizedBox(height: 8),
                 SizedBox(
-                  height: 300,
+                  height: 320,
                   width: double.infinity,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: TerminalView(terminal, autofocus: true),
+                    child: TerminalView(
+                      terminal,
+                      autofocus: true,
+                      textStyle: const TerminalStyle(fontSize: 7),
+                    ),
                   ),
                 ),
               ],
