@@ -34,6 +34,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   List<MusicSearchItem> songs = const [];
   String? searchError;
   bool searching = false;
+  bool confirmingSearch = false;
   bool searched = false;
   RunId? searchRun;
   StreamSubscription<RunEvent>? searchSubscription;
@@ -97,7 +98,8 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       queryFocus.requestFocus();
       return;
     }
-    if (action == null || searching) return;
+    if (action == null || searching || confirmingSearch) return;
+    if (!await _confirmSearch(action) || !mounted) return;
     final current = ++searchGeneration;
     setState(() {
       searching = true;
@@ -108,7 +110,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     try {
       final handle = await widget.runtime.invoke(action.id, {
         'keyword': keyword,
-      });
+      }, permissionGranted: widget.session.searchAuthorized);
       if (!mounted || current != searchGeneration) {
         await widget.runtime.cancel(handle.id);
         return;
@@ -159,6 +161,44 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
           searchRun = null;
         });
       }
+    }
+  }
+
+  Future<bool> _confirmSearch(Capability action) async {
+    if (widget.runtime.isPreview ||
+        action.permission == PermissionLevel.read ||
+        widget.session.searchAuthorized) {
+      return true;
+    }
+    final connectionId = widget.connection.id.value;
+    setState(() => confirmingSearch = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('允许搜索歌曲？'),
+          content: Text(
+            '搜索词将交给 ${widget.connection.label} 的 CLI 执行。'
+            '本次 App 会话中，该连接的后续搜索不再询问。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('允许搜索'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || widget.connection.id.value != connectionId) return false;
+      if (confirmed != true) return false;
+      widget.session.authorizeSearch();
+      return true;
+    } finally {
+      if (mounted) setState(() => confirmingSearch = false);
     }
   }
 
@@ -424,7 +464,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _semanticIconButton(
             label: '搜索歌曲',
-            onPressed: searching ? null : search,
+            onPressed: searching || confirmingSearch ? null : search,
             icon: Icons.arrow_forward_rounded,
           ),
         ),

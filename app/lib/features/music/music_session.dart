@@ -18,6 +18,7 @@ final class MusicSession extends ChangeNotifier {
   String detail = '';
   bool visible = false;
   bool busy = false;
+  bool searchAuthorized = false;
   bool controlsAuthorized = false;
   bool? playing;
   String playbackStatus = '状态未知';
@@ -56,6 +57,7 @@ final class MusicSession extends ChangeNotifier {
       playbackStatus = '状态未知';
       queueLength = 0;
       currentIndex = 0;
+      searchAuthorized = false;
       controlsAuthorized = false;
     }
     connection = target;
@@ -243,6 +245,11 @@ final class MusicSession extends ChangeNotifier {
 
   void authorizeControls() {
     controlsAuthorized = true;
+    _notify();
+  }
+
+  void authorizeSearch() {
+    searchAuthorized = true;
     _notify();
   }
 

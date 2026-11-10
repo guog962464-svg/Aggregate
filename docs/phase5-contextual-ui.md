@@ -30,7 +30,7 @@
 
 `ConnectionExperience` 只读取公共 `Connection` 和 `Capability.presentation`：同一个 CLI 连接同时公布 `music.search` 与 `music.play` 时，进入音乐播放器。普通 CLI 落到命令与动作页；stdio/HTTP MCP 落到 MCP 功能页。连接名称即使叫“网易云音乐”也不会单独触发播放器。这样以后可以按明确的展示元数据增加其他专用界面，同时保留未知连接的通用入口。
 
-音乐界面调用现有 `RuntimePort` 和 `MusicSession`，没有直接执行 CLI 或引入 macOS API。搜索为读取操作；本次 App 会话对当前音乐连接首次播放或播控时确认，随后同一连接的播控可直接点击。切换音乐连接时重新确认。状态仍由 Runtime 核对；若播放命令结果不确定，显示“正在确认”，不会把发送成功当成出声成功。
+音乐界面调用现有 `RuntimePort` 和 `MusicSession`，没有直接执行 CLI 或引入 macOS API。CLI 动作清单不能自行把搜索声明为可信的免确认操作，因此真实音乐连接首次搜索时会说明搜索词将交给该 CLI，并在用户允许后执行；本次 App 会话中同一连接的后续搜索不再询问。首次播放或播控仍单独确认，切换音乐连接后重新确认。状态仍由 Runtime 核对；若播放命令结果不确定，显示“正在确认”，不会把发送成功当成出声成功。
 
 ## 视觉取舍
 
