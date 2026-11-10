@@ -70,12 +70,13 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 ### A0：确定范围、样本和技术基线
 
 **前置：**现有 macOS 工程与两份历史方案。
+**状态：**已完成静态盘点与设备信息采集；证据、版本和未覆盖项见 [A0 基线报告](android-a0-baseline.md)。
 
-- [ ] A0.1 记录当前 Flutter/Dart、Android SDK、Gradle、AGP、NDK 和锁定依赖版本；检查 `mcp_dart`、`flutter_pty2`、`terminal_view` 的 Android 构建条件。当前仓库尚无 `app/android/`。
-- [ ] A0.2 逐个列出 `RuntimePort` 方法的 Android 去向：手机本地、Host、暂不支持。另列 `ConnectionAccountPort`、文件导入导出、凭证、通知、活动记录和终端。
-- [ ] A0.3 定义验收样本：一个远程 HTTP MCP、一个普通 CLI、一个交互式 TUI、一个 stdio MCP、一个不启动子进程的纯 JS npm 包、一个依赖原生/外部程序的 npm 包，以及网易云样本。
-- [ ] A0.4 定义设备矩阵：至少一台窄屏 Android 真机；如计划分发到 16 KB 页设备，准备可实际测试的 16 KB 真机。记录目标 API、最低 API、ABI、4 KB/16 KB 页和是否走 Google Play。
-- [ ] A0.5 把“npm 支持”拆为构建时随包提供、手机上安装纯 JS 包、手机上安装任意包三档；明确 Android 首版希望承诺哪一档。
+- [x] A0.1 记录当前 Flutter/Dart、Android SDK、锁定依赖版本及 Gradle/AGP/NDK 的缺失状态；检查 `mcp_dart`、`flutter_pty2`、`terminal_view` 的 Android 构建条件。当前仓库尚无 `app/android/`。
+- [x] A0.2 逐个列出 `RuntimePort` 方法的 Android 去向：手机本地、Host、暂不支持。另列 `ConnectionAccountPort`、文件导入导出、凭证、通知、活动记录和终端。
+- [x] A0.3 定义验收样本：一个远程 HTTP MCP、一个普通 CLI、一个交互式 TUI、一个 stdio MCP、一个不启动子进程的纯 JS npm 包、一个依赖原生/外部程序的 npm 包，以及网易云样本。
+- [x] A0.4 定义设备矩阵，记录现有真机、目标/最低 API 候选、ABI、4 KB/16 KB 页与分发渠道待定状态；16 KB 真机列为 A3/A8 前置缺口。
+- [x] A0.5 把“npm 支持”拆为构建时随包提供、手机上安装纯 JS 包、手机上运行此前未知的 npm/本地 CLI 三档；以完整本地使用为目标，是否可交付由 A4 验证。
 
 **交付物：**能力矩阵、样本清单、设备/版本矩阵、Android 首版范围与不支持项。**通过门槛：**每项能力有负责人层（Dart、Android 原生、Node 或 Host）与可观察的验收结果；未知项保留为未知。
 
