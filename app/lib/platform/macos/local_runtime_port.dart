@@ -3,7 +3,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'mac_runtime.dart';
 import 'keychain_credential_store.dart';
 
-final class LocalRuntimePort implements RuntimePort {
+final class LocalRuntimePort implements RuntimePort, ConnectionAccountPort {
   LocalRuntimePort.live(MacRuntime runtime) : _delegate = runtime;
 
   static Future<LocalRuntimePort> createLive() async => LocalRuntimePort.live(
@@ -100,4 +100,24 @@ final class LocalRuntimePort implements RuntimePort {
   @override
   Future<void> closeTerminal(TerminalSession session) =>
       _delegate.closeTerminal(session);
+
+  ConnectionAccountPort get _accounts => _delegate as ConnectionAccountPort;
+
+  @override
+  Future<AccountSnapshot?> readAccount(ConnectionId connection) =>
+      _accounts.readAccount(connection);
+
+  @override
+  Future<TerminalSession> beginAccountLogin(ConnectionId connection) =>
+      _accounts.beginAccountLogin(connection);
+
+  @override
+  Future<int> waitAccountLogin(TerminalSession session) =>
+      _accounts.waitAccountLogin(session);
+
+  @override
+  Future<AccountSnapshot> logoutAccount(
+    ConnectionId connection, {
+    required bool confirmed,
+  }) => _accounts.logoutAccount(connection, confirmed: confirmed);
 }

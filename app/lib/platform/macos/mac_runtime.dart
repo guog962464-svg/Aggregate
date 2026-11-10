@@ -24,7 +24,7 @@ File? _bundledCliLauncher() {
   );
 }
 
-final class MacRuntime implements RuntimePort {
+final class MacRuntime implements RuntimePort, ConnectionAccountPort {
   MacRuntime._(this.dataDirectory, this._credentials, this._cliLauncher);
 
   static Future<MacRuntime> open({
@@ -58,6 +58,7 @@ final class MacRuntime implements RuntimePort {
   final _activity = <RunSummary>[];
   UserPreferences _preferences = const UserPreferences();
   final _terminals = <String, _Terminal>{};
+  final _accountLoginSessions = <String>{};
   final _reconnecting = <String>{};
   bool _disposed = false;
   var _serial = 0;
@@ -595,6 +596,186 @@ final class MacRuntime implements RuntimePort {
     }
     if (notes.isNotEmpty) {
       entry.diagnostic = notes.join(' ');
+    }
+  }
+
+  Future<_Entry?> _accountEntry(ConnectionId connection) async {
+    final entry = _entries[connection.value];
+    if (entry?.spec.kind != ConnectionKind.cli ||
+        !await isNeteaseCliPackage(entry!.spec.executable!)) {
+      return null;
+    }
+    return entry;
+  }
+
+  @override
+  Future<AccountSnapshot?> readAccount(ConnectionId connection) async {
+    final entry = await _accountEntry(connection);
+    if (entry == null) return null;
+    if (entry.status != ConnectionStatus.ready) {
+      return const AccountSnapshot(
+        AccountState.unknown,
+        message: '连接不可用，请在“管理连接”中检查。',
+      );
+    }
+    try {
+      final check = await _accountCommand(entry, [
+        'login',
+        '--check',
+        '--output',
+        'json',
+      ]);
+      if (check.output.trim().isEmpty) {
+        return const AccountSnapshot(
+          AccountState.unknown,
+          message: '登录状态检查失败，请检查网络或开放平台配置。',
+        );
+      }
+      final checkData = jsonDecode(check.output);
+      if (checkData is! Map) throw const FormatException('invalid account');
+      if (checkData['success'] == false) {
+        return const AccountSnapshot(AccountState.signedOut);
+      }
+      if (check.exitCode != 0 || checkData['success'] != true) {
+        throw const FormatException('invalid account');
+      }
+      final info = await _accountCommand(entry, [
+        'user',
+        'info',
+        '--output',
+        'json',
+      ]);
+      if (info.exitCode != 0) {
+        return const AccountSnapshot(
+          AccountState.unknown,
+          message: '账号资料读取失败，请刷新后重试。',
+        );
+      }
+      final profile = jsonDecode(info.output);
+      if (profile is! Map ||
+          profile['code'] != 200 ||
+          profile['data'] is! Map) {
+        return const AccountSnapshot(
+          AccountState.unknown,
+          message: '账号资料暂不可用，请刷新后重试。',
+        );
+      }
+      final nickname = (profile['data'] as Map)['nickname'];
+      return AccountSnapshot(
+        AccountState.signedIn,
+        nickname: nickname is String && nickname.trim().isNotEmpty
+            ? String.fromCharCodes(
+                nickname
+                    .replaceAll(RegExp(r'[\x00-\x1f\x7f]'), '')
+                    .trim()
+                    .runes
+                    .take(80),
+              )
+            : null,
+      );
+    } on TimeoutException {
+      return const AccountSnapshot(
+        AccountState.unknown,
+        message: '账号检查超时，请检查网络后重试。',
+      );
+    } on FormatException {
+      return const AccountSnapshot(
+        AccountState.unknown,
+        message: '账号状态格式无法识别，请刷新后重试。',
+      );
+    } on ProcessException {
+      return const AccountSnapshot(
+        AccountState.unknown,
+        message: '无法启动账号命令，请检查连接。',
+      );
+    }
+  }
+
+  @override
+  Future<TerminalSession> beginAccountLogin(ConnectionId connection) async {
+    if (await _accountEntry(connection) == null) {
+      throw StateError('此连接不支持账号登录');
+    }
+    final session = await openTerminal(
+      CliCommand(connection, const ['login', '--output', 'human']),
+    );
+    _accountLoginSessions.add(session.id);
+    return session;
+  }
+
+  @override
+  Future<int> waitAccountLogin(TerminalSession session) async {
+    if (!_accountLoginSessions.contains(session.id)) {
+      throw StateError('登录会话不存在');
+    }
+    final exit = await _terminal(session).session.done;
+    return exit is PtyExitCode ? exit.code : -1;
+  }
+
+  @override
+  Future<AccountSnapshot> logoutAccount(
+    ConnectionId connection, {
+    required bool confirmed,
+  }) async {
+    if (!confirmed) throw StateError('退出登录需要确认');
+    final entry = await _accountEntry(connection);
+    if (entry == null || entry.status != ConnectionStatus.ready) {
+      throw StateError('网易云音乐连接不可用');
+    }
+    final result = await _accountCommand(entry, ['logout', '--output', 'json']);
+    if (result.exitCode != 0) throw StateError('退出登录失败，请稍后重试');
+    final status = await readAccount(connection);
+    if (status?.state != AccountState.signedOut) {
+      throw StateError('退出命令已执行，但账号状态尚未确认，请刷新');
+    }
+    return status!;
+  }
+
+  Future<({int exitCode, String output})> _accountCommand(
+    _Entry entry,
+    List<String> arguments,
+  ) async {
+    final launcher = _cliLauncher;
+    final process = await Process.start(
+      launcher?.path ?? entry.spec.executable!,
+      launcher == null
+          ? [...entry.spec.arguments, ...arguments]
+          : [entry.spec.executable!, ...entry.spec.arguments, ...arguments],
+      workingDirectory: entry.spec.workingDirectory,
+      environment: _environment(networkProxy: true),
+      includeParentEnvironment: false,
+      runInShell: false,
+    );
+    void stop() {
+      if (launcher != null &&
+          Process.killPid(-process.pid, ProcessSignal.sigterm)) {
+        return;
+      }
+      process.kill(ProcessSignal.sigterm);
+    }
+
+    Future<String> collect(Stream<List<int>> source) async {
+      final output = BytesBuilder(copy: false);
+      await for (final chunk in source) {
+        if (output.length + chunk.length > 64 * 1024) {
+          stop();
+          throw const FormatException('account output too large');
+        }
+        output.add(chunk);
+      }
+      return utf8.decode(output.takeBytes(), allowMalformed: true);
+    }
+
+    try {
+      final results = await Future.wait<Object>([
+        process.exitCode,
+        collect(process.stdout),
+        collect(process.stderr),
+      ]).timeout(const Duration(seconds: 15));
+      return (exitCode: results[0] as int, output: results[1] as String);
+    } catch (_) {
+      stop();
+      rethrow;
     }
   }
 
@@ -1421,13 +1602,19 @@ final class MacRuntime implements RuntimePort {
     if (_terminals.length >= _maxConcurrent) {
       throw StateError('同时打开的终端已达上限（3 个）');
     }
+    final accountLogin =
+        command.arguments.length == 3 &&
+        command.arguments[0] == 'login' &&
+        command.arguments[1] == '--output' &&
+        command.arguments[2] == 'human' &&
+        await isNeteaseCliPackage(entry.spec.executable!);
     final session = await Pty.spawn(
       PtySpawnOptions(
         executable: entry.spec.executable!,
         arguments: [...entry.spec.arguments, ...command.arguments],
         workingDirectory: entry.spec.workingDirectory,
         environment: PtyEnvironment.replace({
-          ..._environment(),
+          ..._environment(networkProxy: accountLogin),
           'TERM': 'xterm-256color',
         }),
         size: const PtySize(columns: 80, rows: 24),
@@ -1491,6 +1678,7 @@ final class MacRuntime implements RuntimePort {
 
   @override
   Future<void> closeTerminal(TerminalSession session) async {
+    _accountLoginSessions.remove(session.id);
     final terminal = _terminals.remove(session.id);
     if (terminal == null) return;
     try {

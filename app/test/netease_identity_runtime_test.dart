@@ -27,6 +27,11 @@ void main() {
       expect(connection.status, ConnectionStatus.ready);
       expect(connection.diagnostic, contains('无法确认'));
       expect(await runtime.loadActionManifest(connection.id), isNull);
+      expect(await runtime.readAccount(connection.id), isNull);
+      await expectLater(
+        runtime.logoutAccount(connection.id, confirmed: true),
+        throwsStateError,
+      );
       final capabilities = await runtime.searchCapabilities(
         const SearchQuery(''),
       );
