@@ -85,11 +85,12 @@ class _AppShellState extends State<AppShell> {
               padding: EdgeInsets.only(right: 8),
               child: Center(child: Text('阶段 1 · 预览数据')),
             ),
-            IconButton(
-              tooltip: '添加连接',
-              onPressed: () => select(Section.connections),
-              icon: const Icon(Icons.add),
-            ),
+            if (widget.runtime.features.connectionKinds.isNotEmpty)
+              IconButton(
+                tooltip: '添加连接',
+                onPressed: () => select(Section.connections),
+                icon: const Icon(Icons.add),
+              ),
             const SizedBox(width: 8),
           ],
         ),
