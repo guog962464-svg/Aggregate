@@ -52,12 +52,6 @@ case "\$1" in
       echo 'login done'
     fi ;;
   logout) rm -f "\$STATE"; echo '{"success":true}' ;;
-  user)
-    if [ -f "\$STATE" ]; then
-      echo '{"code":200,"data":{"nickname":"测试账号","token":"do-not-log"}}'
-    else
-      echo '{"code":401}'
-    fi ;;
   *) exit 2 ;;
 esac
 ''');

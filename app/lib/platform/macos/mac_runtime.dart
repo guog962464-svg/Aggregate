@@ -639,40 +639,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
       if (check.exitCode != 0 || checkData['success'] != true) {
         throw const FormatException('invalid account');
       }
-      final info = await _accountCommand(entry, [
-        'user',
-        'info',
-        '--output',
-        'json',
-      ]);
-      if (info.exitCode != 0) {
-        return const AccountSnapshot(
-          AccountState.unknown,
-          message: '账号资料读取失败，请刷新后重试。',
-        );
-      }
-      final profile = jsonDecode(info.output);
-      if (profile is! Map ||
-          profile['code'] != 200 ||
-          profile['data'] is! Map) {
-        return const AccountSnapshot(
-          AccountState.unknown,
-          message: '账号资料暂不可用，请刷新后重试。',
-        );
-      }
-      final nickname = (profile['data'] as Map)['nickname'];
-      return AccountSnapshot(
-        AccountState.signedIn,
-        nickname: nickname is String && nickname.trim().isNotEmpty
-            ? String.fromCharCodes(
-                nickname
-                    .replaceAll(RegExp(r'[\x00-\x1f\x7f]'), '')
-                    .trim()
-                    .runes
-                    .take(80),
-              )
-            : null,
-      );
+      return const AccountSnapshot(AccountState.signedIn);
     } on TimeoutException {
       return const AccountSnapshot(
         AccountState.unknown,

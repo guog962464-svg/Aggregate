@@ -10,7 +10,7 @@ void main() {
       expect(fixture.connection.status, ConnectionStatus.ready);
       final current = await fixture.runtime.readAccount(fixture.connection.id);
       expect(current?.state, AccountState.signedIn);
-      expect(current?.nickname, '测试账号');
+      expect(current?.nickname, isNull);
       expect(await fixture.runtime.listRecentRuns(), isEmpty);
 
       await expectLater(
