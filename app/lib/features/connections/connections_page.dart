@@ -8,6 +8,7 @@ import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
 import '../../widgets/capability_row.dart';
 import 'action_editor_dialog.dart';
+import 'connection_setup_dialog.dart';
 
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({
@@ -66,18 +67,32 @@ class ConnectionsPageState extends State<ConnectionsPage> {
       );
       return;
     }
-    final spec = await showDialog<ConnectionSpec>(
-      context: context,
-      builder: (_) => AddConnectionDialog(
-        initialKind: initialKind,
-        allowedKinds: allowedKinds,
-      ),
-    );
-    if (spec == null) return;
     try {
-      final connection = await widget.runtime.addConnection(spec);
+      final Connection? connection;
+      if (widget.runtime case final ConnectionSetupPort setup) {
+        connection = await showDialog<Connection>(
+          context: context,
+          builder: (_) => ConnectionSetupDialog(
+            setup: setup,
+            initialKind: initialKind,
+            allowedKinds: allowedKinds,
+          ),
+        );
+      } else {
+        final spec = await showDialog<ConnectionSpec>(
+          context: context,
+          builder: (_) => AddConnectionDialog(
+            initialKind: initialKind,
+            allowedKinds: allowedKinds,
+          ),
+        );
+        connection = spec == null
+            ? null
+            : await widget.runtime.addConnection(spec);
+      }
+      if (connection == null) return;
       if (!mounted) return;
-      setState(() => error = connection.diagnostic);
+      setState(() => error = connection!.diagnostic);
       selectedId = connection.id.value;
       reload();
       widget.onChanged?.call();

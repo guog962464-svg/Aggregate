@@ -123,6 +123,12 @@ abstract interface class RuntimePort {
 
 阶段 4 在公共契约中增加 `RuntimeFeatures`：运行端显式报告可添加的连接类型、终端、本地文件预览与文件定位能力。通用页面根据运行端能力显示操作；快捷键按显示 UI 的系统选择 Command 或 Ctrl，而不根据运行端所在机器判断。预览样本移入 `app/lib/preview/`，与 macOS 实现分离。契约、当前接线和测试细节见[阶段 4 公共层准备](phase4-common-layer.md)。
 
+### 应用内连接配置与预检
+
+通用 UI 通过可选 `ConnectionSetupPort` 读取适配器及字段定义，创建只存在于内存中的 `ConnectionSetupDraft`。macOS `MacRuntime` 执行测试并返回逐项 `SetupCheck`；测试通过后才接受 `saveConnectionSetup`。修改输入会废弃旧测试。自定义 CLI 验证可执行文件与动作清单；stdio/HTTP MCP 在草稿阶段握手并发现功能，临时客户端随后关闭。HTTP Bearer Token 在测试时只保留在内存，保存时交给钥匙串。
+
+首个专用适配器是官方 `@music163/ncm-cli`：程序身份先由本机 npm 包元数据核对；App ID 与 PEM Private Key 传给 CLI 的 `config set`，以该连接独立的 HOME 运行 CLI。临时 PEM 文件位于权限限制的账号目录并在命令结束后删除；连接 JSON 只保留不含密钥的 `profileId`。原有连接不带 `profileId`，继续使用原 CLI 目录。技术配置、扫码登录与搜索接口授权分开报告；技术配置通过即可保存并在播放器内扫码。删除连接同时清理其独立账号目录。`profileId` 在使用和删除前都验证格式，防止连接 JSON 注入目录路径。此适配器是可扩展模板，未来其他 npm/CLI 的字段和验证逻辑由各自运行端适配器实现，通用页面不导入系统 API。
+
 ### 通用运行生命周期
 
 ~~~text
