@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
-import 'package:terminal_view/terminal_view.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+import 'netease_login_link.dart';
 
 /// A small account entry in the player heading. Provider work stays in the
 /// optional account port; other CLI and MCP connections never show it.
@@ -142,7 +144,8 @@ class _AccountDialogState extends State<_AccountDialog> {
   _AccountPhase phase = _AccountPhase.idle;
   String? notice;
   bool noticeIsError = false;
-  Terminal terminal = Terminal(maxLines: 800);
+  final loginLinkReader = NeteaseLoginLinkReader();
+  String? loginLink;
   TerminalSession? loginSession;
   StreamSubscription<String>? outputSubscription;
   Timer? loginTimeout;
@@ -264,7 +267,8 @@ class _AccountDialogState extends State<_AccountDialog> {
       phase = _AccountPhase.starting;
       notice = null;
       noticeIsError = false;
-      terminal = Terminal(maxLines: 800);
+      loginLink = null;
+      loginLinkReader.clear();
     });
     try {
       final session = await widget.accounts.beginAccountLogin(
@@ -275,19 +279,13 @@ class _AccountDialogState extends State<_AccountDialog> {
         return;
       }
       loginSession = session;
-      terminal.onOutput = (text) {
-        if (loginSession?.id == session.id) {
-          unawaited(widget.runtime.writeTerminal(session, text));
-        }
-      };
-      terminal.onResize = (columns, rows, _, _) {
-        if (loginSession?.id == session.id) {
-          unawaited(widget.runtime.resizeTerminal(session, columns, rows));
-        }
-      };
-      outputSubscription = widget.runtime
-          .watchTerminal(session)
-          .listen(terminal.write);
+      outputSubscription = widget.runtime.watchTerminal(session).listen((
+        output,
+      ) {
+        if (!mounted || current != operation || loginLink != null) return;
+        final link = loginLinkReader.add(output);
+        if (link != null) setState(() => loginLink = link);
+      });
       setState(() => phase = _AccountPhase.scanning);
       loginTimeout = Timer(const Duration(minutes: 3), () {
         if (mounted && current == operation) {
@@ -341,6 +339,8 @@ class _AccountDialogState extends State<_AccountDialog> {
 
   Future<void> _releaseLogin() async {
     loginTimeout?.cancel();
+    loginLink = null;
+    loginLinkReader.clear();
     final session = loginSession;
     loginSession = null;
     final cancellation = outputSubscription?.cancel();
@@ -373,107 +373,125 @@ class _AccountDialogState extends State<_AccountDialog> {
     final scanning = phase == _AccountPhase.scanning;
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 460, maxHeight: 540),
         child: Padding(
           padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.account_circle_outlined),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text('网易云音乐账号', style: theme.textTheme.titleLarge),
-                  ),
-                  IconButton(
-                    tooltip: '关闭账号面板',
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(switch (snapshot.state) {
-                AccountState.signedIn =>
-                  '已登录 · ${snapshot.nickname ?? '网易云音乐账号'}',
-                AccountState.signedOut => '当前未登录',
-                AccountState.unknown => snapshot.message ?? '账号状态待确认',
-              }),
-              if (notice case final message?) ...[
-                const SizedBox(height: 8),
-                Text(
-                  message,
-                  style: noticeIsError
-                      ? TextStyle(color: theme.colorScheme.error)
-                      : theme.textTheme.bodyMedium,
-                ),
-              ],
-              const SizedBox(height: 16),
-              if (phase == _AccountPhase.starting ||
-                  phase == _AccountPhase.verifying ||
-                  phase == _AccountPhase.signingOut) ...[
-                const LinearProgressIndicator(),
-                const SizedBox(height: 12),
-                Text(switch (phase) {
-                  _AccountPhase.starting => '正在生成登录二维码…',
-                  _AccountPhase.verifying => '正在确认新账号…',
-                  _ => '正在退出登录…',
-                }),
-              ],
-              if (scanning) ...[
-                const Text('使用网易云音乐 App 扫描下方二维码并在手机上确认。'),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 320,
-                  width: double.infinity,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: TerminalView(
-                      terminal,
-                      autofocus: true,
-                      textStyle: const TerminalStyle(fontSize: 7),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.account_circle_outlined),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text('网易云音乐账号', style: theme.textTheme.titleLarge),
                     ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (scanning)
-                    TextButton(
-                      onPressed: _cancelLogin,
-                      child: const Text('取消扫码'),
-                    )
-                  else ...[
-                    TextButton(
-                      onPressed: busy ? null : _refresh,
-                      child: const Text('刷新状态'),
+                    IconButton(
+                      tooltip: '关闭账号面板',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
                     ),
-                    if (snapshot.state == AccountState.signedIn) ...[
-                      TextButton(
-                        onPressed: busy
-                            ? null
-                            : () => _logout(switchAccount: false),
-                        child: const Text('退出登录'),
-                      ),
-                      FilledButton(
-                        onPressed: busy
-                            ? null
-                            : () => _logout(switchAccount: true),
-                        child: const Text('切换账号'),
-                      ),
-                    ] else
-                      FilledButton(
-                        onPressed: busy ? null : _startLogin,
-                        child: const Text('扫码登录'),
-                      ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Text(switch (snapshot.state) {
+                  AccountState.signedIn =>
+                    '已登录 · ${snapshot.nickname ?? '网易云音乐账号'}',
+                  AccountState.signedOut => '当前未登录',
+                  AccountState.unknown => snapshot.message ?? '账号状态待确认',
+                }),
+                if (notice case final message?) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: noticeIsError
+                        ? TextStyle(color: theme.colorScheme.error)
+                        : theme.textTheme.bodyMedium,
+                  ),
                 ],
-              ),
-            ],
+                const SizedBox(height: 16),
+                if (phase == _AccountPhase.starting ||
+                    phase == _AccountPhase.verifying ||
+                    phase == _AccountPhase.signingOut) ...[
+                  const LinearProgressIndicator(),
+                  const SizedBox(height: 12),
+                  Text(switch (phase) {
+                    _AccountPhase.starting => '正在生成登录二维码…',
+                    _AccountPhase.verifying => '正在确认新账号…',
+                    _ => '正在退出登录…',
+                  }),
+                ],
+                if (scanning) ...[
+                  const Text('使用网易云音乐 App 扫描二维码，在手机上确认登录。'),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox.square(
+                        dimension: 240,
+                        child: loginLink == null
+                            ? const Center(child: CircularProgressIndicator())
+                            : QrImageView(
+                                key: const Key('music-login-qr'),
+                                data: loginLink!,
+                                backgroundColor: Colors.white,
+                                padding: const EdgeInsets.all(24),
+                                semanticsLabel: '网易云音乐登录二维码，请用手机 App 扫描',
+                                errorStateBuilder: (context, error) =>
+                                    const Center(
+                                      child: Text('二维码生成失败，请取消后重试。'),
+                                    ),
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      loginLink == null ? '正在生成二维码…' : '等待手机确认…',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (scanning)
+                      TextButton(
+                        onPressed: _cancelLogin,
+                        child: const Text('取消扫码'),
+                      )
+                    else ...[
+                      TextButton(
+                        onPressed: busy ? null : _refresh,
+                        child: const Text('刷新状态'),
+                      ),
+                      if (snapshot.state == AccountState.signedIn) ...[
+                        TextButton(
+                          onPressed: busy
+                              ? null
+                              : () => _logout(switchAccount: false),
+                          child: const Text('退出登录'),
+                        ),
+                        FilledButton(
+                          onPressed: busy
+                              ? null
+                              : () => _logout(switchAccount: true),
+                          child: const Text('切换账号'),
+                        ),
+                      ] else
+                        FilledButton(
+                          onPressed: busy ? null : _startLogin,
+                          child: const Text('扫码登录'),
+                        ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

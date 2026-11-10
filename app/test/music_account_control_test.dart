@@ -7,6 +7,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate_runtime/aggregate_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 void main() {
   testWidgets('account panel confirms logout and switches through QR login', (
@@ -75,6 +76,12 @@ void main() {
     await tester.pump();
     expect(runtime.loginCalls, 1);
     expect(find.text('取消扫码'), findsOneWidget);
+    expect(find.text('正在生成二维码…'), findsOneWidget);
+    runtime.emitLoginOutput('或点击链接打开: https://163cn.tv/fakeLogin\r\n');
+    await tester.pump();
+    expect(find.byKey(const Key('music-login-qr')), findsOneWidget);
+    expect(find.byType(QrImageView), findsOneWidget);
+    expect(find.text('等待手机确认…'), findsOneWidget);
     await tester.tap(
       find.ancestor(of: find.text('取消扫码'), matching: find.byType(TextButton)),
     );
@@ -118,6 +125,9 @@ final class _AccountPreviewRuntime
   int loginCalls = 0;
   int closeCalls = 0;
   Completer<int>? loginDone;
+  StreamController<String>? loginOutput;
+
+  void emitLoginOutput(String output) => loginOutput!.add(output);
 
   void completeLogin() {
     account = AccountSnapshot(
@@ -161,6 +171,7 @@ final class _AccountPreviewRuntime
   Future<TerminalSession> beginAccountLogin(ConnectionId connection) async {
     loginCalls++;
     loginDone = Completer<int>();
+    loginOutput = StreamController<String>.broadcast();
     return TerminalSession('login-$loginCalls');
   }
 
@@ -179,13 +190,13 @@ final class _AccountPreviewRuntime
   }
 
   @override
-  Stream<String> watchTerminal(TerminalSession session) =>
-      const Stream<String>.empty();
+  Stream<String> watchTerminal(TerminalSession session) => loginOutput!.stream;
 
   @override
   Future<void> closeTerminal(TerminalSession session) async {
     closeCalls++;
     if (loginDone != null && !loginDone!.isCompleted) loginDone!.complete(-1);
+    await loginOutput?.close();
   }
 
   @override
