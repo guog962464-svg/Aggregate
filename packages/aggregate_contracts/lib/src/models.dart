@@ -276,6 +276,7 @@ final class ConnectionSpec {
     this.workingDirectory,
     this.url,
     this.manifestPath,
+    this.profileId,
     this.hasCredential = false,
     this.authToken,
   });
@@ -287,6 +288,9 @@ final class ConnectionSpec {
   final String? workingDirectory;
   final String? url;
   final String? manifestPath;
+
+  /// Runtime-owned profile for a connector that supports isolated state.
+  final String? profileId;
   final bool hasCredential;
 
   /// Only used while adding a connection; never written to config JSON.
@@ -300,6 +304,7 @@ final class ConnectionSpec {
     if (workingDirectory != null) 'workingDirectory': workingDirectory,
     if (url != null) 'url': url,
     if (manifestPath != null) 'manifestPath': manifestPath,
+    if (profileId != null) 'profileId': profileId,
     if (hasCredential) 'hasCredential': true,
   };
 
@@ -317,6 +322,7 @@ final class ConnectionSpec {
       workingDirectory: json['workingDirectory'] as String?,
       url: json['url'] as String?,
       manifestPath: json['manifestPath'] as String?,
+      profileId: json['profileId'] as String?,
       hasCredential: json['hasCredential'] == true,
     );
   }

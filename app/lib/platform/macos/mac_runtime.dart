@@ -24,7 +24,8 @@ File? _bundledCliLauncher() {
   );
 }
 
-final class MacRuntime implements RuntimePort, ConnectionAccountPort {
+final class MacRuntime
+    implements RuntimePort, ConnectionAccountPort, ConnectionSetupPort {
   MacRuntime._(this.dataDirectory, this._credentials, this._cliLauncher);
 
   static Future<MacRuntime> open({
@@ -60,6 +61,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
   final _terminals = <String, _Terminal>{};
   final _accountLoginSessions = <String>{};
   final _reconnecting = <String>{};
+  final _setupDrafts = <String, ConnectionSpec>{};
   bool _disposed = false;
   var _serial = 0;
   Future<void> _writeQueue = Future.value();
@@ -298,6 +300,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
       workingDirectory: previous.workingDirectory,
       url: previous.url,
       manifestPath: managed.path,
+      profileId: previous.profileId,
       hasCredential: previous.hasCredential,
     );
     try {
@@ -323,6 +326,10 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
   @override
   Future<Connection> addConnection(ConnectionSpec spec) async {
     _validateSpec(spec);
+    if (spec.profileId != null &&
+        !await isNeteaseCliPackage(spec.executable ?? '')) {
+      throw const FormatException('独立账号目录仅适用于网易云音乐适配器');
+    }
     final id =
         'connection-${DateTime.now().microsecondsSinceEpoch}-${++_serial}';
     final token = spec.authToken?.trim();
@@ -344,7 +351,333 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     return refreshConnection(ConnectionId(id));
   }
 
+  @override
+  List<ConnectionAdapter> get connectionAdapters => const [
+    ConnectionAdapter(
+      id: 'netease-music',
+      label: '网易云音乐',
+      kind: ConnectionKind.cli,
+      defaultLabel: '网易云音乐',
+      description: '先测试本机配置；保存后在播放器内扫码登录，系统会继续显示搜索权限状态。',
+      showGenericCliFields: false,
+      fields: [
+        SetupField(key: 'appId', label: '开放平台 App ID'),
+        SetupField(
+          key: 'privateKey',
+          label: 'Private Key（PEM）',
+          kind: SetupFieldKind.secret,
+          hint: '仅用于配置此连接；不会写入 Aggregate 的连接清单。',
+          readFileContent: true,
+        ),
+      ],
+    ),
+    ConnectionAdapter(id: 'cli', label: '自定义 CLI', kind: ConnectionKind.cli),
+    ConnectionAdapter(
+      id: 'mcp-stdio',
+      label: 'stdio MCP',
+      kind: ConnectionKind.mcpStdio,
+    ),
+    ConnectionAdapter(
+      id: 'mcp-http',
+      label: 'HTTP MCP',
+      kind: ConnectionKind.mcpHttp,
+    ),
+  ];
+
+  Directory _setupProfile(String id) {
+    if (!RegExp(r'^setup-[0-9]+-[0-9]+$').hasMatch(id)) {
+      throw const FormatException('连接账号目录标识无效');
+    }
+    return Directory('${dataDirectory.path}/connector-profiles/$id');
+  }
+
+  Future<void> _deleteSetupProfile(String id) async {
+    final directory = _setupProfile(id);
+    final type = await FileSystemEntity.type(
+      directory.path,
+      followLinks: false,
+    );
+    if (type == FileSystemEntityType.link) {
+      await Link(directory.path).delete();
+    } else if (type == FileSystemEntityType.directory) {
+      await directory.delete(recursive: true);
+    }
+  }
+
+  @override
+  Future<ConnectionSetupReport> testConnectionSetup(
+    ConnectionSetupDraft draft,
+  ) async {
+    final adapter = connectionAdapters.where(
+      (item) => item.id == draft.adapterId,
+    );
+    if (adapter.isEmpty || adapter.single.kind != draft.spec.kind) {
+      throw const FormatException('请选择受支持的连接类型');
+    }
+    _validateSpec(draft.spec);
+    final id = 'setup-${DateTime.now().microsecondsSinceEpoch}-${++_serial}';
+    final checks = <SetupCheck>[];
+    ConnectionSpec spec = draft.spec;
+    try {
+      if (draft.adapterId == 'netease-music') {
+        if (draft.spec.arguments.isNotEmpty ||
+            draft.spec.manifestPath != null ||
+            draft.spec.workingDirectory != null ||
+            !await isNeteaseCliPackage(draft.spec.executable!)) {
+          throw const FormatException('请选择官方 @music163/ncm-cli 程序');
+        }
+        final appId = draft.values['appId']?.trim() ?? '';
+        final privateKey = draft.values['privateKey']?.trim() ?? '';
+        if (appId.isEmpty ||
+            appId.length > 200 ||
+            appId.contains(RegExp(r'[\x00-\x1f\x7f]'))) {
+          throw const FormatException('请输入有效的开放平台 App ID');
+        }
+        if (privateKey.length > 32 * 1024 ||
+            !RegExp(r'-----BEGIN (?:RSA )?PRIVATE KEY-----')
+                .hasMatch(privateKey) ||
+            !privateKey.contains('-----END ')) {
+          throw const FormatException('请输入 PEM 格式的 Private Key');
+        }
+        final profile = _setupProfile(id);
+        await profile.create(recursive: true);
+        final chmod = await Process.run('/bin/chmod', ['700', profile.path]);
+        if (chmod.exitCode != 0) throw const FileSystemException('无法保护账号目录');
+        final keyFile = File('${profile.path}/.setup-private-key.pem');
+        try {
+          await keyFile.writeAsString('$privateKey\n', flush: true);
+          final keyMode = await Process.run('/bin/chmod', [
+            '600',
+            keyFile.path,
+          ]);
+          if (keyMode.exitCode != 0) {
+            throw const FileSystemException('无法保护临时私钥');
+          }
+          final keyCheck = await Process.run('/usr/bin/openssl', [
+            'pkey',
+            '-in',
+            keyFile.path,
+            '-noout',
+          ]).timeout(const Duration(seconds: 5));
+          if (keyCheck.exitCode != 0) {
+            throw const FormatException('Private Key 不是有效的 PEM 私钥');
+          }
+          await _setupCommand(draft.spec.executable!, [
+            'config',
+            'set',
+            'appId',
+            appId,
+          ], id);
+          await _setupCommand(draft.spec.executable!, [
+            'config',
+            'set',
+            'privateKey',
+            keyFile.path,
+          ], id);
+        } finally {
+          if (await keyFile.exists()) await keyFile.delete();
+        }
+        spec = ConnectionSpec(
+          kind: draft.spec.kind,
+          label: draft.spec.label,
+          executable: draft.spec.executable,
+          profileId: id,
+        );
+        try {
+          await _refreshCli(_Entry(id, spec), verifyLogin: false);
+        } finally {
+          _removeCapabilities(id);
+        }
+        checks.add(
+          const SetupCheck(
+            '程序与配置',
+            SetupCheckStatus.passed,
+            '官方 CLI 可运行，App ID 与 Private Key 已写入独立账号目录。',
+          ),
+        );
+        var signedIn = false;
+        try {
+          final login = await _setupCommand(
+            spec.executable!,
+            ['login', '--check', '--output', 'json'],
+            id,
+            network: true,
+            allowFailure: true,
+          );
+          final decoded = jsonDecode(login.stdout);
+          signedIn =
+              login.exitCode == 0 &&
+              decoded is Map &&
+              decoded['success'] == true;
+        } on Exception {
+          // Network and account failures do not invalidate local configuration.
+        }
+        checks.add(
+          SetupCheck(
+            '账号登录',
+            signedIn
+                ? SetupCheckStatus.passed
+                : SetupCheckStatus.actionRequired,
+            signedIn ? '账号已登录。' : '保存后在播放器内扫码登录，再测试搜索权限。',
+          ),
+        );
+        if (signedIn) {
+          var allowed = false;
+          try {
+            final search = await _setupCommand(
+              spec.executable!,
+              ['search', 'song', '--keyword', '音乐', '--output', 'json'],
+              id,
+              network: true,
+              allowFailure: true,
+            );
+            allowed = search.exitCode == 0;
+          } on Exception {
+            // Preserve the tested connection and show the incomplete check.
+          }
+          checks.add(
+            SetupCheck(
+              '搜索接口',
+              allowed
+                  ? SetupCheckStatus.passed
+                  : SetupCheckStatus.actionRequired,
+              allowed ? '搜索接口可用。' : '搜索接口尚未通过，请检查开放平台应用的接口权限。',
+            ),
+          );
+        } else {
+          checks.add(
+            const SetupCheck(
+              '搜索接口',
+              SetupCheckStatus.actionRequired,
+              '登录后才能验证搜索权限。',
+            ),
+          );
+        }
+      } else {
+        final entry = _Entry(id, spec);
+        try {
+          if (spec.kind == ConnectionKind.cli) {
+            await _refreshCli(entry, verifyLogin: false);
+          } else {
+            await _refreshMcp(entry);
+          }
+          if (spec.kind == ConnectionKind.cli) {
+            checks.add(
+              const SetupCheck(
+                '程序检查',
+                SetupCheckStatus.passed,
+                '程序路径、执行权限和动作清单已验证。',
+              ),
+            );
+            checks.add(
+              const SetupCheck(
+                '功能验证',
+                SetupCheckStatus.actionRequired,
+                '普通 CLI 没有统一连通性协议；保存后请运行一个只读命令验证。',
+              ),
+            );
+          } else {
+            checks.add(
+              const SetupCheck(
+                '连通性',
+                SetupCheckStatus.passed,
+                'MCP 握手与功能发现成功。',
+              ),
+            );
+          }
+        } finally {
+          await _clients.remove(id)?.close();
+          _removeCapabilities(id);
+        }
+      }
+      _setupDrafts[id] = spec;
+      return ConnectionSetupReport(draftId: id, checks: checks, canSave: true);
+    } catch (cause) {
+      await _deleteSetupProfile(id);
+      checks.add(
+        SetupCheck(
+          '连接测试',
+          SetupCheckStatus.failed,
+          draft.adapterId == 'netease-music'
+              ? '配置失败：${_safeSetupError(cause)}'
+              : describeConnectionFailure(draft.spec.kind, cause),
+        ),
+      );
+      return ConnectionSetupReport(draftId: id, checks: checks, canSave: false);
+    }
+  }
+
+  String _safeSetupError(Object cause) => switch (cause) {
+    FormatException exception => exception.message,
+    TimeoutException _ => '连接超时，请检查网络与程序路径。',
+    FileSystemException _ => '无法访问程序或配置目录。',
+    ProcessException _ => '无法启动 CLI，请检查程序和依赖。',
+    _ => '连接失败，请检查输入与服务状态。',
+  };
+
+  Future<({int exitCode, String stdout})> _setupCommand(
+    String executable,
+    List<String> arguments,
+    String profileId, {
+    bool network = false,
+    bool allowFailure = false,
+  }) async {
+    final process = await Process.start(
+      executable,
+      arguments,
+      environment: _environment(networkProxy: network, profileId: profileId),
+      includeParentEnvironment: false,
+      runInShell: false,
+    );
+    Future<String> collect(Stream<List<int>> source) async {
+      final output = BytesBuilder(copy: false);
+      await for (final chunk in source) {
+        if (output.length + chunk.length > 64 * 1024) {
+          process.kill(ProcessSignal.sigterm);
+          throw const FormatException('CLI 输出过大');
+        }
+        output.add(chunk);
+      }
+      return utf8.decode(output.takeBytes(), allowMalformed: true);
+    }
+
+    late final List<Object> result;
+    try {
+      result = await Future.wait<Object>([
+        process.exitCode,
+        collect(process.stdout),
+        collect(process.stderr),
+      ]).timeout(Duration(seconds: network ? 15 : 8));
+    } catch (_) {
+      process.kill(ProcessSignal.sigterm);
+      rethrow;
+    }
+    final exitCode = result[0] as int;
+    if (!allowFailure && exitCode != 0) {
+      throw const FormatException('CLI 未接受配置，请检查 App ID 与 Private Key');
+    }
+    return (exitCode: exitCode, stdout: result[1] as String);
+  }
+
+  @override
+  Future<Connection> saveConnectionSetup(String draftId) async {
+    final spec = _setupDrafts[draftId];
+    if (spec == null) throw StateError('连接测试已过期，请重新测试');
+    final connection = await addConnection(spec);
+    _setupDrafts.remove(draftId);
+    return connection;
+  }
+
+  @override
+  Future<void> discardConnectionSetup(String draftId) async {
+    final spec = _setupDrafts.remove(draftId);
+    if (spec?.profileId case final profile?) {
+      await _deleteSetupProfile(profile);
+    }
+  }
+
   void _validateSpec(ConnectionSpec spec) {
+    if (spec.profileId case final profile?) _setupProfile(profile);
     if (spec.label.trim().isEmpty || spec.label.length > 100) {
       throw const FormatException('连接名称应为 1–100 个字符');
     }
@@ -393,6 +726,9 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     _removeCapabilities(id.value);
     await _persistConnections();
     if (entry.spec.hasCredential) await _credentials.delete(id.value);
+    if (entry.spec.profileId case final profile?) {
+      await _deleteSetupProfile(profile);
+    }
   }
 
   void _removeCapabilities(String id) {
@@ -520,7 +856,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     _Entry entry, {
     required bool verifyLogin,
   }) async {
-    final environment = _environment();
+    final environment = _environment(profileId: entry.spec.profileId);
     Future<ProcessResult> check(
       String command,
       List<String> arguments, {
@@ -528,7 +864,9 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     }) => Process.run(
       command,
       arguments,
-      environment: network ? _environment(networkProxy: true) : environment,
+      environment: network
+          ? _environment(networkProxy: true, profileId: entry.spec.profileId)
+          : environment,
       includeParentEnvironment: false,
       runInShell: false,
     ).timeout(Duration(seconds: network ? 12 : 5));
@@ -557,7 +895,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     final output = '${help.stdout}\n${help.stderr}';
     if (output.contains('API key 未设置')) {
       entry.diagnostic =
-          '尚未配置网易云开放平台凭证。请在终端运行 ncm-cli configure，再运行 ncm-cli login。';
+          '尚未配置网易云开放平台凭证。请在“管理连接”中重新添加网易云音乐连接并输入 App ID 与 Private Key。';
       return;
     }
     final notes = <String>[];
@@ -574,17 +912,16 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     } else {
       try {
         final login = await check(entry.spec.executable!, [
-          'user',
-          'info',
+          'login',
+          '--check',
           '--output',
           'json',
         ], network: true);
         final response = jsonDecode('${login.stdout}');
         if (login.exitCode != 0 ||
             response is! Map ||
-            response['code'] != 200 ||
-            response['data'] == null) {
-          notes.add('网易云账号未通过验证。请运行 ncm-cli login 后刷新连接。');
+            response['success'] != true) {
+          notes.add('网易云账号尚未登录。请在播放器内扫码登录。');
         }
       } on TimeoutException {
         notes.add('网易云登录检查超时，请检查网络或代理后重试。');
@@ -709,7 +1046,10 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
           ? [...entry.spec.arguments, ...arguments]
           : [entry.spec.executable!, ...entry.spec.arguments, ...arguments],
       workingDirectory: entry.spec.workingDirectory,
-      environment: _environment(networkProxy: true),
+      environment: _environment(
+        networkProxy: true,
+        profileId: entry.spec.profileId,
+      ),
       includeParentEnvironment: false,
       runInShell: false,
     );
@@ -751,9 +1091,9 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
       const mcp.Implementation(name: 'aggregate', version: '0.3.0'),
     );
     try {
-      final token = entry.spec.hasCredential
-          ? await _credentials.read(entry.id)
-          : null;
+      final token =
+          entry.spec.authToken ??
+          (entry.spec.hasCredential ? await _credentials.read(entry.id) : null);
       if (entry.spec.hasCredential && (token == null || token.isEmpty)) {
         throw StateError('连接凭证缺失，请删除连接后重新添加');
       }
@@ -889,7 +1229,10 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     } while (cursor != null && seen.add(cursor) && seen.length < 100);
   }
 
-  Map<String, String> _environment({bool networkProxy = false}) {
+  Map<String, String> _environment({
+    bool networkProxy = false,
+    String? profileId,
+  }) {
     final home = Platform.environment['HOME'];
     final paths = <String>[
       if (home != null && home.isNotEmpty) '$home/.local/bin',
@@ -903,6 +1246,9 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
       for (final key in _safeEnvironment) key: ?Platform.environment[key],
       'PATH': paths.where((path) => path.isNotEmpty).toSet().join(':'),
     };
+    if (profileId != null) {
+      environment['HOME'] = _setupProfile(profileId).path;
+    }
     if (networkProxy) {
       for (final key in const [
         'HTTP_PROXY',
@@ -1050,6 +1396,7 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
                 'music.',
               ) ==
               true,
+          profileId: spec.profileId,
         ),
         includeParentEnvironment: false,
         runInShell: false,
@@ -1604,7 +1951,10 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
         arguments: [...entry.spec.arguments, ...command.arguments],
         workingDirectory: entry.spec.workingDirectory,
         environment: PtyEnvironment.replace({
-          ..._environment(networkProxy: accountLogin),
+          ..._environment(
+            networkProxy: accountLogin,
+            profileId: entry.spec.profileId,
+          ),
           'TERM': 'xterm-256color',
         }),
         size: const PtySize(columns: 80, rows: 24),
@@ -1686,6 +2036,9 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
 
   Future<void> dispose() async {
     _disposed = true;
+    for (final id in _setupDrafts.keys.toList()) {
+      await discardConnectionSetup(id);
+    }
     for (final id in _terminals.keys.toList()) {
       await closeTerminal(TerminalSession(id));
     }
