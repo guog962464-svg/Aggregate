@@ -4,6 +4,25 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('runtime features describe an HTTP-only execution surface', () {
+    final restored = RuntimeFeatures.fromJson(
+      jsonDecode(jsonEncode(RuntimeFeatures.httpOnly.toJson())),
+    );
+    expect(restored.canAdd(ConnectionKind.mcpHttp), isTrue);
+    expect(restored.canAdd(ConnectionKind.cli), isFalse);
+    expect(restored.canAdd(ConnectionKind.mcpStdio), isFalse);
+    expect(restored.terminal, isFalse);
+    expect(restored.localFilePreview, isFalse);
+    expect(restored.localFileReveal, isFalse);
+    expect(
+      () => RuntimeFeatures.fromJson({
+        ...RuntimeFeatures.httpOnly.toJson(),
+        'connectionKinds': ['futureKind'],
+      }),
+      throwsFormatException,
+    );
+  });
+
   test('connection, capability and event survive JSON round trip', () {
     const connection = Connection(
       id: ConnectionId('76aaf452-0d77-4cda-a492-c2ebf037b81b'),
@@ -108,6 +127,47 @@ void main() {
         jsonDecode(jsonEncode(const SearchQuery('').toJson())),
       ).text,
       '',
+    );
+  });
+
+  test('preferences and music presentation survive serialization', () {
+    const preferences = UserPreferences(
+      appearance: AppearancePreference.dark,
+      activityRetentionDays: 7,
+      favoriteCapabilityKeys: ['source:cliAction:play'],
+      preferredConnectionId: 'source',
+    );
+    final restored = UserPreferences.fromJson(
+      jsonDecode(jsonEncode(preferences.toJson())),
+    );
+    expect(restored.appearance, AppearancePreference.dark);
+    expect(restored.activityRetentionDays, 7);
+    expect(restored.favoriteCapabilityKeys, ['source:cliAction:play']);
+    expect(restored.preferredConnectionId, 'source');
+    expect(
+      UserPreferences.fromJson({
+        'schemaVersion': 1,
+        'appearance': 'system',
+        'activityRetentionDays': 30,
+        'favoriteCapabilityKeys': <String>[],
+      }).preferredConnectionId,
+      isNull,
+    );
+    const capability = Capability(
+      id: CapabilityId(
+        ConnectionId('source'),
+        CapabilityKind.cliAction,
+        'play',
+      ),
+      title: '播放歌曲',
+      description: '音乐示例',
+      permission: PermissionLevel.localControl,
+      presentation: 'music.play',
+    );
+    expect(
+      Capability.fromJson(jsonDecode(jsonEncode(capability.toJson())))
+          .presentation,
+      'music.play',
     );
   });
 }

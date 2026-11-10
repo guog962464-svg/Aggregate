@@ -1,12 +1,12 @@
 import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/app/app_shell.dart';
-import 'package:aggregate/platform/macos/local_runtime_port.dart';
+import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Widget preview() => AggregateApp(runtime: LocalRuntimePort.preview());
+  Widget preview() => AggregateApp(runtime: createPreviewRuntime());
 
   testWidgets('follows system dark appearance', (tester) async {
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;

@@ -65,6 +65,130 @@ enum RuntimeErrorCode {
 
 enum ResultKind { text, json, image, file, terminal }
 
+enum AppearancePreference { system, light, dark }
+
+/// Features available through a RuntimePort instance, independent of the UI
+/// device's operating system. A remote runtime can expose a different set from
+/// a local runtime on the same device.
+final class RuntimeFeatures {
+  const RuntimeFeatures({
+    this.connectionKinds = const {
+      ConnectionKind.cli,
+      ConnectionKind.mcpStdio,
+      ConnectionKind.mcpHttp,
+    },
+    this.terminal = true,
+    this.localFilePreview = true,
+    this.localFileReveal = true,
+  });
+
+  static const localDesktop = RuntimeFeatures();
+  static const httpOnly = RuntimeFeatures(
+    connectionKinds: {ConnectionKind.mcpHttp},
+    terminal: false,
+    localFilePreview: false,
+    localFileReveal: false,
+  );
+
+  final Set<ConnectionKind> connectionKinds;
+  final bool terminal;
+  final bool localFilePreview;
+  final bool localFileReveal;
+
+  bool canAdd(ConnectionKind kind) => connectionKinds.contains(kind);
+
+  JsonMap toJson() => {
+    'schemaVersion': 1,
+    'connectionKinds': [for (final kind in connectionKinds) kind.name],
+    'terminal': terminal,
+    'localFilePreview': localFilePreview,
+    'localFileReveal': localFileReveal,
+  };
+
+  factory RuntimeFeatures.fromJson(Object? value) {
+    final json = jsonObject(value, 'runtimeFeatures');
+    if (json['schemaVersion'] != 1) {
+      throw const FormatException('unsupported runtimeFeatures schemaVersion');
+    }
+    final kinds = json['connectionKinds'];
+    if (kinds is! List || kinds.any((kind) => kind is! String)) {
+      throw const FormatException('invalid connectionKinds');
+    }
+    for (final key in ['terminal', 'localFilePreview', 'localFileReveal']) {
+      if (json[key] is! bool) throw FormatException('invalid $key');
+    }
+    return RuntimeFeatures(
+      connectionKinds: Set.unmodifiable(
+        kinds.map(
+          (kind) => jsonEnum(ConnectionKind.values, {'kind': kind}, 'kind'),
+        ),
+      ),
+      terminal: json['terminal'] as bool,
+      localFilePreview: json['localFilePreview'] as bool,
+      localFileReveal: json['localFileReveal'] as bool,
+    );
+  }
+}
+
+final class UserPreferences {
+  const UserPreferences({
+    this.appearance = AppearancePreference.system,
+    this.activityRetentionDays = 30,
+    this.favoriteCapabilityKeys = const [],
+    this.preferredConnectionId,
+  });
+
+  final AppearancePreference appearance;
+  final int activityRetentionDays;
+  final List<String> favoriteCapabilityKeys;
+  final String? preferredConnectionId;
+
+  UserPreferences copyWith({
+    AppearancePreference? appearance,
+    int? activityRetentionDays,
+    List<String>? favoriteCapabilityKeys,
+    String? preferredConnectionId,
+  }) => UserPreferences(
+    appearance: appearance ?? this.appearance,
+    activityRetentionDays: activityRetentionDays ?? this.activityRetentionDays,
+    favoriteCapabilityKeys:
+        favoriteCapabilityKeys ?? this.favoriteCapabilityKeys,
+    preferredConnectionId: preferredConnectionId ?? this.preferredConnectionId,
+  );
+
+  JsonMap toJson() => {
+    'schemaVersion': 1,
+    'appearance': appearance.name,
+    'activityRetentionDays': activityRetentionDays,
+    'favoriteCapabilityKeys': favoriteCapabilityKeys,
+    if (preferredConnectionId != null)
+      'preferredConnectionId': preferredConnectionId,
+  };
+
+  factory UserPreferences.fromJson(Object? value) {
+    final json = jsonObject(value, 'preferences');
+    if (json['schemaVersion'] != 1) {
+      throw const FormatException('unsupported preferences schemaVersion');
+    }
+    final retention = json['activityRetentionDays'];
+    final favorites = json['favoriteCapabilityKeys'];
+    final preferred = json['preferredConnectionId'];
+    if (retention is! int ||
+        !{7, 30, 90}.contains(retention) ||
+        favorites is! List ||
+        favorites.any((item) => item is! String) ||
+        preferred != null && (preferred is! String || preferred.isEmpty)) {
+      throw const FormatException('invalid preferences');
+    }
+    return UserPreferences(
+      appearance: jsonEnum(AppearancePreference.values, json, 'appearance'),
+      activityRetentionDays: retention,
+      favoriteCapabilityKeys: favorites.cast<String>(),
+      preferredConnectionId: preferred as String?,
+    );
+  }
+}
+
 final class ConnectionId {
   const ConnectionId(this.value);
   final String value;
@@ -110,6 +234,7 @@ final class Connection {
     required this.location,
     this.status = ConnectionStatus.ready,
     this.protocolVersion,
+    this.diagnostic,
   });
   final ConnectionId id;
   final ConnectionKind kind;
@@ -117,6 +242,7 @@ final class Connection {
   final String location;
   final ConnectionStatus status;
   final String? protocolVersion;
+  final String? diagnostic;
   JsonMap toJson() => {
     'id': id.toJson(),
     'kind': kind.name,
@@ -124,6 +250,7 @@ final class Connection {
     'location': location,
     'status': status.name,
     if (protocolVersion != null) 'protocolVersion': protocolVersion,
+    if (diagnostic != null) 'diagnostic': diagnostic,
   };
   factory Connection.fromJson(Object? value) {
     final json = jsonObject(value, 'connection');
@@ -134,6 +261,63 @@ final class Connection {
       location: jsonString(json, 'location'),
       status: jsonEnum(ConnectionStatus.values, json, 'status'),
       protocolVersion: json['protocolVersion'] as String?,
+      diagnostic: json['diagnostic'] as String?,
+    );
+  }
+}
+
+/// User supplied connection details. Executables must be absolute paths.
+final class ConnectionSpec {
+  const ConnectionSpec({
+    required this.kind,
+    required this.label,
+    this.executable,
+    this.arguments = const [],
+    this.workingDirectory,
+    this.url,
+    this.manifestPath,
+    this.hasCredential = false,
+    this.authToken,
+  });
+
+  final ConnectionKind kind;
+  final String label;
+  final String? executable;
+  final List<String> arguments;
+  final String? workingDirectory;
+  final String? url;
+  final String? manifestPath;
+  final bool hasCredential;
+
+  /// Only used while adding a connection; never written to config JSON.
+  final String? authToken;
+
+  JsonMap toJson() => {
+    'kind': kind.name,
+    'label': label,
+    if (executable != null) 'executable': executable,
+    'arguments': arguments,
+    if (workingDirectory != null) 'workingDirectory': workingDirectory,
+    if (url != null) 'url': url,
+    if (manifestPath != null) 'manifestPath': manifestPath,
+    if (hasCredential) 'hasCredential': true,
+  };
+
+  factory ConnectionSpec.fromJson(Object? value) {
+    final json = jsonObject(value, 'connectionSpec');
+    final rawArguments = json['arguments'] ?? const <String>[];
+    if (rawArguments is! List || rawArguments.any((item) => item is! String)) {
+      throw const FormatException('arguments must be a string list');
+    }
+    return ConnectionSpec(
+      kind: jsonEnum(ConnectionKind.values, json, 'kind'),
+      label: jsonString(json, 'label'),
+      executable: json['executable'] as String?,
+      arguments: rawArguments.cast<String>(),
+      workingDirectory: json['workingDirectory'] as String?,
+      url: json['url'] as String?,
+      manifestPath: json['manifestPath'] as String?,
+      hasCredential: json['hasCredential'] == true,
     );
   }
 }
@@ -145,18 +329,23 @@ final class Capability {
     required this.description,
     required this.permission,
     this.inputSchema = const {},
+    this.presentation,
   });
   final CapabilityId id;
   final String title;
   final String description;
   final PermissionLevel permission;
   final JsonMap inputSchema;
+
+  /// Optional UI role supplied by a connector, for example `music.pause`.
+  final String? presentation;
   JsonMap toJson() => {
     'id': id.toJson(),
     'title': title,
     'description': description,
     'permission': permission.name,
     'inputSchema': inputSchema,
+    if (presentation != null) 'presentation': presentation,
   };
   factory Capability.fromJson(Object? value) {
     final json = jsonObject(value, 'capability');
@@ -166,6 +355,7 @@ final class Capability {
       description: jsonString(json, 'description'),
       permission: jsonEnum(PermissionLevel.values, json, 'permission'),
       inputSchema: jsonObject(json['inputSchema'], 'inputSchema'),
+      presentation: json['presentation'] as String?,
     );
   }
 }

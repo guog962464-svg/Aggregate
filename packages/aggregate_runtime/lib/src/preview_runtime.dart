@@ -5,10 +5,17 @@ import 'package:aggregate_domain/aggregate_domain.dart';
 
 /// Stage 1 contract implementation. It never starts a process or network call.
 final class PreviewRuntime implements RuntimePort {
+  @override
+  bool get isPreview => true;
+  @override
+  final RuntimeFeatures features;
+  @override
+  List<String> get startupNotices => const [];
   PreviewRuntime({
     required List<Connection> connections,
     required List<Capability> capabilities,
     this.latency = const Duration(milliseconds: 120),
+    this.features = RuntimeFeatures.localDesktop,
   }) : _connections = List.unmodifiable(connections),
        _catalog = CapabilityCatalog(
          connections: connections,
@@ -23,16 +30,70 @@ final class PreviewRuntime implements RuntimePort {
   final _lifecycles = <String, RunLifecycle>{};
   final _runCapabilities = <String, CapabilityId>{};
   var _counter = 0;
+  UserPreferences _preferences = const UserPreferences();
+
+  @override
+  Future<UserPreferences> loadPreferences() async => _preferences;
+
+  @override
+  Future<void> savePreferences(UserPreferences preferences) async {
+    _preferences = preferences;
+  }
+
+  @override
+  Future<void> clearActivity() async {
+    _histories.clear();
+    _runCapabilities.clear();
+  }
 
   @override
   Future<List<Connection>> listConnections() async => List.of(_connections);
+
+  @override
+  Future<Connection> addConnection(ConnectionSpec spec) =>
+      throw UnsupportedError('预览模式不能添加连接');
+
+  @override
+  Future<void> removeConnection(ConnectionId id) =>
+      throw UnsupportedError('预览模式不能删除连接');
+
+  @override
+  Future<void> moveConnection(ConnectionId id, int offset) =>
+      throw UnsupportedError('预览模式不能调整连接顺序');
+
+  @override
+  Future<Connection> refreshConnection(ConnectionId id) =>
+      throw UnsupportedError('预览模式不能刷新连接');
+
+  @override
+  Future<JsonMap?> loadActionManifest(ConnectionId id) =>
+      throw UnsupportedError('预览模式不能编辑动作');
+
+  @override
+  Future<JsonMap> readActionManifestFile(String path) =>
+      throw UnsupportedError('预览模式不能导入动作');
+
+  @override
+  Future<void> saveActionManifest(ConnectionId id, JsonMap manifest) =>
+      throw UnsupportedError('预览模式不能保存动作');
+
+  @override
+  Future<void> exportActionManifest(
+    ConnectionId id,
+    JsonMap manifest,
+    String path,
+  ) => throw UnsupportedError('预览模式不能导出动作');
 
   @override
   Future<List<Capability>> searchCapabilities(SearchQuery query) async =>
       _catalog.search(query);
 
   @override
-  Future<RunHandle> invoke(CapabilityId id, JsonMap arguments) async {
+  Future<RunHandle> invoke(
+    CapabilityId id,
+    JsonMap arguments, {
+    bool permissionGranted = false,
+  }) async {
     final capability = _catalog.byId(id);
     if (capability == null) {
       throw ArgumentError('unknown capability: ${id.key}');
@@ -78,6 +139,44 @@ final class PreviewRuntime implements RuntimePort {
         }),
       ],
       'status' => [const ResultBlock(ResultKind.text, '预览结果：工作区干净')],
+      'search' => [
+        const ResultBlock(ResultKind.json, {
+          'code': 200,
+          'data': {
+            'records': [
+              {
+                'id': 'PREVIEW00000000000000000000000001',
+                'originalId': 123,
+                'name': '示例歌曲',
+                'artists': [
+                  {'name': '示例歌手'},
+                ],
+                'playFlag': true,
+              },
+              {
+                'id': 'PREVIEW00000000000000000000000002',
+                'originalId': 124,
+                'name': '暂不可播放的歌曲',
+                'artists': [
+                  {'name': '示例歌手'},
+                ],
+                'playFlag': false,
+              },
+            ],
+          },
+        }),
+      ],
+      'state' => [
+        const ResultBlock(ResultKind.json, {
+          'success': true,
+          'state': {
+            'title': '示例歌曲',
+            'status': 'playing',
+            'progress': '0:12 / 3:20',
+            'queueLength': 1,
+          },
+        }),
+      ],
       _ => [ResultBlock(ResultKind.text, '预览结果：${capability.title}')],
     };
     _emit(id, RunState.succeeded, blocks: blocks);
@@ -161,9 +260,38 @@ final class PreviewRuntime implements RuntimePort {
   }
 
   @override
+  Future<List<ResultBlock>> previewLocalFile(String path) async => [
+    ResultBlock(ResultKind.text, '预览文件：$path'),
+  ];
+
+  @override
+  Future<void> revealLocalFile(String path) async =>
+      throw UnsupportedError('预览模式不能打开访达');
+
+  @override
   Future<TerminalSession> openTerminal(CliCommand command) async {
     throw UnsupportedError('终端会话将在阶段 2 接入');
   }
+
+  @override
+  Stream<String> watchTerminal(TerminalSession session) =>
+      throw UnsupportedError('预览模式没有终端');
+
+  @override
+  Future<void> writeTerminal(TerminalSession session, String text) =>
+      throw UnsupportedError('预览模式没有终端');
+
+  @override
+  Future<void> resizeTerminal(TerminalSession session, int columns, int rows) =>
+      throw UnsupportedError('预览模式没有终端');
+
+  @override
+  Future<void> interruptTerminal(TerminalSession session) =>
+      throw UnsupportedError('预览模式没有终端');
+
+  @override
+  Future<void> closeTerminal(TerminalSession session) =>
+      throw UnsupportedError('预览模式没有终端');
 
   Future<void> dispose() async => _events.close();
 }

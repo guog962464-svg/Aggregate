@@ -47,4 +47,54 @@ void main() {
     ];
     expect(() => ConnectorManifest.fromJson(malformed), throwsFormatException);
   });
+
+  test('built-in music actions expand exact CLI argument arrays', () {
+    final manifest = ConnectorManifest.neteaseCli('/tmp/ncm-cli');
+    final search = manifest.actions.singleWhere((item) => item.id == 'search');
+    final play = manifest.actions.singleWhere((item) => item.id == 'play');
+    expect(search.presentation, 'music.search');
+    expect(search.expand({'keyword': '海阔天空'}), [
+      'search',
+      'song',
+      '--keyword',
+      '海阔天空',
+    ]);
+    expect(play.expand({'encryptedId': 'encrypted', 'originalId': '123'}), [
+      'play',
+      '--song',
+      '--encrypted-id',
+      'encrypted',
+      '--original-id',
+      '123',
+    ]);
+    final queue = manifest.actions.singleWhere((item) => item.id == 'queueAdd');
+    expect(queue.presentation, 'music.queueAdd');
+    expect(queue.expand({'encryptedId': 'encrypted', 'originalId': '123'}), [
+      'queue',
+      'add',
+      '--encrypted-id',
+      'encrypted',
+      '--original-id',
+      '123',
+      '--next',
+    ]);
+    expect(
+      manifest.actions.singleWhere((item) => item.id == 'volume').expand({
+        'value': 60,
+      }),
+      ['volume', '60'],
+    );
+  });
+
+  test('manifest serialization preserves editable actions', () {
+    final manifest = ConnectorManifest.fromJson(sample);
+    final restored = ConnectorManifest.fromJson(manifest.toJson());
+    expect(restored.id, manifest.id);
+    expect(restored.actions.first.argv, manifest.actions.first.argv);
+    expect(
+      restored.actions.first.permission,
+      manifest.actions.first.permission,
+    );
+    expect(restored.actions.first.expand({}), ['status', '--short']);
+  });
 }

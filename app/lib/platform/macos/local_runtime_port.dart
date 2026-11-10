@@ -1,95 +1,70 @@
 import 'package:aggregate_contracts/aggregate_contracts.dart';
-import 'package:aggregate_runtime/aggregate_runtime.dart';
 
-/// Stage 1 macOS entry point. The backend is a clearly labeled preview fixture.
-/// Stage 2 replaces it with real CLI/MCP adapters without changing the UI port.
+import 'mac_runtime.dart';
+import 'keychain_credential_store.dart';
+
 final class LocalRuntimePort implements RuntimePort {
-  LocalRuntimePort.preview()
-    : _delegate = PreviewRuntime(
-        connections: const [
-          Connection(
-            id: ConnectionId('example-git'),
-            kind: ConnectionKind.cli,
-            label: '示例 Git CLI',
-            location: '/usr/bin/git · 预览',
-          ),
-          Connection(
-            id: ConnectionId('example-mcp'),
-            kind: ConnectionKind.mcpHttp,
-            label: '示例 MCP',
-            location: 'mcp://preview · 预览',
-            protocolVersion: '2026-07-28',
-          ),
-        ],
-        capabilities: const [
-          Capability(
-            id: CapabilityId(
-              ConnectionId('example-git'),
-              CapabilityKind.cliAction,
-              'status',
-            ),
-            title: '查看 Git 状态',
-            description: '以预览结果演示 CLI 动作',
-            permission: PermissionLevel.read,
-          ),
-          Capability(
-            id: CapabilityId(
-              ConnectionId('example-mcp'),
-              CapabilityKind.mcpTool,
-              'add',
-            ),
-            title: '两个整数相加',
-            description: '以预览结果演示 MCP 工具与结构化输出',
-            permission: PermissionLevel.read,
-            inputSchema: {
-              'type': 'object',
-              'properties': {
-                'a': {'type': 'integer', 'title': '第一个整数'},
-                'b': {'type': 'integer', 'title': '第二个整数'},
-              },
-              'required': ['a', 'b'],
-            },
-          ),
-          Capability(
-            id: CapabilityId(
-              ConnectionId('example-mcp'),
-              CapabilityKind.mcpResource,
-              'readme',
-            ),
-            title: '读取项目说明',
-            description: '资源阅读器的预览样本',
-            permission: PermissionLevel.read,
-          ),
-          Capability(
-            id: CapabilityId(
-              ConnectionId('example-mcp'),
-              CapabilityKind.mcpPrompt,
-              'summary',
-            ),
-            title: '生成摘要提示',
-            description: '提示预览的样本',
-            permission: PermissionLevel.read,
-            inputSchema: {
-              'type': 'object',
-              'properties': {
-                'topic': {'type': 'string', 'title': '主题'},
-              },
-              'required': ['topic'],
-            },
-          ),
-        ],
-      );
+  LocalRuntimePort.live(MacRuntime runtime) : _delegate = runtime;
 
-  final PreviewRuntime _delegate;
+  static Future<LocalRuntimePort> createLive() async => LocalRuntimePort.live(
+    await MacRuntime.open(credentialStore: const KeychainCredentialStore()),
+  );
+
+  final RuntimePort _delegate;
+
+  @override
+  bool get isPreview => _delegate.isPreview;
+  @override
+  RuntimeFeatures get features => _delegate.features;
+  @override
+  List<String> get startupNotices => _delegate.startupNotices;
+
+  @override
+  Future<UserPreferences> loadPreferences() => _delegate.loadPreferences();
+  @override
+  Future<void> savePreferences(UserPreferences preferences) =>
+      _delegate.savePreferences(preferences);
+  @override
+  Future<void> clearActivity() => _delegate.clearActivity();
 
   @override
   Future<List<Connection>> listConnections() => _delegate.listConnections();
   @override
+  Future<Connection> addConnection(ConnectionSpec spec) =>
+      _delegate.addConnection(spec);
+  @override
+  Future<void> removeConnection(ConnectionId id) =>
+      _delegate.removeConnection(id);
+  @override
+  Future<void> moveConnection(ConnectionId id, int offset) =>
+      _delegate.moveConnection(id, offset);
+  @override
+  Future<Connection> refreshConnection(ConnectionId id) =>
+      _delegate.refreshConnection(id);
+  @override
+  Future<JsonMap?> loadActionManifest(ConnectionId id) =>
+      _delegate.loadActionManifest(id);
+  @override
+  Future<JsonMap> readActionManifestFile(String path) =>
+      _delegate.readActionManifestFile(path);
+  @override
+  Future<void> saveActionManifest(ConnectionId id, JsonMap manifest) =>
+      _delegate.saveActionManifest(id, manifest);
+  @override
+  Future<void> exportActionManifest(
+    ConnectionId id,
+    JsonMap manifest,
+    String path,
+  ) => _delegate.exportActionManifest(id, manifest, path);
+  @override
   Future<List<Capability>> searchCapabilities(SearchQuery query) =>
       _delegate.searchCapabilities(query);
   @override
-  Future<RunHandle> invoke(CapabilityId id, JsonMap arguments) =>
-      _delegate.invoke(id, arguments);
+  Future<RunHandle> invoke(
+    CapabilityId id,
+    JsonMap arguments, {
+    bool permissionGranted = false,
+  }) => _delegate.invoke(id, arguments, permissionGranted: permissionGranted);
   @override
   Stream<RunEvent> watchRun(RunId id) => _delegate.watchRun(id);
   @override
@@ -103,6 +78,26 @@ final class LocalRuntimePort implements RuntimePort {
   Future<List<ResultBlock>> getPrompt(PromptRef ref, JsonMap arguments) =>
       _delegate.getPrompt(ref, arguments);
   @override
+  Future<List<ResultBlock>> previewLocalFile(String path) =>
+      _delegate.previewLocalFile(path);
+  @override
+  Future<void> revealLocalFile(String path) => _delegate.revealLocalFile(path);
+  @override
   Future<TerminalSession> openTerminal(CliCommand command) =>
       _delegate.openTerminal(command);
+  @override
+  Stream<String> watchTerminal(TerminalSession session) =>
+      _delegate.watchTerminal(session);
+  @override
+  Future<void> writeTerminal(TerminalSession session, String text) =>
+      _delegate.writeTerminal(session, text);
+  @override
+  Future<void> resizeTerminal(TerminalSession session, int columns, int rows) =>
+      _delegate.resizeTerminal(session, columns, rows);
+  @override
+  Future<void> interruptTerminal(TerminalSession session) =>
+      _delegate.interruptTerminal(session);
+  @override
+  Future<void> closeTerminal(TerminalSession session) =>
+      _delegate.closeTerminal(session);
 }

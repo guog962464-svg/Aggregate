@@ -27,6 +27,7 @@
           "inputSchema": {"type": "object", "required": ["type", "properties"], "properties": {"type": {"const": "object"}, "properties": {"type": "object"}, "required": {"type": "array", "items": {"type": "string"}}}},
           "output": {"enum": ["text", "json", "file", "terminal"]},
           "permission": {"enum": ["read", "localControl", "externalWrite", "unknown"]},
+          "presentation": {"enum": ["music.search", "music.play", "music.pause", "music.resume", "music.stop", "music.next", "music.prev", "music.volume", "music.state"]},
           "timeoutMs": {"type": "integer", "minimum": 100, "maximum": 3600000}
         }
       }
