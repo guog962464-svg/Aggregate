@@ -105,3 +105,9 @@
 - A0.5 已把设备端 npm 目标分为 T1/T2/T3。用户希望的完整本地 npm/CLI 对应 T3，能否达到须以 A4 证据决定。
 
 **A1 可开始：**复用单套 Flutter 页面建立 Android 宿主，先以 API 24 作为最低版本候选，以 API 36 作为 Play 条件下的目标版本候选；生成工程后锁定 Gradle/AGP，安装并锁定用于 `flutter_pty2` 的 NDK，再执行首次 Android 构建。A1 不要求先取得 16 KB 真机，但 A3 原生方案与 A8 正式发布必须解决该验证缺口。本轮没有修改 App 代码或真机配置。
+
+## A0 完成后的接口增量（2026-11-10）
+
+A0 上面的 30 项 `RuntimePort` 表是提交 `9398aa1` 时的基线，并非当前完整接口清单。随后提交 `d96c3d2`、`64eae02`、`bf8db69` 新增共享 `ConnectionSetupPort`（适配器目录、`detectExecutable`、`testConnectionSetup`、`saveConnectionSetup`、`discardConnectionSetup`）、`ConnectionSetupDraft`/检查报告，以及 `ConnectionSpec.profileId`。`ConnectionsPage` 已优先使用共享 `ConnectionSetupDialog`；macOS 网易云使用独立 profile，自动检测 Mac 上的官方 CLI。A1/A2/A5/A6 的新增任务和门槛见[修订后的 Android 适配规划](android-adaptation-plan.md)。
+
+此增量只改变后续阶段输入：它未创建 `app/android/`，没有证明 Android 设备能运行 Node、npm、CLI 或 HTTP MCP，也没有改变 T1/T2/T3 的验收定义。向导目前仍使用桌面绝对路径与 `file.path`，手机文件 URI 和 Host 路径归属须在 A1/A2/A5 处理。
