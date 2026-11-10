@@ -1030,7 +1030,8 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
     Timer? timer;
     var timedOut = false;
     var exceeded = false;
-    final output = BytesBuilder(copy: false);
+    final stdoutOutput = BytesBuilder(copy: false);
+    final stderrOutput = BytesBuilder(copy: false);
     var byteCount = 0;
     try {
       final action = _actions[run.capability.key];
@@ -1063,7 +1064,10 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
         timedOut = true;
         _signalCliProcess(run, ProcessSignal.sigterm);
       });
-      Future<void> collect(Stream<List<int>> stream) async {
+      Future<void> collect(
+        Stream<List<int>> stream,
+        BytesBuilder destination,
+      ) async {
         await for (final chunk in stream) {
           byteCount += chunk.length;
           if (byteCount > _outputLimit) {
@@ -1071,17 +1075,20 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
             _signalCliProcess(run, ProcessSignal.sigterm);
             break;
           }
-          output.add(chunk);
+          destination.add(chunk);
         }
       }
 
-      final stdout = collect(process.stdout);
-      final stderr = collect(process.stderr);
+      final stdout = collect(process.stdout, stdoutOutput);
+      final stderr = collect(process.stderr, stderrOutput);
       final exit = await process.exitCode;
       await Future.wait([stdout, stderr]);
       if (run.isTerminal) return;
-      final textOutput = output.length > 0
-          ? utf8.decode(output.takeBytes(), allowMalformed: true)
+      final textOutput = stdoutOutput.length > 0
+          ? utf8.decode(stdoutOutput.takeBytes(), allowMalformed: true)
+          : '';
+      final errorOutput = stderrOutput.length > 0
+          ? utf8.decode(stderrOutput.takeBytes(), allowMalformed: true)
           : '';
       final isNeteasePlay =
           _capabilities[run.capability.key]?.presentation == 'music.play';
@@ -1090,6 +1097,9 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
             'music.',
           ) ==
           true;
+      final missingNeteaseSearchCommand =
+          _capabilities[run.capability.key]?.presentation == 'music.search' &&
+          errorOutput.contains("unknown command 'search'");
       Object? decodedOutput;
       var invalidJsonOutput = false;
       if (action?.output == 'json' && textOutput.isNotEmpty) {
@@ -1118,6 +1128,8 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
             'file' => ResultBlock(ResultKind.file, textOutput.trim()),
             _ => ResultBlock(ResultKind.text, textOutput),
           },
+        if (errorOutput.isNotEmpty && !isMusicAction)
+          ResultBlock(ResultKind.text, errorOutput),
         ResultBlock(ResultKind.json, {
           'exitCode': exit,
           'durationMs': DateTime.now().difference(run.startedAt).inMilliseconds,
@@ -1145,7 +1157,18 @@ final class MacRuntime implements RuntimePort, ConnectionAccountPort {
             phase: 'execution',
           ),
         );
-      } else if (invalidJsonOutput) {
+      } else if (missingNeteaseSearchCommand) {
+        _emit(
+          run,
+          RunState.failed,
+          blocks: blocks,
+          failure: const RuntimeFailure(
+            RuntimeErrorCode.connectionFailed,
+            'ncm-cli 未加载搜索命令。请检查当前账号的网易云开放平台接口权限，或切回此前可搜索的账号，然后重试。',
+            phase: 'execution',
+          ),
+        );
+      } else if (invalidJsonOutput && exit == 0) {
         _emit(
           run,
           RunState.failed,

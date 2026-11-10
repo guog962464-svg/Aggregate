@@ -52,6 +52,7 @@ case "\$1" in
       echo 'login done'
     fi ;;
   logout) rm -f "\$STATE"; echo '{"success":true}' ;;
+  search) echo "error: unknown command 'search'" >&2; exit 1 ;;
   *) exit 2 ;;
 esac
 ''');

@@ -29,4 +29,29 @@ void main() {
       await fixture.dispose();
     }
   });
+
+  test('missing CLI search command gives an actionable failure', () async {
+    final fixture = await NeteaseAccountFixture.create();
+    try {
+      final capability = (await fixture.runtime.searchCapabilities(
+        const SearchQuery(''),
+      )).firstWhere((item) => item.presentation == 'music.search');
+      final handle = await fixture.runtime.invoke(capability.id, {
+        'keyword': '测试',
+      }, permissionGranted: true);
+      final event = await fixture.runtime
+          .watchRun(handle.id)
+          .firstWhere((item) => item.state == RunState.failed)
+          .timeout(const Duration(seconds: 5));
+      expect(event.failure?.code, RuntimeErrorCode.connectionFailed);
+      expect(event.failure?.message, contains('未加载搜索命令'));
+      expect(event.failure?.message, contains('开放平台接口权限'));
+      expect(
+        event.blocks.map((block) => '${block.value}').join(),
+        isNot(contains("unknown command 'search'")),
+      );
+    } finally {
+      await fixture.dispose();
+    }
+  });
 }
