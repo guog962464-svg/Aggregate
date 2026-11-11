@@ -51,6 +51,48 @@ void main() {
     });
   }, skip: !enabled);
 
+  testWidgets('capability query allows only the fixed entry and rejects stale references', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final capabilityEvent = await channel.invokeMethod<Map<Object?, Object?>>(
+        'capabilities',
+      );
+      expect(capabilityEvent?['kind'], 10);
+      expect(jsonDecode(capabilityEvent?['detail'] as String), {
+        'packaged': true,
+        'protocol': 1,
+        'entrypoints': ['a3-fixed'],
+        'headerVersion': 'v18.20.4',
+        'npm': false,
+        'cli': false,
+        'profiles': false,
+      });
+
+      Future<void> rejected(Map<String, Object?> arguments, String code) async {
+        await expectLater(
+          channel.invokeMethod<Map<Object?, Object?>>('run', arguments),
+          throwsA(
+            isA<PlatformException>().having(
+              (error) => error.code,
+              'code',
+              code,
+            ),
+          ),
+        );
+      }
+
+      await rejected({'entrypoint': 'arbitrary-cli'}, 'invalidEntrypoint');
+      await rejected({'profileRef': 'old-profile'}, 'invalidReference');
+      await rejected({'draftId': 'old-draft'}, 'invalidReference');
+      final previous = await channel.invokeMethod<Map<Object?, Object?>>('run');
+      await rejected({
+        'expectedGeneration': previous?['generation'] as String,
+      }, 'staleGeneration');
+      expect((await channel.invokeMethod<Map<Object?, Object?>>('run'))?['kind'], 3);
+    });
+  }, skip: !enabled);
+
   testWidgets('Node exception is reported as an event and a failure', (
     tester,
   ) async {
@@ -156,6 +198,10 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
+      final capabilities = await channel.invokeMethod<Map<Object?, Object?>>(
+        'capabilities',
+      );
+      expect(capabilities?['packaged'], isFalse);
       await expectLater(
         channel.invokeMethod<Map<Object?, Object?>>('run'),
         throwsA(

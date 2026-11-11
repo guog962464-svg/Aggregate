@@ -28,9 +28,12 @@ public final class NodeProbeService extends Service {
     public static final int CRASH = 6;
     public static final int EVENT = 7;
     public static final int CANCEL = 8;
+    public static final int CAPABILITIES = 9;
+    public static final int CAPABILITIES_RESULT = 10;
     private static final String TAG = "A3NodeProbe";
 
     private static native int nativeStart(String entry, String output, int delayMs, String events, boolean fail);
+    private static native String nativeHeaderVersion();
 
     private final String generation = UUID.randomUUID().toString();
     private final AtomicBoolean started = new AtomicBoolean();
@@ -56,22 +59,52 @@ public final class NodeProbeService extends Service {
             }
             return true;
         }
+        if (request.what == CAPABILITIES && request.replyTo != null) {
+            int id = request.arg1;
+            try {
+                System.loadLibrary("aggregate_node_probe");
+                String detail = "{\"packaged\":true,\"protocol\":1,\"entrypoints\":[\"a3-fixed\"],"
+                        + "\"headerVersion\":\"" + nativeHeaderVersion() + "\","
+                        + "\"npm\":false,\"cli\":false,\"profiles\":false}";
+                send(request.replyTo, CAPABILITIES_RESULT, detail, 0, 0, id);
+            } catch (Throwable failure) {
+                send(request.replyTo, ERROR, failure.toString(), -1, 0, id, "unavailable");
+            }
+            closeIfRequested(request.getData().getBoolean("autoClose", false), request.replyTo, id);
+            return true;
+        }
         if (request.what != RUN || request.replyTo == null) return false;
         final Messenger reply = request.replyTo;
         final int requestId = request.arg1;
         final boolean autoClose = request.getData().getBoolean("autoClose", false);
         final int delayMs = request.getData().getInt("delayMs", 0);
         final boolean fail = request.getData().getBoolean("fail", false);
+        final String entrypoint = request.getData().getString("entrypoint", "a3-fixed");
+        final String profileRef = request.getData().getString("profileRef");
+        final String draftId = request.getData().getString("draftId");
+        final String expectedGeneration = request.getData().getString("expectedGeneration");
+        if (!"a3-fixed".equals(entrypoint)) {
+            reject(reply, requestId, autoClose, "invalidEntrypoint", "entrypoint is not allowed");
+            return true;
+        }
+        if (profileRef != null || draftId != null) {
+            reject(reply, requestId, autoClose, "invalidReference", "profile and draft references are not supported");
+            return true;
+        }
+        if (expectedGeneration != null && !generation.equals(expectedGeneration)) {
+            reject(reply, requestId, autoClose, "staleGeneration", "Node process generation changed");
+            return true;
+        }
         if (delayMs < 0 || delayMs > 5000) {
-            send(reply, ERROR, "invalid delay", -1, 0, requestId);
+            reject(reply, requestId, autoClose, "invalidArgument", "invalid delay");
             return true;
         }
         if (requestId <= 0) {
-            send(reply, ERROR, "request ID required", -1, 0, requestId);
+            reject(reply, requestId, autoClose, "invalidArgument", "request ID required");
             return true;
         }
         if (!started.compareAndSet(false, true)) {
-            send(reply, ERROR, "Node instance already started", -1, 0, requestId);
+            reject(reply, requestId, autoClose, "busy", "Node instance already started");
             return true;
         }
         activeReply = reply;
@@ -119,12 +152,20 @@ public final class NodeProbeService extends Service {
             Log.e(TAG, "Node probe failed", failure);
             send(reply, ERROR, failure.toString(), -1, (System.nanoTime() - startedAt) / 1_000_000, requestId);
         } finally {
-            if (autoClose) {
-                send(reply, CLOSING, "Node process closing", 0, 0, requestId);
-                new Handler(Looper.getMainLooper()).postDelayed(
-                        () -> android.os.Process.killProcess(android.os.Process.myPid()), 200);
-            }
+            closeIfRequested(autoClose, reply, requestId);
         }
+    }
+
+    private void reject(Messenger reply, int requestId, boolean autoClose, String code, String detail) {
+        send(reply, ERROR, detail, -1, 0, requestId, code);
+        closeIfRequested(autoClose, reply, requestId);
+    }
+
+    private void closeIfRequested(boolean autoClose, Messenger reply, int requestId) {
+        if (!autoClose) return;
+        send(reply, CLOSING, "Node process closing", 0, 0, requestId);
+        new Handler(Looper.getMainLooper()).postDelayed(
+                () -> android.os.Process.killProcess(android.os.Process.myPid()), 200);
     }
 
     private void watchEvents(File file, AtomicBoolean finished, Messenger reply, int requestId) {
@@ -162,6 +203,10 @@ public final class NodeProbeService extends Service {
     }
 
     private void send(Messenger reply, int kind, String detail, int exitCode, long elapsed, int requestId) {
+        send(reply, kind, detail, exitCode, elapsed, requestId, null);
+    }
+
+    private void send(Messenger reply, int kind, String detail, int exitCode, long elapsed, int requestId, String errorCode) {
         Message event = Message.obtain(null, kind);
         event.arg1 = requestId;
         Bundle data = new Bundle();
@@ -169,6 +214,7 @@ public final class NodeProbeService extends Service {
         data.putString("detail", detail);
         data.putInt("exitCode", exitCode);
         data.putLong("elapsedMs", elapsed);
+        if (errorCode != null) data.putString("errorCode", errorCode);
         event.setData(data);
         try {
             reply.send(event);

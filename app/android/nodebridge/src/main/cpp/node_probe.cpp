@@ -4,6 +4,12 @@
 #include <string>
 #include <vector>
 
+extern "C" JNIEXPORT jstring JNICALL
+Java_io_github_guog962464_aggregate_nodeprobe_NodeProbeService_nativeHeaderVersion(
+    JNIEnv* env, jclass) {
+  return env->NewStringUTF(NODE_VERSION);
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_io_github_guog962464_aggregate_nodeprobe_NodeProbeService_nativeStart(
     JNIEnv* env, jclass, jstring entry, jstring output, jint delay_ms,

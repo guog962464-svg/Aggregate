@@ -66,8 +66,17 @@ def main() -> None:
                 assert "SERVICE_DISCONNECTED" in log_path.read_text(), "Disconnect not reported"
                 expected = {"version": "v18.20.4", "file": "ok", "network": "network-ok"}
                 assert first[1] == expected and second[1] == expected, (first, second)
+                adb("shell", "am", "force-stop", PACKAGE)
+                adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")
+                third = wait_for(log_path, 3)[-1]
+                assert third[0] not in (first[0], second[0]) and third[1] == expected
+                adb("install", "-r", str(APK))
+                adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")
+                fourth = wait_for(log_path, 4)[-1]
+                assert fourth[0] not in (first[0], second[0], third[0]) and fourth[1] == expected
                 print("A3 probe passed: Node started twice; file and loopback network worked;")
-                print("service crash recovered with a new generation; main process survived.")
+                print("service crash, full app restart and APK reinstall used fresh generations;")
+                print("main process survived the isolated service crash.")
                 if resumed:
                     print("Recovery required bringing the probe Activity to foreground.")
             except Exception:

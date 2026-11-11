@@ -32,6 +32,11 @@ internal class NodeProbeChannel(
     private var remote: Messenger? = null
     private var delayMs = 0
     private var fail = false
+    private var command = 1
+    private var entrypoint = "a3-fixed"
+    private var profileRef: String? = null
+    private var draftId: String? = null
+    private var expectedGeneration: String? = null
 
     init {
         channel.setMethodCallHandler(this)
@@ -39,7 +44,11 @@ internal class NodeProbeChannel(
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
-            result.error("unavailable", "Node probe is debug-only", null)
+            if (call.method == "capabilities") {
+                result.success(mapOf("packaged" to false, "entrypoints" to emptyList<String>()))
+            } else {
+                result.error("unavailable", "Node probe is debug-only", null)
+            }
             return
         }
         if (call.method == "crash" || call.method == "cancel") {
@@ -56,7 +65,7 @@ internal class NodeProbeChannel(
             }
             return
         }
-        if (call.method != "run") {
+        if (call.method != "run" && call.method != "capabilities") {
             result.notImplemented()
             return
         }
@@ -64,13 +73,20 @@ internal class NodeProbeChannel(
             result.error("busy", "Node probe already running", null)
             return
         }
-        val requestedDelay = call.argument<Int>("delayMs") ?: 0
-        if (requestedDelay !in 0..5000) {
-            result.error("invalidArgument", "delayMs must be 0..5000", null)
-            return
+        command = if (call.method == "capabilities") 9 else 1
+        if (command == 1) {
+            val requestedDelay = call.argument<Int>("delayMs") ?: 0
+            if (requestedDelay !in 0..5000) {
+                result.error("invalidArgument", "delayMs must be 0..5000", null)
+                return
+            }
+            delayMs = requestedDelay
+            fail = call.argument<Boolean>("fail") ?: false
+            entrypoint = call.argument<String>("entrypoint") ?: "a3-fixed"
+            profileRef = call.argument<String>("profileRef")
+            draftId = call.argument<String>("draftId")
+            expectedGeneration = call.argument<String>("expectedGeneration")
         }
-        delayMs = requestedDelay
-        fail = call.argument<Boolean>("fail") ?: false
         pending = result
         terminal = null
         generation = null
@@ -82,7 +98,12 @@ internal class NodeProbeChannel(
         )
         bound = context.bindService(intent, this, Context.BIND_AUTO_CREATE)
         if (!bound) {
-            finishError("unavailable", "Node probe library is not in this APK")
+            if (command == 9) {
+                pending?.success(mapOf("packaged" to false, "entrypoints" to emptyList<String>()))
+                clear()
+            } else {
+                finishError("unavailable", "Node probe library is not in this APK")
+            }
             return
         }
         handler.postDelayed({
@@ -95,12 +116,18 @@ internal class NodeProbeChannel(
     override fun onServiceConnected(name: ComponentName, binder: IBinder) {
         if (pending == null) return
         remote = Messenger(binder)
-        val request = Message.obtain(null, 1, requestId, 0)
+        val request = Message.obtain(null, command, requestId, 0)
         request.replyTo = incoming
         request.data = Bundle().apply {
             putBoolean("autoClose", true)
             putInt("delayMs", delayMs)
             putBoolean("fail", fail)
+            if (command == 1) {
+                putString("entrypoint", entrypoint)
+                if (profileRef != null) putString("profileRef", profileRef)
+                if (draftId != null) putString("draftId", draftId)
+                if (expectedGeneration != null) putString("expectedGeneration", expectedGeneration)
+            }
         }
         try {
             remote?.send(request)
@@ -114,11 +141,14 @@ internal class NodeProbeChannel(
         val completed = terminal
         if (completed == null) {
             finishError("outcomeUnknown", "Node process exited before returning a result")
-        } else if (completed["kind"] == 3) {
+        } else if (completed["kind"] == 3 || completed["kind"] == 10) {
             pending?.success(completed)
             clear()
         } else {
-            finishError("nodeFailure", completed["detail"] as? String ?: "Node failed")
+            finishError(
+                completed["errorCode"] as? String ?: "nodeFailure",
+                completed["detail"] as? String ?: "Node failed",
+            )
         }
     }
 
@@ -126,7 +156,7 @@ internal class NodeProbeChannel(
         if (pending == null || event.arg1 != requestId) return true
         val data = event.data
         val eventGeneration = data.getString("generation") ?: return true
-        if (generation == null && (event.what == 2 || event.what == 4)) {
+        if (generation == null && (event.what == 2 || event.what == 4 || event.what == 10)) {
             generation = eventGeneration
         }
         if (eventGeneration != generation) return true
@@ -137,9 +167,10 @@ internal class NodeProbeChannel(
             "detail" to data.getString("detail"),
             "exitCode" to data.getInt("exitCode"),
             "elapsedMs" to data.getLong("elapsedMs"),
+            "errorCode" to data.getString("errorCode"),
         )
         channel.invokeMethod("event", payload)
-        if (event.what == 3 || event.what == 4) terminal = payload
+        if (event.what == 3 || event.what == 4 || event.what == 10) terminal = payload
         return true
     }
 
@@ -155,6 +186,11 @@ internal class NodeProbeChannel(
         remote = null
         delayMs = 0
         fail = false
+        command = 1
+        entrypoint = "a3-fixed"
+        profileRef = null
+        draftId = null
+        expectedGeneration = null
         if (bound) {
             context.unbindService(this)
             bound = false
@@ -162,7 +198,14 @@ internal class NodeProbeChannel(
     }
 
     fun close() {
-        if (pending != null) finishError("cancelled", "Flutter engine closed")
+        if (pending != null) {
+            try {
+                remote?.send(Message.obtain(null, 8, requestId, 0))
+            } catch (_: RemoteException) {
+                // The Service is already gone; the pending result remains unknown.
+            }
+            finishError("outcomeUnknown", "Flutter engine closed during Node run")
+        }
         channel.setMethodCallHandler(null)
     }
 }
