@@ -10,6 +10,8 @@ android {
         applicationId = "io.github.guog962464.aggregate.nodeprobe"
         minSdk = 24
         targetSdk = 36
+        versionCode = providers.gradleProperty("a3ProbeVersionCode").orNull?.toInt() ?: 1
+        versionName = versionCode.toString()
     }
 
     compileOptions {

@@ -9,6 +9,8 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   const enabled = bool.fromEnvironment('A3_PROBE_ENABLED');
   const backgroundTest = bool.fromEnvironment('A3_BACKGROUND_TEST');
+  const longBackgroundTest = bool.fromEnvironment('A3_LONG_BACKGROUND_TEST');
+  const repeatTest = bool.fromEnvironment('A3_REPEAT_TEST');
   const channel = MethodChannel('aggregate/node_probe');
 
   testWidgets('Flutter receives isolated Node results across process generations', (
@@ -241,4 +243,31 @@ void main() {
       expect(result?['kind'], 3);
     });
   }, skip: !enabled || !backgroundTest);
+
+  testWidgets('idle background returns to a fresh Node generation', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final first = await channel.invokeMethod<Map<Object?, Object?>>('run');
+      expect(first?['kind'], 3);
+      // The host runner sends HOME, waits one minute, and resumes this Activity.
+      // ignore: avoid_print
+      print('A3_LONG_BACKGROUND_READY');
+      await Future<void>.delayed(const Duration(seconds: 70));
+      final second = await channel.invokeMethod<Map<Object?, Object?>>('run');
+      expect(second?['kind'], 3);
+      expect(second?['generation'], isNot(first?['generation']));
+    });
+  }, skip: !enabled || !longBackgroundTest);
+
+  testWidgets('repeated calls use fresh Node generations', (tester) async {
+    await tester.runAsync(() async {
+      final generations = <String>{};
+      for (var index = 0; index < 20; index++) {
+        final result = await channel.invokeMethod<Map<Object?, Object?>>('run');
+        expect(result?['kind'], 3);
+        expect(generations.add(result?['generation'] as String), isTrue);
+      }
+    });
+  }, skip: !enabled || !repeatTest);
 }
