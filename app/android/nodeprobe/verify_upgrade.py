@@ -12,7 +12,7 @@ from verify_device import APK, PACKAGE, adb, wait_for
 
 
 ANDROID = Path(__file__).resolve().parents[1]
-EXPECTED = {"version": "v24.20.0", "file": "ok", "network": "network-ok"}
+EXPECTED = {"version": "v24.22.1", "file": "ok", "network": "network-ok"}
 
 
 def build(version: int, destination: Path) -> None:
@@ -42,6 +42,9 @@ def main() -> None:
         directory = Path(temporary)
         first_apk = directory / "probe-v1.apk"
         second_apk = directory / "probe-v2.apk"
+        marker = directory / "stale.txt"
+        marker.write_text("a3-stale-resource-marker\n")
+        remote_marker = "/data/local/tmp/aggregate-a3-stale-resource.txt"
         build(1, first_apk)
         build(2, second_apk)
         adb("uninstall", PACKAGE, check=False)
@@ -61,14 +64,21 @@ def main() -> None:
                 assert first[1] == EXPECTED
                 before = private_files()
                 assert {"a3-probe.js", "a3-result.json", "a3-events.jsonl"} <= before
+                adb("push", str(marker), remote_marker)
+                for name in ("a3-probe.js", "a3-result.json", "a3-events.jsonl"):
+                    adb("shell", "run-as", PACKAGE, "cp", remote_marker, "files/" + name)
                 adb("install", "-r", str(second_apk))
                 assert installed_version() == 2
                 adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")
                 second = wait_for(log_path, 2)[-1]
                 assert second[1] == EXPECTED and second[0] != first[0]
                 assert private_files() == before, "Upgrade left additional probe files"
+                for name in ("a3-probe.js", "a3-result.json", "a3-events.jsonl"):
+                    assert "a3-stale-resource-marker" not in adb(
+                        "shell", "run-as", PACKAGE, "cat", "files/" + name
+                    ), name
                 print("A3 in-place upgrade passed: versionCode 1 -> 2, private data retained,")
-                print("Node ran in a fresh Service generation without extra probe files.")
+                print("Node ran in a fresh Service generation and replaced stale probe files.")
             except Exception:
                 print(log_path.read_text()[-3000:])
                 raise
@@ -76,6 +86,7 @@ def main() -> None:
                 monitor.terminate()
                 monitor.wait(timeout=5)
                 adb("uninstall", PACKAGE, check=False)
+                adb("shell", "rm", "-f", remote_marker, check=False)
 
 
 if __name__ == "__main__":

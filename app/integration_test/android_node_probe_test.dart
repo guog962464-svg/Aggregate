@@ -11,6 +11,7 @@ void main() {
   const backgroundTest = bool.fromEnvironment('A3_BACKGROUND_TEST');
   const longBackgroundTest = bool.fromEnvironment('A3_LONG_BACKGROUND_TEST');
   const repeatTest = bool.fromEnvironment('A3_REPEAT_TEST');
+  const activeBackgroundTest = bool.fromEnvironment('A3_ACTIVE_BACKGROUND_TEST');
   const channel = MethodChannel('aggregate/node_probe');
 
   testWidgets('Flutter receives isolated Node results across process generations', (
@@ -31,7 +32,7 @@ void main() {
         expect(result!['kind'], 3);
         expect(result['exitCode'], 0);
         expect(jsonDecode(result['detail'] as String), {
-          'version': 'v24.20.0',
+          'version': 'v24.22.1',
           'file': 'ok',
           'network': 'network-ok',
         });
@@ -65,7 +66,7 @@ void main() {
         'packaged': true,
         'protocol': 1,
         'entrypoints': ['a3-fixed'],
-        'headerVersion': 'v24.20.0',
+        'headerVersion': 'v24.22.1',
         'npm': false,
         'cli': false,
         'profiles': false,
@@ -270,4 +271,32 @@ void main() {
       }
     });
   }, skip: !enabled || !repeatTest);
+
+  testWidgets('active Node request survives a minute in the background', (
+    tester,
+  ) async {
+    final ready = Completer<void>();
+    channel.setMethodCallHandler((call) async {
+      if (call.method != 'event') return;
+      final event = Map<Object?, Object?>.from(call.arguments as Map);
+      if (event['kind'] == 7 &&
+          jsonDecode(event['detail'] as String)['type'] == 'ready' &&
+          !ready.isCompleted) {
+        ready.complete();
+      }
+    });
+    addTearDown(() => channel.setMethodCallHandler(null));
+    await tester.runAsync(() async {
+      final pending = channel.invokeMethod<Map<Object?, Object?>>('run', {
+        'delayMs': 70000,
+      });
+      await ready.future.timeout(const Duration(seconds: 10));
+      // The host sends HOME, waits 60 seconds, then resumes the Activity.
+      // ignore: avoid_print
+      print('A3_ACTIVE_BACKGROUND_READY');
+      final result = await pending.timeout(const Duration(seconds: 100));
+      expect(result?['kind'], 3);
+      expect(jsonDecode(result?['detail'] as String)['version'], 'v24.22.1');
+    });
+  }, skip: !enabled || !activeBackgroundTest);
 }

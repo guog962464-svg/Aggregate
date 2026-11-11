@@ -64,7 +64,7 @@ def main() -> None:
                 assert first[0] != second[0], "Service generation did not change"
                 assert adb("shell", "pidof", PACKAGE) == main_pid, "Main process died"
                 assert "SERVICE_DISCONNECTED" in log_path.read_text(), "Disconnect not reported"
-                expected = {"version": "v24.20.0", "file": "ok", "network": "network-ok"}
+                expected = {"version": "v24.22.1", "file": "ok", "network": "network-ok"}
                 assert first[1] == expected and second[1] == expected, (first, second)
                 adb("shell", "am", "force-stop", PACKAGE)
                 adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")
@@ -74,8 +74,17 @@ def main() -> None:
                 adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")
                 fourth = wait_for(log_path, 4)[-1]
                 assert fourth[0] not in (first[0], second[0], third[0]) and fourth[1] == expected
+                adb("shell", "input", "keyevent", "3")
+                time.sleep(1)
+                adb("shell", "am", "kill", PACKAGE)
+                assert not adb("shell", "pidof", PACKAGE, check=False), "Background main process survived am kill"
+                assert not adb("shell", "pidof", PACKAGE + ":node", check=False), "Node process survived am kill"
+                adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")
+                fifth = wait_for(log_path, 5)[-1]
+                assert fifth[0] not in (first[0], second[0], third[0], fourth[0])
+                assert fifth[1] == expected
                 print("A3 probe passed: Node started twice; file and loopback network worked;")
-                print("service crash, full app restart and APK reinstall used fresh generations;")
+                print("service crash, full app restart, APK reinstall and background am kill recovered;")
                 print("main process survived the isolated service crash.")
                 if resumed:
                     print("Recovery required bringing the probe Activity to foreground.")

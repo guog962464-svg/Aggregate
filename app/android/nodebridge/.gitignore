@@ -1,3 +1,4 @@
 /src/main/jniLibs/
+/src/allAbis/jniLibs/
 /vendor/
 /src/main/assets/nodejs-mobile-LICENSE.txt

@@ -76,8 +76,8 @@ internal class NodeProbeChannel(
         command = if (call.method == "capabilities") 9 else 1
         if (command == 1) {
             val requestedDelay = call.argument<Int>("delayMs") ?: 0
-            if (requestedDelay !in 0..5000) {
-                result.error("invalidArgument", "delayMs must be 0..5000", null)
+            if (requestedDelay !in 0..90_000) {
+                result.error("invalidArgument", "delayMs must be 0..90000", null)
                 return
             }
             delayMs = requestedDelay
@@ -106,11 +106,12 @@ internal class NodeProbeChannel(
             }
             return
         }
+        val timeoutMs = if (command == 1) maxOf(15_000, delayMs + 15_000) else 15_000
         handler.postDelayed({
             if (pending != null && requestId == id) {
-                finishError("timeout", "Node probe did not finish in 15 seconds")
+                finishError("timeout", "Node probe did not finish in ${timeoutMs / 1000} seconds")
             }
-        }, 15_000)
+        }, timeoutMs.toLong())
     }
 
     override fun onServiceConnected(name: ComponentName, binder: IBinder) {

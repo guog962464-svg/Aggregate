@@ -6,15 +6,24 @@ android {
     namespace = "io.github.guog962464.aggregate.nodebridge"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
+    val allProbeAbis = providers.gradleProperty("a3ProbeAllAbis").orNull == "true"
+
+    if (allProbeAbis) {
+        sourceSets.getByName("main").jniLibs.srcDir("src/allAbis/jniLibs")
+    }
 
     defaultConfig {
         minSdk = 24
         ndk {
-            abiFilters += "arm64-v8a"
+            abiFilters += if (allProbeAbis) {
+                listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            } else {
+                listOf("arm64-v8a")
+            }
         }
         externalNativeBuild {
             cmake {
-                cppFlags += "-std=c++17"
+                cppFlags += "-std=c++20"
             }
         }
     }

@@ -1,6 +1,6 @@
 # Android A3：Node 原生桥探针记录
 
-> 2026-11-11。A3 进行中；默认实验候选已由 Node 18 换成 digidem Node 24.20.0。A3.1–A3.4 的固定探针范围已在 4 KB 真机通过；A3.5 已补 60 秒退后台、20 次连续调用和版本号升级验证，系统低内存终止仍未覆盖。A3.6 三 ABI ELF 对齐已通过，16 KB 真机加载尚未验证。探针与用户可见 CLI 能力保持隔离。
+> 2026-11-11。A3 进行中；默认 Debug 实验候选已更新至 fogtape Node 24.22.1 预发布。A3.1–A3.5 的固定探针范围已在 4 KB arm64 真机通过，包括运行中的 60 秒后台、后台进程终止后的重启及升级后陈旧探针文件替换。`am kill` 不等同真实低内存终止。A3.6 的 arm64/x86_64 成品静态对齐通过，16 KB 真机加载尚未验证。探针与用户可见 CLI 能力保持隔离。
 
 ## 当前基线
 
@@ -33,8 +33,8 @@ Android [16 KB 页指南](https://developer.android.com/guide/practices/page-siz
 ## A3.6 Node 24 候选实物核验
 
 - 来源：[digidem/nodejs-mobile v24.20.0-0 Release](https://github.com/digidem/nodejs-mobile/releases/tag/v24.20.0-0)，2026-09-03 发布的非预发布、不可变 Release；Android full ZIP 77,677,749 字节。Release API 提供 SHA-256 `f5ffbaf4f2679fa9180b0758c637c2f8fc8828300f95129badf213a028fb37bb`，本地下载匹配。其发布说明指向 [recipe 提交 `7c55423d73`](https://github.com/digidem/nodejs-mobile/commit/7c55423d731f7fec83ac52ab158901ce20a57356)；仓库的 [TESTING 说明](https://github.com/digidem/nodejs-mobile/blob/recipe/docs/TESTING.md)描述设备与 CI 测试，但本项目未独立复现该 fork 的完整测试。
-- ZIP 含 `arm64-v8a`、`armeabi-v7a`、`x86_64` 的 `libnode.so` 和 Node 24.20.0 头文件，未附独立 LICENSE 文件。[同一发布标签的 LICENSE](https://github.com/digidem/nodejs-mobile/blob/v24.20.0-0/LICENSE) 含 Node 及依赖许可文本；本地 SHA-256 `c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66`。准备脚本现在校验并把它打入实验 APK 的 `assets/nodejs-mobile-LICENSE.txt`；错误摘要会在复制库之前失败。正式分发还需核对 NDK `libc++_shared.so`、其他依赖声明及用户可见许可入口。三个 ABI 各四个 ELF `LOAD` 段经 NDK r28c `llvm-readelf -l` 检查均为 `0x4000`；动态依赖包含 `libc++_shared.so`、`libm.so`、`libdl.so`、`liblog.so`、`libc.so`。
-- 版本时效性仍是发布阻断：[Node 24.22.1](https://nodejs.org/en/blog/release/v24.22.1) 已包含高严重性安全修复，当前实验库 24.20.0 更旧。[fogtape 的 24.22.1 移动库](https://github.com/fogtape/nodejs-mobile/releases/tag/v24.22.1-0) 为预发布；尚未在本工程核验其下载包、许可、ABI 或真机行为，不能直接替换发布候选。A3 继续只在 Debug 探针使用已验证的 24.20.0，发布前须升级并重跑相同门槛。
+- ZIP 含 `arm64-v8a`、`armeabi-v7a`、`x86_64` 的 `libnode.so` 和 Node 24.20.0 头文件，未附独立 LICENSE 文件。[同一发布标签的 LICENSE](https://github.com/digidem/nodejs-mobile/blob/v24.20.0-0/LICENSE) 含 Node 及依赖许可文本；本地 SHA-256 `c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66`。当时的准备脚本校验并把它打入实验 APK 的 `assets/nodejs-mobile-LICENSE.txt`；错误摘要会在复制库之前失败。正式分发还需核对 NDK `libc++_shared.so`、其他依赖声明及用户可见许可入口。三个 ABI 各四个 ELF `LOAD` 段经 NDK r28c `llvm-readelf -l` 检查均为 `0x4000`；动态依赖包含 `libc++_shared.so`、`libm.so`、`libdl.so`、`liblog.so`、`libc.so`。
+- digidem 24.20.0 的历史核验如上。当前 Debug 实验候选为 [fogtape v24.22.1-0](https://github.com/fogtape/nodejs-mobile/releases/tag/v24.22.1-0)，对应 [Node 24.22.1 安全更新](https://nodejs.org/en/blog/release/v24.22.1)。该 Release 标为预发布，不能据此认定可正式分发；发布前仍需稳定维护版本及完整依赖许可审查。
 
 | v24.20.0-0 Android ABI | `libnode.so` 字节数 | 四个 `LOAD` 段对齐 | 加载验证 |
 | --- | ---: | --- | --- |
@@ -42,32 +42,32 @@ Android [16 KB 页指南](https://developer.android.com/guide/practices/page-siz
 | `armeabi-v7a` | 79,439,076 | 全部 `0x4000` | 未有对应真机 |
 | `x86_64` | 85,885,640 | 全部 `0x4000` | 未有对应真机 |
 
-`nodeprobe/prepare.sh` 现在默认校验并准备此候选，二进制与头文件仍在忽略目录，不入 Git。Node 24 头文件需要 JNI 桥以 C++20 编译；准备脚本会触发 JNI 重编译，避免换库后能力查询仍显示旧头文件版本。独立探针 App 和 Flutter Debug 桥在 LGE AN10 上返回 `v24.20.0`、`file=ok`、`network=network-ok`，能力查询的 `headerVersion` 也为 `v24.20.0`；异常、取消、崩溃后恢复集成测试通过。曾有一次增量构建未重编 JNI，导致 Node 进程为 24.20.0 而 `headerVersion` 仍为 18.20.4；修正准备脚本并重编后通过。该字段是编译期头文件版本，脚本结果才是运行时 `process.version`。
+fogtape ZIP 为 112,853,733 字节，本地 SHA-256 与 Release API 摘要同为 `d6fd9f610fe5d81fede8f0d400c5a62723247725a19831835f15abf4f0604250`。同标签 LICENSE 的 SHA-256 为 `c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66`，已随实验包打入 assets。头文件为 24.22.1；三个 ABI 的 `libnode.so` 四个 LOAD 段均为 `0x4000`。`prepare.sh` 现在默认校验此候选并准备三 ABI，二进制与头文件仍在忽略目录，不入 Git。JNI 桥以 C++20 编译；脚本会触发 JNI 重编译。独立探针 App 与 Flutter Debug 桥在 LGE AN10 上返回运行时版本及头文件版本 `v24.22.1`、`file=ok`、`network=network-ok`。
 
 ## 最小真机探针
 
-- `app/android/nodeprobe` 是单独的 Debug 验证 App；共用的原生实现放在 `app/android/nodebridge`。`prepare.sh` 下载或接收 Node 24 候选 ZIP，校验 SHA-256，只将 arm64 `libnode.so`、头文件及项目锁定 NDK 的 `libc++_shared.so` 放入本机忽略目录；二进制和头文件不入 Git。早期 Node 18 探针首次加载失败准确报缺少 `libc++_shared.so`，补齐后成功。
+- `app/android/nodeprobe` 是单独的 Debug 验证 App；共用的原生实现放在 `app/android/nodebridge`。`prepare.sh` 下载或接收 Node 24 候选 ZIP，校验 SHA-256，将 arm64 库放入默认 `jniLibs`，另外两个 ABI 放入仅供 `a3ProbeAllAbis` 构建的忽略目录，并准备头文件及项目锁定 NDK 的 `libc++_shared.so`；默认构建仅打包 arm64。早期 Node 18 探针首次加载失败准确报缺少 `libc++_shared.so`，补齐后成功。
 - `:node` Service 在工作线程通过 C++ JNI 调 `node::Start`，固定 JS 入口复制到应用私有目录；JS 输出 Node 版本、写文件、完成 `127.0.0.1` HTTP 请求。Service 以 Android `Messenger` 返回带请求 ID 和进程 generation 的启动、实际就绪、事件、结果、错误及关闭消息。当前协议只运行固定入口，`STARTED` 代表工作线程开始，JS 发出的 `ready` 事件才表示脚本已执行。
-- LGE AN10 真机当前返回 `v24.20.0`、`file=ok`、`network=network-ok`、退出码 0。旧 Node 18 候选的一次启动到结果观测为 326 ms；后续两次为 196/178 ms，均包括复制入口、加载库和 JS 调用，不是整 App 冷启动计时。空闲 Service PSS 53,877 KB/RSS 108,872 KB 和 Debug APK 约 96 MB 也属于旧候选，不能当作 Node 24 性能或体积数据。
-- `verify_device.py` 安装 Debug APK，运行一次，单独杀 `:node` 进程并等待新代际再次成功；主进程 PID 保持不变。随后整 App `force-stop` 和同包重装，各自启动新代际并再次成功，测试结束卸载实验 App。先前一次初版脚本在后台等待 15 秒没有收到第二个结果，后续改为必要时将 Activity 带回前台再等待；仍不能称为稳定自动重连。
-- `verify_upgrade.py` 使用 Gradle 属性将独立探针 App 构建成 `versionCode` 1 和 2，真机安装 1、运行 Node、保留私有数据原位升级至 2，再运行 Node。版本号确由 PackageManager 报告为 1→2，升级后进入不同 Service 代际且无额外探针文件；测试结束卸载实验 App。两包除了版本元数据没有业务代码差异，因此这是 Android 包升级及现有资源复用验证，不覆盖脚本格式迁移或真实产品升级。
-- `flutter build apk --debug --no-pub` 通过，Aggregate 普通 APK 不含 Node 探针库。NDK r28c 构建的 JNI 桥和 `libc++_shared.so` ELF `LOAD` 段均为 `0x4000` 对齐，Node 24 的 `libnode.so` 也为 `0x4000`；`zipalign -c -P 16 4` 对 Node 24 独立实验 APK 通过。`:nodeprobe:bundleDebug` 的 AAB 经 Google bundletool 1.18.3 `dump config` 报 `PAGE_ALIGNMENT_16K`，由该 AAB 生成的 universal APK 也通过 `zipalign -c -P 16 4`。当前工程只打包 arm64 ABI；AAB 的 x86_64/armeabi-v7a 成品与 16 KB 真机加载仍未验证。
+- LGE AN10 真机当前返回 `v24.22.1`、`file=ok`、`network=network-ok`、退出码 0。当前候选单次 Activity 冷启动 `am start -W` TotalTime 515 ms；Service 启动到 Node 结果 416 ms；结果后 Service PSS 58,171 KB/RSS 113,900 KB；arm64 独立 Debug APK 98,126,840 字节。均为单次观测，不是性能分布或产品包指标。旧 Node 18 候选的耗时和内存不用于当前判断。
+- `verify_device.py` 安装 Debug APK，运行一次，单独杀 `:node` 进程并等待新代际再次成功；主进程 PID 保持不变。随后整 App `force-stop`、同包重装及 HOME 后 `am kill` 主进程和 `:node` 进程，各自重新进入并成功运行新代际，测试结束卸载实验 App。`am kill` 是系统命令触发的后台终止，不是内存压力下的 LMK；重启由重新进入触发，不证明后台自动重连。
+- `verify_upgrade.py` 使用 Gradle 属性将独立探针 App 构建成 `versionCode` 1 和 2，真机安装 1、运行 Node，再把入口、结果和事件文件均改成陈旧标记，保留私有数据原位升级至 2 并再次运行。PackageManager 报告 1→2，新 Service 代际成功运行，三份陈旧文件均被替换且无额外探针文件；测试结束卸载实验 App。两包除了版本元数据没有业务代码差异，尚不覆盖脚本格式迁移或真实产品升级。
+- `flutter build apk --debug --no-pub` 通过，Aggregate 普通 APK 不含 Node 探针库。默认 arm64 探针 AAB 经 bundletool 1.18.3 报 `PAGE_ALIGNMENT_16K`，由其生成的 universal APK 通过 `zipalign -c -P 16 4`。另以 `-Pa3ProbeAllAbis=true` 构建三 ABI AAB：九个原生库均进入成品，AAB 配置和 universal APK ZIP 对齐通过；arm64 与 x86_64 的全部库以及 armeabi-v7a 的 JNI/Node 库 ELF LOAD 段为 `0x4000`，但 NDK r28c 提供的 armeabi-v7a `libc++_shared.so` 为 `0x1000`。故不能声称三 ABI 的每个库均通过 16 KB ELF 静态门槛；默认发行范围仍仅 arm64。16 KB 真机及其他 ABI 真机加载未验证。
 
 复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径] [同标签 LICENSE]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。ZIP 和 LICENSE 可省略以下载固定版本；都校验固定 SHA-256。脚本使用当前连接的真机；没有启动模拟器。
 
 ## Flutter Debug 测试通道
 
 - `app/android/app` 仅在 Gradle 属性 `a3Probe=true` 时为 Debug 构建依赖 `:nodebridge`；Release 构建不加入该库。`MainActivity` 的 `aggregate/node_probe` 平台通道只在可调试 App 中提供 `capabilities`、固定 `run`、`cancel`、`crash` 测试命令，不接用户界面或 `AndroidRuntimePort`。未打入库时 `capabilities` 返回 `packaged=false`，`run` 返回 `unavailable`。
-- `NodeProbeChannel` 经 Binder 发送请求，核对请求 ID 与 generation；Service 把固定 JS 写入应用私有目录的有界 JSONL 事件（上限 64 KB）实时转发到 Dart，包含 `ready`、`console`、`network`、`fileWrite`、`fileRead` 和 `exception`。这是实验传输方式，未将 JSONL 文件或回环端口暴露给其他 App。固定脚本支持最多 5 秒延迟；Service 在完成后关闭自身进程，下一次请求启动新代际。
+- `NodeProbeChannel` 经 Binder 发送请求，核对请求 ID 与 generation；Service 把固定 JS 写入应用私有目录的有界 JSONL 事件（上限 64 KB）实时转发到 Dart，包含 `ready`、`console`、`network`、`fileWrite`、`fileRead` 和 `exception`。这是实验传输方式，未将 JSONL 文件或回环端口暴露给其他 App。固定脚本支持最多 90 秒延迟，仅供 Debug 长后台测试；Service 在完成后关闭自身进程，下一次请求启动新代际。
 - 主动 `cancel` 发送 `cancelRequested` 事件并终止 `:node` 进程；与意外崩溃一样，Dart 报 `outcomeUnknown`，不会自动重放。此结果不能证明脚本在终止前没有产生外部副作用。
-- `capabilities` 由 Service 在加载 JNI 库后返回协议版本 1、唯一受控入口 `a3-fixed`、构建头文件版本 `v24.20.0`，并明确报告 `npm=false`、`cli=false`、`profiles=false`；头文件版本不是一次运行的 `process.version` 验证。Service 拒绝其他入口、任何 `profileRef` / `draftId` 与过期的 `expectedGeneration`。每次调用使用新的 Service 代际；这里验证的是固定探针不接受旧引用，尚未实现真实草稿或 profile 的迁移语义。
+- `capabilities` 由 Service 在加载 JNI 库后返回协议版本 1、唯一受控入口 `a3-fixed`、构建头文件版本 `v24.22.1`，并明确报告 `npm=false`、`cli=false`、`profiles=false`；头文件版本不是一次运行的 `process.version` 验证。Service 拒绝其他入口、任何 `profileRef` / `draftId` 与过期的 `expectedGeneration`。每次调用使用新的 Service 代际；这里验证的是固定探针不接受旧引用，尚未实现真实草稿或 profile 的迁移语义。
 - LGE AN10 真机 `integration_test/android_node_probe_test.dart` 的探针构建通过两次连续调用、新代际、上述实时事件、脚本异常、主动取消、运行中崩溃及后续恢复。另一次用 HOME 键把 App 放到后台约 5 秒，进行中的固定请求仍完成。普通构建通过“探针不可用”；实验 APK 包含 `libnode.so`，普通 Flutter Debug APK 不含 `libnode.so` 或 JNI 桥，测试后已重新安装普通 Aggregate 包。`flutter analyze --no-pub` 无问题，独立 `:nodeprobe` 真机回归通过。
 - A3.4 真机集成测试还通过能力查询、非法入口/引用/旧代际拒绝，以及拒绝后再次成功运行。服务测试通过整 App 重启和同包重装后的新代际运行。
-- A3.5 追加真机集成测试：固定探针先成功运行，App 经 HOME 退后台 60 秒后回前台，新请求在不同 Service 代际成功；另有 20 次连续请求，20 个不同代际均成功。一次首次运行误漏 `a3Probe=true` 导致普通 APK 报探针不可用，已用正确构建开关重跑通过。60 秒测试是空闲后台停留，运行中的 Node 请求仍只测过约 5 秒；未测系统低内存杀进程、后台长期运行或产品级配置迁移。
+- A3.5 追加真机集成测试：固定探针先成功运行，App 经 HOME 退后台 60 秒后回前台，新请求在不同 Service 代际成功；另有 20 次连续请求、20 个不同代际均成功。新增 70 秒固定请求在 JS `ready` 后退后台 60 秒，回到前台后同一请求成功完成。系统命令 `am kill` 后重新进入、升级后陈旧文件替换也通过。真实 LMK 压力、系统对更长时间后台执行的限制及产品级配置迁移仍未知。
 
 | Binder 消息 | 含义 |
 | --- | --- |
-| `RUN` 1 | 固定入口、请求 ID、最多 5 秒延迟及失败样本开关。 |
+| `RUN` 1 | 固定入口、请求 ID、最多 90 秒延迟及失败样本开关。 |
 | `STARTED` 2 | Service 工作线程启动；不等于 JS 就绪。 |
 | `RESULT` 3 / `ERROR` 4 | 成功结果或失败；Dart 核对请求 ID 和 generation。 |
 | `CLOSING` 5 | 单次运行后将退出 Service 进程。 |
@@ -79,8 +79,10 @@ Android [16 KB 页指南](https://developer.android.com/guide/practices/page-siz
 
 A3.5 长后台测试另加 `--dart-define=A3_LONG_BACKGROUND_TEST=true`，在 `A3_LONG_BACKGROUND_READY` 后主机发送 HOME，等待 60 秒，再把 Aggregate 带回前台；重复调用测试加 `--dart-define=A3_REPEAT_TEST=true`。在 `app/android/` 运行 `python3 nodeprobe/verify_upgrade.py` 可复现独立 App 的两版本原位升级；脚本只使用当前连接的真机，不启动模拟器。
 
+运行中后台专项测试另加 `--dart-define=A3_ACTIVE_BACKGROUND_TEST=true`，在 `A3_ACTIVE_BACKGROUND_READY` 后发送 HOME，等待 60 秒再回前台。三 ABI 静态验收可在 `app/android/` 运行 `./gradlew :nodeprobe:bundleDebug -Pa3ProbeAllAbis=true`；该开关不改变默认 arm64 包，不代表其他 ABI 已在设备上运行。
+
 ## 后续实验门槛
 
 1. 扩展固定探针之外的受控包入口之前，逐包验证 A4 门槛。当前能力查询只声明 `a3-fixed`，继续隐藏 `cli`、`mcp-stdio` 适配器。
-2. 继续验证系统低内存杀进程、运行中的长期后台任务，以及业务代码或资源格式变化的升级清理。60 秒空闲退后台、20 次重入和仅版本号变化的原位升级已通过；后台自动重连仍未知。
-3. 取得包含已发布安全修复的 Node 24 移动库，复核其维护与许可、重跑固定探针，并取得 16 KB 真机加载验证；如果扩展 APK ABI，需逐项重测成品对齐与加载。当前实验 APK 已携带 Node LICENSE，但完整分发许可仍待审。未通过这些门槛前不进入 A4 产品化，也不声称设备端 npm/CLI 可用。
+2. 取得可复现的真实 LMK 压力测试、产品级配置迁移和目标后台策略证据；现有 `am kill`、一分钟运行中后台与陈旧探针文件替换只覆盖已记录的范围。
+3. 取得稳定维护、许可齐备的 Node 移动库及 16 KB 真机加载验证；如果扩展到 32 位 ABI，需解决其 `libc++_shared.so` 的 4 KB ELF 对齐并在对应设备加载。当前实验 APK 已携带 Node LICENSE，但完整分发许可仍待审。未通过这些门槛前不进入 A4 产品化，也不声称设备端 npm/CLI 可用。

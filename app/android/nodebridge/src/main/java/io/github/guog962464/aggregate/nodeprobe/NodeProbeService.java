@@ -95,7 +95,7 @@ public final class NodeProbeService extends Service {
             reject(reply, requestId, autoClose, "staleGeneration", "Node process generation changed");
             return true;
         }
-        if (delayMs < 0 || delayMs > 5000) {
+        if (delayMs < 0 || delayMs > 90000) {
             reject(reply, requestId, autoClose, "invalidArgument", "invalid delay");
             return true;
         }
