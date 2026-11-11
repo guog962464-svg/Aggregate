@@ -33,7 +33,8 @@ Android [16 KB 页指南](https://developer.android.com/guide/practices/page-siz
 ## A3.6 Node 24 候选实物核验
 
 - 来源：[digidem/nodejs-mobile v24.20.0-0 Release](https://github.com/digidem/nodejs-mobile/releases/tag/v24.20.0-0)，2026-09-03 发布的非预发布、不可变 Release；Android full ZIP 77,677,749 字节。Release API 提供 SHA-256 `f5ffbaf4f2679fa9180b0758c637c2f8fc8828300f95129badf213a028fb37bb`，本地下载匹配。其发布说明指向 [recipe 提交 `7c55423d73`](https://github.com/digidem/nodejs-mobile/commit/7c55423d731f7fec83ac52ab158901ce20a57356)；仓库的 [TESTING 说明](https://github.com/digidem/nodejs-mobile/blob/recipe/docs/TESTING.md)描述设备与 CI 测试，但本项目未独立复现该 fork 的完整测试。
-- ZIP 含 `arm64-v8a`、`armeabi-v7a`、`x86_64` 的 `libnode.so` 和 Node 24.20.0 头文件，未附独立 LICENSE 文件。分发前仍需复核 fork、Node 和依赖许可证声明。三个 ABI 各四个 ELF `LOAD` 段经 NDK r28c `llvm-readelf -l` 检查均为 `0x4000`；动态依赖包含 `libc++_shared.so`、`libm.so`、`libdl.so`、`liblog.so`、`libc.so`。
+- ZIP 含 `arm64-v8a`、`armeabi-v7a`、`x86_64` 的 `libnode.so` 和 Node 24.20.0 头文件，未附独立 LICENSE 文件。[同一发布标签的 LICENSE](https://github.com/digidem/nodejs-mobile/blob/v24.20.0-0/LICENSE) 含 Node 及依赖许可文本；本地 SHA-256 `c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66`。准备脚本现在校验并把它打入实验 APK 的 `assets/nodejs-mobile-LICENSE.txt`；错误摘要会在复制库之前失败。正式分发还需核对 NDK `libc++_shared.so`、其他依赖声明及用户可见许可入口。三个 ABI 各四个 ELF `LOAD` 段经 NDK r28c `llvm-readelf -l` 检查均为 `0x4000`；动态依赖包含 `libc++_shared.so`、`libm.so`、`libdl.so`、`liblog.so`、`libc.so`。
+- 版本时效性仍是发布阻断：[Node 24.22.1](https://nodejs.org/en/blog/release/v24.22.1) 已包含高严重性安全修复，当前实验库 24.20.0 更旧。[fogtape 的 24.22.1 移动库](https://github.com/fogtape/nodejs-mobile/releases/tag/v24.22.1-0) 为预发布；尚未在本工程核验其下载包、许可、ABI 或真机行为，不能直接替换发布候选。A3 继续只在 Debug 探针使用已验证的 24.20.0，发布前须升级并重跑相同门槛。
 
 | v24.20.0-0 Android ABI | `libnode.so` 字节数 | 四个 `LOAD` 段对齐 | 加载验证 |
 | --- | ---: | --- | --- |
@@ -52,7 +53,7 @@ Android [16 KB 页指南](https://developer.android.com/guide/practices/page-siz
 - `verify_upgrade.py` 使用 Gradle 属性将独立探针 App 构建成 `versionCode` 1 和 2，真机安装 1、运行 Node、保留私有数据原位升级至 2，再运行 Node。版本号确由 PackageManager 报告为 1→2，升级后进入不同 Service 代际且无额外探针文件；测试结束卸载实验 App。两包除了版本元数据没有业务代码差异，因此这是 Android 包升级及现有资源复用验证，不覆盖脚本格式迁移或真实产品升级。
 - `flutter build apk --debug --no-pub` 通过，Aggregate 普通 APK 不含 Node 探针库。NDK r28c 构建的 JNI 桥和 `libc++_shared.so` ELF `LOAD` 段均为 `0x4000` 对齐，Node 24 的 `libnode.so` 也为 `0x4000`；`zipalign -c -P 16 4` 对 Node 24 独立实验 APK 通过。`:nodeprobe:bundleDebug` 的 AAB 经 Google bundletool 1.18.3 `dump config` 报 `PAGE_ALIGNMENT_16K`，由该 AAB 生成的 universal APK 也通过 `zipalign -c -P 16 4`。当前工程只打包 arm64 ABI；AAB 的 x86_64/armeabi-v7a 成品与 16 KB 真机加载仍未验证。
 
-复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。脚本使用当前连接的真机；没有启动模拟器。
+复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径] [同标签 LICENSE]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。ZIP 和 LICENSE 可省略以下载固定版本；都校验固定 SHA-256。脚本使用当前连接的真机；没有启动模拟器。
 
 ## Flutter Debug 测试通道
 
@@ -82,4 +83,4 @@ A3.5 长后台测试另加 `--dart-define=A3_LONG_BACKGROUND_TEST=true`，在 `A
 
 1. 扩展固定探针之外的受控包入口之前，逐包验证 A4 门槛。当前能力查询只声明 `a3-fixed`，继续隐藏 `cli`、`mcp-stdio` 适配器。
 2. 继续验证系统低内存杀进程、运行中的长期后台任务，以及业务代码或资源格式变化的升级清理。60 秒空闲退后台、20 次重入和仅版本号变化的原位升级已通过；后台自动重连仍未知。
-3. 继续核验 Node 24 fork 的维护、许可证与发布流程，取得 16 KB 真机加载验证；如果扩展 APK ABI，需逐项重测成品对齐与加载。未通过这些门槛前不进入 A4 产品化，也不声称设备端 npm/CLI 可用。
+3. 取得包含已发布安全修复的 Node 24 移动库，复核其维护与许可、重跑固定探针，并取得 16 KB 真机加载验证；如果扩展 APK ABI，需逐项重测成品对齐与加载。当前实验 APK 已携带 Node LICENSE，但完整分发许可仍待审。未通过这些门槛前不进入 A4 产品化，也不声称设备端 npm/CLI 可用。
