@@ -127,7 +127,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A3：`nodejs-mobile` 原生桥探针
 
-**状态：**进行中；候选库与工程基线见 [A3 探针记录](android-a3-probe.md)。预编译 Node 18 的 arm64 ELF 仅为 4 KB 对齐，不能直接作为 16 KB 设备发布构建。
+**状态：**进行中；候选库核验及 4 KB 真机最小 JNI/Service 实验见 [A3 探针记录](android-a3-probe.md)。实验仍在独立 Android App，未接 Dart；预编译 Node 18 的 arm64 ELF 仅为 4 KB 对齐，不能直接作为 16 KB 设备发布构建。
 
 **依赖：**A1，可与 A2、A5 并行。探针保持独立，不先绑定完整 UI。
 
