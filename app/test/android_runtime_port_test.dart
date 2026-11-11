@@ -1,12 +1,20 @@
+import 'dart:io';
+
 import 'package:aggregate/platform/android/android_runtime_port.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('A1 Android shell advertises only implemented behavior', () async {
-    final runtime = AndroidRuntimePort();
+  test('A2 Android runtime advertises only HTTP MCP', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'aggregate-android-test-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final runtime = await AndroidRuntimePort.open(dataDirectory: directory);
+    addTearDown(runtime.dispose);
     expect(runtime.isPreview, isFalse);
-    expect(runtime.features.connectionKinds, isEmpty);
+    expect(runtime.features.connectionKinds, {ConnectionKind.mcpHttp});
+    expect(runtime.connectionAdapters.map((item) => item.id), ['mcp-http']);
     expect(runtime.features.terminal, isFalse);
     expect(await runtime.listConnections(), isEmpty);
     expect(await runtime.searchCapabilities(const SearchQuery('')), isEmpty);
@@ -14,12 +22,12 @@ void main() {
     await expectLater(
       runtime.addConnection(
         const ConnectionSpec(
-          kind: ConnectionKind.mcpHttp,
+          kind: ConnectionKind.cli,
           label: 'Unavailable',
-          url: 'https://example.invalid/mcp',
+          executable: '/bin/sh',
         ),
       ),
-      throwsUnsupportedError,
+      throwsStateError,
     );
   });
 }

@@ -1,6 +1,6 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-11；依据 A0 后连接向导改动及 A1 实施结果。状态：A0、A1 已完成；A2–A8 待实施。A1 Android 宿主已在真机启动，HTTP MCP、Node/npm/CLI 和 Host 尚未验证。
+> 修订日期：2026-11-11；依据 A0 后连接向导改动及 A1、A2 实施结果。状态：A0、A1 已完成；A2 进行中；A3–A8 待实施。Android HTTP MCP 的本机回环闭环已在真机通过，外部网络与文档 URI 仍待验证；Node/npm/CLI 和 Host 尚未验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
 **统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
@@ -110,14 +110,18 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A2：Android HTTP MCP 与共享连接预检闭环
 
+**状态：**已启动；HTTP MCP 核心闭环、凭证存储与手机向导在真机通过，剩余验收见 [A2 进展记录](android-a2-progress.md)。
+
 **依赖：**A1。Android Runtime 实现 `RuntimePort` 和 `ConnectionSetupPort` 的 HTTP 子集，无需 Node 或 Mac。
 
-- [ ] A2.1 在应用私有存储保存连接、偏好与脱敏活动，配置文件保存凭证引用；使用 Android 安全存储处理 Bearer Token，验证写入失败、重启、撤销、删除和迁移。
-- [ ] A2.2 `connectionAdapters` 先只发布 `mcp-http`；复用共享向导的“填写 → 测试 → 检查结果 → 保存/丢弃”。测试使用临时 MCP 客户端做握手与发现，保存前不进连接列表；失败报告 `canSave=false`，及时关闭客户端。
+- [x] A2.1 在应用私有存储保存连接、偏好与脱敏活动，配置文件保存凭证引用；使用 Android 安全存储处理 Bearer Token，验证写入失败、重启、撤销、删除和迁移。
+- [x] A2.2 `connectionAdapters` 先只发布 `mcp-http`；复用共享向导的“填写 → 测试 → 检查结果 → 保存/丢弃”。测试使用临时 MCP 客户端做握手与发现，保存前不进连接列表；失败报告 `canSave=false`，及时关闭客户端。
 - [ ] A2.3 实现草稿过期、输入变更、弹层关闭、后台/进程重启后的清理。保存原子化；重复保存返回明确结果，未保存的凭证和连接不残留。为上述状态转换加契约测试。
 - [ ] A2.4 接 `mcp_dart` Streamable HTTP：能力发现、工具、资源、提示、超时、取消、网络切换与认证失败；搜索/运行/活动沿用公共 `RuntimePort` 结果模型。
 - [ ] A2.5 用 Android 系统文档选择器处理导入/导出和预览，区分内容读取、URI 授权与可持久化 URI；检查动作清单编辑器和其他 `file.path` 调用。Mac 路径不得在手机上打开。
 - [ ] A2.6 在真机用实际可达 HTTP MCP 服务测试“添加 → 预检 → 保存 → 搜索 → 调用 → 结果 → 重启恢复 → 删除”，并测断网、错误 Token、服务器无响应和取消。
+
+当前 A2.3 已覆盖草稿 TTL、输入变化/关闭、后台清理和重复保存的主要状态，仍需加强保存与丢弃并发验证。A2.4 已接通工具、资源、提示、调用超时与取消，网络切换尚未做真机验收。A2.5 的 `file.path` 入口目前仅属于未开放的 CLI/动作清单流程，HTTP 连接不需要本地文件路径；待 Android 出现实际文档导入/导出功能时再按系统 URI 实现。A2.6 已用真机进程内的 HTTP MCP 服务完成核心闭环及向导点击，仍需外部服务和网络异常场景。
 
 **交付物：**不依赖 Host 的 Android HTTP MCP 功能包和真机记录。**通过门槛：**完整闭环通过，预检失败不产生已保存连接/凭证；Android 仅展示 HTTP 适配器；macOS 连接向导回归通过。
 

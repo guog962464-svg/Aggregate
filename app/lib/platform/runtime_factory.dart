@@ -7,6 +7,6 @@ import 'macos/local_runtime_port.dart';
 
 Future<RuntimePort> createRuntimePort() {
   if (Platform.isMacOS) return LocalRuntimePort.createLive();
-  if (Platform.isAndroid) return Future.value(AndroidRuntimePort());
+  if (Platform.isAndroid) return AndroidRuntimePort.open();
   throw UnsupportedError('当前平台尚未支持');
 }
