@@ -3,10 +3,10 @@ set -euo pipefail
 
 probe_root="$(cd "$(dirname "$0")" && pwd)"
 bridge_root="$probe_root/../nodebridge"
-archive="${1:-${TMPDIR:-/tmp}/aggregate-nodejs-mobile-v18.20.4-android.zip}"
+archive="${1:-${TMPDIR:-/tmp}/aggregate-nodejs-mobile-android-24.20.0-0.zip}"
 ndk_root="${2:-${ANDROID_NDK_HOME:-}}"
-expected="bd7321eaa1a7602fbe0bb87302df2d79d87835cf4363fbdd17c350dbb485c2af"
-url="https://github.com/nodejs-mobile/nodejs-mobile/releases/download/v18.20.4/nodejs-mobile-v18.20.4-android.zip"
+expected="f5ffbaf4f2679fa9180b0758c637c2f8fc8828300f95129badf213a028fb37bb"
+url="https://github.com/digidem/nodejs-mobile/releases/download/v24.20.0-0/nodejs-mobile-android-24.20.0-0.zip"
 
 if [[ -z "$ndk_root" ]]; then
   sdk_root="$(sed -n 's/^sdk.dir=//p' "$probe_root/../local.properties")"
@@ -31,4 +31,6 @@ mkdir -p "$bridge_root/src/main/jniLibs/arm64-v8a" "$bridge_root/vendor"
 unzip -p "$archive" bin/arm64-v8a/libnode.so > "$bridge_root/src/main/jniLibs/arm64-v8a/libnode.so"
 cp "$cpp_runtime" "$bridge_root/src/main/jniLibs/arm64-v8a/libc++_shared.so"
 unzip -oq "$archive" 'include/node/*' -d "$bridge_root/vendor"
-echo "Prepared experimental arm64 Node 18 probe from verified archive."
+# AGP may reuse the JNI object after ignored vendor headers change.
+touch "$bridge_root/src/main/cpp/node_probe.cpp"
+echo "Prepared experimental arm64 Node 24.20.0 probe from verified archive."

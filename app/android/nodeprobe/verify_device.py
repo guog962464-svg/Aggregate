@@ -64,7 +64,7 @@ def main() -> None:
                 assert first[0] != second[0], "Service generation did not change"
                 assert adb("shell", "pidof", PACKAGE) == main_pid, "Main process died"
                 assert "SERVICE_DISCONNECTED" in log_path.read_text(), "Disconnect not reported"
-                expected = {"version": "v18.20.4", "file": "ok", "network": "network-ok"}
+                expected = {"version": "v24.20.0", "file": "ok", "network": "network-ok"}
                 assert first[1] == expected and second[1] == expected, (first, second)
                 adb("shell", "am", "force-stop", PACKAGE)
                 adb("shell", "am", "start", "-n", PACKAGE + "/.ProbeActivity")

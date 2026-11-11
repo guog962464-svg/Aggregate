@@ -12,7 +12,7 @@ from verify_device import APK, PACKAGE, adb, wait_for
 
 
 ANDROID = Path(__file__).resolve().parents[1]
-EXPECTED = {"version": "v18.20.4", "file": "ok", "network": "network-ok"}
+EXPECTED = {"version": "v24.20.0", "file": "ok", "network": "network-ok"}
 
 
 def build(version: int, destination: Path) -> None:

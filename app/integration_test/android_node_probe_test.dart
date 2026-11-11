@@ -31,7 +31,7 @@ void main() {
         expect(result!['kind'], 3);
         expect(result['exitCode'], 0);
         expect(jsonDecode(result['detail'] as String), {
-          'version': 'v18.20.4',
+          'version': 'v24.20.0',
           'file': 'ok',
           'network': 'network-ok',
         });
@@ -65,7 +65,7 @@ void main() {
         'packaged': true,
         'protocol': 1,
         'entrypoints': ['a3-fixed'],
-        'headerVersion': 'v18.20.4',
+        'headerVersion': 'v24.20.0',
         'npm': false,
         'cli': false,
         'profiles': false,

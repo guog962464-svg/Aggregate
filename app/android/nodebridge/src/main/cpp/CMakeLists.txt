@@ -6,6 +6,7 @@ set_target_properties(node PROPERTIES IMPORTED_LOCATION
     "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/${ANDROID_ABI}/libnode.so")
 
 add_library(aggregate_node_probe SHARED node_probe.cpp)
+target_compile_features(aggregate_node_probe PRIVATE cxx_std_20)
 target_include_directories(aggregate_node_probe PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/../../../vendor/include/node")
 target_link_libraries(aggregate_node_probe node log)
