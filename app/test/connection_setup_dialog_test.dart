@@ -7,17 +7,27 @@ final class _SetupFixture implements ConnectionSetupPort {
   _SetupFixture({
     this.withField = false,
     this.autoDetect = false,
+    this.httpOnly = false,
     this.executionTarget = ExecutionTarget.device,
   });
   final bool withField;
   final bool autoDetect;
+  final bool httpOnly;
   final ExecutionTarget executionTarget;
   int tests = 0;
   final discarded = <String>[];
   ConnectionSetupDraft? latest;
 
   @override
-  List<ConnectionAdapter> get connectionAdapters => autoDetect
+  List<ConnectionAdapter> get connectionAdapters => httpOnly
+      ? const [
+          ConnectionAdapter(
+            id: 'mcp-http',
+            label: 'HTTP MCP',
+            kind: ConnectionKind.mcpHttp,
+          ),
+        ]
+      : autoDetect
       ? const [
           ConnectionAdapter(
             id: 'detectable',
@@ -271,5 +281,44 @@ void main() {
     await tester.tap(find.text('打开'));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.folder_open_outlined), findsNothing);
+  });
+
+  testWidgets('Android HTTP actions remain above the keyboard inset', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.view.resetViewInsets();
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<Connection>(
+                context: context,
+                builder: (_) => ConnectionSetupDialog(
+                  setup: _SetupFixture(httpOnly: true),
+                  initialKind: ConnectionKind.mcpHttp,
+                  allowedKinds: const {ConnectionKind.mcpHttp},
+                ),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    final saveButton = find.widgetWithText(FilledButton, '保存连接');
+    expect(tester.getRect(saveButton).bottom, lessThanOrEqualTo(544));
+    expect(tester.takeException(), isNull);
   });
 }

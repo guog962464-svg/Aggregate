@@ -16,6 +16,8 @@ void main() {
     expect(runtime.features.connectionKinds, {ConnectionKind.mcpHttp});
     expect(runtime.connectionAdapters.map((item) => item.id), ['mcp-http']);
     expect(runtime.features.terminal, isFalse);
+    expect(runtime.features.localFilePreview, isFalse);
+    expect(runtime.features.localFileReveal, isFalse);
     expect(await runtime.listConnections(), isEmpty);
     expect(await runtime.searchCapabilities(const SearchQuery('')), isEmpty);
     expect(await runtime.listRecentRuns(), isEmpty);
@@ -28,6 +30,18 @@ void main() {
         ),
       ),
       throwsStateError,
+    );
+    await expectLater(
+      runtime.readActionManifestFile('/Users/guo/Desktop/actions.json'),
+      throwsUnsupportedError,
+    );
+    await expectLater(
+      runtime.previewLocalFile('/Users/guo/Desktop/output.txt'),
+      throwsUnsupportedError,
+    );
+    await expectLater(
+      runtime.revealLocalFile('/Users/guo/Desktop/output.txt'),
+      throwsUnsupportedError,
     );
   });
 }

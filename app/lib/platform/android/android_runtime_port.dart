@@ -17,17 +17,19 @@ import 'android_runtime_store.dart';
 final class AndroidRuntimePort
     with WidgetsBindingObserver
     implements RuntimePort, ConnectionSetupPort {
-  AndroidRuntimePort._(this._store, this._credentials);
+  AndroidRuntimePort._(this._store, this._credentials, this._draftTtl);
 
   static Future<AndroidRuntimePort> open({
     Directory? dataDirectory,
     AndroidCredentialStore? credentialStore,
+    Duration draftTtl = const Duration(minutes: 10),
   }) async {
     WidgetsFlutterBinding.ensureInitialized();
     final directory = dataDirectory ?? await getApplicationSupportDirectory();
     final runtime = AndroidRuntimePort._(
       AndroidRuntimeStore(directory),
       credentialStore ?? const SecureAndroidCredentialStore(),
+      draftTtl,
     );
     await runtime._load();
     WidgetsBinding.instance.addObserver(runtime);
@@ -36,6 +38,7 @@ final class AndroidRuntimePort
 
   final AndroidRuntimeStore _store;
   final AndroidCredentialStore _credentials;
+  final Duration _draftTtl;
   final _entries = <String, _AndroidEntry>{};
   final _drafts = <String, _AndroidDraft>{};
   final _savingDrafts = <String>{};
@@ -45,10 +48,24 @@ final class AndroidRuntimePort
   final _notices = <String>[];
   UserPreferences _preferences = const UserPreferences();
   int _serial = 0;
+  Future<void> _mutationTail = Future<void>.value();
+
+  Future<T> _mutate<T>(Future<T> Function() action) async {
+    final previous = _mutationTail;
+    final done = Completer<void>();
+    _mutationTail = done.future;
+    await previous;
+    try {
+      return await action();
+    } finally {
+      done.complete();
+    }
+  }
 
   Future<void> dispose() async {
     WidgetsBinding.instance.removeObserver(this);
     _clearDrafts();
+    await _mutationTail;
     for (final entry in _entries.values) {
       await entry.session?.close();
     }
@@ -67,6 +84,7 @@ final class AndroidRuntimePort
 
   void _clearDrafts() {
     for (final draft in _drafts.values) {
+      draft.discarded = true;
       draft.timer.cancel();
     }
     _drafts.clear();
@@ -197,37 +215,43 @@ final class AndroidRuntimePort
 
   @override
   Future<void> removeConnection(ConnectionId id) async {
-    final entry = _entries[id.value];
-    if (entry == null) return;
-    final token = entry.spec.hasCredential
-        ? await _credentials.read(id.value)
-        : null;
-    if (entry.spec.hasCredential) await _credentials.delete(id.value);
-    try {
-      await _persistConnections(excluding: id.value);
-    } catch (_) {
-      if (token != null) await _credentials.write(id.value, token);
-      rethrow;
-    }
-    _entries.remove(id.value);
-    await entry.session?.close();
+    await _mutate(() async {
+      final entry = _entries[id.value];
+      if (entry == null) return;
+      final token = entry.spec.hasCredential
+          ? await _credentials.read(id.value)
+          : null;
+      if (entry.spec.hasCredential) await _credentials.delete(id.value);
+      try {
+        await _persistConnections(excluding: id.value);
+      } catch (_) {
+        if (token != null) await _credentials.write(id.value, token);
+        rethrow;
+      }
+      _entries.remove(id.value);
+      final session = entry.session;
+      entry.session = null;
+      await session?.close();
+    });
   }
 
   @override
   Future<void> moveConnection(ConnectionId id, int offset) async {
-    final entries = _entries.values.toList();
-    final from = entries.indexWhere((entry) => entry.id == id.value);
-    if (from < 0) return;
-    final to = (from + offset).clamp(0, entries.length - 1);
-    if (from == to) return;
-    final item = entries.removeAt(from);
-    entries.insert(to, item);
-    await _store.saveConnections([
-      for (final entry in entries) (id: entry.id, spec: entry.spec),
-    ]);
-    _entries
-      ..clear()
-      ..addEntries(entries.map((entry) => MapEntry(entry.id, entry)));
+    await _mutate(() async {
+      final entries = _entries.values.toList();
+      final from = entries.indexWhere((entry) => entry.id == id.value);
+      if (from < 0) return;
+      final to = (from + offset).clamp(0, entries.length - 1);
+      if (from == to) return;
+      final item = entries.removeAt(from);
+      entries.insert(to, item);
+      await _store.saveConnections([
+        for (final entry in entries) (id: entry.id, spec: entry.spec),
+      ]);
+      _entries
+        ..clear()
+        ..addEntries(entries.map((entry) => MapEntry(entry.id, entry)));
+    });
   }
 
   @override
@@ -286,6 +310,7 @@ final class AndroidRuntimePort
     final now = DateTime.now();
     _drafts.removeWhere((_, draft) {
       if (!now.isAfter(draft.expiresAt)) return false;
+      draft.discarded = true;
       draft.timer.cancel();
       return true;
     });
@@ -311,11 +336,16 @@ final class AndroidRuntimePort
         draft.spec.authToken,
       );
       await session.close();
-      _drafts[id] = _AndroidDraft(
+      late final _AndroidDraft staged;
+      staged = _AndroidDraft(
         draft.spec,
-        DateTime.now().add(const Duration(minutes: 10)),
-        Timer(const Duration(minutes: 10), () => _drafts.remove(id)),
+        DateTime.now().add(_draftTtl),
+        Timer(_draftTtl, () {
+          staged.discarded = true;
+          _drafts.remove(id);
+        }),
       );
+      _drafts[id] = staged;
       return ConnectionSetupReport(
         draftId: id,
         checks: const [
@@ -343,34 +373,65 @@ final class AndroidRuntimePort
       throw StateError('连接正在保存，请等待当前操作完成');
     }
     try {
-      final id = _newId('android-http');
-      final spec = _storedSpec(draft.spec);
-      final token = draft.spec.authToken;
-      if (token != null && token.isNotEmpty) {
-        await _credentials.write(id, token);
-      }
-      try {
-        await _store.saveConnections([
-          for (final entry in _entries.values) (id: entry.id, spec: entry.spec),
-          (id: id, spec: spec),
-        ]);
-      } catch (_) {
-        if (token != null && token.isNotEmpty) await _credentials.delete(id);
-        rethrow;
-      }
-      _drafts.remove(draftId)?.timer.cancel();
-      final entry = _AndroidEntry(id, spec);
-      _entries[id] = entry;
-      await _refresh(entry);
-      return entry.toConnection();
+      return await _mutate(() async {
+        if (!_draftIsCurrent(draftId, draft)) {
+          throw StateError('连接测试已取消或过期，请重新测试');
+        }
+        final id = _newId('android-http');
+        final spec = _storedSpec(draft.spec);
+        final token = draft.spec.authToken;
+        var tokenWritten = false;
+        var configWritten = false;
+        _AndroidEntry? entry;
+        try {
+          if (token != null && token.isNotEmpty) {
+            await _credentials.write(id, token);
+            tokenWritten = true;
+          }
+          if (!_draftIsCurrent(draftId, draft)) {
+            throw StateError('连接测试已取消或过期，请重新测试');
+          }
+          await _store.saveConnections([
+            for (final item in _entries.values) (id: item.id, spec: item.spec),
+            (id: id, spec: spec),
+          ]);
+          configWritten = true;
+          entry = _AndroidEntry(id, spec);
+          _entries[id] = entry;
+          await _refresh(entry);
+          if (!_draftIsCurrent(draftId, draft)) {
+            throw StateError('连接测试已取消或过期，请重新测试');
+          }
+          _drafts.remove(draftId)?.timer.cancel();
+          return entry.toConnection();
+        } catch (_) {
+          if (configWritten) {
+            _entries.remove(id);
+            await _persistConnections();
+          }
+          final session = entry?.session;
+          if (entry != null) entry.session = null;
+          await session?.close();
+          if (tokenWritten) await _credentials.delete(id);
+          rethrow;
+        }
+      });
     } finally {
       _savingDrafts.remove(draftId);
     }
   }
 
+  bool _draftIsCurrent(String id, _AndroidDraft draft) =>
+      identical(_drafts[id], draft) &&
+      !draft.discarded &&
+      DateTime.now().isBefore(draft.expiresAt);
+
   @override
   Future<void> discardConnectionSetup(String draftId) async {
-    _drafts.remove(draftId)?.timer.cancel();
+    final draft = _drafts.remove(draftId);
+    if (draft == null) return;
+    draft.discarded = true;
+    draft.timer.cancel();
   }
 
   Future<void> _persistConnections({String? excluding}) =>
@@ -755,6 +816,7 @@ final class _AndroidDraft {
   final ConnectionSpec spec;
   final DateTime expiresAt;
   final Timer timer;
+  bool discarded = false;
 }
 
 final class _AndroidRun {

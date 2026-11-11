@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:aggregate/platform/android/android_credential_store.dart';
@@ -10,10 +11,18 @@ import 'package:mcp_dart/mcp_dart.dart' as mcp;
 final class _MemoryCredentials implements AndroidCredentialStore {
   final values = <String, String>{};
   bool rejectWrite = false;
+  Completer<void>? writeStarted;
+  Completer<void>? allowWrite;
 
   @override
   Future<void> write(String connectionId, String token) async {
     if (rejectWrite) throw StateError('secure storage unavailable');
+    final started = writeStarted;
+    final release = allowWrite;
+    if (started != null && release != null) {
+      started.complete();
+      await release.future;
+    }
     values[connectionId] = token;
   }
 
@@ -88,6 +97,132 @@ mcp.McpServer _server() {
 }
 
 void main() {
+  test(
+    'draft expires and is discarded on background or process restart',
+    () async {
+      final root = await Directory.systemTemp.createTemp('aggregate-a2-ttl-');
+      final credentials = _MemoryCredentials();
+      final server = mcp.StreamableMcpServer(
+        serverFactory: (_) => _server(),
+        host: '127.0.0.1',
+        port: 0,
+        path: '/mcp',
+        allowedHosts: const {'127.0.0.1'},
+      );
+      await server.start();
+      var runtime = await AndroidRuntimePort.open(
+        dataDirectory: root,
+        credentialStore: credentials,
+        draftTtl: const Duration(milliseconds: 50),
+      );
+      final spec = ConnectionSpec(
+        kind: ConnectionKind.mcpHttp,
+        label: '草稿生命周期',
+        url: 'http://127.0.0.1:${server.boundPort}/mcp',
+      );
+      Future<ConnectionSetupReport> probe() => runtime.testConnectionSetup(
+        ConnectionSetupDraft(adapterId: 'mcp-http', spec: spec),
+      );
+      try {
+        final expired = await probe();
+        expect(expired.canSave, isTrue);
+        await Future<void>.delayed(const Duration(milliseconds: 90));
+        await expectLater(
+          runtime.saveConnectionSetup(expired.draftId),
+          throwsStateError,
+        );
+
+        final backgrounded = await probe();
+        runtime.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await expectLater(
+          runtime.saveConnectionSetup(backgrounded.draftId),
+          throwsStateError,
+        );
+
+        final restarted = await probe();
+        await runtime.dispose();
+        runtime = await AndroidRuntimePort.open(
+          dataDirectory: root,
+          credentialStore: credentials,
+          draftTtl: const Duration(milliseconds: 50),
+        );
+        await expectLater(
+          runtime.saveConnectionSetup(restarted.draftId),
+          throwsStateError,
+        );
+        expect(await runtime.listConnections(), isEmpty);
+        expect(credentials.values, isEmpty);
+      } finally {
+        await runtime.dispose();
+        await server.stop();
+        await root.delete(recursive: true);
+      }
+    },
+  );
+
+  test(
+    'discard during save rolls back token and preserves concurrent save',
+    () async {
+      final root = await Directory.systemTemp.createTemp('aggregate-a2-race-');
+      final credentials = _MemoryCredentials();
+      final server = mcp.StreamableMcpServer(
+        serverFactory: (_) => _server(),
+        host: '127.0.0.1',
+        port: 0,
+        path: '/mcp',
+        allowedHosts: const {'127.0.0.1'},
+      );
+      await server.start();
+      final runtime = await AndroidRuntimePort.open(
+        dataDirectory: root,
+        credentialStore: credentials,
+      );
+      try {
+        final spec = ConnectionSpec(
+          kind: ConnectionKind.mcpHttp,
+          label: '并发测试',
+          url: 'http://127.0.0.1:${server.boundPort}/mcp',
+          authToken: 'secret',
+        );
+        Future<ConnectionSetupReport> probe() => runtime.testConnectionSetup(
+          ConnectionSetupDraft(adapterId: 'mcp-http', spec: spec),
+        );
+        final first = await probe();
+        final second = await probe();
+        expect(first.canSave, isTrue);
+        expect(second.canSave, isTrue);
+        credentials.writeStarted = Completer<void>();
+        credentials.allowWrite = Completer<void>();
+        final savingFirst = runtime.saveConnectionSetup(first.draftId);
+        final firstFailure = expectLater(savingFirst, throwsStateError);
+        await credentials.writeStarted!.future;
+        await expectLater(
+          runtime.saveConnectionSetup(first.draftId),
+          throwsStateError,
+        );
+        final savingSecond = runtime.saveConnectionSetup(second.draftId);
+        await runtime.discardConnectionSetup(first.draftId);
+        credentials.writeStarted = null;
+        final release = credentials.allowWrite!;
+        credentials.allowWrite = null;
+        release.complete();
+        await firstFailure;
+        final saved = await savingSecond;
+        expect(
+          (await runtime.listConnections()).single.id.value,
+          saved.id.value,
+        );
+        expect(credentials.values, {saved.id.value: 'secret'});
+        final json = await File('${root.path}/connections.json').readAsString();
+        expect(json, isNot(contains('secret')));
+      } finally {
+        await runtime.dispose();
+        await server.stop();
+        await root.delete(recursive: true);
+      }
+    },
+  );
+
   test('HTTP setup, call, restart and delete keep token out of JSON', () async {
     final root = await Directory.systemTemp.createTemp('aggregate-a2-http-');
     final credentials = _MemoryCredentials();
