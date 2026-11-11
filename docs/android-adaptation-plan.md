@@ -127,13 +127,13 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A3：`nodejs-mobile` 原生桥探针
 
-**状态：**进行中；候选库核验、4 KB 真机 Service/JNI 实验及可选 Flutter Debug 通道见 [A3 探针记录](android-a3-probe.md)。当前仅执行固定 JS 测试脚本，缺少完整就绪/实时事件/取消协议；预编译 Node 18 的 arm64 ELF 仅为 4 KB 对齐，不能直接作为 16 KB 设备发布构建。
+**状态：**进行中；候选库核验、4 KB 真机 Service/JNI 实验及可选 Flutter Debug 通道见 [A3 探针记录](android-a3-probe.md)。固定 JS 脚本的就绪、事件与进程级取消协议已在真机通过；受控包能力、完整生命周期与可发布原生库仍未验收。预编译 Node 18 的 arm64 ELF 仅为 4 KB 对齐，不能直接作为 16 KB 设备发布构建。
 
 **依赖：**A1，可与 A2、A5 并行。探针保持独立，不先绑定完整 UI。
 
 - [x] A3.1 核验 `libnode.so` 来源、许可证、校验值、头文件、Node 版本、ABI、NDK/AGP 要求；评估维护中的 Node 构建和 16 KB 页支持。预编译 Node 18 只作实验候选；维护版本构建与 16 KB 真机验证仍是 A3.6 门槛。
-- [ ] A3.2 在独立 `:node` Service 进程使用 Kotlin/Java + C++ JNI 薄层加载库、调用 `node::Start`，在工作线程运行；定义启动、就绪、请求、事件、失败和关闭协议。
-- [ ] A3.3 通过 Binder/平台通道把 `console`、文件读写、网络请求、异常与取消事件返回 Dart；若试回环服务，比较端口管理与鉴权后再选。
+- [x] A3.2 在独立 `:node` Service 进程使用 Kotlin/Java + C++ JNI 薄层加载库、调用 `node::Start`，在工作线程运行；为固定探针定义启动、就绪、请求、事件、失败和关闭协议。尚未支持任意包入口。
+- [x] A3.3 通过 Binder/平台通道把固定探针的 `console`、文件读写、网络请求、异常与取消事件返回 Dart。实验用应用私有 JSONL 文件在 Service 内转发事件，不对外开放回环通信端口；进程级取消仍报告结果未知。
 - [ ] A3.4 把运行端能力查询与受控包入口列成桥接协议；此时不把 `ConnectionSetupPort` 的 `cli`/`mcp-stdio` 适配器暴露给用户。验证 Node 进程重启后旧草稿、请求和 profile 引用不会误指向新实例。
 - [ ] A3.5 测冷启动耗时、常驻内存、进程崩溃与重连、重复进入/退出、App 退后台、系统杀进程和升级后的资源清理。
 - [ ] A3.6 检查 `.so` ELF 与 APK/AAB 的 16 KB 对齐，并在目标 4 KB 与 16 KB 真机加载；记录每个 ABI 的结果。

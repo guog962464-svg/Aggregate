@@ -31,6 +31,7 @@ internal class NodeProbeChannel(
     private var bound = false
     private var remote: Messenger? = null
     private var delayMs = 0
+    private var fail = false
 
     init {
         channel.setMethodCallHandler(this)
@@ -41,14 +42,14 @@ internal class NodeProbeChannel(
             result.error("unavailable", "Node probe is debug-only", null)
             return
         }
-        if (call.method == "crash") {
+        if (call.method == "crash" || call.method == "cancel") {
             val service = remote
             if (pending == null || service == null) {
                 result.error("unavailable", "No active Node probe", null)
                 return
             }
             try {
-                service.send(Message.obtain(null, 6))
+                service.send(Message.obtain(null, if (call.method == "cancel") 8 else 6, requestId, 0))
                 result.success(null)
             } catch (failure: RemoteException) {
                 result.error("transport", failure.message, null)
@@ -69,6 +70,7 @@ internal class NodeProbeChannel(
             return
         }
         delayMs = requestedDelay
+        fail = call.argument<Boolean>("fail") ?: false
         pending = result
         terminal = null
         generation = null
@@ -98,6 +100,7 @@ internal class NodeProbeChannel(
         request.data = Bundle().apply {
             putBoolean("autoClose", true)
             putInt("delayMs", delayMs)
+            putBoolean("fail", fail)
         }
         try {
             remote?.send(request)
@@ -151,6 +154,7 @@ internal class NodeProbeChannel(
         generation = null
         remote = null
         delayMs = 0
+        fail = false
         if (bound) {
             context.unbindService(this)
             bound = false

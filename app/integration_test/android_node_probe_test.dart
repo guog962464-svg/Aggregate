@@ -8,6 +8,7 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   const enabled = bool.fromEnvironment('A3_PROBE_ENABLED');
+  const backgroundTest = bool.fromEnvironment('A3_BACKGROUND_TEST');
   const channel = MethodChannel('aggregate/node_probe');
 
   testWidgets('Flutter receives isolated Node results across process generations', (
@@ -43,6 +44,72 @@ void main() {
         events.where((event) => event['kind'] == 2).length,
         greaterThanOrEqualTo(2),
       );
+      final types = events
+          .where((event) => event['kind'] == 7)
+          .map((event) => jsonDecode(event['detail'] as String)['type']);
+      expect(types, containsAll(['ready', 'console', 'network', 'fileWrite', 'fileRead']));
+    });
+  }, skip: !enabled);
+
+  testWidgets('Node exception is reported as an event and a failure', (
+    tester,
+  ) async {
+    final types = <String>[];
+    channel.setMethodCallHandler((call) async {
+      if (call.method != 'event') return;
+      final event = Map<Object?, Object?>.from(call.arguments as Map);
+      if (event['kind'] == 7) {
+        types.add(jsonDecode(event['detail'] as String)['type'] as String);
+      }
+    });
+    addTearDown(() => channel.setMethodCallHandler(null));
+    await tester.runAsync(() async {
+      await expectLater(
+        channel.invokeMethod<Map<Object?, Object?>>('run', {'fail': true}),
+        throwsA(
+          isA<PlatformException>().having(
+            (error) => error.code,
+            'code',
+            'nodeFailure',
+          ),
+        ),
+      );
+      expect(types, containsAll(['ready', 'exception']));
+    });
+  }, skip: !enabled);
+
+  testWidgets('cancel emits an event and reports unknown outcome', (
+    tester,
+  ) async {
+    final ready = Completer<void>();
+    final types = <String>[];
+    channel.setMethodCallHandler((call) async {
+      if (call.method != 'event') return;
+      final event = Map<Object?, Object?>.from(call.arguments as Map);
+      if (event['kind'] != 7) return;
+      final type = jsonDecode(event['detail'] as String)['type'] as String;
+      types.add(type);
+      if (type == 'ready' && !ready.isCompleted) ready.complete();
+    });
+    addTearDown(() => channel.setMethodCallHandler(null));
+    await tester.runAsync(() async {
+      final pending = channel.invokeMethod<Map<Object?, Object?>>('run', {
+        'delayMs': 5000,
+      });
+      await ready.future.timeout(const Duration(seconds: 5));
+      await channel.invokeMethod<void>('cancel');
+      await expectLater(
+        pending,
+        throwsA(
+          isA<PlatformException>().having(
+            (error) => error.code,
+            'code',
+            'outcomeUnknown',
+          ),
+        ),
+      );
+      expect(types, contains('cancelRequested'));
+      expect((await channel.invokeMethod<Map<Object?, Object?>>('run'))?['kind'], 3);
     });
   }, skip: !enabled);
 
@@ -101,4 +168,31 @@ void main() {
       );
     });
   }, skip: enabled);
+
+  testWidgets('Node request survives a temporary app background', (
+    tester,
+  ) async {
+    final ready = Completer<void>();
+    channel.setMethodCallHandler((call) async {
+      if (call.method != 'event') return;
+      final event = Map<Object?, Object?>.from(call.arguments as Map);
+      if (event['kind'] != 7) return;
+      if (jsonDecode(event['detail'] as String)['type'] == 'ready' &&
+          !ready.isCompleted) {
+        ready.complete();
+      }
+    });
+    addTearDown(() => channel.setMethodCallHandler(null));
+    await tester.runAsync(() async {
+      final pending = channel.invokeMethod<Map<Object?, Object?>>('run', {
+        'delayMs': 5000,
+      });
+      await ready.future.timeout(const Duration(seconds: 5));
+      // The host test runner sends HOME and then returns this Activity.
+      // ignore: avoid_print
+      print('A3_BACKGROUND_READY');
+      final result = await pending.timeout(const Duration(seconds: 12));
+      expect(result?['kind'], 3);
+    });
+  }, skip: !enabled || !backgroundTest);
 }
