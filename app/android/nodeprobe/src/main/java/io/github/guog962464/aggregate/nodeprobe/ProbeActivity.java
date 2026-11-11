@@ -26,6 +26,11 @@ public final class ProbeActivity extends Activity {
             Message request = Message.obtain(null, NodeProbeService.RUN);
             request.arg1 = 1;
             request.replyTo = incoming;
+            if ("a4-json5".equals(getIntent().getStringExtra("probe"))) {
+                Bundle arguments = new Bundle();
+                arguments.putString("entrypoint", "a4-json5");
+                request.setData(arguments);
+            }
             try {
                 new Messenger(binder).send(request);
             } catch (RemoteException failure) {

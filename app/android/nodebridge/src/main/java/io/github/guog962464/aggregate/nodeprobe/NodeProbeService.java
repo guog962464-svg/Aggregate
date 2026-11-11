@@ -83,7 +83,7 @@ public final class NodeProbeService extends Service {
         final String profileRef = request.getData().getString("profileRef");
         final String draftId = request.getData().getString("draftId");
         final String expectedGeneration = request.getData().getString("expectedGeneration");
-        if (!"a3-fixed".equals(entrypoint)) {
+        if (!"a3-fixed".equals(entrypoint) && !"a4-json5".equals(entrypoint)) {
             reject(reply, requestId, autoClose, "invalidEntrypoint", "entrypoint is not allowed");
             return true;
         }
@@ -110,17 +110,22 @@ public final class NodeProbeService extends Service {
         activeReply = reply;
         activeRequestId = requestId;
         send(reply, STARTED, "worker started", 0, 0, requestId);
-        new Thread(() -> run(reply, requestId, autoClose, delayMs, fail), "a3-node-worker").start();
+        new Thread(() -> run(reply, requestId, autoClose, delayMs, fail, entrypoint), "a3-node-worker").start();
         return true;
     }
 
-    private void run(Messenger reply, int requestId, boolean autoClose, int delayMs, boolean fail) {
+    private void run(Messenger reply, int requestId, boolean autoClose, int delayMs, boolean fail,
+                     String entrypoint) {
         long startedAt = System.nanoTime();
         try {
-            File entry = new File(getFilesDir(), "a3-probe.js");
+            boolean packageProbe = "a4-json5".equals(entrypoint);
+            File entry = new File(getFilesDir(), packageProbe ? "a4-probe.js" : "a3-probe.js");
             File output = new File(getFilesDir(), "a3-result.json");
             File events = new File(getFilesDir(), "a3-events.jsonl");
-            try (InputStream source = getAssets().open("probe.js");
+            if (packageProbe) {
+                copyAssetTree("a4-json5", new File(getFilesDir(), "node_modules/json5"));
+            }
+            try (InputStream source = getAssets().open(packageProbe ? "a4-probe.js" : "probe.js");
                  FileOutputStream destination = new FileOutputStream(entry, false)) {
                 byte[] buffer = new byte[8192];
                 int count;
@@ -153,6 +158,29 @@ public final class NodeProbeService extends Service {
             send(reply, ERROR, failure.toString(), -1, (System.nanoTime() - startedAt) / 1_000_000, requestId);
         } finally {
             closeIfRequested(autoClose, reply, requestId);
+        }
+    }
+
+    private void copyAssetTree(String assetPath, File destination) throws Exception {
+        String[] children = getAssets().list(assetPath);
+        if (children == null || children.length == 0) {
+            File parent = destination.getParentFile();
+            if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
+                throw new IllegalStateException("Cannot create package directory");
+            }
+            try (InputStream source = getAssets().open(assetPath);
+                 FileOutputStream target = new FileOutputStream(destination, false)) {
+                byte[] buffer = new byte[8192];
+                int count;
+                while ((count = source.read(buffer)) != -1) target.write(buffer, 0, count);
+            }
+            return;
+        }
+        if (!destination.isDirectory() && !destination.mkdirs()) {
+            throw new IllegalStateException("Cannot create package directory");
+        }
+        for (String child : children) {
+            copyAssetTree(assetPath + "/" + child, new File(destination, child));
         }
     }
 

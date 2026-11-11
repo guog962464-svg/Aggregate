@@ -1,6 +1,6 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-11；依据 A0 后连接向导改动及 A1、A2 实施结果。状态：A0–A2 已完成；A3 已启动；A4–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；Node/npm/CLI 和 Host 尚未验证。
+> 修订日期：2026-11-11。状态：A0–A2 已完成；A3 进行中；A4 已启动 Debug 包兼容性实验；A5–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；一个随包纯 JS 样本已通过，设备端 npm/通用 CLI 和 Host 尚未验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
 **统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
@@ -142,9 +142,9 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
-**依赖：**A3 通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。
+**依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
 
-- [ ] A4.1 在开发机锁定安装一个纯 JS 包，随 App 打包，验证 `require`/`import`、动态加载、资源文件、配置路径与升级；比较原文件树与 esbuild bundle。
+- [ ] A4.1 在开发机锁定安装一个纯 JS 包，随 App 打包，验证 `require`/`import`、动态加载、资源文件、配置路径与升级；比较原文件树与 esbuild bundle。JSON5 2.2.3 已完成真机源码、动态加载、包自带分发文件、ESM、资源和私有配置路径及整 App 重启；esbuild 对照和版本升级仍待做。
 - [ ] A4.2 验证其 `package.json` 的 `bin` 脚本能否**以 Node 入口函数方式**执行；记录参数、退出码、stdout/stderr、取消和并发语义，不依赖 shebang 自动执行。
 - [ ] A4.3 若纯 JS CLI 样本通过，为“内置包 + 已知入口”定义与绝对可执行文件路径不同的标识和适配器字段；配置与缓存留在 Android 应用私有目录，`profileId` 只引用 Android 自有配置。对测试、保存、丢弃、卸载逐项核对状态清理。
 - [ ] A4.4 单独实验“手机上 npm 安装”：包下载、完整性、依赖解析、安装脚本、缓存、断网恢复、升级/卸载；按 Google Play 分发政策和安全模型判断是否可以进入产品。
