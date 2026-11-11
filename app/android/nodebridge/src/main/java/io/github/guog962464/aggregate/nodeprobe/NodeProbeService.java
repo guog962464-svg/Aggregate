@@ -24,9 +24,11 @@ public final class NodeProbeService extends Service {
     public static final int STARTED = 2;
     public static final int RESULT = 3;
     public static final int ERROR = 4;
+    public static final int CLOSING = 5;
+    public static final int CRASH = 6;
     private static final String TAG = "A3NodeProbe";
 
-    private static native int nativeStart(String entry, String output);
+    private static native int nativeStart(String entry, String output, int delayMs);
 
     private final String generation = UUID.randomUUID().toString();
     private final AtomicBoolean started = new AtomicBoolean();
@@ -38,18 +40,33 @@ public final class NodeProbeService extends Service {
     }
 
     private boolean handle(Message request) {
-        if (request.what != RUN || request.replyTo == null) return false;
-        final Messenger reply = request.replyTo;
-        if (!started.compareAndSet(false, true)) {
-            send(reply, ERROR, "Node instance already started", -1, 0);
+        if (request.what == CRASH) {
+            android.os.Process.killProcess(android.os.Process.myPid());
             return true;
         }
-        send(reply, STARTED, "worker started", 0, 0);
-        new Thread(() -> run(reply), "a3-node-worker").start();
+        if (request.what != RUN || request.replyTo == null) return false;
+        final Messenger reply = request.replyTo;
+        final int requestId = request.arg1;
+        final boolean autoClose = request.getData().getBoolean("autoClose", false);
+        final int delayMs = request.getData().getInt("delayMs", 0);
+        if (delayMs < 0 || delayMs > 5000) {
+            send(reply, ERROR, "invalid delay", -1, 0, requestId);
+            return true;
+        }
+        if (requestId <= 0) {
+            send(reply, ERROR, "request ID required", -1, 0, requestId);
+            return true;
+        }
+        if (!started.compareAndSet(false, true)) {
+            send(reply, ERROR, "Node instance already started", -1, 0, requestId);
+            return true;
+        }
+        send(reply, STARTED, "worker started", 0, 0, requestId);
+        new Thread(() -> run(reply, requestId, autoClose, delayMs), "a3-node-worker").start();
         return true;
     }
 
-    private void run(Messenger reply) {
+    private void run(Messenger reply, int requestId, boolean autoClose, int delayMs) {
         long startedAt = System.nanoTime();
         try {
             File entry = new File(getFilesDir(), "a3-probe.js");
@@ -62,10 +79,10 @@ public final class NodeProbeService extends Service {
             }
             if (output.exists() && !output.delete()) throw new IllegalStateException("old output not removed");
             System.loadLibrary("aggregate_node_probe");
-            int exitCode = nativeStart(entry.getAbsolutePath(), output.getAbsolutePath());
+            int exitCode = nativeStart(entry.getAbsolutePath(), output.getAbsolutePath(), delayMs);
             long elapsed = (System.nanoTime() - startedAt) / 1_000_000;
             if (exitCode != 0 || !output.isFile()) {
-                send(reply, ERROR, "Node exit=" + exitCode + ", output missing=" + !output.isFile(), exitCode, elapsed);
+                send(reply, ERROR, "Node exit=" + exitCode + ", output missing=" + !output.isFile(), exitCode, elapsed, requestId);
             } else {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 try (InputStream source = new FileInputStream(output)) {
@@ -74,16 +91,23 @@ public final class NodeProbeService extends Service {
                     while ((count = source.read(buffer)) != -1) bytes.write(buffer, 0, count);
                 }
                 String payload = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
-                send(reply, RESULT, payload, exitCode, elapsed);
+                send(reply, RESULT, payload, exitCode, elapsed, requestId);
             }
         } catch (Throwable failure) {
             Log.e(TAG, "Node probe failed", failure);
-            send(reply, ERROR, failure.toString(), -1, (System.nanoTime() - startedAt) / 1_000_000);
+            send(reply, ERROR, failure.toString(), -1, (System.nanoTime() - startedAt) / 1_000_000, requestId);
+        } finally {
+            if (autoClose) {
+                send(reply, CLOSING, "Node process closing", 0, 0, requestId);
+                new Handler(Looper.getMainLooper()).postDelayed(
+                        () -> android.os.Process.killProcess(android.os.Process.myPid()), 200);
+            }
         }
     }
 
-    private void send(Messenger reply, int kind, String detail, int exitCode, long elapsed) {
+    private void send(Messenger reply, int kind, String detail, int exitCode, long elapsed, int requestId) {
         Message event = Message.obtain(null, kind);
+        event.arg1 = requestId;
         Bundle data = new Bundle();
         data.putString("generation", generation);
         data.putString("detail", detail);

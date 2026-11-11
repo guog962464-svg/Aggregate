@@ -44,3 +44,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    if (providers.gradleProperty("a3Probe").orNull == "true") {
+        add("debugImplementation", project(":nodebridge"))
+    }
+}

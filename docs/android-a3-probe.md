@@ -1,10 +1,10 @@
 # Android A3：Node 原生桥探针记录
 
-> 2026-11-11。A3 已启动；A3.1 候选库盘点完成，独立 Android 实验模块已在 4 KB 真机运行最小 JNI 探针。探针与 Aggregate 用户可见 CLI 能力保持隔离。
+> 2026-11-11。A3 进行中；A3.1 候选库盘点完成，4 KB 真机已验证独立 Service/JNI 与可选的 Flutter 测试通道。探针与用户可见 CLI 能力保持隔离。
 
 ## 当前基线
 
-- 工程：Flutter Android 宿主，AGP 9.1.0、Kotlin 2.4.0、`minSdk 24`、`targetSdk 36`、NDK 28.2.13676358。当前 `:node` Service 与 JNI 桥位于独立 `:nodeprobe` 实验 App，不在 Flutter 产品 App 内。
+- 工程：Flutter Android 宿主，AGP 9.1.0、Kotlin 2.4.0、`minSdk 24`、`targetSdk 36`、NDK 28.2.13676358。`:nodebridge` Android 库由独立 `:nodeprobe` App 验证，也可通过显式 Gradle 属性加入 Flutter Debug APK；普通及 Release 包不依赖它。
 - 设备：LGE AN10，Android 15/API 35，arm64，4 KB 页。当前没有 16 KB 页真机。
 - A1 已完成，故 A3 的工程前置满足；A3 是独立实验，A2 的 HTTP MCP 能力不依赖它。
 
@@ -24,16 +24,24 @@ Android [16 KB 页指南](https://developer.android.com/guide/practices/page-siz
 
 ## 最小真机探针
 
-- `app/android/nodeprobe` 是单独的 Debug 实验 App，不接入 Flutter 产品 UI 或 `AndroidRuntimePort`。`prepare.sh` 下载或接收上述 ZIP，校验 SHA-256，只将 arm64 `libnode.so`、头文件及项目锁定 NDK 的 `libc++_shared.so` 放入本机忽略目录；二进制和头文件不入 Git。首次加载失败准确报缺少 `libc++_shared.so`，补齐后成功。
-- 实验 App 的 `:node` Service 在工作线程通过 C++ JNI 调 `node::Start`，固定 JS 入口复制到应用私有目录；JS 输出 Node 版本、写文件、完成 `127.0.0.1` HTTP 请求。Service 以 Android `Messenger` 返回 `STARTED`、`RESULT` 或 `ERROR`，每次 Service 进程有新的 generation。当前协议是一次性请求，`STARTED` 只代表工作线程开始，不代表 Node 已就绪；尚无取消、实时 console 事件或 Dart 平台通道。
+- `app/android/nodeprobe` 是单独的 Debug 验证 App；共用的原生实现放在 `app/android/nodebridge`。`prepare.sh` 下载或接收上述 ZIP，校验 SHA-256，只将 arm64 `libnode.so`、头文件及项目锁定 NDK 的 `libc++_shared.so` 放入本机忽略目录；二进制和头文件不入 Git。首次加载失败准确报缺少 `libc++_shared.so`，补齐后成功。
+- `:node` Service 在工作线程通过 C++ JNI 调 `node::Start`，固定 JS 入口复制到应用私有目录；JS 输出 Node 版本、写文件、完成 `127.0.0.1` HTTP 请求。Service 以 Android `Messenger` 返回带请求 ID 和进程 generation 的 `STARTED`、`RESULT`、`ERROR`、`CLOSING`。当前协议是一次性固定入口，`STARTED` 只代表工作线程开始，不代表 Node 已就绪；尚无实时 console、任意包入口或取消能力。
 - LGE AN10 真机返回 `v18.20.4`、`file=ok`、`network=network-ok`、退出码 0。一次启动到结果的观测为 326 ms；后续两次为 196/178 ms，均包括复制入口、加载库和 JS 调用，不是整 App 冷启动计时。空闲 Service 一次 `dumpsys meminfo` 为 PSS 53,877 KB、RSS 108,872 KB；Debug 探针 APK 约 96 MB。
 - `verify_device.py` 安装 Debug APK，运行一次，单独杀 `:node` 进程并等待新代际再次成功；主进程 PID 保持不变，测试结束卸载实验 App。真机先后两次脚本通过；其中一次初版脚本在后台等待 15 秒没有收到第二个结果，后续改为必要时将 Activity 带回前台再等待。该现象需要 A3.5 继续测后台恢复，不能称为稳定自动重连。
 - `flutter build apk --debug --no-pub` 通过，Aggregate 主 APK 不含 Node 探针库。NDK r28c 构建的 JNI 桥和 `libc++_shared.so` ELF `LOAD` 段均为 `0x4000` 对齐，`zipalign -c -P 16 4` 对实验 APK 通过；但旧 `libnode.so` 仍为 `0x1000`，整包不满足 16 KB 页原生加载门槛。
 
 复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。脚本使用当前连接的真机；没有启动模拟器。
 
+## Flutter Debug 测试通道
+
+- `app/android/app` 仅在 Gradle 属性 `a3Probe=true` 时为 Debug 构建依赖 `:nodebridge`；Release 构建不加入该库。`MainActivity` 的 `aggregate/node_probe` 平台通道只在可调试 App 中提供固定 `run`/`crash` 测试命令，不接用户界面或 `AndroidRuntimePort`。未打入库时 `run` 明确返回 `unavailable`。
+- `NodeProbeChannel` 经 Binder 发送请求，核对请求 ID 与 generation；`STARTED`、结果和关闭事件返回 Dart。固定测试脚本支持最多 5 秒延迟以验证运行中崩溃；Service 在完成后关闭自身进程，下一次请求启动新代际。进程在返回结果前退出时，Dart 收到 `outcomeUnknown`，不会自动重放旧请求。
+- LGE AN10 真机 `integration_test/android_node_probe_test.dart` 的探针构建通过两次连续调用、新代际、运行中杀掉 `:node` 后结果未知及再次成功；普通构建通过“探针不可用”。实验 APK 包含 `libnode.so`，普通 Flutter Debug APK 不含 `libnode.so` 或 JNI 桥；测试后重新安装普通 Aggregate 包。`flutter analyze --no-pub` 无问题，独立 `:nodeprobe` 真机回归通过。
+
+真机探针构建命令：在 `app/` 运行 `ORG_GRADLE_PROJECT_a3Probe=true flutter test --no-pub integration_test/android_node_probe_test.dart -d <设备序列号> --dart-define=A3_PROBE_ENABLED=true`。普通构建用相同测试路径而不设置 Gradle 属性与 Dart define。该过程只验证固定 JS 样本，不证明 npm 安装、任意 CLI 或可发布的 Node 运行时。
+
 ## 后续实验门槛
 
-1. 将 Service/JNI 桥作为可选实验能力接入 Flutter 宿主，设计带请求 ID、进程 generation、就绪/事件/关闭的 Binder 与 Dart 协议；继续隐藏 `cli`、`mcp-stdio` 适配器。
-2. 验证 console、文件、网络、异常与取消事件，处理 Node 单实例、请求超时、旧请求失效、重复进入/退出和后台重连；测系统杀进程与升级后的资源清理。
+1. 补 Node 实际就绪、console、文件、网络和异常的实时事件，以及主动取消语义；目前只有完成后的文件/网络结果和测试用崩溃注入。继续隐藏 `cli`、`mcp-stdio` 适配器。
+2. 明确运行端能力查询与受控包入口，验证 Node 单实例、请求超时、旧草稿/profile 引用、App 退后台、系统杀进程及升级后的资源清理。后台自动重连稳定性仍未知。
 3. 寻找或构建维护中的 Node 移动库，逐 ABI 检查 ELF、APK/AAB 对齐，并取得 16 KB 真机验证。未通过这些门槛前不进入 A4 产品化，也不声称设备端 npm/CLI 可用。

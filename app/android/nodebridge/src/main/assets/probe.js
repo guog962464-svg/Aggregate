@@ -2,10 +2,11 @@ const fs = require('fs');
 const http = require('http');
 
 const output = process.argv[2];
+const delayMs = Number(process.argv[3] || 0);
 const server = http.createServer((request, response) => {
   response.end('network-ok');
 });
-server.listen(0, '127.0.0.1', () => {
+setTimeout(() => server.listen(0, '127.0.0.1', () => {
   const port = server.address().port;
   http.get(`http://127.0.0.1:${port}/`, (response) => {
     let body = '';
@@ -24,4 +25,4 @@ server.listen(0, '127.0.0.1', () => {
     process.exitCode = 1;
     server.close();
   });
-});
+}), delayMs);

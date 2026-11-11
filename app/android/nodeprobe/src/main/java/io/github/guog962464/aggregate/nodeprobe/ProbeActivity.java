@@ -24,6 +24,7 @@ public final class ProbeActivity extends Activity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
             Message request = Message.obtain(null, NodeProbeService.RUN);
+            request.arg1 = 1;
             request.replyTo = incoming;
             try {
                 new Messenger(binder).send(request);
@@ -54,7 +55,7 @@ public final class ProbeActivity extends Activity {
     private boolean handle(Message event) {
         Bundle data = event.getData();
         String detail = data.getString("detail", "");
-        String line = "kind=" + event.what + " generation=" + data.getString("generation")
+        String line = "kind=" + event.what + " requestId=" + event.arg1 + " generation=" + data.getString("generation")
                 + " exit=" + data.getInt("exitCode") + " elapsedMs=" + data.getLong("elapsedMs")
                 + " detail=" + detail;
         status.setText(line);

@@ -11,7 +11,7 @@ from pathlib import Path
 
 PACKAGE = "io.github.guog962464.aggregate.nodeprobe"
 APK = Path(__file__).resolve().parents[2] / "build/nodeprobe/outputs/apk/debug/nodeprobe-debug.apk"
-RESULT = re.compile(r"kind=3 generation=([\w-]+).*?exit=0.*?detail=(\{[^\n]+\})")
+RESULT = re.compile(r"kind=3 requestId=\d+ generation=([\w-]+).*?exit=0.*?detail=(\{[^\n]+\})")
 
 
 def adb(*args: str, check: bool = True) -> str:

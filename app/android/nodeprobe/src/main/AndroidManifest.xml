@@ -7,6 +7,5 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".NodeProbeService" android:process=":node" android:exported="false" />
     </application>
 </manifest>
