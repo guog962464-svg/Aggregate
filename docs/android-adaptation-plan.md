@@ -1,12 +1,14 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-10；依据提交 `bf8db69`（A0 后新增连接向导、草稿预检、独立账号配置和 CLI 自动检测）。状态：A0 已完成；A1–A8 尚未实施，Android 仍无宿主工程或真机运行结果。
+> 修订日期：2026-11-11；依据 A0 后连接向导改动及 A1 实施结果。状态：A0、A1 已完成；A2–A8 待实施。A1 Android 宿主已在真机启动，HTTP MCP、Node/npm/CLI 和 Host 尚未验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
-**统一开发原则：仍然只有一套 Flutter/Dart App。** macOS 和 Android 共同使用 `app/lib/` 中的 `AggregateApp`、路由、页面、Widget、主题、领域模型及 `RuntimePort` 契约；按窗口宽度和输入方式调整同一套 Widget 的布局。`app/android/` 只承载 Flutter 的 Android 宿主、构建配置和确有必要的系统桥接代码，不另写一套 Kotlin/Compose 页面。Android 的 Kotlin/C++/JNI 只负责 Node 共享库、Service、凭证/文件等平台能力，结果经 Dart 适配器返回现有 Flutter 界面。macOS 继续使用现有原生适配层。
+**统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
 
 ~~~text
-同一套 Flutter 页面 / 主题 / 交互
+一个 Flutter 工程 + 共享领域/状态/设计元素
+       ├─ macOS 场景界面（Flutter）
+       └─ Android 场景界面（Flutter）
              ↓ RuntimePort（Dart 契约）
    macOS 适配器          Android 适配器（Dart）
    现有 MacRuntime       ├─ HTTP MCP（Dart）
@@ -26,7 +28,7 @@
 
 ## 2. `nodejs-mobile` + JNI/FFI 的判断
 
-**结论：可作为“内嵌 JS 运行器”的验证路线，不能直接作为“完整 npm/CLI 环境”的交付方案。** `nodejs-mobile` 官方提供 Android `libnode.so`，原生示例通过 JNI 调用 `node::Start`。Android 原生层仅承担运行时桥接：用 Kotlin/Java 负责生命周期和平台通道、C++ JNI 薄层调用 Node；Dart FFI 只有在导出稳定的 C ABI 后才接入，不直接绑定 C++ `node::Start`。优先在独立的 Android `:node` Service 进程中运行，以隔离 Node 崩溃和单实例限制，再通过 Binder/平台通道向 Dart `AndroidRuntimePort` 传递请求与事件，最终仍由共用 Flutter 页面呈现；是否需要本机回环服务留给探针比较。
+**结论：可作为“内嵌 JS 运行器”的验证路线，不能直接作为“完整 npm/CLI 环境”的交付方案。** `nodejs-mobile` 官方提供 Android `libnode.so`，原生示例通过 JNI 调用 `node::Start`。Android 原生层仅承担运行时桥接：用 Kotlin/Java 负责生命周期和平台通道、C++ JNI 薄层调用 Node；Dart FFI 只有在导出稳定的 C ABI 后才接入，不直接绑定 C++ `node::Start`。优先在独立的 Android `:node` Service 进程中运行，以隔离 Node 崩溃和单实例限制，再通过 Binder/平台通道向 Dart `AndroidRuntimePort` 传递请求与事件，最终由 Flutter 手机界面呈现；是否需要本机回环服务留给探针比较。
 
 对原设想的修正：
 
@@ -55,7 +57,7 @@
 | 已落地的 macOS / 共享能力 | Android 计划调整 |
 | --- | --- |
 | `ConnectionSetupPort` 提供适配器目录、程序检测、草稿测试、保存和丢弃；`ConnectionsPage` 已优先打开共享 `ConnectionSetupDialog`。 | A1 不再从零设计连接向导。先补齐执行位置、平台能力和文件来源语义；A2 Android HTTP 实现同一测试/保存流程，A5 Host 透传该流程。 |
-| `ConnectionSetupDialog` 目前是宽 520 的 `AlertDialog`；非 HTTP 类型展示“程序绝对路径”，文件按钮取 `file.path`。 | A1/A7 把同一 Widget 做手机全屏/窄屏布局；仅在真正拥有文件的运行端显示程序路径，Android 文档 URI 与 Mac 文件路径不能互用。 |
+| `ConnectionSetupDialog` 原为宽 520 的 `AlertDialog`；非 HTTP 类型展示“程序绝对路径”，文件按钮取 `file.path`。 | A1 已提供可浏览的手机全屏表单；A7 可按手机连接场景重组向导页面和步骤。仅在真正拥有文件的运行端显示程序路径，Android 文档 URI 与 Mac 文件路径不能互用。 |
 | `ConnectionSetupDraft.values` 可能含私钥，约定只在内存中；测试成功后 UI 清空密文字段。 | A1/A2/A5 明确测试与保存时的秘密归属、传输、草稿 TTL 和取消清理；Android 生命周期恢复不得序列化敏感草稿。 |
 | macOS 网易云在独立 `profileId` 下配置 CLI，测试后登录与搜索权限可处于 `actionRequired`；自动检测只查 Mac 上的官方 `ncm-cli`。 | A4 不继承 macOS 可运行结论；A5 Host 模式把检测和配置留在 Mac，A6 按连接显示执行设备、配置所在设备和未完成检查。 |
 
@@ -64,14 +66,14 @@
 ## 4. 阶段关系与交付边界
 
 ~~~text
-A0 范围与基线 → A1 Flutter Android 宿主与共享导航
+A0 范围与基线 → A1 Flutter Android 宿主与可浏览的手机界面壳
                     ├→ A2 Android HTTP MCP + 连接预检 ─┐
                     ├→ A3 Node 原生桥 → A4 npm/CLI 门槛 ─┤（A4 通过的本地能力才接入）
                     └→ A5 macOS Host + 向导协议 ────────┤
                                                        ↓
                                           A6 Android 执行路由与终端/账号
                                                        ↓
-                                          A7 共享 UI/网易云整合 → A8 发布验收
+                                          A7 手机场景界面/网易云整合 → A8 发布验收
 ~~~
 
 A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可以在 A3 进行时开始。A4 未通过时，A6 仍可交付 Host 功能，但不算 T3 已完成。若产品验收条件是“任意 npm CLI 都必须脱离 Host 在手机运行”，而 A4 无法证明该能力，**Android 版本不能按此条件验收**，需要重新确定产品范围或继续研究本地执行环境。
@@ -104,7 +106,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - [x] A1.5 创建 `app/android/` Flutter 宿主，安装并锁定首次构建所需 NDK，记录 Gradle/AGP/ABI；`main.dart` 用平台工厂连接 `LocalRuntimePort` 或 `AndroidRuntimePort`，继续共用 `AggregateApp`、路由和主题。
 - [x] A1.6 让同一套导航、连接页和向导在窄屏可浏览：表单改为手机可滚动页面/全屏弹层，处理系统返回、状态/手势栏、输入法、安全区、触控与 TalkBack。未实现的本地 CLI/stdio/终端不出现在可操作入口。
 
-**交付物：**Android 开发包、执行目标与文件语义契约、草稿生命周期表、共享 UI 的手机布局。**通过门槛：**现有 API 35 真机能启动并浏览同一套路由；连接向导不溢出或被输入法挡住；仅可用适配器可选；已有 macOS 连接/向导测试不回退。此阶段不宣称 Android MCP/CLI 已可用。
+**交付物：**Android 开发包、执行目标与文件语义契约、草稿生命周期表、手机可浏览的共享界面壳。**通过门槛：**现有 API 35 真机能启动并浏览基础界面；手机尺寸的向导测试无溢出，真机输入法和 TalkBack 留待 A2 开放连接后复查；仅可用适配器可选；已有 macOS 连接/向导测试不回退。A1 的页面结构只是启动和能力验证基线，不限制 A7 重新设计手机界面；此阶段不宣称 Android MCP/CLI 已可用。
 
 ### A2：Android HTTP MCP 与共享连接预检闭环
 
@@ -166,21 +168,22 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - [ ] A6.2 合并 Android HTTP 与 Host 的适配器目录；先选执行设备，再显示该设备的字段。Host CLI 自动检测经 Host 执行，手机文件选择器不能填 Mac 程序路径；已验证的本地 JS 用 A4 的包入口标识。
 - [ ] A6.3 搜索、调用、取消、活动、终端和账号 API 按连接执行目标路由；连接 ID 包含来源。切换目标要创建新连接并重新预检，旧权限不自动复用。
 - [ ] A6.4 Host 网易云沿用 Mac 独立 profile 登录及搜索权限检查；`actionRequired` 可见，声音实际由 Mac 输出。文件/URI 跨设备使用时传输内容或明确拒绝，不混用两端路径。
-- [ ] A6.5 终端复用 `TerminalPage` 显示 Host PTY 事件；补齐手机软键盘 Ctrl、Esc、Tab、方向键和中断，测尺寸变化、横屏、复制粘贴、断线和进程清理。本地 JS 可用不意味着本地 TUI 可用。
+- [ ] A6.5 终端复用现有 PTY 事件契约，并以 `TerminalPage` 为初始界面；补齐手机软键盘 Ctrl、Esc、Tab、方向键和中断，测尺寸变化、横屏、复制粘贴、断线和进程清理。A7 可重组手机终端界面；本地 JS 可用不意味着本地 TUI 可用。
 
 **交付物：**Android 上统一展示手机与 Host 连接的功能包。**通过门槛：**真机可调用本地 HTTP MCP、Host 普通 CLI/TUI/stdio MCP；向导、账号、取消、断线、重连和执行位置正确；若 A4 未通过，本地 CLI 不可选。
 
-### A7：同一套 Flutter UI 的完整手机适配
+### A7：按使用场景设计 Flutter 手机界面
 
-**依赖：**A2、A6；本地音乐分支还依赖 A4 的单独验证。
+**依赖：**A7.1 的手机场景研究与流程设计可在 A1 后启动；完整界面实施和验收依赖 A2、A6，本地音乐分支还依赖 A4 的单独验证。
 
-- [ ] A7.1 在共用 `AppShell`、连接首页、所有功能、运行、活动和设置 Widget 中按窗口宽度适配单栏/宽屏导航；保持一套页面树，不按设备名分叉。
-- [ ] A7.2 把连接向导做成手机可用的长表单：适配器和执行设备先选，再显示字段；测试检查可逐项阅读，`actionRequired` 不误显示为完成；保存、键盘和返回手势不互相遮挡，关闭/更改输入会丢弃临时草稿。
-- [ ] A7.3 运行页按来源、权限、参数、进度、结果排列；复杂 JSON、长输出和终端用全屏视图。错误说明运行设备、失败状态和可恢复动作。
-- [ ] A7.4 调整播放器与迷你播放器，避免底部导航、输入法和手势条重叠；Host 网易云标注声音由 Mac 输出。若要手机出声，另接 Android 音频/后台控制路径并单列验收。
-- [ ] A7.5 用长连接名、复杂 schema、中文/英文、错误 Token、Host 离线、Node 不可用及大输出检查浅深色、小屏/大屏/分屏、字体放大、TalkBack 顺序与触控范围。
+- [ ] A7.1 从手机实际任务绘制流程与页面图：快速查找并调用功能、添加/测试连接、查看运行进度与结果、恢复活动、控制 Host 终端及网易云播放。标明每条流程的执行设备、网络依赖、失败恢复和完成反馈；以流程决定导航入口与层级。
+- [ ] A7.2 在 Flutter 内实现手机专用的导航和页面组合；`AppShell`、桌面路由及 Widget 可按需复用，手机可以采用不同页面树。共用领域模型、业务状态、`RuntimePort` 和适用的基础组件；保持 macOS 原有工作流。按可用窗口宽度和输入方式处理手机竖屏、横屏、大屏及分屏。
+- [ ] A7.3 重组手机连接向导：先选执行设备与适配器，再填写对应字段、预检和保存；测试检查逐项可读，`actionRequired` 不误显示为完成。处理输入法、返回手势、草稿失效和文件来源，保存/取消按钮始终可达。
+- [ ] A7.4 设计手机调用与结果流程：来源、权限、参数、进度、结果和可恢复错误清晰可见；复杂 JSON、长输出和终端使用适合触控与软键盘的视图，Host 终端补充常用控制键。
+- [ ] A7.5 根据手机播放场景设计播放器与迷你播放器，避免与导航、输入法和手势条重叠；Host 网易云标注声音由 Mac 输出。手机出声需另接 Android 音频/后台控制路径并单列验收。
+- [ ] A7.6 用长连接名、复杂 schema、中文/英文、错误 Token、Host 离线、Node 不可用及大输出检查浅深色、小屏/大屏/分屏、字体放大、TalkBack 顺序与触控范围；按任务在真机走通并记录截图与问题。
 
-**交付物：**共享 Widget 的手机完整流程、截图与真机操作记录。**通过门槛：**主要功能单手触控可达，向导与运行页关键按钮不被输入法遮挡，读屏能区分执行设备和检查状态；Mac 回归截图与操作无明显退化。
+**交付物：**手机场景流程图、Flutter 手机界面与必要的共享组件、截图和真机操作记录。**通过门槛：**快速调用、连接设置、结果查看及已开放的 Host/播放流程在真机可完成；常用操作单手触控可达，关键按钮不被输入法遮挡，读屏能区分执行设备和检查状态；Mac 回归截图与操作无明显退化。
 
 ### A8：稳定性、发布与文档
 
@@ -198,6 +201,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 | 场景 | 重点 | 首次检查阶段 | 最终验收 |
 | --- | --- | --- | --- |
+| 快速调用功能 | 从手机入口找到功能、确认执行设备、填写参数、查看结果 | A2/A6 | A7 |
+| 运行与恢复 | 进度、长结果、失败后的重试、活动恢复 | A2/A6 | A7/A8 |
 | 窄屏竖屏 / 横屏 | 连接切换、导航、全局搜索、返回 | A1 | A7 |
 | 连接向导 | 执行设备先选、字段与文件来源正确、测试/保存/丢弃、`actionRequired` | A1/A2 | A7/A8 |
 | 大屏 / 分屏 | 侧栏、表单与结果并列、窗口变化 | A1 | A7 |
@@ -206,7 +211,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 | 可访问性 | TalkBack、字体放大、状态与执行位置朗读 | A1 | A7/A8 |
 | 离线与故障 | Host 离线、Node 失败、权限拒绝、结果未知 | A2/A6 | A8 |
 
-当前 `AppShell` 有 760 逻辑像素抽屉断点，`TerminalPage` 已复用 `terminal_view`；这只是复用起点。Android 的实际断点、导航方式和终端输入控件必须按真机可用窗口与交互结果确定，不能仅用桌面窄窗口截图验收。
+当前 `AppShell` 有 760 逻辑像素抽屉断点，`TerminalPage` 已复用 `terminal_view`；这只是 A1 技术起点。Android 的页面结构、导航方式、断点和终端输入控件须由手机任务与真机交互决定，不能仅用桌面窄窗口截图验收。
 
 ## 6. Skillpilot 结果如何取舍
 
