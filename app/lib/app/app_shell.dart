@@ -277,6 +277,10 @@ class AppShellState extends State<AppShell> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 760;
+          final mobileInput = switch (defaultTargetPlatform) {
+            TargetPlatform.android || TargetPlatform.iOS => true,
+            _ => false,
+          };
           return Scaffold(
             bottomNavigationBar: onMusicHome
                 ? null
@@ -289,8 +293,9 @@ class AppShellState extends State<AppShell> {
               ),
               actions: [
                 IconButton(
-                  tooltip:
-                      '搜索所有功能（${ShortcutScheme(defaultTargetPlatform).searchLabel}）',
+                  tooltip: mobileInput
+                      ? '搜索所有功能'
+                      : '搜索所有功能（${ShortcutScheme(defaultTargetPlatform).searchLabel}）',
                   onPressed: searchAll,
                   icon: const Icon(Icons.search),
                 ),

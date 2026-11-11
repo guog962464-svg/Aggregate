@@ -7,6 +7,28 @@ import 'package:aggregate/platform/macos/credential_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('macOS runtime rejects a connection owned by another Host', () async {
+    final directory = await Directory.systemTemp.createTemp('aggregate-owner-');
+    final runtime = await MacRuntime.open(dataDirectory: directory);
+    try {
+      await expectLater(
+        runtime.addConnection(
+          ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Remote Git',
+            executable: '/usr/bin/git',
+            executionTarget: ExecutionTarget.host('paired-mac-1'),
+          ),
+        ),
+        throwsFormatException,
+      );
+      expect(await runtime.listConnections(), isEmpty);
+    } finally {
+      await runtime.dispose();
+      await directory.delete(recursive: true);
+    }
+  });
+
   test(
     'registers an unknown CLI, blocks unapproved calls, runs and persists',
     () async {

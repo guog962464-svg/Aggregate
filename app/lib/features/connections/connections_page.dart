@@ -164,6 +164,8 @@ class ConnectionsPageState extends State<ConnectionsPage> {
     title: '连接',
     subtitle: widget.runtime.isPreview
         ? '预览连接。'
+        : widget.runtime.features.connectionKinds.isEmpty
+        ? '此运行端的连接功能尚未开放。'
         : widget.runtime.features.connectionKinds.length == 1 &&
               widget.runtime.features.canAdd(ConnectionKind.mcpHttp)
         ? '管理 HTTP MCP 连接。'

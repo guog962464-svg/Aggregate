@@ -1,3 +1,5 @@
+import 'execution_target.dart';
+
 typedef JsonMap = Map<String, Object?>;
 
 JsonMap jsonObject(Object? value, String field) {
@@ -232,6 +234,7 @@ final class Connection {
     required this.kind,
     required this.label,
     required this.location,
+    this.executionTarget = ExecutionTarget.device,
     this.status = ConnectionStatus.ready,
     this.protocolVersion,
     this.diagnostic,
@@ -240,6 +243,7 @@ final class Connection {
   final ConnectionKind kind;
   final String label;
   final String location;
+  final ExecutionTarget executionTarget;
   final ConnectionStatus status;
   final String? protocolVersion;
   final String? diagnostic;
@@ -248,6 +252,8 @@ final class Connection {
     'kind': kind.name,
     'label': label,
     'location': location,
+    if (executionTarget.kind == ExecutionTargetKind.host)
+      'executionTarget': executionTarget.toJson(),
     'status': status.name,
     if (protocolVersion != null) 'protocolVersion': protocolVersion,
     if (diagnostic != null) 'diagnostic': diagnostic,
@@ -259,6 +265,7 @@ final class Connection {
       kind: jsonEnum(ConnectionKind.values, json, 'kind'),
       label: jsonString(json, 'label'),
       location: jsonString(json, 'location'),
+      executionTarget: ExecutionTarget.fromJson(json['executionTarget']),
       status: jsonEnum(ConnectionStatus.values, json, 'status'),
       protocolVersion: json['protocolVersion'] as String?,
       diagnostic: json['diagnostic'] as String?,
@@ -271,6 +278,7 @@ final class ConnectionSpec {
   const ConnectionSpec({
     required this.kind,
     required this.label,
+    this.executionTarget = ExecutionTarget.device,
     this.executable,
     this.arguments = const [],
     this.workingDirectory,
@@ -283,6 +291,7 @@ final class ConnectionSpec {
 
   final ConnectionKind kind;
   final String label;
+  final ExecutionTarget executionTarget;
   final String? executable;
   final List<String> arguments;
   final String? workingDirectory;
@@ -299,6 +308,8 @@ final class ConnectionSpec {
   JsonMap toJson() => {
     'kind': kind.name,
     'label': label,
+    if (executionTarget.kind == ExecutionTargetKind.host)
+      'executionTarget': executionTarget.toJson(),
     if (executable != null) 'executable': executable,
     'arguments': arguments,
     if (workingDirectory != null) 'workingDirectory': workingDirectory,
@@ -317,6 +328,7 @@ final class ConnectionSpec {
     return ConnectionSpec(
       kind: jsonEnum(ConnectionKind.values, json, 'kind'),
       label: jsonString(json, 'label'),
+      executionTarget: ExecutionTarget.fromJson(json['executionTarget']),
       executable: json['executable'] as String?,
       arguments: rawArguments.cast<String>(),
       workingDirectory: json['workingDirectory'] as String?,

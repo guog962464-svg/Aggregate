@@ -4,6 +4,38 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('execution target preserves host identity and migrates old records', () {
+    final host = ExecutionTarget.host('paired-mac-1');
+    final spec = ConnectionSpec(
+      kind: ConnectionKind.cli,
+      label: 'Host CLI',
+      executable: '/usr/bin/git',
+      executionTarget: host,
+    );
+    final restored = ConnectionSpec.fromJson(
+      jsonDecode(jsonEncode(spec.toJson())),
+    );
+    expect(restored.executionTarget.kind, ExecutionTargetKind.host);
+    expect(restored.executionTarget.hostId, 'paired-mac-1');
+    expect(
+      ConnectionSpec.fromJson({
+        'kind': 'mcpHttp',
+        'label': 'Old connection',
+        'url': 'https://example.invalid/mcp',
+      }).executionTarget.kind,
+      ExecutionTargetKind.device,
+    );
+    expect(
+      () => ExecutionTarget.fromJson({'kind': 'host'}),
+      throwsFormatException,
+    );
+    expect(
+      () => ExecutionTarget.fromJson({'kind': 'device', 'hostId': 'mac'}),
+      throwsFormatException,
+    );
+    expect(() => ExecutionTarget.host('../mac'), throwsFormatException);
+  });
+
   test('runtime features describe an HTTP-only execution surface', () {
     final restored = RuntimeFeatures.fromJson(
       jsonDecode(jsonEncode(RuntimeFeatures.httpOnly.toJson())),

@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final class _SetupFixture implements ConnectionSetupPort {
-  _SetupFixture({this.withField = false, this.autoDetect = false});
+  _SetupFixture({
+    this.withField = false,
+    this.autoDetect = false,
+    this.executionTarget = ExecutionTarget.device,
+  });
   final bool withField;
   final bool autoDetect;
+  final ExecutionTarget executionTarget;
   int tests = 0;
   final discarded = <String>[];
   ConnectionSetupDraft? latest;
@@ -38,11 +43,12 @@ final class _SetupFixture implements ConnectionSetupPort {
             ],
           ),
         ]
-      : const [
+      : [
           ConnectionAdapter(
             id: 'cli',
             label: '自定义 CLI',
             kind: ConnectionKind.cli,
+            executionTarget: executionTarget,
           ),
         ];
 
@@ -194,4 +200,76 @@ void main() {
       expect(tester.widget<TextField>(field).controller?.text, '/usr/bin/env');
     },
   );
+
+  testWidgets('phone form stays usable and keeps Host path on the Host', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final setup = _SetupFixture(
+      executionTarget: ExecutionTarget.host('paired-mac-1'),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<Connection>(
+                context: context,
+                builder: (_) => ConnectionSetupDialog(setup: setup),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.byTooltip('关闭添加连接'), findsOneWidget);
+    expect(find.byIcon(Icons.folder_open_outlined), findsNothing);
+    await tester.enterText(find.widgetWithText(TextField, '名称'), 'Mac 工具');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Host 程序绝对路径'),
+      '/usr/bin/git',
+    );
+    await tester.tap(find.text('测试连接'));
+    await tester.pumpAndSettle();
+    expect(setup.latest?.spec.executionTarget.hostId, 'paired-mac-1');
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(setup.discarded, contains('draft-1'));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Android local CLI field has no document path picker', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<Connection>(
+                context: context,
+                builder: (_) => ConnectionSetupDialog(setup: _SetupFixture()),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.folder_open_outlined), findsNothing);
+  });
 }

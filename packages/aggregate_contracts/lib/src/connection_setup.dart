@@ -1,4 +1,5 @@
 import 'models.dart';
+import 'execution_target.dart';
 
 enum SetupFieldKind { text, secret, file }
 
@@ -25,6 +26,7 @@ final class ConnectionAdapter {
     required this.id,
     required this.label,
     required this.kind,
+    this.executionTarget = ExecutionTarget.device,
     this.fields = const [],
     this.defaultLabel,
     this.description,
@@ -35,6 +37,7 @@ final class ConnectionAdapter {
   final String id;
   final String label;
   final ConnectionKind kind;
+  final ExecutionTarget executionTarget;
   final List<SetupField> fields;
   final String? defaultLabel;
   final String? description;

@@ -93,14 +93,16 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A1：共享契约、连接向导与 Flutter Android 宿主
 
+**状态：**已完成 A1 宿主、契约与 UI 壳；验证见 [A1 实施记录](android-a1-report.md)。
+
 **依赖：**A0。把现有连接向导作为跨端基线；先解决执行位置和文件语义，再连接 Android Runtime。
 
-- [ ] A1.1 记录 A0 后接口增量并为 `ConnectionSetupPort`、`ConnectionSpec.profileId`、`ConnectionAccountPort` 制作 Android/Host 去向表；明确 `profileId` 只标识运行端自有配置，不是可跨设备使用的文件路径。
-- [ ] A1.2 设计连接的执行目标（手机/指定 Host）、连接级能力与稳定 ID；测试、保存、调用、终端、活动、账号和清理必须指向同一目标。定义已有连接 JSON 的迁移与缺失目标时的处理，避免单个全局 `RuntimeFeatures` 把 Host 能力误报给手机连接。
-- [ ] A1.3 扩展/约束连接适配器目录：只列出当前目标可用的类型；程序检测返回值与“程序绝对路径”只属于拥有该程序的设备；文件字段区分 Android 文档 URI、内存内容与 Host 路径。`ConnectionSetupDialog` 仍是一份 Flutter Widget，不在手机上让用户挑选 Mac 可执行文件。
-- [ ] A1.4 定义草稿状态机：输入变化、关闭、超时、进程重启、保存失败和重复保存时怎样失效/清理；敏感 `values` 和 Token 只短暂驻留内存，错误/日志/活动不得包含其内容；Host 草稿 ID 需绑定配对设备和执行目标。
-- [ ] A1.5 创建 `app/android/` Flutter 宿主，安装并锁定首次构建所需 NDK，记录 Gradle/AGP/ABI；`main.dart` 用平台工厂连接 `LocalRuntimePort` 或 `AndroidRuntimePort`，继续共用 `AggregateApp`、路由和主题。
-- [ ] A1.6 让同一套导航、连接页和向导在窄屏可浏览：表单改为手机可滚动页面/全屏弹层，处理系统返回、状态/手势栏、输入法、安全区、触控与 TalkBack。未实现的本地 CLI/stdio/终端不出现在可操作入口。
+- [x] A1.1 记录 A0 后接口增量并为 `ConnectionSetupPort`、`ConnectionSpec.profileId`、`ConnectionAccountPort` 制作 Android/Host 去向表；明确 `profileId` 只标识运行端自有配置，不是可跨设备使用的文件路径。
+- [x] A1.2 设计连接的执行目标（手机/指定 Host）、连接级能力与稳定 ID；测试、保存、调用、终端、活动、账号和清理必须指向同一目标。定义已有连接 JSON 的迁移与缺失目标时的处理，避免单个全局 `RuntimeFeatures` 把 Host 能力误报给手机连接。
+- [x] A1.3 扩展/约束连接适配器目录：只列出当前目标可用的类型；程序检测返回值与“程序绝对路径”只属于拥有该程序的设备；文件字段区分 Android 文档 URI、内存内容与 Host 路径。`ConnectionSetupDialog` 仍是一份 Flutter Widget，不在手机上让用户挑选 Mac 可执行文件。
+- [x] A1.4 定义草稿状态机：输入变化、关闭、超时、进程重启、保存失败和重复保存时怎样失效/清理；敏感 `values` 和 Token 只短暂驻留内存，错误/日志/活动不得包含其内容；Host 草稿 ID 需绑定配对设备和执行目标。
+- [x] A1.5 创建 `app/android/` Flutter 宿主，安装并锁定首次构建所需 NDK，记录 Gradle/AGP/ABI；`main.dart` 用平台工厂连接 `LocalRuntimePort` 或 `AndroidRuntimePort`，继续共用 `AggregateApp`、路由和主题。
+- [x] A1.6 让同一套导航、连接页和向导在窄屏可浏览：表单改为手机可滚动页面/全屏弹层，处理系统返回、状态/手势栏、输入法、安全区、触控与 TalkBack。未实现的本地 CLI/stdio/终端不出现在可操作入口。
 
 **交付物：**Android 开发包、执行目标与文件语义契约、草稿生命周期表、共享 UI 的手机布局。**通过门槛：**现有 API 35 真机能启动并浏览同一套路由；连接向导不溢出或被输入法挡住；仅可用适配器可选；已有 macOS 连接/向导测试不回退。此阶段不宣称 Android MCP/CLI 已可用。
 

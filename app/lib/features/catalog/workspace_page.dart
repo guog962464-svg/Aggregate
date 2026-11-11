@@ -108,6 +108,10 @@ class WorkspacePageState extends State<WorkspacePage> {
 
   @override
   Widget build(BuildContext context) {
+    final mobileInput = switch (defaultTargetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS => true,
+      _ => false,
+    };
     final sources = {for (final item in connections) item.id.value: item.label};
     final visible = visibleCapabilities;
     final recentCapabilities = <Capability>[];
@@ -154,15 +158,18 @@ class WorkspacePageState extends State<WorkspacePage> {
               hintText: '名称、说明或来源',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: search.text.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Center(
-                        widthFactor: 1,
-                        child: Text(
-                          ShortcutScheme(defaultTargetPlatform).searchLabel,
-                        ),
-                      ),
-                    )
+                  ? mobileInput
+                        ? null
+                        : Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Center(
+                              widthFactor: 1,
+                              child: Text(
+                                ShortcutScheme(defaultTargetPlatform)
+                                    .searchLabel,
+                              ),
+                            ),
+                          )
                   : IconButton(
                       tooltip: '清除搜索',
                       icon: const Icon(Icons.close),
@@ -186,7 +193,13 @@ class WorkspacePageState extends State<WorkspacePage> {
             _filterChip('工具', CapabilityKind.mcpTool),
             _filterChip('资源', CapabilityKind.mcpResource),
             _filterChip('提示', CapabilityKind.mcpPrompt),
-            _filterChip('CLI', CapabilityKind.cliCommand),
+            if (widget.runtime.features.canAdd(ConnectionKind.cli) ||
+                visible.any(
+                  (item) =>
+                      item.id.kind == CapabilityKind.cliCommand ||
+                      item.id.kind == CapabilityKind.cliAction,
+                ))
+              _filterChip('CLI', CapabilityKind.cliCommand),
           ],
         ),
         const SizedBox(height: 28),

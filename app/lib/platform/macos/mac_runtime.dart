@@ -705,6 +705,9 @@ final class MacRuntime
   }
 
   void _validateSpec(ConnectionSpec spec) {
+    if (spec.executionTarget.kind != ExecutionTargetKind.device) {
+      throw const FormatException('此运行端只接受本机连接');
+    }
     if (spec.profileId case final profile?) _setupProfile(profile);
     if (spec.label.trim().isEmpty || spec.label.length > 100) {
       throw const FormatException('连接名称应为 1–100 个字符');
