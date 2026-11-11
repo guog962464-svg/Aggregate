@@ -1,6 +1,6 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-11；依据 A0 后连接向导改动及 A1、A2 实施结果。状态：A0–A2 已完成；A3–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；Node/npm/CLI 和 Host 尚未验证。
+> 修订日期：2026-11-11；依据 A0 后连接向导改动及 A1、A2 实施结果。状态：A0–A2 已完成；A3 已启动；A4–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；Node/npm/CLI 和 Host 尚未验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
 **统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
@@ -127,9 +127,11 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A3：`nodejs-mobile` 原生桥探针
 
+**状态：**进行中；候选库与工程基线见 [A3 探针记录](android-a3-probe.md)。预编译 Node 18 的 arm64 ELF 仅为 4 KB 对齐，不能直接作为 16 KB 设备发布构建。
+
 **依赖：**A1，可与 A2、A5 并行。探针保持独立，不先绑定完整 UI。
 
-- [ ] A3.1 核验 `libnode.so` 来源、许可证、校验值、头文件、Node 版本、ABI、NDK/AGP 要求；评估维护中的 Node 构建和 16 KB 页支持。预编译 Node 18 只作实验候选。
+- [x] A3.1 核验 `libnode.so` 来源、许可证、校验值、头文件、Node 版本、ABI、NDK/AGP 要求；评估维护中的 Node 构建和 16 KB 页支持。预编译 Node 18 只作实验候选；维护版本构建与 16 KB 真机验证仍是 A3.6 门槛。
 - [ ] A3.2 在独立 `:node` Service 进程使用 Kotlin/Java + C++ JNI 薄层加载库、调用 `node::Start`，在工作线程运行；定义启动、就绪、请求、事件、失败和关闭协议。
 - [ ] A3.3 通过 Binder/平台通道把 `console`、文件读写、网络请求、异常与取消事件返回 Dart；若试回环服务，比较端口管理与鉴权后再选。
 - [ ] A3.4 把运行端能力查询与受控包入口列成桥接协议；此时不把 `ConnectionSetupPort` 的 `cli`/`mcp-stdio` 适配器暴露给用户。验证 Node 进程重启后旧草稿、请求和 profile 引用不会误指向新实例。
