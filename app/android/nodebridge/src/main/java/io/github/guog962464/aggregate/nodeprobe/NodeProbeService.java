@@ -9,6 +9,8 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -80,10 +82,12 @@ public final class NodeProbeService extends Service {
         final int delayMs = request.getData().getInt("delayMs", 0);
         final boolean fail = request.getData().getBoolean("fail", false);
         final String entrypoint = request.getData().getString("entrypoint", "a3-fixed");
+        String cliArgsJson = request.getData().getString("cliArgsJson", "[\"--version\"]");
         final String profileRef = request.getData().getString("profileRef");
         final String draftId = request.getData().getString("draftId");
         final String expectedGeneration = request.getData().getString("expectedGeneration");
-        if (!"a3-fixed".equals(entrypoint) && !"a4-json5".equals(entrypoint)) {
+        if (!"a3-fixed".equals(entrypoint) && !"a4-json5".equals(entrypoint)
+                && !"a4-json5-cli".equals(entrypoint)) {
             reject(reply, requestId, autoClose, "invalidEntrypoint", "entrypoint is not allowed");
             return true;
         }
@@ -94,6 +98,14 @@ public final class NodeProbeService extends Service {
         if (expectedGeneration != null && !generation.equals(expectedGeneration)) {
             reject(reply, requestId, autoClose, "staleGeneration", "Node process generation changed");
             return true;
+        }
+        if ("a4-json5-cli".equals(entrypoint)) {
+            try {
+                cliArgsJson = validateCliArgs(cliArgsJson);
+            } catch (JSONException failure) {
+                reject(reply, requestId, autoClose, "invalidArgument", "invalid fixed CLI arguments");
+                return true;
+            }
         }
         if (delayMs < 0 || delayMs > 90000) {
             reject(reply, requestId, autoClose, "invalidArgument", "invalid delay");
@@ -110,22 +122,37 @@ public final class NodeProbeService extends Service {
         activeReply = reply;
         activeRequestId = requestId;
         send(reply, STARTED, "worker started", 0, 0, requestId);
-        new Thread(() -> run(reply, requestId, autoClose, delayMs, fail, entrypoint), "a3-node-worker").start();
+        final String safeCliArgsJson = cliArgsJson;
+        new Thread(() -> run(reply, requestId, autoClose, delayMs, fail, entrypoint,
+                safeCliArgsJson), "a3-node-worker").start();
         return true;
     }
 
     private void run(Messenger reply, int requestId, boolean autoClose, int delayMs, boolean fail,
-                     String entrypoint) {
+                     String entrypoint, String cliArgsJson) {
         long startedAt = System.nanoTime();
         try {
-            boolean packageProbe = "a4-json5".equals(entrypoint);
-            File entry = new File(getFilesDir(), packageProbe ? "a4-probe.js" : "a3-probe.js");
+            boolean packageProbe = entrypoint.startsWith("a4-json5");
+            boolean cliProbe = "a4-json5-cli".equals(entrypoint);
+            File entry = new File(getFilesDir(), packageProbe
+                    ? (cliProbe ? "a4-cli-probe.js" : "a4-probe.js") : "a3-probe.js");
             File output = new File(getFilesDir(), "a3-result.json");
             File events = new File(getFilesDir(), "a3-events.jsonl");
             if (packageProbe) {
-                copyAssetTree("a4-json5", new File(getFilesDir(), "node_modules/json5"));
+                File packageDirectory = new File(getFilesDir(), "node_modules/json5");
+                deleteTree(packageDirectory);
+                copyAssetTree("a4-json5", packageDirectory);
+                copyAsset("a4-json5-esbuild.cjs", new File(getFilesDir(), "a4-json5-esbuild.cjs"));
+                if (cliProbe) {
+                    File argsFile = new File(getFilesDir(), "a4-cli-args.json");
+                    try (FileOutputStream args = new FileOutputStream(argsFile, false)) {
+                        args.write(cliArgsJson.getBytes(StandardCharsets.UTF_8));
+                    }
+                }
             }
-            try (InputStream source = getAssets().open(packageProbe ? "a4-probe.js" : "probe.js");
+            String entryAsset = packageProbe
+                    ? (cliProbe ? "a4-cli-probe.js" : "a4-probe.js") : "probe.js";
+            try (InputStream source = getAssets().open(entryAsset);
                  FileOutputStream destination = new FileOutputStream(entry, false)) {
                 byte[] buffer = new byte[8192];
                 int count;
@@ -159,6 +186,43 @@ public final class NodeProbeService extends Service {
         } finally {
             closeIfRequested(autoClose, reply, requestId);
         }
+    }
+
+    private String validateCliArgs(String value) throws JSONException {
+        JSONArray arguments = new JSONArray(value);
+        if (arguments.length() == 0 || arguments.length() > 2) {
+            throw new JSONException("argument count outside allowed range");
+        }
+        for (int index = 0; index < arguments.length(); index++) {
+            String argument = arguments.getString(index);
+            if (!"--version".equals(argument) && !"-V".equals(argument)
+                    && !"--help".equals(argument) && !"-h".equals(argument)) {
+                throw new JSONException("argument is not in the fixed allowlist");
+            }
+        }
+        return arguments.toString();
+    }
+
+    private void copyAsset(String assetPath, File destination) throws Exception {
+        File parent = destination.getParentFile();
+        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
+            throw new IllegalStateException("Cannot create asset directory");
+        }
+        try (InputStream source = getAssets().open(assetPath);
+             FileOutputStream target = new FileOutputStream(destination, false)) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = source.read(buffer)) != -1) target.write(buffer, 0, count);
+        }
+    }
+
+    private void deleteTree(File path) {
+        if (!path.exists()) return;
+        File[] children = path.listFiles();
+        if (children != null) {
+            for (File child : children) deleteTree(child);
+        }
+        if (!path.delete()) throw new IllegalStateException("Cannot remove stale package file");
     }
 
     private void copyAssetTree(String assetPath, File destination) throws Exception {

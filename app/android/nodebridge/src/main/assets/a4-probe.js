@@ -16,9 +16,11 @@ function emit(type, data = {}) {
   const original = require(packageRoot);
   const dynamicName = path.join(packageRoot, 'lib', 'index.js');
   const dynamic = require(dynamicName);
-  const bundled = require(path.join(packageRoot, 'dist', 'index.js'));
+  const packageBundle = require(path.join(packageRoot, 'dist', 'index.js'));
+  const esbuildBundle = require(path.join(__dirname, 'a4-json5-esbuild.cjs'));
   const imported = await import(pathToFileURL(path.join(packageRoot, 'dist', 'index.mjs')).href);
-  const values = [original, dynamic, bundled, imported.default].map((module) => module.parse(input));
+  const values = [original, dynamic, packageBundle, esbuildBundle, imported.default]
+      .map((module) => module.parse(input));
   if (values.some((value) => value.unquoted !== 'works' || value.trailing.length !== 2)) {
     throw new Error('JSON5 implementations disagree');
   }
@@ -33,14 +35,27 @@ function emit(type, data = {}) {
     bin: metadata.bin,
     source: values[0].unquoted,
     dynamic: values[1].unquoted,
-    bundled: values[2].unquoted,
-    esm: values[3].unquoted,
+    bundled: values[3].unquoted,
+    esm: values[4].unquoted,
     configPrivate: config.startsWith(__dirname + path.sep),
     configVersion: persisted.version,
   };
   fs.writeFileSync(output, JSON.stringify(result));
-  emit('packageResult', {package: metadata.name, version: metadata.version});
+  emit('packageResult', {
+    package: metadata.name,
+    version: metadata.version,
+    esbuildMatches: values.every((value) => value.unquoted === values[3].unquoted),
+    esbuildBundleBytes: fs.statSync(path.join(__dirname, 'a4-json5-esbuild.cjs')).size,
+    packageTreeBytes: treeBytes(packageRoot),
+  });
 })().catch((error) => {
   emit('exception', {message: error.stack || String(error)});
   process.exitCode = 1;
 });
+
+function treeBytes(directory) {
+  return fs.readdirSync(directory, {withFileTypes: true}).reduce((total, item) => {
+    const itemPath = path.join(directory, item.name);
+    return total + (item.isDirectory() ? treeBytes(itemPath) : fs.statSync(itemPath).size);
+  }, 0);
+}

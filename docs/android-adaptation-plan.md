@@ -144,12 +144,12 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
 
-- [ ] A4.1 在开发机锁定安装一个纯 JS 包，随 App 打包，验证 `require`/`import`、动态加载、资源文件、配置路径与升级；比较原文件树与 esbuild bundle。JSON5 2.2.3 已完成真机源码、动态加载、包自带分发文件、ESM、资源和私有配置路径及整 App 重启；esbuild 对照和版本升级仍待做。
-- [ ] A4.2 验证其 `package.json` 的 `bin` 脚本能否**以 Node 入口函数方式**执行；记录参数、退出码、stdout/stderr、取消和并发语义，不依赖 shebang 自动执行。
+- [ ] A4.1 在开发机锁定安装一个纯 JS 包，随 App 打包，验证 `require`/`import`、动态加载、资源文件、配置路径与升级；比较原文件树与 esbuild bundle。JSON5 2.2.3 的源码、动态加载、包分发文件、ESM、私有配置和 esbuild bundle 对照在 4 KB 真机通过；force-stop 后重启成功，并确认旧包目录标记被清理。真实 package version 升级尚未验收。
+- [ ] A4.2 验证其 `package.json` 的 `bin` 脚本能否**以 Node 入口函数方式**执行；记录参数、退出码、stdout/stderr、取消和并发语义，不依赖 shebang 自动执行。JSON5 `lib/cli.js` 的 `--version` / `--help` 参数、stdout/stderr 与 0 退出码已在真机通过；取消、并发及失败输出仍待验。
 - [ ] A4.3 若纯 JS CLI 样本通过，为“内置包 + 已知入口”定义与绝对可执行文件路径不同的标识和适配器字段；配置与缓存留在 Android 应用私有目录，`profileId` 只引用 Android 自有配置。对测试、保存、丢弃、卸载逐项核对状态清理。
-- [ ] A4.4 单独实验“手机上 npm 安装”：包下载、完整性、依赖解析、安装脚本、缓存、断网恢复、升级/卸载；按 Google Play 分发政策和安全模型判断是否可以进入产品。
-- [ ] A4.5 用原生 `.node` 扩展、`child_process.spawn/fork`、外部 ffmpeg/ffprobe/mpv、stdio MCP 和交互式 TUI 做失败边界样本；记录确切错误与设备版本。
-- [ ] A4.6 对 `@music163/ncm-cli` 0.1.7 逐项试 `--version`、配置/登录、搜索、播放控制、真正出声；标明 `fluent-ffmpeg`、`ffprobe-static`、`mpv` 等依赖在哪一步阻断。不可用时不修改连接器声称支持 Android 本地播放。
+- [ ] A4.4 单独实验“手机上 npm 安装”：包下载、完整性、依赖解析、安装脚本、缓存、断网恢复、升级/卸载；按 Google Play 分发政策和安全模型判断是否可以进入产品。2026-11-12 官方规则静态审查指出解释型脚本并非一概禁止，但仍不得支持政策违规；Node 的宿主权限使运行时 npm 资格保持未决，现阶段先验证 APK 内随包方案。
+- [ ] A4.5 用原生 `.node` 扩展、`child_process.spawn/fork`、外部 ffmpeg/ffprobe/mpv、stdio MCP 和交互式 TUI 做失败边界样本；记录确切错误与设备版本。nodejs-mobile 文档已把 child_process/cluster 标为不支持，stdin 默认不可用、cwd 为 `/`、原生扩展须按 ABI 交叉编译；这只是先验边界，当前 Release 的真机错误仍待记录。
+- [ ] A4.6 对 `@music163/ncm-cli` 0.1.7 逐项试 `--version`、配置/登录、搜索、播放控制、真正出声；标明 `fluent-ffmpeg`、`ffprobe-static`、`mpv` 等依赖在哪一步阻断。已有静态包审查：Node >=18，4-file npm tarball 不含依赖；README 要求 mpv，fluent-ffmpeg 调用 `child_process.spawn`，ffprobe-static 3.1.0 包含约 122 MB 的非 Android 平台二进制。手机安装与运行结果仍待真机；不可用时不修改连接器声称支持 Android 本地播放。
 - [ ] A4.7 写决策记录：T1/T2/T3 各自的真机结果、可发布的本地能力白名单、需要 Host 的包类型、设备端 npm 是否保留为实验功能，以及 Node 更新/漏洞响应责任。仅向 `connectionAdapters` 发布已通过预检与调用门槛的本地适配器。
 
 **交付物：**包兼容矩阵和明确的“本地 / Host / 不支持”决策。**通过门槛：**至少一个真实纯 JS 包完成调用、取消和重启；每个向用户开放的 npm/CLI 行为都有真机结果。**停止条件：**不能安全、可维护地支持设备端安装时，首版仅提供构建时打包的受控包；任意 CLI 走 Host。

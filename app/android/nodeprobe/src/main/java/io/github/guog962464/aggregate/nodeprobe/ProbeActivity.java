@@ -26,9 +26,15 @@ public final class ProbeActivity extends Activity {
             Message request = Message.obtain(null, NodeProbeService.RUN);
             request.arg1 = 1;
             request.replyTo = incoming;
-            if ("a4-json5".equals(getIntent().getStringExtra("probe"))) {
+            String probe = getIntent().getStringExtra("probe");
+            if ("a4-json5".equals(probe) || "a4-json5-cli".equals(probe)) {
                 Bundle arguments = new Bundle();
-                arguments.putString("entrypoint", "a4-json5");
+                arguments.putString("entrypoint", probe);
+                if ("a4-json5-cli".equals(probe)) {
+                    arguments.putString("cliArgsJson",
+                            getIntent().getStringExtra("cliArgsJson") == null
+                                    ? "[\"--version\"]" : getIntent().getStringExtra("cliArgsJson"));
+                }
                 request.setData(arguments);
             }
             try {
