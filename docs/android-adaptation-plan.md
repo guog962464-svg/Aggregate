@@ -1,6 +1,6 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-11。状态：A0–A2 已完成；A3 进行中；A4 已启动 Debug 包兼容性实验；A5–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；一个随包纯 JS 样本已通过，设备端 npm/通用 CLI 和 Host 尚未验证。
+> 修订日期：2026-11-12。状态：A0–A2 已完成；A3 进行中；A4 Debug 兼容性实验进行中（A4.4 已完成受限真机样本）；A5–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；随包和设备端受限纯 JS 样本已通过部分门槛，设备端 npm 稳定性/产品资格、通用 CLI 和 Host 尚未验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
 **统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
@@ -147,7 +147,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - [x] A4.1 在开发机锁定安装一个纯 JS 包，随 App 打包，验证 `require`/`import`、动态加载、资源文件、配置路径与升级；比较原文件树与 esbuild bundle。JSON5 2.2.3 的源码、动态加载、包分发文件、ESM、私有配置和 esbuild bundle 对照在 4 KB 真机通过；force-stop 后重启成功，并确认旧包目录标记被清理。另完成 JSON5 2.2.2/versionCode 1 到 2.2.3/versionCode 2 的 APK 原位升级，确认新包加载、旧包文件清理及用户配置保留。仅代表此 Debug 真机样本。
 - [x] A4.2 验证其 `package.json` 的 `bin` 脚本能否**以 Node 入口函数方式**执行；记录参数、退出码、stdout/stderr、取消和并发语义，不依赖 shebang 自动执行。JSON5 2.2.3 `lib/cli.js` 的 `--version`/`--help`、非法输入的 stderr 与退出码 1 在 4 KB 真机通过；运行期间第二个请求收到 busy，处理 4 MiB 校验输入时取消会终止隔离 Node Service 且不回终态结果，重启新 generation 成功。仅覆盖此 Debug 样本，取消是进程级终止。
 - [x] A4.3 为“内置包 + 已知入口”定义不同于绝对可执行文件路径的标识；profile/配置/缓存保存在应用私有目录，`profileId` 只作 Runtime 引用。隔离 Debug 探针通过草稿丢弃、保存重启、2.2.2→2.2.3 APK 升级、损坏索引备份、伪造入口拒绝、孤儿清理、双连接删除隔离和卸载清空验收。记录见 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md)。仅 LGE AN10 Android 15/API 35、arm64、4 KB 页；中断保存通过合成 staging/orphan 残留验证，未在精确提交点强杀进程；未实现或开放产品 Android 适配器，16 KB 与 A4.7 决策仍待完成。
-- [ ] A4.4 单独实验“手机上 npm 安装”：包下载、完整性、依赖解析、安装脚本、缓存、断网恢复、升级/卸载；按 Google Play 分发政策和安全模型判断是否可以进入产品。2026-11-12 官方规则静态审查指出解释型脚本并非一概禁止，但仍不得支持政策违规；Node 的宿主权限使运行时 npm 资格保持未决，现阶段先验证 APK 内随包方案。
+- [x] A4.4 单独实验“手机上 npm 安装”：固定 npm 12.2.2 在 LGE AN10 Android 15/API 35、arm64、4 KB 页真机通过 CLI 启动、纯 JS 包下载/依赖解析/SHA-512 lockfile、错误完整性拒绝、缓存离线重装、json5 升级/卸载和 cache verify。npm 12 默认阻止未授权生命周期脚本；精确授权本地 tarball 后 `sh -c node install.js` 以 127 失败，marker 未生成。首轮 `0/11` Messenger 终态统计是验证器时序竞争，修正后已确认普通 registry/离线安装和 npm CLI 资源重拷贝收到 `kind=3`；本地 tarball 脚本样本附近观察到 Service tagged-pointer fatal，根因未确认。仅表示受限 Debug 可行性实验完成，不表示稳定性或产品资格通过；Play 政策未预审，16 KB 真机未覆盖。完整记录见 [A4 npm 安装研究与真机结果](android-a4-npm-install-research.md)。
 - [ ] A4.5 用原生 `.node` 扩展、`child_process.spawn/fork`、外部 ffmpeg/ffprobe/mpv、stdio MCP 和交互式 TUI 做失败边界样本；记录确切错误与设备版本。nodejs-mobile 文档已把 child_process/cluster 标为不支持，stdin 默认不可用、cwd 为 `/`、原生扩展须按 ABI 交叉编译；这只是先验边界，当前 Release 的真机错误仍待记录。
 - [ ] A4.6 对 `@music163/ncm-cli` 0.1.7 逐项试 `--version`、配置/登录、搜索、播放控制、真正出声；标明 `fluent-ffmpeg`、`ffprobe-static`、`mpv` 等依赖在哪一步阻断。已有静态包审查：Node >=18，4-file npm tarball 不含依赖；README 要求 mpv，fluent-ffmpeg 调用 `child_process.spawn`，ffprobe-static 3.1.0 包含约 122 MB 的非 Android 平台二进制。手机安装与运行结果仍待真机；不可用时不修改连接器声称支持 Android 本地播放。
 - [ ] A4.7 写决策记录：T1/T2/T3 各自的真机结果、可发布的本地能力白名单、需要 Host 的包类型、设备端 npm 是否保留为实验功能，以及 Node 更新/漏洞响应责任。仅向 `connectionAdapters` 发布已通过预检与调用门槛的本地适配器。

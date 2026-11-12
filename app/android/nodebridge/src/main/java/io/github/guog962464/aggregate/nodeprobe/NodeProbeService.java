@@ -11,6 +11,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -83,12 +84,17 @@ public final class NodeProbeService extends Service {
         final boolean fail = request.getData().getBoolean("fail", false);
         final String entrypoint = request.getData().getString("entrypoint", "a3-fixed");
         String cliArgsJson = request.getData().getString("cliArgsJson", "[\"--version\"]");
+        final String npmAction = request.getData().getString("npmAction");
         final String profileRef = request.getData().getString("profileRef");
         final String draftId = request.getData().getString("draftId");
         final String expectedGeneration = request.getData().getString("expectedGeneration");
         if (!"a3-fixed".equals(entrypoint) && !"a4-json5".equals(entrypoint)
-                && !"a4-json5-cli".equals(entrypoint)) {
+                && !"a4-json5-cli".equals(entrypoint) && !"a4-npm".equals(entrypoint)) {
             reject(reply, requestId, autoClose, "invalidEntrypoint", "entrypoint is not allowed");
+            return true;
+        }
+        if ("a4-npm".equals(entrypoint) && !isNpmActionAllowed(npmAction)) {
+            reject(reply, requestId, autoClose, "invalidArgument", "npm action is not in the fixed allowlist");
             return true;
         }
         if (profileRef != null || draftId != null) {
@@ -124,17 +130,18 @@ public final class NodeProbeService extends Service {
         send(reply, STARTED, "worker started", 0, 0, requestId);
         final String safeCliArgsJson = cliArgsJson;
         new Thread(() -> run(reply, requestId, autoClose, delayMs, fail, entrypoint,
-                safeCliArgsJson), "a3-node-worker").start();
+                safeCliArgsJson, npmAction), "a3-node-worker").start();
         return true;
     }
 
     private void run(Messenger reply, int requestId, boolean autoClose, int delayMs, boolean fail,
-                     String entrypoint, String cliArgsJson) {
+                     String entrypoint, String cliArgsJson, String npmAction) {
         long startedAt = System.nanoTime();
         try {
             boolean packageProbe = entrypoint.startsWith("a4-json5");
             boolean cliProbe = "a4-json5-cli".equals(entrypoint);
-            File entry = new File(getFilesDir(), packageProbe
+            boolean npmProbe = "a4-npm".equals(entrypoint);
+            File entry = new File(getFilesDir(), npmProbe ? "a4-npm-probe.js" : packageProbe
                     ? (cliProbe ? "a4-cli-probe.js" : "a4-probe.js") : "a3-probe.js");
             File output = new File(getFilesDir(), "a3-result.json");
             File events = new File(getFilesDir(), "a3-events.jsonl");
@@ -149,8 +156,35 @@ public final class NodeProbeService extends Service {
                         args.write(cliArgsJson.getBytes(StandardCharsets.UTF_8));
                     }
                 }
+            } else if (npmProbe) {
+                File npmCliDirectory = new File(getFilesDir(), "a4-npm-cli");
+                File npmCliEntry = new File(npmCliDirectory, "bin/npm-cli.js");
+                File npmManifestFile = new File(getFilesDir(), "a4-npm-manifest.json");
+                JSONObject packagedManifest = new JSONObject(readAssetText("a4-npm-manifest.json"));
+                String packagedNpmVersion = packagedManifest.getString("version");
+                String installedNpmVersion = npmManifestFile.isFile()
+                        ? new JSONObject(readFile(npmManifestFile)).optString("version", null) : null;
+                boolean refreshNpmAssets = !npmCliEntry.isFile()
+                        || !packagedNpmVersion.equals(installedNpmVersion);
+                if (refreshNpmAssets) {
+                    deleteTree(npmCliDirectory);
+                    copyAssetTree("a4-npm-cli", npmCliDirectory);
+                }
+                File generatedDirectory = new File(npmCliDirectory,
+                        "node_modules/@sigstore/protobuf-specs/dist/__generated__");
+                if (refreshNpmAssets || !new File(generatedDirectory, "envelope.js").isFile()) {
+                    deleteTree(generatedDirectory);
+                    copyAssetTree("a4-npm-generated", generatedDirectory);
+                }
+                copyAsset("a4-npm-manifest.json", npmManifestFile);
+                copyAsset("a4-npm-install-script.tgz",
+                        new File(getFilesDir(), "a4-npm-install-script.tgz"));
+                File actionFile = new File(getFilesDir(), "a4-npm-action.txt");
+                try (FileOutputStream action = new FileOutputStream(actionFile, false)) {
+                    action.write(npmAction.getBytes(StandardCharsets.UTF_8));
+                }
             }
-            String entryAsset = packageProbe
+            String entryAsset = npmProbe ? "a4-npm-probe.js" : packageProbe
                     ? (cliProbe ? "a4-cli-probe.js" : "a4-probe.js") : "probe.js";
             try (InputStream source = getAssets().open(entryAsset);
                  FileOutputStream destination = new FileOutputStream(entry, false)) {
@@ -174,7 +208,7 @@ public final class NodeProbeService extends Service {
                 eventReader.join(1000);
             }
             long elapsed = (System.nanoTime() - startedAt) / 1_000_000;
-            if ((!cliProbe && exitCode != 0) || !output.isFile()) {
+            if ((!cliProbe && !npmProbe && exitCode != 0) || !output.isFile()) {
                 send(reply, ERROR, "Node exit=" + exitCode + ", output missing=" + !output.isFile(), exitCode, elapsed, requestId);
             } else {
                 String payload = readFile(output);
@@ -203,6 +237,15 @@ public final class NodeProbeService extends Service {
             }
         }
         return arguments.toString();
+    }
+
+    private boolean isNpmActionAllowed(String action) {
+        return "version".equals(action) || "install".equals(action) || "offline".equals(action)
+                || "cache-verify".equals(action) || "script-ignored".equals(action)
+                || "script-default".equals(action) || "script-allowed".equals(action)
+                || "integrity-bad".equals(action)
+                || "upgrade-old".equals(action)
+                || "upgrade-new".equals(action) || "uninstall".equals(action);
     }
 
     private void copyAsset(String assetPath, File destination) throws Exception {
@@ -289,6 +332,16 @@ public final class NodeProbeService extends Service {
     private String readFile(File file) throws Exception {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (InputStream source = new FileInputStream(file)) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = source.read(buffer)) != -1) bytes.write(buffer, 0, count);
+        }
+        return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private String readAssetText(String assetPath) throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (InputStream source = getAssets().open(assetPath)) {
             byte[] buffer = new byte[8192];
             int count;
             while ((count = source.read(buffer)) != -1) bytes.write(buffer, 0, count);

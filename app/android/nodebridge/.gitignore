@@ -5,3 +5,7 @@
 /src/main/assets/a4-json5/
 /src/main/assets/a4-json5-esbuild.cjs
 /src/main/assets/a4-json5-manifest.json
+/src/main/assets/a4-npm-cli/
+/src/main/assets/a4-npm-generated/
+/src/main/assets/a4-npm-manifest.json
+/src/main/assets/a4-npm-install-script.tgz

@@ -24,6 +24,7 @@ public final class ProbeActivity extends Activity {
     private Messenger nodeService;
     private boolean cancelOnReady;
     private boolean cancelSent;
+    private boolean npmRequestSent;
     private final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), this::handle));
     private boolean bound;
     private final ServiceConnection connection = new ServiceConnection() {
@@ -31,6 +32,10 @@ public final class ProbeActivity extends Activity {
         public void onServiceConnected(ComponentName name, IBinder binder) {
             if (cancelSent) return;
             String probe = getIntent().getStringExtra("probe");
+            if ("a4-npm".equals(probe)) {
+                if (npmRequestSent) return;
+                npmRequestSent = true;
+            }
             nodeService = new Messenger(binder);
             try {
                 sendRun(nodeService, 1, probe,
@@ -72,12 +77,15 @@ public final class ProbeActivity extends Activity {
         Message request = Message.obtain(null, NodeProbeService.RUN);
         request.arg1 = requestId;
         request.replyTo = incoming;
-        if ("a4-json5".equals(probe) || "a4-json5-cli".equals(probe)) {
+        if ("a4-json5".equals(probe) || "a4-json5-cli".equals(probe) || "a4-npm".equals(probe)) {
             Bundle arguments = new Bundle();
             arguments.putString("entrypoint", probe);
             if ("a4-json5-cli".equals(probe)) {
                 arguments.putString("cliArgsJson",
                         cliArgsJson == null ? "[\"--version\"]" : cliArgsJson);
+            } else if ("a4-npm".equals(probe)) {
+                arguments.putString("npmAction", getIntent().getStringExtra("npmAction"));
+                arguments.putBoolean("autoClose", true);
             }
             request.setData(arguments);
         }

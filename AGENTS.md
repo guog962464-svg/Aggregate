@@ -8,6 +8,6 @@ Before project tasks, use $project-knowledge at /Users/guo/.codex/skills/project
 
 The current release targets macOS only. Keep shared Flutter/Dart contracts and widgets independent of macOS APIs so later platforms can reuse them. See docs/architecture.md and docs/ui-design.md.
 
-## Commit workflow
+## Commit and push workflow
 
-After each completed and verified optimization in this project, create a local Git commit without asking for a file-list review. The user has explicitly waived that review for Aggregate. Commit only task-related source, tests, documentation, and required test baselines; exclude generated artifacts and secrets. Use a concise Chinese commit message. Push only when separately requested.
+After each completed and verified project task, create a local Git commit and push it to the current branch's configured upstream without asking for a file-list review. Commit only task-related source, tests, documentation, and required test baselines; exclude generated artifacts and secrets. Use a concise Chinese commit message. Push normally without force; if the branch has no upstream or the push is rejected, keep the local commit and report the blocker.

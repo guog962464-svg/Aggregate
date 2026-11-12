@@ -34,6 +34,14 @@
 - 当前建议：A4 先验证随 APK 打包、版本固定、摘要可复现的纯 JS 包；运行时 npm install 保持未决，直至确定发行渠道、包来源/签名/摘要、安装脚本策略、缓存清理/回滚、权限隔离及 Play 审查结论。未进行 Play 预审或法律判断。
 - 来源：[Android 动态代码加载安全指南](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)、[Google Play Device and Network Abuse 政策](https://support.google.com/googleplay/android-developer/answer/16559646)。
 
+## A4.4 Debug 真机实验（2026-11-12）
+
+- 复现入口为 `nodeprobe/prepare_a4_npm.sh`、`nodeprobe/verify_a4_npm.py`；固定 npm 12.2.2 tarball SHA-512，并在 LGE AN10 Android 15/API 35、arm64、4 KB 页运行 Node v24.22.1。Debug APK 约 102 MB；不代表 16 KB 页、其他 ABI 或发布包。
+- `npm --version`、Registry 安装 `supports-color@7.2.0`（含 `has-flag@4.0.0`）、lockfile SHA-512/registry URL、包加载、离线缓存重装、错误 integrity 拒绝、`json5` 2.2.2→2.2.3 升级/卸载和 `npm cache verify` 均有真机通过结果。
+- `--ignore-scripts` 安装完成但不产生 fixture marker；默认 npm 12.2.2 也把脚本列为未授权并阻止执行。对固定本地 tarball 按精确 `file:` 来源授权后，npm 确实尝试 `sh -c node install.js`，返回 127，marker 未生成。该失败与 nodejs-mobile 不支持 `child_process` 的文档限制一致；实际 127 的底层子进程路径仍未隔离确认。
+- 整轮 11 个 npm 操作均能写出 app-private JSON 结果。首轮验证器把 `npmResult` 到达后立即读取 Logcat，`0/11` 终态统计有时序竞争，不计为有效结果；修正为等待最多 3 秒后，下一轮日志确认普通 registry 安装和离线安装都收到 Messenger `kind=3`。清除 app-private npm CLI 目录后再次运行 `npm --version`，资源重拷贝与终态 Messenger 结果也通过。另一轮在本地 tarball 的 `script-ignored` 阶段 Service 断开，单独运行精确授权的 `script-allowed` 也写出 npm 127 结果后触发 Android tagged-pointer fatal；根因未确认。当前证据指向本地生命周期脚本样本附近的不稳定，不能泛化为全部 npm 操作都没有 Messenger 终态。
+- **验收结论：**A4.4 的 Debug 可行性样本完成，证明受限纯 JS 安装路径在单台 4 KB arm64 设备可工作，也明确暴露脚本执行和本地 tarball 样本附近的 Service 稳定性缺口。手机端 npm 与任意 CLI 不进入产品能力；后续产品白名单/Host/不支持决策留在 A4.7。未覆盖 Play 预审、16 KB 真机、其他 ABI、缓存配额/清理策略或长期稳定性。
+
 ## A4.5 nodejs-mobile API 静态边界（2026-11-12 查阅）
 
 - nodejs-mobile 的 API 差异文档将 `child_process` 和 `cluster` 标为不支持；`process.stdin` 默认不可用，除非宿主提供原生管道；Android `process.cwd()` 为 `/`；stdout/stderr 默认导向 `/dev/null`，需宿主重定向。
@@ -48,4 +56,4 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 ## 下一步
 
 1. A4.3 的 profile 契约和隔离 Debug 生命周期验收已通过；结果与限制记录在 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md)。产品连接器仍不开放此探针。
-2. 继续 A4.4–A4.7：单独验证设备端 npm、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli`，再形成发布能力决策；这些实验的失败不得反向打开用户可见适配器。
+2. A4.4 受限 Debug npm 实验已完成；继续 A4.5–A4.7，验证原生扩展/子进程/TUI 边界和 `@music163/ncm-cli`，再形成发布能力决策。A4.4 的失败与未决项不得反向打开用户可见适配器。
