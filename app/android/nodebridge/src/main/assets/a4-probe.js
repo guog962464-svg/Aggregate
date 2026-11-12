@@ -25,7 +25,15 @@ function emit(type, data = {}) {
     throw new Error('JSON5 implementations disagree');
   }
   const config = path.join(__dirname, 'a4-config.json5');
-  fs.writeFileSync(config, original.stringify({version: metadata.version, enabled: true}));
+  const previousConfig = fs.existsSync(config)
+      ? original.parse(fs.readFileSync(config, 'utf8'))
+      : {};
+  const nextConfig = {
+    ...previousConfig,
+    version: metadata.version,
+    enabled: previousConfig.enabled ?? true,
+  };
+  fs.writeFileSync(config, original.stringify(nextConfig));
   const persisted = original.parse(fs.readFileSync(config, 'utf8'));
   const result = {
     node: process.version,
@@ -39,6 +47,7 @@ function emit(type, data = {}) {
     esm: values[4].unquoted,
     configPrivate: config.startsWith(__dirname + path.sep),
     configVersion: persisted.version,
+    configUserValue: persisted.userValue ?? null,
   };
   fs.writeFileSync(output, JSON.stringify(result));
   emit('packageResult', {

@@ -7,15 +7,16 @@
 - `npm view json5@2.2.3` 报包入口 `lib/index.js`、bin `lib/cli.js`、无运行依赖，tarball integrity 为 `sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWfxasyg==`；本地 tarball SHA-256 为 `08afb33db600d11fc89b98fac4054f19d5d3e0fe527063116150e1ecc2d2377b`。`nodeprobe/prepare_a4.sh` 校验该摘要、名称/版本/入口后，把源码、分发文件、包元数据与 MIT LICENSE 暂存于忽略目录。包源不入 Git。
 - 独立 Debug App 通过 `--es probe a4-json5` 选择实验入口；Service 把包复制至应用私有 `files/node_modules/json5`，在隔离的 `:node` 进程运行固定脚本。Flutter 产品界面和 `ConnectionSetupPort` 未开放该入口，现有能力查询仍只声明 `a3-fixed`。
 - LGE AN10、Android 15/API 35、arm64、4 KB 页：原始包 `require`、运行时拼接路径的动态 `require`、包自带 `dist/index.js`、`dist/index.mjs` 的动态 `import` 均成功解析同一 JSON5 输入；`package.json` 资源读取正确，配置写在应用私有目录并可读回。整 App `force-stop` 后第二次运行成功且 Service generation 不同。`verify_a4.py` 用固定结果断言复现；没有独立外部实现对照。
-- 首次样本验收只覆盖源码与 JSON5 自带分发文件；esbuild 对照、固定 bin 的版本/帮助调用随后在下方补充验收。实际包版本升级、bin 取消/并发以及设备端 `npm install` 和任意 CLI 仍未验证。
+- 首次样本验收只覆盖源码与 JSON5 自带分发文件；esbuild 对照、固定 bin 的版本/帮助调用和实际包版本升级随后在下方补充验收。bin 取消/并发以及设备端 `npm install` 和任意 CLI 仍未验证。
 
 ## A4.1 / A4.2 补充验收（2026-11-12）
 
 - 固定 JSON5 2.2.3 tarball SHA-256 校验通过；esbuild 0.25.12 生成 bundle 45,044 字节，JSON5 包文件树为 235,198 字节。bundle 与包自带 dist、源码 `require`、动态 `require`、ESM 的固定 JSON5 输入结果一致；真机结果事件断言 bundle 一致，且 bundle 小于源包文件树。
-- LGE AN10、Android 15/API 35、arm64、4 KB 页真机上，源码/动态加载/包内 CJS/ESM/esbuild bundle、`package.json` 读取和私有配置写读通过；整 App force-stop 后再次成功，Service generation 改变。首次运行后注入的旧包目录标记在重启重复制包后消失。此项不覆盖包版本升级。
+- LGE AN10、Android 15/API 35、arm64、4 KB 页真机上，源码/动态加载/包内 CJS/ESM/esbuild bundle、`package.json` 读取和私有配置写读通过；整 App force-stop 后再次成功，Service generation 改变。首次运行后注入的旧包目录标记在重启重复制包后消失。
+- 同一真机完成两个不同包版本的 APK 原位升级：JSON5 2.2.2 / versionCode 1 首次运行通过；升级前在应用私有配置写入 `userValue=keep-me`，并在旧包目录放入陈旧文件；安装 JSON5 2.2.3 / versionCode 2 后，新 Service generation 加载 2.2.3，配置用户字段保留、配置版本更新为 2.2.3、陈旧包文件移除，`files/` 根目录文件集合不变。脚本为 `nodeprobe/verify_a4_upgrade.py`。
 - `json5` bin `lib/cli.js` 由 Node 入口函数调用，`--version` 与 `--help` 两组参数均正确；`--version` 输出 `2.2.3\n`，`--help` 包含 Usage，stderr 为空，退出码 0。限制参数来自固定 allowlist。
 - A3 固定探针的进程崩溃、整 App 重启、重装和后台 `am kill` 后恢复回归通过。普通 Flutter Debug APK 构建并安装成功，包内无 `libnode.so`、JNI 探针或 A4 包资源。
-- **未完成**：实际 JSON5 版本升级后的包树清理、CLI 取消/并发、非零退出/错误 stderr、npm 设备端安装均未验证。A4.1 与 A4.2 保持进行中。
+- **状态**：A4.1 的 JSON5 样本（含实际 APK 包版本升级、文件树清理、配置保留及 bundle 对照）在上述 4 KB Debug 真机范围内通过。A4.2 仅验证了 `--version`/`--help` 成功路径；取消、并发、非零退出与错误 stderr 未验。设备端 `npm install`、任意 CLI 和其他包仍未验证。
 
 ## `@music163/ncm-cli` 0.1.7 静态包审查
 
@@ -37,12 +38,11 @@
 - 静态映射：无子进程/交互输入的纯 JS 入口有继续验证价值；TUI 需要的 stdin/终端能力不能从当前桥接推定；`ncm-cli` 的 `fluent-ffmpeg` 调用 `child_process.spawn`、README 要求外部 mpv，正好触及已知限制，手机本地播放通过概率很低。这里只依据包源码与 nodejs-mobile 文档判断，未在本项目当前 fogtape Release 上实测 API 错误信息。
 - 来源：[nodejs-mobile 当前移动端 API 差异](https://nodejs-mobile.github.io/docs/api/differences/)、[nodejs-mobile FAQ](https://github.com/nodejs-mobile/nodejs-mobile/blob/main/doc_mobile/FAQ.md)、[fogtape Node 24 移动版 README](https://github.com/fogtape/nodejs-mobile/blob/recipe/README.md)。
 
-复现：在 `app/android/` 先运行 `nodeprobe/prepare.sh`，再运行 `nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline` 和 `python3 nodeprobe/verify_a4.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
+复现：在 `app/android/` 运行 `nodeprobe/prepare.sh`、`nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline` 和 `python3 nodeprobe/verify_a4.py`；两个版本 APK 升级验收可运行 `python3 nodeprobe/verify_a4_upgrade.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
 
 CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggregate.nodeprobe/.ProbeActivity --es probe a4-json5-cli --es cliArgsJson '["--version"]'`；将 `--version` 换成 `--help` 可选另一个固定样本。
 
 ## 下一步
 
-1. 用新 JSON5 包版本构建升级 APK，核对 versionCode 升级前后的包树版本、陈旧文件移除和用户配置保留。
-2. 继续验收 bin runner 的取消与并发语义及失败输出，不执行任意 shebang。
-3. 再进入设备端 npm 安装、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli` 样本；这些实验的失败不得反向打开用户可见适配器。
+1. 继续验收 bin runner 的取消与并发语义及失败输出，不执行任意 shebang。
+2. 再进入设备端 npm 安装、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli` 样本；这些实验的失败不得反向打开用户可见适配器。

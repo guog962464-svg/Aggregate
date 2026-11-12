@@ -74,6 +74,7 @@ def main() -> None:
                         "esm": "works",
                         "configPrivate": True,
                         "configVersion": "2.2.3",
+                        "configUserValue": None,
                     }, result
                     package_event = wait_for_package_event(log_path, count)[-1]
                     assert package_event["package"] == "json5"
