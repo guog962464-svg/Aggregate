@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify JSON5 package replacement and private config across an APK upgrade."""
 
+import json
 import re
 import shutil
 import subprocess
@@ -14,9 +15,14 @@ from verify_device import APK, PACKAGE, adb, wait_for
 ANDROID = Path(__file__).resolve().parents[1]
 PREPARE = ANDROID / "nodeprobe/prepare_a4.sh"
 ACTIVITY = PACKAGE + "/.ProbeActivity"
+PROFILE_RESULT = re.compile(r"PROFILE_RESULT:(\{[^\n]+\})")
 ARCHIVES = {
     "2.2.2": Path("/tmp/json5-2.2.2.tgz"),
     "2.2.3": Path("/tmp/json5-2.2.3.tgz"),
+}
+TARBALL_SHA256 = {
+    "2.2.2": "86f16f0b61deae8046bf4eef42c24deab0e9832e7d20a4aaee5620d726c86a39",
+    "2.2.3": "08afb33db600d11fc89b98fac4054f19d5d3e0fe527063116150e1ecc2d2377b",
 }
 
 
@@ -53,6 +59,36 @@ def installed_version() -> int:
 
 def private_files() -> set[str]:
     return set(adb("shell", "run-as", PACKAGE, "ls", "files").splitlines())
+
+
+def profile_results(log_path: Path) -> list[dict]:
+    return [json.loads(payload) for payload in PROFILE_RESULT.findall(log_path.read_text())]
+
+
+def wait_profile_result(log_path: Path, count: int) -> dict:
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        found = profile_results(log_path)
+        if len(found) >= count:
+            return found[-1]
+        time.sleep(0.1)
+    raise RuntimeError(f"Only {len(profile_results(log_path))} profile result(s); see {log_path}")
+
+
+def run_profile_action(log_path: Path, action: str, count: int,
+                       draft_id: str | None = None,
+                       profile_id: str | None = None) -> dict:
+    adb("shell", "am", "force-stop", PACKAGE)
+    arguments = ["shell", "am", "start", "-n", ACTIVITY,
+                 "--es", "probe", "a4-profile", "--es", "profileAction", action]
+    if draft_id is not None:
+        arguments += ["--es", "draftId", draft_id]
+    if profile_id is not None:
+        arguments += ["--es", "profileId", profile_id]
+    adb(*arguments)
+    result = wait_profile_result(log_path, count)
+    assert result.get("ok") is True, result
+    return result
 
 
 def start_probe() -> None:
@@ -97,7 +133,7 @@ def main() -> None:
         log_path = directory / "logcat.txt"
         with log_path.open("w") as log:
             monitor = subprocess.Popen(
-                ["adb", "logcat", "-s", "A3NodeProbe:I", "*:S"],
+                ["adb", "logcat", "-s", "A3NodeProbe:I", "A4ProfileProbe:I", "*:S"],
                 stdout=log,
                 stderr=subprocess.DEVNULL,
             )
@@ -108,6 +144,16 @@ def main() -> None:
                 start_probe()
                 first = wait_for(log_path, 1)[-1]
                 assert_version_result(first[1], "2.2.2", None)
+
+                draft = run_profile_action(log_path, "test", 1)["draftId"]
+                saved = run_profile_action(log_path, "save", 2, draft_id=draft)
+                profile_id = saved["profileId"]
+                old_profile_path = f"files/node-profiles/{profile_id}/profile.json"
+                old_profile = json.loads(adb("shell", "run-as", PACKAGE, "cat", old_profile_path))
+                assert old_profile["packageVersion"] == "2.2.2", old_profile
+                assert old_profile["tarballSha256"] == TARBALL_SHA256["2.2.2"], old_profile
+                assert saved["spec"]["profileId"] == profile_id
+
                 before = private_files()
 
                 adb("push", str(config), remote_config)
@@ -136,6 +182,19 @@ def main() -> None:
                 assert second[0] != first[0], "Service generation did not change across upgrade"
                 assert_version_result(second[1], "2.2.3", "keep-me")
                 assert private_files() == before, "Upgrade changed the app-private root file set"
+                migrated = run_profile_action(log_path, "inspect", 3, profile_id=profile_id)
+                assert migrated["found"] is True
+                assert migrated["migratedFrom"] == "2.2.2", migrated
+                assert migrated["packageVersion"] == "2.2.3", migrated
+                assert migrated["tarballSha256"] == TARBALL_SHA256["2.2.3"], migrated
+                assert migrated["config"]["userValue"] == "keep-me", migrated
+                new_profile = json.loads(adb("shell", "run-as", PACKAGE, "cat", old_profile_path))
+                assert new_profile["packageVersion"] == "2.2.3", new_profile
+                assert new_profile["tarballSha256"] == TARBALL_SHA256["2.2.3"], new_profile
+                connections = json.loads(adb(
+                    "shell", "run-as", PACKAGE, "cat", "files/connections.json"
+                ))["connections"]
+                assert len(connections) == 1 and connections[0]["spec"]["profileId"] == profile_id
                 assert not adb(
                     "shell",
                     "run-as",
@@ -144,8 +203,8 @@ def main() -> None:
                     "files/node_modules/json5/stale-upgrade.js",
                     check=False,
                 ), "Old package resource survived package version upgrade"
-                print("A4 package upgrade passed: JSON5 2.2.2 -> 2.2.3, APK versionCode 1 -> 2.")
-                print("Node reloaded the new package, removed stale files and preserved user config.")
+                print("A4 package/profile upgrade passed: JSON5 2.2.2 -> 2.2.3, APK versionCode 1 -> 2.")
+                print("Node reloaded the new package, removed stale files, and migrated profile metadata while preserving its config/reference.")
             except Exception:
                 print(log_path.read_text()[-4000:])
                 raise

@@ -57,6 +57,11 @@ public final class ProbeActivity extends Activity {
         status.setTextSize(18);
         status.setPadding(32, 64, 32, 32);
         setContentView(status);
+        if ("a4-profile".equals(getIntent().getStringExtra("probe"))) {
+            A4ProfileProbe.run(this, getIntent());
+            finish();
+            return;
+        }
         cancelOnReady = getIntent().getBooleanExtra("cancelOnReady", false);
         bound = bindService(new Intent(this, NodeProbeService.class), connection, Context.BIND_AUTO_CREATE);
         if (!bound) status.setText("Node service bind failed");

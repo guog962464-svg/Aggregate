@@ -1,6 +1,6 @@
 # Android APK 内置 Node 包入口契约
 
-状态：A4.3 设计建议；保存、丢弃、删除和清除应用数据的设备验收尚未完成。此文档用于隔离 Debug 实验，不开放 Android 产品连接器。
+状态：A4.3 契约与隔离 Debug 探针的 profile 生命周期验收已完成。此文档只记录实验，不开放 Android 产品连接器；结果仅适用于 LGE AN10、Android 15/API 35、arm64、4 KB 页和固定 JSON5 样本。
 
 ## 设计决定
 
@@ -25,14 +25,16 @@
 
 | 操作 | 通过条件 |
 | --- | --- |
-| 测试后丢弃草稿 | 无永久连接、profile、配置或包缓存 |
-| 测试后保存并重启 | 连接引用唯一 profile；配置在应用私有目录；连接 JSON 不含凭证或可执行路径 |
-| APK 原位升级 | 静态包版本刷新，用户配置和有效 profile 引用保留，陈旧包文件消失 |
-| 删除连接 | 连接记录、profile 和专属缓存消失；其他连接数据不变 |
-| 中途终止保存 | 连接和 profile 都回滚，或由启动清理器识别并收回 orphan |
-| 伪造 profile/package/entrypoint | 运行前拒绝；不访问 profile 外路径，不执行任意 JS |
-| 清除数据/卸载 | app 私有数据全部由 Android 清除；无共享目录残留 |
+| 测试后丢弃草稿 | 通过：无连接或 profile；临时草稿目录已删除 |
+| 测试后保存并重启 | 通过：强停后重新启动可读回配置；连接只保存 profile 引用，不含可执行路径或包入口字段 |
+| APK 原位升级 | 通过：JSON5 2.2.2 / APK versionCode 1 升到 2.2.3 / versionCode 2；包元数据迁移，用户配置和引用保留，陈旧文件消失 |
+| 删除连接 | 通过：两个连接中删除一个后，其 profile/cache 消失；另一个 profile、配置、连接及无关文件保留 |
+| 中途终止保存 | 通过合成残留验收：预置未完成 `.staging-*` 目录和未引用 profile 后，下次操作清理两者。没有在两次文件提交之间强杀进程 |
+| 伪造 profile ID/entrypoint | 通过：越界 profile ID 和伪造入口路径在 profile 读取前拒绝；损坏连接索引会备份并保留现有 profile |
+| 清除数据/卸载 | 通过：卸载后重装看不到旧 profile 或连接文件；未使用共享目录 |
+
+验收通过 `app/android/nodeprobe/verify_a4_profiles.py` 与 `verify_a4_upgrade.py` 在 USB 真机完成，未启动模拟器。探针运行在独立 Debug APK 中；本次未修改 Flutter 公共合同或产品 `AndroidRuntimePort`，也未验证 16 KB 设备。
 
 ## 当前边界
 
-`ConnectionAdapter` 已有静态 adapter ID，`ConnectionSetupDraft` 已带临时 adapter ID，`ConnectionSpec.profileId` 已定义为 Runtime 拥有的 profile 引用。Android `AndroidRuntimePort` 当前只公布 HTTP MCP，并拒绝 CLI/profile 字段；本设计尚未改动这些行为。当前项目发布范围仍为 macOS，未来 Android Runtime 可以先在独立实验或明确的后续版本中实现此契约，通过 A4.3 与 A4.7 门槛后再决定是否向用户展示。
+`ConnectionAdapter` 已有静态 adapter ID，`ConnectionSetupDraft` 已带临时 adapter ID，`ConnectionSpec.profileId` 已定义为 Runtime 拥有的 profile 引用。Android `AndroidRuntimePort` 当前只公布 HTTP MCP，并拒绝 CLI/profile 字段；本次只增加独立 Debug 生命周期探针，没有改动这些产品行为。当前项目发布范围仍为 macOS；A4.3 的实验通过不代表 Android 产品适配器已实现，仍需 A4.7 发布判断及 16 KB 等产品化门槛。

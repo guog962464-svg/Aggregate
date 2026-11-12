@@ -41,11 +41,11 @@
 - 静态映射：无子进程/交互输入的纯 JS 入口有继续验证价值；TUI 需要的 stdin/终端能力不能从当前桥接推定；`ncm-cli` 的 `fluent-ffmpeg` 调用 `child_process.spawn`、README 要求外部 mpv，正好触及已知限制，手机本地播放通过概率很低。这里只依据包源码与 nodejs-mobile 文档判断，未在本项目当前 fogtape Release 上实测 API 错误信息。
 - 来源：[nodejs-mobile 当前移动端 API 差异](https://nodejs-mobile.github.io/docs/api/differences/)、[nodejs-mobile FAQ](https://github.com/nodejs-mobile/nodejs-mobile/blob/main/doc_mobile/FAQ.md)、[fogtape Node 24 移动版 README](https://github.com/fogtape/nodejs-mobile/blob/recipe/README.md)。
 
-复现：在 `app/android/` 运行 `nodeprobe/prepare.sh`、`nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline` 和 `python3 nodeprobe/verify_a4.py`；两个版本 APK 升级验收可运行 `python3 nodeprobe/verify_a4_upgrade.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
+复现：在 `app/android/` 运行 `nodeprobe/prepare.sh`、`nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline` 和 `python3 nodeprobe/verify_a4.py`；两个版本 APK 升级验收可运行 `python3 nodeprobe/verify_a4_upgrade.py`。A4.3 profile 生命周期可运行 `python3 nodeprobe/verify_a4_profiles.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
 
 CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggregate.nodeprobe/.ProbeActivity --es probe a4-json5-cli --es cliArgsJson '["--version"]'`；将 `--version` 换成 `--help` 可选另一个固定样本。
 
 ## 下一步
 
-1. 按 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md) 实现并验收 profile 的测试、保存、丢弃、删除和清除数据；保持当前产品连接器不开放此探针。
-2. 再进入设备端 npm 安装、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli` 样本；这些实验的失败不得反向打开用户可见适配器。
+1. A4.3 的 profile 契约和隔离 Debug 生命周期验收已通过；结果与限制记录在 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md)。产品连接器仍不开放此探针。
+2. 继续 A4.4–A4.7：单独验证设备端 npm、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli`，再形成发布能力决策；这些实验的失败不得反向打开用户可见适配器。
