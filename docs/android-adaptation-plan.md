@@ -145,7 +145,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
 
 - [x] A4.1 在开发机锁定安装一个纯 JS 包，随 App 打包，验证 `require`/`import`、动态加载、资源文件、配置路径与升级；比较原文件树与 esbuild bundle。JSON5 2.2.3 的源码、动态加载、包分发文件、ESM、私有配置和 esbuild bundle 对照在 4 KB 真机通过；force-stop 后重启成功，并确认旧包目录标记被清理。另完成 JSON5 2.2.2/versionCode 1 到 2.2.3/versionCode 2 的 APK 原位升级，确认新包加载、旧包文件清理及用户配置保留。仅代表此 Debug 真机样本。
-- [ ] A4.2 验证其 `package.json` 的 `bin` 脚本能否**以 Node 入口函数方式**执行；记录参数、退出码、stdout/stderr、取消和并发语义，不依赖 shebang 自动执行。JSON5 `lib/cli.js` 的 `--version` / `--help` 参数、stdout/stderr 与 0 退出码已在真机通过；取消、并发及失败输出仍待验。
+- [x] A4.2 验证其 `package.json` 的 `bin` 脚本能否**以 Node 入口函数方式**执行；记录参数、退出码、stdout/stderr、取消和并发语义，不依赖 shebang 自动执行。JSON5 2.2.3 `lib/cli.js` 的 `--version`/`--help`、非法输入的 stderr 与退出码 1 在 4 KB 真机通过；运行期间第二个请求收到 busy，处理 4 MiB 校验输入时取消会终止隔离 Node Service 且不回终态结果，重启新 generation 成功。仅覆盖此 Debug 样本，取消是进程级终止。
 - [ ] A4.3 若纯 JS CLI 样本通过，为“内置包 + 已知入口”定义与绝对可执行文件路径不同的标识和适配器字段；配置与缓存留在 Android 应用私有目录，`profileId` 只引用 Android 自有配置。对测试、保存、丢弃、卸载逐项核对状态清理。
 - [ ] A4.4 单独实验“手机上 npm 安装”：包下载、完整性、依赖解析、安装脚本、缓存、断网恢复、升级/卸载；按 Google Play 分发政策和安全模型判断是否可以进入产品。2026-11-12 官方规则静态审查指出解释型脚本并非一概禁止，但仍不得支持政策违规；Node 的宿主权限使运行时 npm 资格保持未决，现阶段先验证 APK 内随包方案。
 - [ ] A4.5 用原生 `.node` 扩展、`child_process.spawn/fork`、外部 ffmpeg/ffprobe/mpv、stdio MCP 和交互式 TUI 做失败边界样本；记录确切错误与设备版本。nodejs-mobile 文档已把 child_process/cluster 标为不支持，stdin 默认不可用、cwd 为 `/`、原生扩展须按 ABI 交叉编译；这只是先验边界，当前 Release 的真机错误仍待记录。

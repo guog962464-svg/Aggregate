@@ -12,33 +12,31 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.TextView;
+
+import java.nio.charset.StandardCharsets;
 
 public final class ProbeActivity extends Activity {
     private static final String TAG = "A3NodeProbe";
     private TextView status;
+    private Messenger nodeService;
+    private boolean cancelOnReady;
+    private boolean cancelSent;
     private final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), this::handle));
     private boolean bound;
     private final ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
-            Message request = Message.obtain(null, NodeProbeService.RUN);
-            request.arg1 = 1;
-            request.replyTo = incoming;
+            if (cancelSent) return;
             String probe = getIntent().getStringExtra("probe");
-            if ("a4-json5".equals(probe) || "a4-json5-cli".equals(probe)) {
-                Bundle arguments = new Bundle();
-                arguments.putString("entrypoint", probe);
-                if ("a4-json5-cli".equals(probe)) {
-                    arguments.putString("cliArgsJson",
-                            getIntent().getStringExtra("cliArgsJson") == null
-                                    ? "[\"--version\"]" : getIntent().getStringExtra("cliArgsJson"));
-                }
-                request.setData(arguments);
-            }
+            nodeService = new Messenger(binder);
             try {
-                new Messenger(binder).send(request);
+                sendRun(nodeService, 1, probe,
+                        getCliArgs("cliArgsJson", "cliArgsBase64"));
+                String secondCliArgs = getCliArgs("secondCliArgsJson", "secondCliArgsBase64");
+                if (secondCliArgs != null) sendRun(nodeService, 2, probe, secondCliArgs);
             } catch (RemoteException failure) {
                 status.setText(failure.toString());
             }
@@ -59,8 +57,34 @@ public final class ProbeActivity extends Activity {
         status.setTextSize(18);
         status.setPadding(32, 64, 32, 32);
         setContentView(status);
+        cancelOnReady = getIntent().getBooleanExtra("cancelOnReady", false);
         bound = bindService(new Intent(this, NodeProbeService.class), connection, Context.BIND_AUTO_CREATE);
         if (!bound) status.setText("Node service bind failed");
+    }
+
+    private void sendRun(Messenger service, int requestId, String probe, String cliArgsJson)
+            throws RemoteException {
+        Message request = Message.obtain(null, NodeProbeService.RUN);
+        request.arg1 = requestId;
+        request.replyTo = incoming;
+        if ("a4-json5".equals(probe) || "a4-json5-cli".equals(probe)) {
+            Bundle arguments = new Bundle();
+            arguments.putString("entrypoint", probe);
+            if ("a4-json5-cli".equals(probe)) {
+                arguments.putString("cliArgsJson",
+                        cliArgsJson == null ? "[\"--version\"]" : cliArgsJson);
+            }
+            request.setData(arguments);
+        }
+        service.send(request);
+    }
+
+    private String getCliArgs(String jsonExtra, String base64Extra) {
+        String encoded = getIntent().getStringExtra(base64Extra);
+        if (encoded != null) {
+            return new String(Base64.decode(encoded, Base64.DEFAULT), StandardCharsets.UTF_8);
+        }
+        return getIntent().getStringExtra(jsonExtra);
     }
 
     private boolean handle(Message event) {
@@ -71,6 +95,17 @@ public final class ProbeActivity extends Activity {
                 + " detail=" + detail;
         status.setText(line);
         Log.i(TAG, line);
+        if (cancelOnReady && !cancelSent && event.what == NodeProbeService.EVENT
+                && detail.contains("\"type\":\"ready\"")) {
+            cancelSent = true;
+            Message cancel = Message.obtain(null, NodeProbeService.CANCEL);
+            cancel.arg1 = 1;
+            try {
+                if (nodeService != null) nodeService.send(cancel);
+            } catch (RemoteException failure) {
+                Log.e(TAG, "Unable to send cancellation", failure);
+            }
+        }
         return true;
     }
 

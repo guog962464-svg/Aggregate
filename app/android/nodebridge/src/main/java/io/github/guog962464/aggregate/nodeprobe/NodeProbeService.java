@@ -174,7 +174,7 @@ public final class NodeProbeService extends Service {
                 eventReader.join(1000);
             }
             long elapsed = (System.nanoTime() - startedAt) / 1_000_000;
-            if (exitCode != 0 || !output.isFile()) {
+            if ((!cliProbe && exitCode != 0) || !output.isFile()) {
                 send(reply, ERROR, "Node exit=" + exitCode + ", output missing=" + !output.isFile(), exitCode, elapsed, requestId);
             } else {
                 String payload = readFile(output);
@@ -196,7 +196,9 @@ public final class NodeProbeService extends Service {
         for (int index = 0; index < arguments.length(); index++) {
             String argument = arguments.getString(index);
             if (!"--version".equals(argument) && !"-V".equals(argument)
-                    && !"--help".equals(argument) && !"-h".equals(argument)) {
+                    && !"--help".equals(argument) && !"-h".equals(argument)
+                    && !"--probe-invalid-json".equals(argument)
+                    && !"--probe-large-validate".equals(argument)) {
                 throw new JSONException("argument is not in the fixed allowlist");
             }
         }

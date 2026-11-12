@@ -15,8 +15,11 @@
 - LGE AN10、Android 15/API 35、arm64、4 KB 页真机上，源码/动态加载/包内 CJS/ESM/esbuild bundle、`package.json` 读取和私有配置写读通过；整 App force-stop 后再次成功，Service generation 改变。首次运行后注入的旧包目录标记在重启重复制包后消失。
 - 同一真机完成两个不同包版本的 APK 原位升级：JSON5 2.2.2 / versionCode 1 首次运行通过；升级前在应用私有配置写入 `userValue=keep-me`，并在旧包目录放入陈旧文件；安装 JSON5 2.2.3 / versionCode 2 后，新 Service generation 加载 2.2.3，配置用户字段保留、配置版本更新为 2.2.3、陈旧包文件移除，`files/` 根目录文件集合不变。脚本为 `nodeprobe/verify_a4_upgrade.py`。
 - `json5` bin `lib/cli.js` 由 Node 入口函数调用，`--version` 与 `--help` 两组参数均正确；`--version` 输出 `2.2.3\n`，`--help` 包含 Usage，stderr 为空，退出码 0。限制参数来自固定 allowlist。
+- 错误路径也在真机验收：给 JSON5 bin 一个固定的非法 JSON5 文件，stdout 为空，stderr 为 `JSON5: invalid character '}' at 1:12\n`，`process.exit(1)` 请求和 Node 返回码均为 1。探针暂时拦截 `process.exit` 以收集输出，再将捕获到的返回码写入结果。
+- 并发与取消：首个 `--version` 运行期间立即提交第二个 bin 请求，Service 返回 `Node instance already started`（busy），首个请求随后成功完成，未并行启动第二个 Node 实例。取消样本通过 `--validate` 解析应用私有目录里的 4 MiB JSON5 文件；Activity 收到 Node `ready` 事件后发取消，日志观察到 `cancelRequested` 与 Service 断开，未返回终态结果；重新启动后新 generation 的 `--version` 成功。当前取消实现是杀掉隔离的 Node Service 进程，不是 bin 内部的协作式取消。
+- 曾用 32 MiB 输入尝试压测；观察到 Service 断开且没有终态结果，原因未确认，因此不计入通过项。最终并发项使用两个同时提交的 `--version` 请求，取消项使用上述 4 MiB 输入。
 - A3 固定探针的进程崩溃、整 App 重启、重装和后台 `am kill` 后恢复回归通过。普通 Flutter Debug APK 构建并安装成功，包内无 `libnode.so`、JNI 探针或 A4 包资源。
-- **状态**：A4.1 的 JSON5 样本（含实际 APK 包版本升级、文件树清理、配置保留及 bundle 对照）在上述 4 KB Debug 真机范围内通过。A4.2 仅验证了 `--version`/`--help` 成功路径；取消、并发、非零退出与错误 stderr 未验。设备端 `npm install`、任意 CLI 和其他包仍未验证。
+- **状态**：A4.1 与 A4.2 的 JSON5 样本在上述 4 KB Debug 真机范围内通过，包含实际 APK 包版本升级、文件树清理、配置保留、bundle 对照、成功/非零退出、输出采集、并发拒绝及进程级取消/恢复。该结果不代表设备端 `npm install`、任意 CLI、其他包或产品适配器已经通过。
 
 ## `@music163/ncm-cli` 0.1.7 静态包审查
 
@@ -44,5 +47,5 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 
 ## 下一步
 
-1. 继续验收 bin runner 的取消与并发语义及失败输出，不执行任意 shebang。
+1. 进入 A4.3，评估“APK 内置包 + 已知 Node 入口”在 Android 的独立标识、配置/缓存与清理契约；保持当前产品连接器不开放此探针。
 2. 再进入设备端 npm 安装、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli` 样本；这些实验的失败不得反向打开用户可见适配器。
