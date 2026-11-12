@@ -42,12 +42,15 @@
 - 整轮 11 个 npm 操作均能写出 app-private JSON 结果。首轮验证器把 `npmResult` 到达后立即读取 Logcat，`0/11` 终态统计有时序竞争，不计为有效结果；修正为等待最多 3 秒后，下一轮日志确认普通 registry 安装和离线安装都收到 Messenger `kind=3`。清除 app-private npm CLI 目录后再次运行 `npm --version`，资源重拷贝与终态 Messenger 结果也通过。另一轮在本地 tarball 的 `script-ignored` 阶段 Service 断开，单独运行精确授权的 `script-allowed` 也写出 npm 127 结果后触发 Android tagged-pointer fatal；根因未确认。当前证据指向本地生命周期脚本样本附近的不稳定，不能泛化为全部 npm 操作都没有 Messenger 终态。
 - **验收结论：**A4.4 的 Debug 可行性样本完成，证明受限纯 JS 安装路径在单台 4 KB arm64 设备可工作，也明确暴露脚本执行和本地 tarball 样本附近的 Service 稳定性缺口。手机端 npm 与任意 CLI 不进入产品能力；后续产品白名单/Host/不支持决策留在 A4.7。未覆盖 Play 预审、16 KB 真机、其他 ABI、缓存配额/清理策略或长期稳定性。
 
-## A4.5 nodejs-mobile API 静态边界（2026-11-12 查阅）
+## A4.5 nodejs-mobile API 文档与真机边界（2026-11-12）
 
-- nodejs-mobile 的 API 差异文档将 `child_process` 和 `cluster` 标为不支持；`process.stdin` 默认不可用，除非宿主提供原生管道；Android `process.cwd()` 为 `/`；stdout/stderr 默认导向 `/dev/null`，需宿主重定向。
-- FAQ 说明 npm 模块可在开发时安装到随 App 打包的 Node 项目，原生 `.node` 扩展可以工作，但必须为目标平台/CPU 交叉编译；定制构建步骤和平台代码可能需要适配。当前 Aggregate 手写 JNI 路径没有通用 addon 交叉编译、加载与许可治理流程。
-- 静态映射：无子进程/交互输入的纯 JS 入口有继续验证价值；TUI 需要的 stdin/终端能力不能从当前桥接推定；`ncm-cli` 的 `fluent-ffmpeg` 调用 `child_process.spawn`、README 要求外部 mpv，正好触及已知限制，手机本地播放通过概率很低。这里只依据包源码与 nodejs-mobile 文档判断，未在本项目当前 fogtape Release 上实测 API 错误信息。
-- 来源：[nodejs-mobile 当前移动端 API 差异](https://nodejs-mobile.github.io/docs/api/differences/)、[nodejs-mobile FAQ](https://github.com/nodejs-mobile/nodejs-mobile/blob/main/doc_mobile/FAQ.md)、[fogtape Node 24 移动版 README](https://github.com/fogtape/nodejs-mobile/blob/recipe/README.md)。
+- LGE AN10、Android 15/API 35、arm64、4 KB 页上的 8 个固定 Debug 样本全部完成，Node v24.22.1 / `process.versions.mobile=24.22.1-0`；每项均写出结果并收到 Messenger `kind=3` 终态。探针结束后卸载。该结果不覆盖其他设备、ABI、Node 构建或 16 KB 页。
+- `node:child_process` 与 `child_process` 均可导入，`spawn`/`fork` 均为函数；`spawn('/system/bin/sh', ['-c', 'exit 0'])` 正常退出 0。`spawn(process.execPath, [应用私有目录中的 JS])` 和 `fork(私有 JS)` 都创建了子进程，但子进程以 `SIGABRT` 结束；Android crash buffer 记录 `app_process64` 的 abort message 为 `Error changing dalvik-cache ownership : Permission denied`。这不是“所有 spawn 都不可用”，也不证明任意系统命令或工具链可运行。
+- 当前 nodejs-mobile API 差异文档仍将 `child_process`/`cluster` 标为不支持，并指出 Android 的 stdin 需要宿主原生管道。与本机样本存在差异，需保留文档声明和当前构建实测，不能推广到其他构建。实测 `process.stdin` 对象存在且 readable，但 350 ms 观察窗口收到 0 字节，桥接没有把 MCP initialize 写入 fd 0；stdin/stdout 均非 TTY，`setRawMode` 不存在，交互式 TUI 条件不满足。`cwd` 为 `/`，`PATH` 仅为系统目录。
+- `ffmpeg`、`ffprobe`、`mpv` 在 `PATH` 及固定系统目录均未找到，因此本轮未启动这些程序。此前静态审查指出 `ncm-cli` 需要 `mpv`，`fluent-ffmpeg` 使用 `child_process.spawn`；A4.6 仍须单独验证 CLI 安装/启动和依赖在哪一步失败，不能用本轮缺少系统二进制代替 CLI 运行结果。
+- 用 NDK r28c、arm64/API 24、Node-API 8 头文件编译的自有最小 `.node` 样本，显式链接 `libnode.so` 后在应用私有目录成功加载，导出函数返回 N-API 10。此前不带 `libnode.so` 动态依赖时加载报 `ERR_DLOPEN_FAILED` / `cannot locate symbol napi_create_function`。这只证明该 ABI/Node 构建/最小 N-API 样本的加载路径成立；不代表第三方扩展、V8/C++ addon 或通用 npm 原生依赖可用。
+- 复现入口：`app/android/nodeprobe/prepare_a4_boundary_addon.sh`、`app/android/nodeprobe/verify_a4_boundary.py`；在 `app/android/` 运行 `./gradlew :nodeprobe:assembleDebug --offline` 后执行 `python3 nodeprobe/verify_a4_boundary.py`。生成的 `.node` 是忽略的临时 APK 资源。
+- 来源：[nodejs-mobile 移动端 API 差异](https://nodejs-mobile.github.io/docs/api/differences/)、[nodejs-mobile FAQ](https://github.com/nodejs-mobile/nodejs-mobile/blob/main/doc_mobile/FAQ.md)、[fogtape Node 24 移动版 README](https://github.com/fogtape/nodejs-mobile/blob/recipe/README.md)、[Android 10 执行权限行为变化](https://developer.android.com/about/versions/10/behavior-changes-10)。
 
 复现：在 `app/android/` 运行 `nodeprobe/prepare.sh`、`nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline` 和 `python3 nodeprobe/verify_a4.py`；两个版本 APK 升级验收可运行 `python3 nodeprobe/verify_a4_upgrade.py`。A4.3 profile 生命周期可运行 `python3 nodeprobe/verify_a4_profiles.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
 
@@ -56,4 +59,4 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 ## 下一步
 
 1. A4.3 的 profile 契约和隔离 Debug 生命周期验收已通过；结果与限制记录在 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md)。产品连接器仍不开放此探针。
-2. A4.4 受限 Debug npm 实验已完成；继续 A4.5–A4.7，验证原生扩展/子进程/TUI 边界和 `@music163/ncm-cli`，再形成发布能力决策。A4.4 的失败与未决项不得反向打开用户可见适配器。
+2. A4.4 受限 Debug npm 实验与 A4.5 固定 API 边界样本已完成；继续 A4.6 真机检查 `@music163/ncm-cli`，再由 A4.7 形成“本地 / Host / 不支持”与发布能力决策。A4.4/A4.5 的失败、设备范围和文档差异不得反向打开用户可见适配器；A3.6 的 16 KB 真机和稳定发布库门槛仍未完成。

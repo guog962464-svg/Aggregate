@@ -85,16 +85,22 @@ public final class NodeProbeService extends Service {
         final String entrypoint = request.getData().getString("entrypoint", "a3-fixed");
         String cliArgsJson = request.getData().getString("cliArgsJson", "[\"--version\"]");
         final String npmAction = request.getData().getString("npmAction");
+        final String boundaryAction = request.getData().getString("boundaryAction");
         final String profileRef = request.getData().getString("profileRef");
         final String draftId = request.getData().getString("draftId");
         final String expectedGeneration = request.getData().getString("expectedGeneration");
         if (!"a3-fixed".equals(entrypoint) && !"a4-json5".equals(entrypoint)
-                && !"a4-json5-cli".equals(entrypoint) && !"a4-npm".equals(entrypoint)) {
+                && !"a4-json5-cli".equals(entrypoint) && !"a4-npm".equals(entrypoint)
+                && !"a4-boundary".equals(entrypoint)) {
             reject(reply, requestId, autoClose, "invalidEntrypoint", "entrypoint is not allowed");
             return true;
         }
         if ("a4-npm".equals(entrypoint) && !isNpmActionAllowed(npmAction)) {
             reject(reply, requestId, autoClose, "invalidArgument", "npm action is not in the fixed allowlist");
+            return true;
+        }
+        if ("a4-boundary".equals(entrypoint) && !isBoundaryActionAllowed(boundaryAction)) {
+            reject(reply, requestId, autoClose, "invalidArgument", "boundary action is not in the fixed allowlist");
             return true;
         }
         if (profileRef != null || draftId != null) {
@@ -130,18 +136,20 @@ public final class NodeProbeService extends Service {
         send(reply, STARTED, "worker started", 0, 0, requestId);
         final String safeCliArgsJson = cliArgsJson;
         new Thread(() -> run(reply, requestId, autoClose, delayMs, fail, entrypoint,
-                safeCliArgsJson, npmAction), "a3-node-worker").start();
+                safeCliArgsJson, npmAction, boundaryAction), "a3-node-worker").start();
         return true;
     }
 
     private void run(Messenger reply, int requestId, boolean autoClose, int delayMs, boolean fail,
-                     String entrypoint, String cliArgsJson, String npmAction) {
+                     String entrypoint, String cliArgsJson, String npmAction, String boundaryAction) {
         long startedAt = System.nanoTime();
         try {
             boolean packageProbe = entrypoint.startsWith("a4-json5");
             boolean cliProbe = "a4-json5-cli".equals(entrypoint);
             boolean npmProbe = "a4-npm".equals(entrypoint);
-            File entry = new File(getFilesDir(), npmProbe ? "a4-npm-probe.js" : packageProbe
+            boolean boundaryProbe = "a4-boundary".equals(entrypoint);
+            File entry = new File(getFilesDir(), boundaryProbe ? "a4-boundary-probe.js"
+                    : npmProbe ? "a4-npm-probe.js" : packageProbe
                     ? (cliProbe ? "a4-cli-probe.js" : "a4-probe.js") : "a3-probe.js");
             File output = new File(getFilesDir(), "a3-result.json");
             File events = new File(getFilesDir(), "a3-events.jsonl");
@@ -183,8 +191,17 @@ public final class NodeProbeService extends Service {
                 try (FileOutputStream action = new FileOutputStream(actionFile, false)) {
                     action.write(npmAction.getBytes(StandardCharsets.UTF_8));
                 }
+            } else if (boundaryProbe) {
+                copyAsset("a4-boundary-native-addon.node",
+                        new File(getFilesDir(), "a4-boundary-native-addon.node"));
+                copyAsset("a4-boundary-child.js", new File(getFilesDir(), "a4-boundary-child.js"));
+                File actionFile = new File(getFilesDir(), "a4-boundary-action.txt");
+                try (FileOutputStream action = new FileOutputStream(actionFile, false)) {
+                    action.write(boundaryAction.getBytes(StandardCharsets.UTF_8));
+                }
             }
-            String entryAsset = npmProbe ? "a4-npm-probe.js" : packageProbe
+            String entryAsset = boundaryProbe ? "a4-boundary-probe.js"
+                    : npmProbe ? "a4-npm-probe.js" : packageProbe
                     ? (cliProbe ? "a4-cli-probe.js" : "a4-probe.js") : "probe.js";
             try (InputStream source = getAssets().open(entryAsset);
                  FileOutputStream destination = new FileOutputStream(entry, false)) {
@@ -208,7 +225,7 @@ public final class NodeProbeService extends Service {
                 eventReader.join(1000);
             }
             long elapsed = (System.nanoTime() - startedAt) / 1_000_000;
-            if ((!cliProbe && !npmProbe && exitCode != 0) || !output.isFile()) {
+            if ((!cliProbe && !npmProbe && !boundaryProbe && exitCode != 0) || !output.isFile()) {
                 send(reply, ERROR, "Node exit=" + exitCode + ", output missing=" + !output.isFile(), exitCode, elapsed, requestId);
             } else {
                 String payload = readFile(output);
@@ -246,6 +263,13 @@ public final class NodeProbeService extends Service {
                 || "integrity-bad".equals(action)
                 || "upgrade-old".equals(action)
                 || "upgrade-new".equals(action) || "uninstall".equals(action);
+    }
+
+    private boolean isBoundaryActionAllowed(String action) {
+        return "runtime".equals(action) || "child-process".equals(action)
+                || "spawn".equals(action) || "fork".equals(action)
+                || "media-tools".equals(action) || "stdio".equals(action)
+                || "tui".equals(action) || "native-addon".equals(action);
     }
 
     private void copyAsset(String assetPath, File destination) throws Exception {
