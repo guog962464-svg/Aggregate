@@ -47,5 +47,5 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 
 ## 下一步
 
-1. 进入 A4.3，评估“APK 内置包 + 已知 Node 入口”在 Android 的独立标识、配置/缓存与清理契约；保持当前产品连接器不开放此探针。
+1. 按 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md) 实现并验收 profile 的测试、保存、丢弃、删除和清除数据；保持当前产品连接器不开放此探针。
 2. 再进入设备端 npm 安装、原生扩展/子进程/TUI 边界和 `@music163/ncm-cli` 样本；这些实验的失败不得反向打开用户可见适配器。
