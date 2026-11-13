@@ -131,10 +131,18 @@ class SchemaFormState extends State<SchemaForm> {
                 return DropdownButtonFormField<String>(
                   key: Key('field-${entry.key}'),
                   initialValue: selections[entry.key],
+                  isExpanded: true,
                   decoration: InputDecoration(labelText: label),
                   items: [
                     for (final option in options.cast<String>())
-                      DropdownMenuItem(value: option, child: Text(option)),
+                      DropdownMenuItem(
+                        value: option,
+                        child: Text(
+                          option,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                   ],
                   onChanged: (value) => setState(() {
                     if (value == null) {

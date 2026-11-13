@@ -2,6 +2,7 @@ import 'package:aggregate/features/music/music_mini_player.dart';
 import 'package:aggregate/features/music/music_player_page.dart';
 import 'package:aggregate/features/music/music_session.dart';
 import 'package:aggregate/app/app_shell.dart';
+import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/foundation.dart';
@@ -65,6 +66,46 @@ void main() {
     expect(find.byTooltip('打开播放器'), findsNothing);
     expect(find.byTooltip('暂停'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Android mini-player controls have 48 dp semantic hit targets', (
+    tester,
+  ) async {
+    await _withPlatform(TargetPlatform.android, () async {
+      _useSize(tester, const Size(320, 800));
+      final semantics = tester.ensureSemantics();
+      final session = _playingSession();
+      addTearDown(session.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.android,
+          ),
+          home: Scaffold(
+            body: const SizedBox.shrink(),
+            bottomNavigationBar: MusicMiniPlayer(
+              session: session,
+              onOpen: () {},
+            ),
+          ),
+        ),
+      );
+
+      for (final tooltip in [
+        '上一首',
+        '暂停',
+        '下一首',
+        '打开播放器',
+        '更多播放操作',
+        '收起迷你播放器',
+      ]) {
+        final bounds = tester.getSemantics(find.byTooltip(tooltip)).rect;
+        expect(bounds.width, greaterThanOrEqualTo(48), reason: tooltip);
+        expect(bounds.height, greaterThanOrEqualTo(48), reason: tooltip);
+      }
+      semantics.dispose();
+    });
   });
 
   testWidgets('desktop mini player keeps direct playback actions', (

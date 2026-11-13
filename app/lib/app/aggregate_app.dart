@@ -96,8 +96,14 @@ class _AggregateAppState extends State<AggregateApp> {
   Widget build(BuildContext context) => MaterialApp(
     title: 'Aggregate',
     debugShowCheckedModeBanner: false,
-    theme: AggregateTheme.light,
-    darkTheme: AggregateTheme.dark,
+    theme: AggregateTheme.forPlatform(
+      AggregateTheme.light,
+      defaultTargetPlatform,
+    ),
+    darkTheme: AggregateTheme.forPlatform(
+      AggregateTheme.dark,
+      defaultTargetPlatform,
+    ),
     themeMode: themeMode,
     themeAnimationDuration: _themeAnimationDuration(context),
     themeAnimationCurve: Curves.easeInOutCubic,

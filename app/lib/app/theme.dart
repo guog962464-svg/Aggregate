@@ -20,6 +20,28 @@ abstract final class AggregateTheme {
     Brightness.dark,
   );
 
+  static ThemeData forPlatform(ThemeData theme, TargetPlatform platform) {
+    if (platform != TargetPlatform.android &&
+        platform != TargetPlatform.iOS &&
+        platform != TargetPlatform.fuchsia) {
+      return theme;
+    }
+    const mobileButtonStyle = ButtonStyle(
+      minimumSize: WidgetStatePropertyAll(Size(64, 48)),
+      tapTargetSize: MaterialTapTargetSize.padded,
+    );
+    return theme.copyWith(
+      platform: platform,
+      visualDensity: VisualDensity.standard,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      filledButtonTheme: const FilledButtonThemeData(style: mobileButtonStyle),
+      outlinedButtonTheme: const OutlinedButtonThemeData(
+        style: mobileButtonStyle,
+      ),
+      textButtonTheme: const TextButtonThemeData(style: mobileButtonStyle),
+    );
+  }
+
   static ThemeData _build(
     Color background,
     Color surface,

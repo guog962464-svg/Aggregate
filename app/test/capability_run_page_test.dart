@@ -1,11 +1,28 @@
 import 'dart:async';
 
+import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/features/invocation/capability_run_page.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('mobile themes keep body text at accessible contrast', () {
+    for (final theme in [AggregateTheme.light, AggregateTheme.dark]) {
+      expect(
+        _contrastRatio(theme.colorScheme.onSurface, theme.colorScheme.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(
+          theme.colorScheme.onSurfaceVariant,
+          theme.colorScheme.surface,
+        ),
+        greaterThanOrEqualTo(4.5),
+      );
+    }
+  });
+
   testWidgets(
     'phone run shows execution context, redacts submitted secrets, and expands long output',
     (tester) async {
@@ -216,6 +233,151 @@ void main() {
     expect(find.text('已取消'), findsOneWidget);
     expect(runtime.invocations, 0);
   });
+
+  testWidgets(
+    'Android run page handles long bilingual schemas, large text, themes, and window sizes',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final viewports = [
+        const Size(320, 720),
+        const Size(393, 852),
+        const Size(700, 900),
+        const Size(900, 900),
+        const Size(844, 390),
+      ];
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        for (final viewport in viewports) {
+          tester.view.physicalSize = viewport;
+          tester.view.devicePixelRatio = 1;
+          final runtime = _RunRuntime()
+            ..connectionLookup = Completer<List<Connection>>()
+            ..connectionLookup!.complete([
+              Connection(
+                id: const ConnectionId('connection-1'),
+                kind: ConnectionKind.mcpHttp,
+                label: '超长连接名称 Long Aggregate Workflow Service for Mobile Acceptance',
+                location: 'Mac Host',
+                executionTarget: ExecutionTarget.host('test-host'),
+                status: ConnectionStatus.unavailable,
+                diagnostic: 'Mac Host 离线',
+              ),
+            ]);
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: AggregateTheme.forPlatform(
+                AggregateTheme.light,
+                TargetPlatform.android,
+              ),
+              darkTheme: AggregateTheme.forPlatform(
+                AggregateTheme.dark,
+                TargetPlatform.android,
+              ),
+              themeMode: brightness == Brightness.dark
+                  ? ThemeMode.dark
+                  : ThemeMode.light,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: const TextScaler.linear(2)),
+                child: child!,
+              ),
+              home: CapabilityRunPage(
+                runtime: runtime,
+                capability: _matrixCapability,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.textContaining('Submit a detailed mobile payload'),
+            findsNWidgets(2),
+          );
+          final source = find.bySemanticsLabel(RegExp('来源：超长连接名称'));
+          expect(source, findsOneWidget);
+          final sourceBounds = tester.getSemantics(source).rect;
+          final execution = find.bySemanticsLabel(RegExp(r'执行端[\s\S]*配对 Mac'));
+          expect(execution, findsOneWidget);
+          final executionBounds = tester.getSemantics(execution).rect;
+          final permission = find.bySemanticsLabel(RegExp(r'权限[\s\S]*外部写入'));
+          expect(permission, findsOneWidget);
+          final permissionBounds = tester.getSemantics(permission).rect;
+          expect(_comesBefore(sourceBounds, executionBounds), isTrue);
+          expect(_comesBefore(executionBounds, permissionBounds), isTrue);
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: '$brightness $viewport',
+          );
+
+          if (viewport.width < 600) {
+            final runButton = tester.getSemantics(
+              find.widgetWithText(FilledButton, '运行'),
+            );
+            expect(
+              runButton.rect.height,
+              greaterThanOrEqualTo(48),
+              reason: 'Android primary actions should have a 48 dp hit area',
+            );
+          }
+          await tester.pumpWidget(const SizedBox.shrink());
+          await runtime.dispose();
+        }
+      }
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'invalid token, offline Host, and unavailable Node show recovery',
+    (tester) async {
+      final scenarios = [
+        (
+          code: RuntimeErrorCode.authenticationRequired,
+          message: '访问令牌已失效',
+          recovery: '到连接页完成登录或更新凭据',
+        ),
+        (
+          code: RuntimeErrorCode.connectionFailed,
+          message: 'Mac Host 离线',
+          recovery: '检查网络和执行端在线状态',
+        ),
+        (
+          code: RuntimeErrorCode.executableMissing,
+          message: 'node: command not found',
+          recovery: '检查 Mac Host 上的 CLI 是否安装',
+        ),
+      ];
+      for (final scenario in scenarios) {
+        _usePhoneSize(tester);
+        final runtime = _RunRuntime();
+        await _showRunPage(tester, runtime);
+        await tester.enterText(
+          find.byKey(const Key('field-apiToken')),
+          'token',
+        );
+        await tester.tap(find.text('运行'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, '执行'));
+        await tester.pump();
+        runtime.events.add(
+          RunEvent(
+            runId: const RunId('run-1'),
+            sequence: 1,
+            state: RunState.failed,
+            occurredAt: DateTime.utc(2026, 11, 14),
+            failure: RuntimeFailure(scenario.code, scenario.message),
+          ),
+        );
+        await tester.pump();
+        expect(find.textContaining(scenario.recovery), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await runtime.dispose();
+      }
+    },
+  );
 }
 
 void _usePhoneSize(WidgetTester tester) {
@@ -251,6 +413,34 @@ const _capability = Capability(
       'apiToken': {'type': 'string', 'title': '访问令牌', 'writeOnly': true},
     },
     'required': ['apiToken'],
+  },
+);
+
+const _matrixCapability = Capability(
+  id: CapabilityId(
+    ConnectionId('connection-1'),
+    CapabilityKind.mcpTool,
+    'submit',
+  ),
+  title: '提交复杂配置 Submit a detailed mobile payload safely',
+  description: '检查中英文说明、长连接名称与复杂参数在 Android 手机、平板和分屏宽度下的布局。',
+  permission: PermissionLevel.externalWrite,
+  inputSchema: {
+    'required': ['payload'],
+    'properties': {
+      'payload': {
+        'type': 'object',
+        'title': '复杂配置 Complex payload',
+        'description': '嵌套 JSON 对象 / Nested JSON configuration',
+      },
+      'items': {'type': 'array', 'title': '项目清单 Items'},
+      'language': {
+        'type': 'string',
+        'title': '显示语言 / Display language',
+        'enum': ['中文', 'English'],
+      },
+      'enabled': {'type': 'boolean', 'title': '启用 / Enabled'},
+    },
   },
 );
 
@@ -321,3 +511,15 @@ Connection _hostConnection() => Connection(
   location: 'Mac Host',
   executionTarget: ExecutionTarget.host('test-host'),
 );
+
+double _contrastRatio(Color foreground, Color background) {
+  final first = foreground.computeLuminance();
+  final second = background.computeLuminance();
+  final lighter = first > second ? first : second;
+  final darker = first > second ? second : first;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+bool _comesBefore(Rect first, Rect second) =>
+    first.top < second.top ||
+    first.top == second.top && first.left <= second.left;

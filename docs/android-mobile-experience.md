@@ -219,3 +219,11 @@ flowchart LR
 - Host 音乐连接打开播放器时显示“声音由配对 Mac 输出”；`MusicSession` 按已解析的 `ExecutionTarget` 更新输出位置，连接确认期间读屏不会误报本机。手机迷你栏显示短标签“Mac 输出”，对应无障碍语义保留完整输出说明。Android 输入法打开时迷你栏收起；完整音乐页依靠可滚动视口将搜索框移到键盘可见区，一级导航与 IME 不叠放。没有新增手机本地音频或后台播放能力。
 - `music_mini_player_test.dart` 覆盖 320 dp 长曲名/多控制、主控与更多菜单、Host 输出语义、IME 隐藏、完整播放器路由及桌面直控；Android 导航测试覆盖音乐搜索框在 IME 下可滚动可见；Host 账号场景测试检查 `MusicSession` 输出目标标记。完整 Flutter 测试 185 项通过，`flutter analyze --no-pub` 无问题；Android arm64 Debug APK、macOS Debug app 与 Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机重新安装并启动，`MainActivity` resumed，最近 500 条 AndroidRuntime/Flutter 崩溃过滤日志为空。设备没有 Host/真实网易云账号，未在实体设备打开远端播放器或实际播放；这些 Widget/fake runtime 结果不算真实账号或 Mac 音频闭环。没有 16 KB 实体设备；静态对齐不等同于 16 KB 系统运行验收。
+
+### A7.6 真机与可访问性验收（2026-11-14）
+
+- UI 矩阵：长中英文连接名、长功能标题、复杂 object/array/enum schema、错误 Token（`authenticationRequired`）、Mac Host 离线（`connectionFailed`）、Host CLI/Node 缺失（`executableMissing`）及大输出均有对应运行时或结果页测试。调用页在浅色/深色主题、320×720、393×852、700×900、900×900、844×390 dp、200% 字体的 10 种主题/窗口组合下无溢出；覆盖小屏、大屏、双栏分屏尺寸和横屏。下拉框启用全宽布局，长选项单行省略，修复 320dp+200% 字体下 3.1px 横向溢出。
+- 可访问性：主题主/次正文对比度检查通过；来源、执行端、权限语义标签能区分并按视觉顺序排列；调用主按钮和迷你播放器上一首/暂停/下一首/打开/更多/收起的语义节点点击区域均至少 48×48 dp。Android/iOS 主题为按钮设置 48dp 最小高度及标准视觉密度，`macOS` 主题原样返回以保持桌面尺寸。设备用户 0 未安装 TalkBack，故只验 Flutter 语义树和目标尺寸，未执行实体 TalkBack 朗读。
+- 真机：LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页，安装新 APK 后启动；依次打开执行设备选择、HTTP MCP 配置页，在名称字段输入长英文连接名并拉起系统 IME，底部测试/保存按钮仍高于键盘。之后丢弃未保存草稿。临时把系统字体从 100% 调到 150%，页面可读且无裁切；已恢复 100%。临时切换浅色/深色模式截图后恢复深色。未启用模拟器。
+- 全量 Flutter 测试 189 项、`flutter analyze --no-pub`、格式和 diff 检查通过；Android arm64 Debug APK、macOS Debug app 构建与 Build Tools 36.0.0 `zipalign -c -P 16 4` 检查通过。真实设备未配置 production WSS Host，故错误 Token/Host 离线/Node 缺失由测试桩与 HTTP/Host 运行时集成测试覆盖，未在真机连接真实服务；没有实际进入 Android 多窗口，分屏布局以 900dp 双栏窗口和其余窗口约束进行 Widget 测试。
+- 真机截图： [功能页深色](screenshots/android-a7.6/01-functions-dark.png)、[执行设备选择深色](screenshots/android-a7.6/02-target-selection-dark.png)、[连接配置深色](screenshots/android-a7.6/03-connection-form-dark.png)、[长名称与 IME 深色](screenshots/android-a7.6/04-long-name-ime-dark.png)、[连接页浅色](screenshots/android-a7.6/05-connections-light.png)、[150% 字体深色](screenshots/android-a7.6/06-large-font-dark.png)、[150% 字体浅色](screenshots/android-a7.6/07-large-font-light.png)。
