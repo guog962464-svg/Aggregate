@@ -180,6 +180,14 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 自动化覆盖 Android `actionRequired` 检查呈现、Host 播放位置标签、二维码同机扫描限制文案、音乐控制确认及 Host 账号退出逐连接授权。账号页面组件在 375×812、深色主题、1.8 倍文字缩放与 844×390 横屏下回归，发现并修复账号弹窗按钮横向溢出；手机宽度的共享 Flutter 页面标题区会将尾部操作放到标题下方。验收：Flutter 全量 161 项通过、`flutter analyze --no-pub` 无问题，Android arm64 与 macOS Debug 构建成功；LGE AN10 / Android 15 / API 35 / 4 KB 真机已安装并启动，MainActivity resumed，最近 300 条 logcat 无应用崩溃。
 - 验收边界：本轮没有用用户真实账号完成 production WSS 登录/搜索/扬声器听音闭环，也没有 16 KB 实体设备；双设备二维码登录、Host 网络/WSS 实时体验和实际音频验收仍待后续。网易云扫码登录遵循 [`@music163/ncm-cli` 官方 README](https://www.npmjs.com/package/%40music163/ncm-cli) 的终端扫码流程，移动端不能把当前屏幕上的二维码当成同机可扫描入口。
 
+## A6.5 Android 手机终端交互进度（2026-11-14）
+
+- `TerminalPage` 继续复用现有 PTY/Host 事件，不在 Android 另起本地 CLI；横向触控栏提供 Ctrl latch、Esc、Tab、方向键、复制和显式粘贴，AppBar 中断按钮调用 PTY interrupt。Ctrl latch 将单个 ASCII 控制输入映射成控制字节，工具栏按键也能携带 Ctrl。
+- 复制要求终端中有选区；粘贴只在用户按键后读取系统文本剪贴板。复制和粘贴均按 UTF-8 字节限制在 256 KiB，超限给出提示且不发送。终端 resize 串行送到 Runtime；输入/resize/interrupt 错误或 PTY 输出流断开后停止输入、取消订阅、尽力 close 会话，并保留现有输出供只读查看。页面销毁时取消订阅、close PTY、释放 Terminal、selection controller 和 focus node。
+- `app/test/terminal_page_test.dart` 新增 4 项 widget 回归：Ctrl/Esc/Tab/方向键序列、中断、屏幕尺寸改变时 resize 与 844×390 横屏、375×812 深色大字布局、剪贴板复制/粘贴及 256 KiB 上限、流完成只读与订阅清理、写入错误与销毁 close。全量 Flutter 165 项测试通过，`flutter analyze --no-pub` 无问题；Android arm64 与 macOS Debug 构建通过。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机安装并启动新 APK，MainActivity resumed，最近 300 条 AndroidRuntime/Flutter 错误日志为空；Build Tools 36.0.0 `zipalign -c -P 16 4` APK 检查通过。未使用模拟器。
+- 验收边界：本轮没有从 production WSS Host 真正打开远程 PTY 并执行 CLI，也没有手工观察真实 Android IME 的键盘布局/按键行为；widget 模拟了 Terminal text input 到 Runtime 的输入路径。没有 16 KB 实体设备，APK 静态对齐不能替代 16 KB 系统实际加载验收。A7 仍可按手机场景重组整体终端流程。
+
 ## A5.4 配对实现进度（2026-11-13）
 
 - `app/android/app/src/main/kotlin/io/github/guog962464/aggregate/HostDeviceKeyStoreChannel.kt` 使用 Android Keystore 生成 P-256 `PURPOSE_SIGN` 私钥，SHA-256/ECDSA 签名只经 MethodChannel 返回；Dart 侧只接触 X.509 SPKI 公钥、按公钥摘要派生的 device ID 和 DER 签名。应用层从不读取私钥字节。密钥删除后再创建会产生新的 device ID。

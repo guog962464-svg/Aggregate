@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:terminal_view/terminal_view.dart';
+
+const _maxClipboardBytes = 256 * 1024;
 
 class TerminalPage extends StatefulWidget {
   const TerminalPage({
@@ -11,6 +15,7 @@ class TerminalPage extends StatefulWidget {
     required this.command,
     required this.source,
   });
+
   final RuntimePort runtime;
   final CliCommand command;
   final String source;
@@ -20,61 +25,230 @@ class TerminalPage extends StatefulWidget {
 }
 
 class _TerminalPageState extends State<TerminalPage> {
-  late final Terminal terminal;
-  TerminalSession? session;
-  StreamSubscription<String>? subscription;
-  String? error;
+  late final Terminal _terminal;
+  late final TerminalController _terminalController;
+  late final FocusNode _focusNode;
+
+  TerminalSession? _session;
+  StreamSubscription<String>? _subscription;
+  Future<void> _writeQueue = Future<void>.value();
+  Future<void> _resizeQueue = Future<void>.value();
+  String? _startupError;
+  String? _connectionMessage;
+  bool _connected = false;
+  bool _ctrlPending = false;
+  bool _closeRequested = false;
+
+  bool get _hasSelection {
+    final selection = _terminalController.selection;
+    return selection != null && !selection.isCollapsed;
+  }
 
   @override
   void initState() {
     super.initState();
-    terminal = Terminal(maxLines: 2000);
-    terminal.onOutput = (text) {
-      final current = session;
-      if (current != null) {
-        unawaited(widget.runtime.writeTerminal(current, text));
-      }
+    _terminal = Terminal(maxLines: 2000);
+    _terminalController = TerminalController();
+    _terminalController.addListener(_selectionChanged);
+    _focusNode = FocusNode();
+    _terminal.onOutput = _sendInput;
+    _terminal.onResize = (columns, rows, _, _) {
+      if (columns > 0 && rows > 0) _resize(columns, rows);
     };
-    terminal.onResize = (columns, rows, _, _) {
-      final current = session;
-      if (current != null) {
-        unawaited(widget.runtime.resizeTerminal(current, columns, rows));
-      }
-    };
-    unawaited(start());
+    unawaited(_start());
   }
 
-  Future<void> start() async {
+  Future<void> _start() async {
     try {
       final opened = await widget.runtime.openTerminal(widget.command);
       if (!mounted) {
         await widget.runtime.closeTerminal(opened);
         return;
       }
-      setState(() => session = opened);
-      subscription = widget.runtime
-          .watchTerminal(opened)
-          .listen(terminal.write);
-      await widget.runtime.resizeTerminal(
-        opened,
-        terminal.viewWidth,
-        terminal.viewHeight,
+
+      _session = opened;
+      final output = widget.runtime.watchTerminal(opened);
+      _subscription = output.listen(
+        _receiveOutput,
+        onError: (Object cause) {
+          _markDisconnected('终端连接中断：$cause');
+        },
+        onDone: () => _markDisconnected('终端会话已结束，输出仍可查看。'),
+        cancelOnError: true,
       );
+      setState(() => _connected = true);
+      _resize(_terminal.viewWidth, _terminal.viewHeight);
     } catch (cause) {
-      if (mounted) setState(() => error = '$cause');
+      if (!mounted) return;
+      if (_session == null) {
+        setState(() => _startupError = '$cause');
+      } else {
+        _markDisconnected('终端连接中断：$cause');
+      }
     }
   }
 
-  Future<void> interrupt() async {
-    final current = session;
-    if (current != null) await widget.runtime.interruptTerminal(current);
+  void _receiveOutput(String text) {
+    if (!mounted) return;
+    _terminal.write(text);
+  }
+
+  void _selectionChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _sendInput(String text) {
+    final current = _session;
+    if (!_connected || current == null || text.isEmpty) return;
+
+    var output = text;
+    final controlCode = _ctrlPending ? _controlCode(text) : null;
+    if (controlCode != null) {
+      output = String.fromCharCode(controlCode);
+      setState(() => _ctrlPending = false);
+    }
+
+    _writeQueue = _writeQueue
+        .then((_) async {
+          if (!_connected || _session != current) return;
+          await widget.runtime.writeTerminal(current, output);
+        })
+        .catchError((Object cause) {
+          _markDisconnected('终端输入失败：$cause');
+        });
+  }
+
+  int? _controlCode(String text) {
+    if (text.length != 1) return null;
+    final code = text.codeUnitAt(0);
+    if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) {
+      return code & 0x1f;
+    }
+    if (code >= 0x40 && code <= 0x5f) return code & 0x1f;
+    if (code == 0x3f) return 0x7f;
+    return null;
+  }
+
+  void _resize(int columns, int rows) {
+    final current = _session;
+    if (!_connected || current == null) return;
+    _resizeQueue = _resizeQueue
+        .then((_) async {
+          if (!_connected || _session != current) return;
+          await widget.runtime.resizeTerminal(current, columns, rows);
+        })
+        .catchError((Object cause) {
+          _markDisconnected('终端尺寸同步失败：$cause');
+        });
+  }
+
+  void _sendKey(TerminalKey key) {
+    if (!_connected) return;
+    final useControl = _ctrlPending;
+    if (useControl) setState(() => _ctrlPending = false);
+    _terminal.keyInput(key, ctrl: useControl);
+    _focusNode.requestFocus();
+  }
+
+  Future<void> _interrupt() async {
+    final current = _session;
+    if (!_connected || current == null) return;
+    try {
+      await widget.runtime.interruptTerminal(current);
+    } catch (cause) {
+      _markDisconnected('中断终端失败：$cause');
+    }
+  }
+
+  Future<void> _copySelection() async {
+    final selection = _terminalController.selection;
+    if (selection == null || selection.isCollapsed) return;
+    final text = _terminal.buffer.getText(selection);
+    if (text.isEmpty) {
+      _showMessage('所选区域没有可复制的文本');
+      return;
+    }
+    if (utf8.encode(text).length > _maxClipboardBytes) {
+      _showMessage('选中内容超过 256 KiB，请缩小选择范围');
+      return;
+    }
+    try {
+      await Clipboard.setData(ClipboardData(text: text));
+      _showMessage('已复制终端文本');
+    } catch (cause) {
+      _showMessage('复制失败：$cause');
+    }
+  }
+
+  Future<void> _pasteClipboard() async {
+    if (!_connected) return;
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (!mounted || !_connected) return;
+      final text = data?.text;
+      if (text == null || text.isEmpty) {
+        _showMessage('剪贴板没有文本');
+        return;
+      }
+      if (utf8.encode(text).length > _maxClipboardBytes) {
+        _showMessage('粘贴内容超过 256 KiB，未发送');
+        return;
+      }
+      _terminal.paste(text);
+      _focusNode.requestFocus();
+    } catch (cause) {
+      _showMessage('读取剪贴板失败：$cause');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _markDisconnected(String message) {
+    if (!_connected && _connectionMessage != null) return;
+    if (mounted) {
+      setState(() {
+        _connected = false;
+        _ctrlPending = false;
+        _connectionMessage = message;
+      });
+    } else {
+      _connected = false;
+      _ctrlPending = false;
+      _connectionMessage = message;
+    }
+    final subscription = _subscription;
+    _subscription = null;
+    if (subscription != null) unawaited(subscription.cancel());
+    final current = _session;
+    if (current != null) unawaited(_close(current));
+  }
+
+  Future<void> _close(TerminalSession current) async {
+    if (_closeRequested) return;
+    _closeRequested = true;
+    try {
+      await widget.runtime.closeTerminal(current);
+    } catch (_) {
+      // A disconnected Host may already have closed the remote PTY.
+    }
   }
 
   @override
   void dispose() {
-    final current = session;
-    if (current != null) unawaited(widget.runtime.closeTerminal(current));
-    unawaited(subscription?.cancel());
+    _connected = false;
+    final current = _session;
+    if (current != null) unawaited(_close(current));
+    unawaited(_subscription?.cancel());
+    _terminalController
+      ..removeListener(_selectionChanged)
+      ..dispose();
+    _focusNode.dispose();
+    _terminal.dispose();
     super.dispose();
   }
 
@@ -85,7 +259,7 @@ class _TerminalPageState extends State<TerminalPage> {
       actions: [
         IconButton(
           tooltip: '中断程序',
-          onPressed: session == null ? null : interrupt,
+          onPressed: _connected ? _interrupt : null,
           icon: const Icon(Icons.stop_circle_outlined),
         ),
       ],
@@ -94,35 +268,131 @@ class _TerminalPageState extends State<TerminalPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.terminal, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '${widget.source}  ${widget.command.arguments.join(' ')}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontFamily: 'monospace'),
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.terminal, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${widget.source}  ${widget.command.arguments.join(' ')}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontFamily: 'monospace'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _connected
+                        ? '交互会话'
+                        : _session == null
+                        ? '正在启动'
+                        : '已断开',
+                  ),
+                ],
               ),
-              Text(session == null ? '正在启动' : '交互会话'),
+              if (_ctrlPending) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Ctrl 已按下，点按一个按键以发送控制字符',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+              if (_connectionMessage case final message?) ...[
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
             ],
           ),
         ),
         const Divider(height: 1),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: error != null
-                ? Center(child: Text(error!))
-                : session == null
+            padding: const EdgeInsets.all(12),
+            child: _startupError != null && _session == null
+                ? Center(child: Text(_startupError!))
+                : _session == null
                 ? const Center(child: CircularProgressIndicator())
-                : TerminalView(terminal, autofocus: true),
+                : TerminalView(
+                    _terminal,
+                    controller: _terminalController,
+                    focusNode: _focusNode,
+                    autofocus: true,
+                    keyboardType: TextInputType.text,
+                    readOnly: !_connected,
+                    deleteDetection: true,
+                  ),
           ),
         ),
+        _buildToolbar(context),
       ],
     ),
   );
+
+  Widget _buildToolbar(BuildContext context) => SafeArea(
+    top: false,
+    child: Material(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                key: const Key('terminal-control-ctrl'),
+                tooltip: _ctrlPending ? '取消 Ctrl' : '启用 Ctrl',
+                onPressed: _connected
+                    ? () => setState(() => _ctrlPending = !_ctrlPending)
+                    : null,
+                style: IconButton.styleFrom(
+                  backgroundColor: _ctrlPending
+                      ? Theme.of(context).colorScheme.secondaryContainer
+                      : null,
+                ),
+                icon: const Text('Ctrl'),
+              ),
+              _keyButton(TerminalKey.escape, 'Esc', '发送 Esc 键'),
+              _keyButton(TerminalKey.tab, 'Tab', '发送 Tab 键'),
+              _keyButton(TerminalKey.arrowUp, '↑', '方向键上'),
+              _keyButton(TerminalKey.arrowDown, '↓', '方向键下'),
+              _keyButton(TerminalKey.arrowLeft, '←', '方向键左'),
+              _keyButton(TerminalKey.arrowRight, '→', '方向键右'),
+              TextButton.icon(
+                key: const Key('terminal-copy'),
+                onPressed: _hasSelection ? _copySelection : null,
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                icon: const Icon(Icons.copy_outlined),
+                label: const Text('复制'),
+              ),
+              TextButton.icon(
+                key: const Key('terminal-paste'),
+                onPressed: _connected ? _pasteClipboard : null,
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                icon: const Icon(Icons.content_paste_outlined),
+                label: const Text('粘贴'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _keyButton(TerminalKey key, String label, String tooltip) =>
+      IconButton(
+        key: Key('terminal-key-${key.name}'),
+        tooltip: tooltip,
+        onPressed: _connected ? () => _sendKey(key) : null,
+        icon: Text(label),
+      );
 }
