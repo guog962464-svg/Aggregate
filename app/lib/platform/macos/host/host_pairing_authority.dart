@@ -933,10 +933,6 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
           connectionId is String &&
           grant.permitsInvocation(connectionId, PermissionLevel.externalWrite);
     }
-    if (method == 'manifest.readContent' ||
-        method == 'manifest.exportContent') {
-      return grant.scopes.contains(HostGrantScope.contentTransfer);
-    }
     if (method.startsWith('account.')) {
       return grant.scopes.contains(HostGrantScope.account);
     }

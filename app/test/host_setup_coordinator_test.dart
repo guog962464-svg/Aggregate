@@ -234,59 +234,42 @@ void main() {
       );
     });
 
-    test(
-      'binds references to a device and adapter and rejects raw manifest refs',
-      () async {
-        final setup = _SetupFixture();
-        final coordinator = HostSetupCoordinator(setup: setup);
-        final executable = await coordinator.detectExecutable(
-          deviceId: 'device-1',
-          adapterId: 'netease-music',
-        );
-        final draft = HostSetupDraftPayload(
-          adapterId: 'netease-music',
-          label: '音乐',
-          fieldValues: const {'appId': 'app-123'},
-          executableRef: executable!.executableRef,
-        );
+    test('binds executable references to a device and adapter', () async {
+      final setup = _SetupFixture();
+      final coordinator = HostSetupCoordinator(setup: setup);
+      final executable = await coordinator.detectExecutable(
+        deviceId: 'device-1',
+        adapterId: 'netease-music',
+      );
+      final draft = HostSetupDraftPayload(
+        adapterId: 'netease-music',
+        label: '音乐',
+        fieldValues: const {'appId': 'app-123'},
+        executableRef: executable!.executableRef,
+      );
 
-        await expectLater(
-          coordinator.testConnectionSetup(
-            deviceId: 'device-2',
-            draft: draft,
-            secretValues: const {'privateKey': 'private'},
+      await expectLater(
+        coordinator.testConnectionSetup(
+          deviceId: 'device-2',
+          draft: draft,
+          secretValues: const {'privateKey': 'private'},
+        ),
+        throwsA(_rpcCode(HostRpcErrorCode.unauthorized)),
+      );
+      await expectLater(
+        coordinator.testConnectionSetup(
+          deviceId: 'device-1',
+          draft: HostSetupDraftPayload(
+            adapterId: 'cli',
+            label: 'CLI',
+            fieldValues: const {},
+            executableRef: executable.executableRef,
           ),
-          throwsA(_rpcCode(HostRpcErrorCode.unauthorized)),
-        );
-        await expectLater(
-          coordinator.testConnectionSetup(
-            deviceId: 'device-1',
-            draft: HostSetupDraftPayload(
-              adapterId: 'cli',
-              label: 'CLI',
-              fieldValues: const {},
-              executableRef: executable.executableRef,
-            ),
-          ),
-          throwsA(_rpcCode(HostRpcErrorCode.unauthorized)),
-        );
-        await expectLater(
-          coordinator.testConnectionSetup(
-            deviceId: 'device-1',
-            draft: HostSetupDraftPayload(
-              adapterId: 'netease-music',
-              label: '音乐',
-              fieldValues: const {'appId': 'app-123'},
-              executableRef: executable.executableRef,
-              manifestRef: 'unregistered-manifest',
-            ),
-            secretValues: const {'privateKey': 'private'},
-          ),
-          throwsA(_rpcCode(HostRpcErrorCode.invalidParams)),
-        );
-        expect(setup.testCount, 0);
-      },
-    );
+        ),
+        throwsA(_rpcCode(HostRpcErrorCode.unauthorized)),
+      );
+      expect(setup.testCount, 0);
+    });
 
     test('hides the Mac location when returning a saved connection', () async {
       final setup = _SetupFixture();

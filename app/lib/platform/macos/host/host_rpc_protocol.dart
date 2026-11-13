@@ -208,16 +208,6 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
       _connectionId,
       HostRpcParameter('manifest', _connectorManifest),
     ]),
-    const HostRpcMethodDefinition('manifest.readContent', [
-      _connectionId,
-      HostRpcParameter('manifestRef', _identifier, maxLength: 128),
-    ]),
-    const HostRpcMethodDefinition('manifest.exportContent', [
-      _op,
-      _connectionId,
-      HostRpcParameter('manifestRef', _identifier, maxLength: 128),
-      HostRpcParameter('transferHandle', _identifier, maxLength: 128),
-    ]),
     const HostRpcMethodDefinition('account.read', [_connectionId]),
     const HostRpcMethodDefinition('account.beginLogin', [_op, _connectionId]),
     const HostRpcMethodDefinition('account.waitLogin', [
@@ -306,7 +296,6 @@ final class HostSetupDraftPayload {
     required this.fieldValues,
     this.url,
     this.executableRef,
-    this.manifestRef,
     this.arguments = const [],
   });
 
@@ -315,7 +304,6 @@ final class HostSetupDraftPayload {
   final Map<String, String> fieldValues;
   final String? url;
   final String? executableRef;
-  final String? manifestRef;
   final List<String> arguments;
 
   JsonMap toJson() => {
@@ -324,7 +312,6 @@ final class HostSetupDraftPayload {
     'fieldValues': fieldValues,
     if (url != null) 'url': url,
     if (executableRef != null) 'executableRef': executableRef,
-    if (manifestRef != null) 'manifestRef': manifestRef,
     if (arguments.isNotEmpty) 'arguments': arguments,
   };
 
@@ -339,7 +326,6 @@ final class HostSetupDraftPayload {
           'fieldValues',
           'url',
           'executableRef',
-          'manifestRef',
           'arguments',
         }) ||
         json['adapterId'] is! String ||
@@ -354,9 +340,6 @@ final class HostSetupDraftPayload {
         (json['executableRef'] != null &&
             (json['executableRef'] is! String ||
                 !_validRpcId(json['executableRef']! as String))) ||
-        (json['manifestRef'] != null &&
-            (json['manifestRef'] is! String ||
-                !_validRpcId(json['manifestRef']! as String))) ||
         (json['arguments'] != null &&
             (json['arguments'] is! List ||
                 (json['arguments']! as List).length > _maxSetupArguments ||
@@ -376,7 +359,6 @@ final class HostSetupDraftPayload {
       ),
       url: json['url'] as String?,
       executableRef: json['executableRef'] as String?,
-      manifestRef: json['manifestRef'] as String?,
       arguments: List.unmodifiable(
         (json['arguments'] as List? ?? const []).cast<String>(),
       ),

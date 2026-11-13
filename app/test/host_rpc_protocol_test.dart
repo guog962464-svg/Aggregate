@@ -79,7 +79,15 @@ void main() {
         'permissionLevel': 'read',
         'arguments': {'query': 'hello'},
       });
-      expect(hostRpcMethodCatalog.keys, hasLength(38));
+      expect(hostRpcMethodCatalog.keys, hasLength(36));
+      expect(
+        hostRpcMethodCatalog.keys,
+        isNot(contains('manifest.readContent')),
+      );
+      expect(
+        hostRpcMethodCatalog.keys,
+        isNot(contains('manifest.exportContent')),
+      );
       expect(
         hostRpcMethodCatalog['operation.read']!.requiresOperationId,
         isFalse,
@@ -346,6 +354,26 @@ void main() {
                 'label': 'Git',
                 'fieldValues': {},
                 'executable': '/usr/bin/git',
+              },
+            },
+          }),
+        ),
+        throwsA(isA<HostRpcProtocolException>()),
+      );
+
+      expect(
+        () => HostRpcCodec.decodeRequest(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'id': 'req-1',
+            'method': 'setup.test',
+            'params': {
+              'operationId': 'op-1',
+              'draft': {
+                'adapterId': 'cli',
+                'label': 'Git',
+                'fieldValues': {},
+                'manifestRef': 'legacy-manifest-ref',
               },
             },
           }),

@@ -521,7 +521,6 @@ final class HostSetupCoordinator {
       if (value != null) values[field.key] = value;
     }
 
-    if (draft.manifestRef != null) _throw(HostRpcErrorCode.invalidParams);
     final executable = switch (adapter.kind) {
       ConnectionKind.mcpHttp => null,
       ConnectionKind.cli ||

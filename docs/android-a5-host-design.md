@@ -75,7 +75,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 | 连接 | `connection.list`、`connection.refresh`、`connection.remove`、`connection.move` | 只操作 Host 连接；ID 在 Android 侧加 Host 来源前缀，Mac 持久化原始 ID。删除必须清理 Mac 自有凭证/profile。 |
 | 向导 | `setup.adapters`、`setup.detectExecutable`、`setup.resolveExecutable`、`setup.test`、`setup.save`、`setup.discard` | 返回 Host 适配器目录；草稿句柄由 Host 签发并绑定设备身份。CLI 自动检测或按 basename 查找都只返回短期 opaque `executableRef` 和可展示位置，不向 Android 返回 Mac 路径。适配器必须在 Host 白名单内。 |
 | 能力与结果 | `capability.search`、`run.invoke`、`run.subscribe`、`run.cancel`、`run.listRecent`、`activity.clear`、`resource.read`、`prompt.get` | 能力/运行必须属于已授权连接；`permissionGranted` 仅在 Host 自身权限策略允许后传给 `RuntimePort`。 |
-| 动作清单 | `manifest.get`、`manifest.save`、`manifest.readContent`、`manifest.exportContent` | 连接必须是已授权 CLI；文件内容经显式内容传输或一次性 Host 文件句柄，绝不把 Mac 路径当 Android 本地路径。 |
+| 动作清单 | `manifest.get`、`manifest.save` | 连接必须是已授权 CLI；经认证 RPC 传输完整、校验后的 JSON 动作清单，受 1 MiB 帧上限约束。Android v1 不提供 Host CLI 动作编辑器，也不提供通用 Host 文件传输。 |
 | 账号 | `account.read`、`account.beginLogin`、`account.waitLogin`、`account.logout` | `account.read` 以 `{snapshot: ...}` 表达受支持状态或 `null`；仅暴露 Mac 已实现并验证的账号适配器；登录的 PTY/配置/profile 留在 Mac。登出需要对应设备授权和用户确认。 |
 | 终端 | `terminal.open`、`terminal.subscribe`、`terminal.write`、`terminal.resize`、`terminal.interrupt`、`terminal.close` | 只对登记 CLI 连接开放；`terminal.open.arguments` 是最多 256 项、单项最多 4096 字符的参数向量，不接受 shell 字符串；单独 `terminal` grant；宿主执行程序仍由连接决定。限制帧、并发和输出缓存。 |
 
@@ -85,7 +85,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 - 公开字段通过版本化 `SetupDraftPayload` 传送；`authToken`、Private Key 等由独立 `secretValues` 段承载，只通过已经配对的 WSS 连接传输。调试日志只记录 request ID、adapter ID、字段名、字节数和结果状态，不记录值或原始 body。
 - Mac Host 生成随机 `draftHandle`，并映射到 MacRuntime 的真实 `draftId`；映射键包含 `deviceId`，默认 TTL 10 分钟。保存/丢弃成功、输入变更、设备断线超时、Host 停止和撤销配对时失效；必要时调用 `discardConnectionSetup` 删除临时 profile。
-- `executableRef` 和 `manifestRef` 是 Host 随机签发的 opaque 引用，绑定设备/草稿并短期有效。路径由 Mac 文件选择/登记流程确认后保留在 Mac；Android 只能显示明确标注的 Host 路径，不能传回该字符串执行文件操作。
+- `executableRef` 是 Host 随机签发的 opaque 引用，绑定设备和连接并短期有效。Mac 程序路径保留在 Mac；Android 只能显示明确标注的 Host 位置，不能传回该路径执行文件操作。`manifestRef` 未纳入 v1 的可调用 RPC。
 
 ## 配对、认证与授权
 
@@ -95,7 +95,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 4. Android 对每个 RPC 请求签署规范化的 method、request ID、operation ID、时间戳、nonce 和 body SHA-256。Host 验证设备公钥、时间窗、nonce 未重放、请求大小和 grant，再进入 dispatcher。TLS 的 Host 身份以扫描时记录的证书指纹固定；不能对任意证书返回接受。
 5. Mac 的“已配对设备”设置可撤销设备；撤销立即终止其 WebSocket、清理该设备草稿/一次性引用并关闭它拥有的终端。Host 证书轮换必须通过 Mac 用户确认后让设备重新配对，不能静默改 pin。
 
-配对仅代表身份可信，不代表设备自动拥有所有功能。Host 按 `(deviceId, connectionId, grant)` 检查每次调用；grant 包括读取、调用权限等级、连接设置/管理、账号、终端、活动清理和内容传输。设备端 UI 的确认不替代 Host 授权。现有 `PermissionLevel` 的 `read`、`localControl`、`externalWrite` 应保留，不把未知权限降级为允许。
+配对仅代表身份可信，不代表设备自动拥有所有功能。Host 按 `(deviceId, connectionId, grant)` 检查每次调用；grant 包括读取、调用权限等级、连接设置/管理、账号、终端和活动清理。历史 `contentTransfer` grant 仅为已保存授权兼容保留，审批 UI 禁止新授予，v1 RPC 没有可调用的文件传输方法。设备端 UI 的确认不替代 Host 授权。现有 `PermissionLevel` 的 `read`、`localControl`、`externalWrite` 应保留，不把未知权限降级为允许。
 
 ## 生命周期、网络权限与资源限制
 
@@ -128,12 +128,12 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 ## A5.2 实现状态（2026-11-13）
 
-- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 38 个封闭的 v1 方法定义（由初始 33 项增加 operation.read、配对/认证入口与 Host 命令名查找）、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
+- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 36 个封闭的 v1 方法定义（含 operation.read、配对/认证入口与 Host 命令名查找）、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
 - `app/lib/platform/macos/host/host_jcs.dart` 按 RFC 8785 对 method 与参数（去除 `operationId`）生成 SHA-256 操作哈希；外层设备签名仍按上文对收到的原始 payload 字节计算。
 - `app/lib/platform/macos/host/host_operation_ledger.dart` 以 `(deviceId, operationId)` 隔离记录开始/完成/结果未知状态，不持久化请求参数、结果或秘密。启动时把遗留 `started` 记录改为 `outcomeUnknown`，绝不自动重放。账本上限为 10,000 条或 4 MiB，达到上限后拒绝新操作。
 - `app/lib/platform/macos/host/host_setup_coordinator.dart` 是 A5.3 进行中的 Host 向导核心：只公开固定 adapter allowlist；仅返回绑定设备和 adapter 的随机 `executableRef`，不返回 Mac 路径；适配器字段决定公开值和秘密值的分离，secret map 单值不超过 32 KiB；`draftHandle` 绑定设备并在 10 分钟后失效。结果检查文本和保存连接摘要脱敏。Host stop 与设备撤销清理可安全丢弃的草稿；保存异常按结果未知处理，不重试也不删除可能已被连接引用的 profile。
 - `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read` 与 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
-- A5.2/A5.3 的早期验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为。当前 production factory 已把配对 authority、签名验证、文件账本、setup dispatcher 与 `HostRuntimeRpcDispatcher` 接入 WSS。runtime dispatcher 覆盖连接目录、能力搜索/调用/结果订阅/取消、活动清理、MCP 资源/提示、账号和终端；调用权限会由 Mac 按能力实际声明等级再次检查。`manifest.get` 与 `manifest.save` 已实现；`manifest.readContent` / `manifest.exportContent` 的内容传输 handler 仍未实现。Mac 新设备审批 UI 已支持连接向导、连接管理、账号、终端、活动清理，以及按连接配置 read/localControl/externalWrite；保存动作清单要求连接管理 scope 与目标连接 externalWrite 双重授权。内容传输尚未开放，既有设备权限暂需撤销后重新配对调整。生产 Bonjour/LAN、Release 权限和 Android RemoteRuntime 客户端端到端仍未验收，因此这不是 Host 全功能可用的结论。
+- A5.2/A5.3 的早期验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为。当前 production factory 已把配对 authority、签名验证、文件账本、setup dispatcher 与 `HostRuntimeRpcDispatcher` 接入 WSS。runtime dispatcher 覆盖连接目录、能力搜索/调用/结果订阅/取消、活动清理、MCP 资源/提示、账号和终端；调用权限会由 Mac 按能力实际声明等级再次检查。`manifest.get/save` 可经 RPC 传输完整校验的 JSON，受 1 MiB RPC 帧上限约束；现有连接页不会为 Host CLI 显示动作编辑器，有对应 Widget 回归测试。动作清单模型没有附件字段，未实现的 `manifest.readContent/exportContent` 占位方法从 v1 catalog 移除，v1 不开放通用 Host 文件读写。Mac 新设备审批 UI 已支持连接向导、连接管理、账号、终端、活动清理，以及按连接配置 read/localControl/externalWrite；保存动作清单要求连接管理 scope 与目标连接 externalWrite 双重授权。Release 权限和 Android RemoteRuntime 客户端端到端仍未验收，因此这不是 Host 全功能可用的结论。
 
 ## A5.5 Host runtime RPC 实现进度（2026-11-13）
 
@@ -142,8 +142,8 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `run.invoke` 要求客户端提交 `permissionLevel`，Host 重新查找当前能力并核对精确等级，再次调用 Host grant authorizer 后才将 `permissionGranted: true` 传给 Mac runtime。返回能力使用设备范围 opaque ID；MCP resource URI、Mac 路径、连接诊断、URL 路径/query 和常见 token 字段在 Host 输出侧脱敏。账号登录和终端使用 Host 侧 PTY；opaque terminal handle 绑定设备与会话，断连或撤销会关闭 PTY，设备撤销也会取消归属运行。
 - 副作用通过现有文件 operation ledger 去重；同进程重试可返回缓存结果，进程内最多缓存 4096 个完成结果。终端/登录句柄按认证会话缓存，重连后重复请求只返回账本状态，不泄漏旧会话句柄。Host 重启后不会重放已开始操作；重启前已完成但客户端未收到回复的操作，其返回值没有持久化，账本只能报告状态；恢复 UI 尚未实现。
 - `flutter test --no-pub test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_rpc_protocol_test.dart test/host_wss_transport_test.dart test/mac_runtime_test.dart` 共 51 项通过，`flutter analyze --no-pub` 无问题；Mac 新设备授权选择器另有 widget 测试。测试证明 dispatcher 单元行为和界面授权映射，不等同 Android 客户端通过 production WSS 完成这些 RPC。
-- manifest.get 只接受已登记 CLI 连接，发放 10 分钟、按 deviceId/connectionId 绑定的 opaque executableRef；manifest.save 要求目标连接获批 externalWrite，解析 opaque 引用后只在 Mac 上恢复真实可执行文件路径，不能由 Android 指定路径。Host 返回的 manifest action 参数会脱敏。文件引用与分块内容传输尚无协议实现。
-- 后续边界：`manifest.readContent` / `manifest.exportContent` 尚无 runtime handler；manifest 附件的 Host opaque handle / 有界内容传输尚未实现。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；保存动作清单需连接管理和该连接的 externalWrite；内容传输仍关闭，既有设备没有原位修改权限的 UI。A6.1 已把 Android 认证 RPC、连接/能力路由与运行事件映射接入 Android Runtime，并加入分级配对状态；A6.2 完成 Host 向导路由；A6.3 已完成 Host 活动读取、账号 API、带参数的终端 API 及本地来源/会话映射。A6 自动化和 4 KB 真机启动通过，但本轮未通过 production WSS 的 Android→Mac 活动、账号、CLI 和 PTY 数据闭环；网易云账号/搜索和手机终端交互体验仍分别待 A6.4/A6.5。直接 LAN/Bonjour 和 Release 权限也未验证。
+- manifest.get 只接受已登记 CLI 连接，发放 10 分钟、按 deviceId/connectionId 绑定的 opaque executableRef；manifest.save 要求目标连接获批 externalWrite，解析 opaque 引用后只在 Mac 上恢复真实可执行文件路径，不能由 Android 指定路径。Host 返回的 manifest action 参数会脱敏。manifest 当前为无附件的结构化 JSON，v1 不定义文件引用或分块传输协议。
+- 后续边界：Host CLI 的动作编辑继续留在 Mac；Android v1 不展示远程动作编辑 UI，文件传输占位方法不在 RPC catalog 中。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；保存动作清单需连接管理和该连接的 externalWrite；contentTransfer grant 仍保留以兼容既有授权，但当前没有可调用方法。A6.1 已把 Android 认证 RPC、连接/能力路由与运行事件映射接入 Android Runtime，并加入分级配对状态；A6.2 完成 Host 向导路由；A6.3 已完成 Host 活动读取、账号 API、带参数的终端 API 及本地来源/会话映射。A6 自动化和 4 KB 真机启动通过，但本轮未通过 production WSS 的 Android→Mac 活动、账号、CLI 和 PTY 数据闭环；网易云账号/搜索和手机终端交互体验仍分别待 A6.4/A6.5。直接 LAN/Bonjour 和 Release 权限也未验证。
 
 ## A6.1 Android RemoteRuntime 客户端进度（2026-11-13）
 
@@ -151,7 +151,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `AndroidRuntimePort` 合并本机 HTTP MCP 与配对 Host 的连接目录。远端连接 ID 以 Host ID 和 Mac connection ID 构成，`executionTarget` 指明 Host；能力查询保留 Host 签发的 capability opaque ID 映射，远端运行事件重映射到本机 `RunId` / `RunEvent`。调用 timeout、认证断开及 Host 的 `outcomeUnknown` 不会被当作失败后自动重试。
 - 配对面板区分离线、连接中、在线、认证失效、版本不兼容、权限拒绝、超时与执行结果未知。Runtime 状态变化触发 Flutter shell 重载连接和能力目录。
 - `HostRuntimeRpcDispatcher.connection.list` 现在逐连接检查 read grant；未授权连接不会将名称和类型暴露给设备。
-- 自动化覆盖 authenticated session notification、Android Host connection/capability/invoke/event 路由、运行历史及 status mapping、配对面板状态显示和逐连接 read 过滤。Android→Mac production WSS 的真实 RPC 尚未验收；Host LAN/Bonjour、活动恢复、账号、终端、连接向导与 manifest 内容传输也未包含在 A6.1。
+- 自动化覆盖 authenticated session notification、Android Host connection/capability/invoke/event 路由、运行历史及 status mapping、配对面板状态显示和逐连接 read 过滤。Android→Mac production WSS 的真实 RPC 尚未验收；Host LAN/Bonjour、活动恢复、账号、终端和连接向导不属于 A6.1。本机动作编辑器不向 Host CLI 开放，Android v1 没有远程动作编辑入口。
 
 ## A6.2 Android 连接向导进度（2026-11-13）
 
