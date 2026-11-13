@@ -439,11 +439,14 @@ class AppShellState extends State<AppShell> {
         runtime: widget.runtime,
         onOpen: openCapability,
       ),
-      SettingsPage(
-        preferences: widget.preferences,
-        onPreferencesChanged: widget.onPreferencesChanged,
-        onClearActivity: widget.onClearActivity,
-        platformSections: widget.platformSettingsSections,
+      TickerMode(
+        enabled: selected == Section.settings,
+        child: SettingsPage(
+          preferences: widget.preferences,
+          onPreferencesChanged: widget.onPreferencesChanged,
+          onClearActivity: widget.onClearActivity,
+          platformSections: widget.platformSettingsSections,
+        ),
       ),
     ],
   );

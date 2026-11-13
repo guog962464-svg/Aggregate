@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>主题切换逐帧对照</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { margin: 24px auto; padding: 0 20px; max-width: 1440px; }
+  h1 { font-size: 22px; font-weight: 500; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0; }
+  button { font: inherit; padding: 8px 16px; }
+  input { flex: 1; min-width: 200px; }
+  output { font-variant-numeric: tabular-nums; }
+  .frames { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  figure { margin: 0; } figcaption { margin-bottom: 6px; }
+  img { width: 100%; height: auto; display: block; }
+  .values { font-variant-numeric: tabular-nums; margin: 12px 0; }
+  @media(max-width:720px) { .frames { grid-template-columns: 1fr; } }
+</style>
+<h1>主题切换逐帧对照</h1>
+<div class="controls">
+  <button id="previous" type="button">上一帧</button>
+  <button id="play" type="button">播放对照</button>
+  <button id="next" type="button">下一帧</button>
+  <label for="position">帧</label>
+  <input id="position" type="range" min="0" value="0" step="1">
+  <output id="timestamp"></output>
+</div>
+<div class="frames">
+  <figure><figcaption>参考</figcaption><img id="reference" alt="当前时间的参考帧"></figure>
+  <figure><figcaption>Flutter</figcaption><img id="render" alt="相同时间的原生渲染帧"></figure>
+  <figure><figcaption>RGB 绝对差 ×4</figcaption><img id="difference" alt="放大四倍显示的逐像素差分"></figure>
+</div>
+<div id="values" class="values" aria-live="polite"></div>
+<div id="scope"></div>
+<script id="data" type="application/json">__FRAME_DATA__</script>
+<script>
+  const data = JSON.parse(document.getElementById('data').textContent);
+  const frames = data.frames;
+  const range = document.getElementById('position');
+  const play = document.getElementById('play');
+  let index = 0, timer;
+  range.max = String(frames.length - 1);
+  function show(next) {
+    index = Math.max(0, Math.min(frames.length - 1, next));
+    const frame = frames[index];
+    range.value = String(index);
+    document.getElementById('timestamp').textContent = `${frame.frame} · ${frame.pts.toFixed(6)} s`;
+    for (const name of ['reference', 'render', 'difference']) document.getElementById(name).src = frame.paths[name];
+    document.getElementById('values').textContent = `RGB MAE ${frame.mae.toFixed(4)} /255 · 控件区域 ${frame.controlMae.toFixed(4)} /255 · 完全相同像素 ${(frame.identicalPixels * 100).toFixed(2)}%`;
+    document.getElementById('scope').textContent = data.summary.sourceMode === 'model-input'
+      ? '相同状态与种子；未遮罩、未配准、未做颜色校正。'
+      : frame.eligible
+        ? '未遮罩、未配准、未做颜色校正；录屏指针和压缩误差计入差分。'
+        : '此帧含播放器循环叠化，仍显示差分，未计入实时控件的汇总误差。';
+  }
+  function stop() { clearTimeout(timer); timer = undefined; play.textContent = '播放对照'; }
+  function advance() {
+    if (index === frames.length - 1) { stop(); return; }
+    const delay = Math.max(16, (frames[index + 1].pts - frames[index].pts) * 1000);
+    timer = setTimeout(() => { show(index + 1); advance(); }, delay);
+  }
+  play.onclick = () => { if (timer) { stop(); } else { if (index === frames.length - 1) show(0); play.textContent = '暂停'; advance(); } };
+  range.oninput = () => { stop(); show(Number(range.value)); };
+  document.getElementById('previous').onclick = () => { stop(); show(index - 1); };
+  document.getElementById('next').onclick = () => { stop(); show(index + 1); };
+  show(0);
+</script>
+</html>

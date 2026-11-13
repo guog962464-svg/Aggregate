@@ -1,0 +1,1078 @@
+{
+  "provenance": {
+    "origin": "Fixed RGB probes sampled from PNGs rendered by the author's original WebGL shader in Chromium/SwiftShader, independently of the Flutter renderer. Native images were not used to choose expected RGB values.",
+    "source_url": "https://experiments.thisiswhitespace.com/standalone/glass-light-toggle/main.js?v=3",
+    "source_sha256": "7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee",
+    "source_model_sha256": "a61bbe71421589bd976dcaaf0f1199e392864701c2289c81ae37849e9949d165",
+    "oracle_renderer": "Chromium headless with ANGLE SwiftShader; 720x540 canvas, deviceScaleFactor1. Original shader receives measured model snapshots.",
+    "seed": 1831565813,
+    "random_initialization": "32-bit LCG, multiplier1664525, increment1013904223; unsigned output divided by2^32.",
+    "frames_per_second": 60,
+    "initial_frame": "Frame0 at time0, dt0. Later frames advance dt1/60 before capture.",
+    "events_before_frame": [
+      {
+        "frame": 48,
+        "hover": true
+      },
+      {
+        "frame": 60,
+        "light": true
+      },
+      {
+        "frame": 82,
+        "light": false
+      },
+      {
+        "frame": 100,
+        "light": true
+      }
+    ],
+    "viewport": [
+      720,
+      540
+    ],
+    "device_pixel_ratio": 1,
+    "scene_origin": [
+      360,
+      267
+    ],
+    "scene_scale": 0.76,
+    "sampling": "Single fixed framebuffer pixel per probe. Positions are defined from scene geometry and light-strip distance, with glass-interior probes kept away from glyph cells. Expected RGB comes exclusively from original-render-*.png.",
+    "tolerance_rgb255": 2,
+    "scope": "Independent regression of background, recess, glass bevel, LED position/tint/falloff and shadow across interrupted motion. This does not establish pixel-identical replay of the user recording or recover its unknown particle seed."
+  },
+  "cases": [
+    {
+      "frame": 0,
+      "time_seconds": 0,
+      "oracle_png_sha256": "81ba2c5a804434d46fdca170e64b8863475b99bcf78c149882a4d96eec5370c0",
+      "probes": [
+        {
+          "name": "page_upper_left",
+          "x": 32,
+          "y": 32,
+          "rgb": [
+            17,
+            17,
+            18
+          ],
+          "checks": "Unlit page gradient and grain"
+        },
+        {
+          "name": "page_sky_gradient",
+          "x": 660,
+          "y": 55,
+          "rgb": [
+            29,
+            29,
+            29
+          ],
+          "checks": "Upper-right scene gradient in dark and light themes"
+        },
+        {
+          "name": "page_lower_right",
+          "x": 688,
+          "y": 508,
+          "rgb": [
+            10,
+            10,
+            11
+          ],
+          "checks": "Far page floor, independent of the glyph"
+        },
+        {
+          "name": "track_upper_lip",
+          "x": 360,
+          "y": 182,
+          "rgb": [
+            15,
+            15,
+            18
+          ],
+          "checks": "Recessed track upper boundary"
+        },
+        {
+          "name": "empty_track_floor",
+          "x": 498,
+          "y": 267,
+          "rgb": [
+            6,
+            6,
+            8
+          ],
+          "checks": "Recess floor opposite the moving glass"
+        },
+        {
+          "name": "track_bottom_shadow",
+          "x": 360,
+          "y": 361,
+          "rgb": [
+            42,
+            49,
+            86
+          ],
+          "checks": "Outer cast shadow below the track"
+        },
+        {
+          "name": "glass_upper_left",
+          "x": 232,
+          "y": 218,
+          "rgb": [
+            40,
+            41,
+            47
+          ],
+          "checks": "Frosted glass transmission away from the central glyph"
+        },
+        {
+          "name": "glass_lower_right",
+          "x": 330,
+          "y": 316,
+          "rgb": [
+            109,
+            127,
+            220
+          ],
+          "checks": "Glass tint and internal light wash away from the glyph"
+        },
+        {
+          "name": "glass_top_bevel",
+          "x": 281,
+          "y": 193,
+          "rgb": [
+            72,
+            72,
+            74
+          ],
+          "checks": "Top glass bevel and Fresnel highlight"
+        },
+        {
+          "name": "glass_side_bevel",
+          "x": 355,
+          "y": 267,
+          "rgb": [
+            88,
+            100,
+            162
+          ],
+          "checks": "Side glass bevel and refraction boundary"
+        },
+        {
+          "name": "glass_corner_bevel",
+          "x": 219,
+          "y": 329,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Rounded corner bevel, distinct from the straight sides"
+        },
+        {
+          "name": "led_arc_core",
+          "x": 281,
+          "y": 347,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Travelling LED strip centre line"
+        },
+        {
+          "name": "led_near_halo",
+          "x": 281,
+          "y": 355,
+          "rgb": [
+            94,
+            113,
+            210
+          ],
+          "checks": "Near LED halo, ten design pixels beyond its centre line"
+        },
+        {
+          "name": "led_far_halo",
+          "x": 281,
+          "y": 375,
+          "rgb": [
+            49,
+            57,
+            97
+          ],
+          "checks": "LED falloff, thirty-six design pixels beyond its centre line"
+        },
+        {
+          "name": "opposite_perimeter",
+          "x": 281,
+          "y": 187,
+          "rgb": [
+            4,
+            4,
+            4
+          ],
+          "checks": "Unlit perimeter opposite the current LED arc"
+        }
+      ]
+    },
+    {
+      "frame": 60,
+      "time_seconds": 1,
+      "oracle_png_sha256": "062acdb9c8039c502aec9d14df1a206a564dce6b876b253d44021216c4090c7d",
+      "probes": [
+        {
+          "name": "page_upper_left",
+          "x": 32,
+          "y": 32,
+          "rgb": [
+            17,
+            18,
+            18
+          ],
+          "checks": "Unlit page gradient and grain"
+        },
+        {
+          "name": "page_sky_gradient",
+          "x": 660,
+          "y": 55,
+          "rgb": [
+            29,
+            29,
+            29
+          ],
+          "checks": "Upper-right scene gradient in dark and light themes"
+        },
+        {
+          "name": "page_lower_right",
+          "x": 688,
+          "y": 508,
+          "rgb": [
+            10,
+            11,
+            11
+          ],
+          "checks": "Far page floor, independent of the glyph"
+        },
+        {
+          "name": "track_upper_lip",
+          "x": 360,
+          "y": 182,
+          "rgb": [
+            16,
+            16,
+            19
+          ],
+          "checks": "Recessed track upper boundary"
+        },
+        {
+          "name": "empty_track_floor",
+          "x": 498,
+          "y": 267,
+          "rgb": [
+            7,
+            7,
+            9
+          ],
+          "checks": "Recess floor opposite the moving glass"
+        },
+        {
+          "name": "track_bottom_shadow",
+          "x": 360,
+          "y": 361,
+          "rgb": [
+            56,
+            66,
+            119
+          ],
+          "checks": "Outer cast shadow below the track"
+        },
+        {
+          "name": "glass_upper_left",
+          "x": 226,
+          "y": 223,
+          "rgb": [
+            44,
+            46,
+            55
+          ],
+          "checks": "Frosted glass transmission away from the central glyph"
+        },
+        {
+          "name": "glass_lower_right",
+          "x": 343,
+          "y": 311,
+          "rgb": [
+            134,
+            157,
+            255
+          ],
+          "checks": "Glass tint and internal light wash away from the glyph"
+        },
+        {
+          "name": "glass_top_bevel",
+          "x": 284,
+          "y": 197,
+          "rgb": [
+            82,
+            82,
+            84
+          ],
+          "checks": "Top glass bevel and Fresnel highlight"
+        },
+        {
+          "name": "glass_side_bevel",
+          "x": 368,
+          "y": 267,
+          "rgb": [
+            108,
+            123,
+            202
+          ],
+          "checks": "Side glass bevel and refraction boundary"
+        },
+        {
+          "name": "glass_corner_bevel",
+          "x": 221,
+          "y": 330,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Rounded corner bevel, distinct from the straight sides"
+        },
+        {
+          "name": "led_arc_core",
+          "x": 284,
+          "y": 343,
+          "rgb": [
+            228,
+            255,
+            255
+          ],
+          "checks": "Travelling LED strip centre line"
+        },
+        {
+          "name": "led_near_halo",
+          "x": 284,
+          "y": 350,
+          "rgb": [
+            89,
+            106,
+            200
+          ],
+          "checks": "Near LED halo, ten design pixels beyond its centre line"
+        },
+        {
+          "name": "led_far_halo",
+          "x": 284,
+          "y": 370,
+          "rgb": [
+            56,
+            66,
+            119
+          ],
+          "checks": "LED falloff, thirty-six design pixels beyond its centre line"
+        },
+        {
+          "name": "opposite_perimeter",
+          "x": 284,
+          "y": 191,
+          "rgb": [
+            8,
+            8,
+            9
+          ],
+          "checks": "Unlit perimeter opposite the current LED arc"
+        }
+      ]
+    },
+    {
+      "frame": 70,
+      "time_seconds": 1.1666666666666667,
+      "oracle_png_sha256": "c395a6e5bd117d80ed40cd04a12465663dca7bd98b17783efa5d3e0fbaa0dfe8",
+      "probes": [
+        {
+          "name": "page_upper_left",
+          "x": 32,
+          "y": 32,
+          "rgb": [
+            217,
+            217,
+            217
+          ],
+          "checks": "Unlit page gradient and grain"
+        },
+        {
+          "name": "page_sky_gradient",
+          "x": 660,
+          "y": 55,
+          "rgb": [
+            235,
+            233,
+            231
+          ],
+          "checks": "Upper-right scene gradient in dark and light themes"
+        },
+        {
+          "name": "page_lower_right",
+          "x": 688,
+          "y": 508,
+          "rgb": [
+            207,
+            206,
+            205
+          ],
+          "checks": "Far page floor, independent of the glyph"
+        },
+        {
+          "name": "track_upper_lip",
+          "x": 360,
+          "y": 182,
+          "rgb": [
+            190,
+            189,
+            188
+          ],
+          "checks": "Recessed track upper boundary"
+        },
+        {
+          "name": "empty_track_floor",
+          "x": 222,
+          "y": 267,
+          "rgb": [
+            230,
+            227,
+            225
+          ],
+          "checks": "Recess floor opposite the moving glass"
+        },
+        {
+          "name": "track_bottom_shadow",
+          "x": 360,
+          "y": 361,
+          "rgb": [
+            228,
+            183,
+            119
+          ],
+          "checks": "Outer cast shadow below the track"
+        },
+        {
+          "name": "glass_upper_left",
+          "x": 351,
+          "y": 224,
+          "rgb": [
+            244,
+            241,
+            236
+          ],
+          "checks": "Frosted glass transmission away from the central glyph"
+        },
+        {
+          "name": "glass_lower_right",
+          "x": 472,
+          "y": 310,
+          "rgb": [
+            255,
+            204,
+            119
+          ],
+          "checks": "Glass tint and internal light wash away from the glyph"
+        },
+        {
+          "name": "glass_top_bevel",
+          "x": 412,
+          "y": 198,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Top glass bevel and Fresnel highlight"
+        },
+        {
+          "name": "glass_side_bevel",
+          "x": 498,
+          "y": 267,
+          "rgb": [
+            255,
+            190,
+            68
+          ],
+          "checks": "Side glass bevel and refraction boundary"
+        },
+        {
+          "name": "glass_corner_bevel",
+          "x": 348,
+          "y": 331,
+          "rgb": [
+            255,
+            196,
+            93
+          ],
+          "checks": "Rounded corner bevel, distinct from the straight sides"
+        },
+        {
+          "name": "led_arc_core",
+          "x": 456,
+          "y": 342,
+          "rgb": [
+            255,
+            255,
+            94
+          ],
+          "checks": "Travelling LED strip centre line"
+        },
+        {
+          "name": "led_near_halo",
+          "x": 461,
+          "y": 349,
+          "rgb": [
+            235,
+            172,
+            83
+          ],
+          "checks": "Near LED halo, ten design pixels beyond its centre line"
+        },
+        {
+          "name": "led_far_halo",
+          "x": 472,
+          "y": 367,
+          "rgb": [
+            224,
+            184,
+            129
+          ],
+          "checks": "LED falloff, thirty-six design pixels beyond its centre line"
+        },
+        {
+          "name": "opposite_perimeter",
+          "x": 367,
+          "y": 192,
+          "rgb": [
+            212,
+            212,
+            210
+          ],
+          "checks": "Unlit perimeter opposite the current LED arc"
+        }
+      ]
+    },
+    {
+      "frame": 90,
+      "time_seconds": 1.5,
+      "oracle_png_sha256": "7e8ab44446c7acb7fe8ebab9d24ca92dc58610480660ddce1f424ffb6b41d521",
+      "probes": [
+        {
+          "name": "page_upper_left",
+          "x": 32,
+          "y": 32,
+          "rgb": [
+            50,
+            50,
+            51
+          ],
+          "checks": "Unlit page gradient and grain"
+        },
+        {
+          "name": "page_sky_gradient",
+          "x": 660,
+          "y": 55,
+          "rgb": [
+            60,
+            60,
+            61
+          ],
+          "checks": "Upper-right scene gradient in dark and light themes"
+        },
+        {
+          "name": "page_lower_right",
+          "x": 688,
+          "y": 508,
+          "rgb": [
+            43,
+            43,
+            44
+          ],
+          "checks": "Far page floor, independent of the glyph"
+        },
+        {
+          "name": "track_upper_lip",
+          "x": 360,
+          "y": 182,
+          "rgb": [
+            149,
+            155,
+            233
+          ],
+          "checks": "Recessed track upper boundary"
+        },
+        {
+          "name": "empty_track_floor",
+          "x": 498,
+          "y": 267,
+          "rgb": [
+            51,
+            52,
+            59
+          ],
+          "checks": "Recess floor opposite the moving glass"
+        },
+        {
+          "name": "track_bottom_shadow",
+          "x": 360,
+          "y": 361,
+          "rgb": [
+            41,
+            42,
+            51
+          ],
+          "checks": "Outer cast shadow below the track"
+        },
+        {
+          "name": "glass_upper_left",
+          "x": 274,
+          "y": 224,
+          "rgb": [
+            110,
+            112,
+            133
+          ],
+          "checks": "Frosted glass transmission away from the central glyph"
+        },
+        {
+          "name": "glass_lower_right",
+          "x": 396,
+          "y": 310,
+          "rgb": [
+            115,
+            117,
+            146
+          ],
+          "checks": "Glass tint and internal light wash away from the glyph"
+        },
+        {
+          "name": "glass_top_bevel",
+          "x": 335,
+          "y": 198,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Top glass bevel and Fresnel highlight"
+        },
+        {
+          "name": "glass_side_bevel",
+          "x": 421,
+          "y": 267,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Side glass bevel and refraction boundary"
+        },
+        {
+          "name": "glass_corner_bevel",
+          "x": 271,
+          "y": 331,
+          "rgb": [
+            66,
+            66,
+            68
+          ],
+          "checks": "Rounded corner bevel, distinct from the straight sides"
+        },
+        {
+          "name": "led_arc_core",
+          "x": 393,
+          "y": 195,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Travelling LED strip centre line"
+        },
+        {
+          "name": "led_near_halo",
+          "x": 398,
+          "y": 188,
+          "rgb": [
+            177,
+            183,
+            255
+          ],
+          "checks": "Near LED halo, ten design pixels beyond its centre line"
+        },
+        {
+          "name": "led_far_halo",
+          "x": 411,
+          "y": 172,
+          "rgb": [
+            111,
+            113,
+            151
+          ],
+          "checks": "LED falloff, thirty-six design pixels beyond its centre line"
+        },
+        {
+          "name": "opposite_perimeter",
+          "x": 277,
+          "y": 339,
+          "rgb": [
+            20,
+            20,
+            21
+          ],
+          "checks": "Unlit perimeter opposite the current LED arc"
+        }
+      ]
+    },
+    {
+      "frame": 110,
+      "time_seconds": 1.8333333333333333,
+      "oracle_png_sha256": "43121cb24ee9205361f16061366cc2094ccbb5dfbbc4c276be378a02a38eefe4",
+      "probes": [
+        {
+          "name": "page_upper_left",
+          "x": 32,
+          "y": 32,
+          "rgb": [
+            213,
+            213,
+            212
+          ],
+          "checks": "Unlit page gradient and grain"
+        },
+        {
+          "name": "page_sky_gradient",
+          "x": 660,
+          "y": 55,
+          "rgb": [
+            233,
+            231,
+            229
+          ],
+          "checks": "Upper-right scene gradient in dark and light themes"
+        },
+        {
+          "name": "page_lower_right",
+          "x": 688,
+          "y": 508,
+          "rgb": [
+            205,
+            204,
+            203
+          ],
+          "checks": "Far page floor, independent of the glyph"
+        },
+        {
+          "name": "track_upper_lip",
+          "x": 360,
+          "y": 182,
+          "rgb": [
+            189,
+            187,
+            185
+          ],
+          "checks": "Recessed track upper boundary"
+        },
+        {
+          "name": "empty_track_floor",
+          "x": 222,
+          "y": 267,
+          "rgb": [
+            231,
+            230,
+            228
+          ],
+          "checks": "Recess floor opposite the moving glass"
+        },
+        {
+          "name": "track_bottom_shadow",
+          "x": 360,
+          "y": 361,
+          "rgb": [
+            210,
+            180,
+            139
+          ],
+          "checks": "Outer cast shadow below the track"
+        },
+        {
+          "name": "glass_upper_left",
+          "x": 345,
+          "y": 224,
+          "rgb": [
+            241,
+            239,
+            237
+          ],
+          "checks": "Frosted glass transmission away from the central glyph"
+        },
+        {
+          "name": "glass_lower_right",
+          "x": 467,
+          "y": 310,
+          "rgb": [
+            255,
+            202,
+            117
+          ],
+          "checks": "Glass tint and internal light wash away from the glyph"
+        },
+        {
+          "name": "glass_top_bevel",
+          "x": 406,
+          "y": 198,
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "checks": "Top glass bevel and Fresnel highlight"
+        },
+        {
+          "name": "glass_side_bevel",
+          "x": 492,
+          "y": 267,
+          "rgb": [
+            255,
+            188,
+            64
+          ],
+          "checks": "Side glass bevel and refraction boundary"
+        },
+        {
+          "name": "glass_corner_bevel",
+          "x": 342,
+          "y": 331,
+          "rgb": [
+            252,
+            212,
+            156
+          ],
+          "checks": "Rounded corner bevel, distinct from the straight sides"
+        },
+        {
+          "name": "led_arc_core",
+          "x": 486,
+          "y": 325,
+          "rgb": [
+            255,
+            255,
+            177
+          ],
+          "checks": "Travelling LED strip centre line"
+        },
+        {
+          "name": "led_near_halo",
+          "x": 492,
+          "y": 330,
+          "rgb": [
+            240,
+            176,
+            87
+          ],
+          "checks": "Near LED halo, ten design pixels beyond its centre line"
+        },
+        {
+          "name": "led_far_halo",
+          "x": 508,
+          "y": 342,
+          "rgb": [
+            218,
+            179,
+            125
+          ],
+          "checks": "LED falloff, thirty-six design pixels beyond its centre line"
+        },
+        {
+          "name": "opposite_perimeter",
+          "x": 326,
+          "y": 209,
+          "rgb": [
+            214,
+            213,
+            212
+          ],
+          "checks": "Unlit perimeter opposite the current LED arc"
+        }
+      ]
+    },
+    {
+      "frame": 150,
+      "time_seconds": 2.5,
+      "oracle_png_sha256": "b7d4cb3b51f01323bbbd171235e2c56442839da305f8211f2cf0052d02c1f1ee",
+      "probes": [
+        {
+          "name": "page_upper_left",
+          "x": 32,
+          "y": 32,
+          "rgb": [
+            216,
+            216,
+            216
+          ],
+          "checks": "Unlit page gradient and grain"
+        },
+        {
+          "name": "page_sky_gradient",
+          "x": 660,
+          "y": 55,
+          "rgb": [
+            232,
+            230,
+            228
+          ],
+          "checks": "Upper-right scene gradient in dark and light themes"
+        },
+        {
+          "name": "page_lower_right",
+          "x": 688,
+          "y": 508,
+          "rgb": [
+            207,
+            207,
+            206
+          ],
+          "checks": "Far page floor, independent of the glyph"
+        },
+        {
+          "name": "track_upper_lip",
+          "x": 360,
+          "y": 182,
+          "rgb": [
+            215,
+            181,
+            134
+          ],
+          "checks": "Recessed track upper boundary"
+        },
+        {
+          "name": "empty_track_floor",
+          "x": 222,
+          "y": 267,
+          "rgb": [
+            229,
+            228,
+            226
+          ],
+          "checks": "Recess floor opposite the moving glass"
+        },
+        {
+          "name": "track_bottom_shadow",
+          "x": 360,
+          "y": 361,
+          "rgb": [
+            185,
+            179,
+            170
+          ],
+          "checks": "Outer cast shadow below the track"
+        },
+        {
+          "name": "glass_upper_left",
+          "x": 390,
+          "y": 218,
+          "rgb": [
+            255,
+            207,
+            132
+          ],
+          "checks": "Frosted glass transmission away from the central glyph"
+        },
+        {
+          "name": "glass_lower_right",
+          "x": 487,
+          "y": 316,
+          "rgb": [
+            241,
+            235,
+            228
+          ],
+          "checks": "Glass tint and internal light wash away from the glyph"
+        },
+        {
+          "name": "glass_top_bevel",
+          "x": 439,
+          "y": 193,
+          "rgb": [
+            255,
+            229,
+            108
+          ],
+          "checks": "Top glass bevel and Fresnel highlight"
+        },
+        {
+          "name": "glass_side_bevel",
+          "x": 513,
+          "y": 267,
+          "rgb": [
+            255,
+            215,
+            143
+          ],
+          "checks": "Side glass bevel and refraction boundary"
+        },
+        {
+          "name": "glass_corner_bevel",
+          "x": 377,
+          "y": 329,
+          "rgb": [
+            246,
+            238,
+            226
+          ],
+          "checks": "Rounded corner bevel, distinct from the straight sides"
+        },
+        {
+          "name": "led_arc_core",
+          "x": 443,
+          "y": 187,
+          "rgb": [
+            255,
+            255,
+            154
+          ],
+          "checks": "Travelling LED strip centre line"
+        },
+        {
+          "name": "led_near_halo",
+          "x": 444,
+          "y": 179,
+          "rgb": [
+            255,
+            191,
+            101
+          ],
+          "checks": "Near LED halo, ten design pixels beyond its centre line"
+        },
+        {
+          "name": "led_far_halo",
+          "x": 445,
+          "y": 160,
+          "rgb": [
+            247,
+            211,
+            162
+          ],
+          "checks": "LED falloff, thirty-six design pixels beyond its centre line"
+        },
+        {
+          "name": "opposite_perimeter",
+          "x": 434,
+          "y": 347,
+          "rgb": [
+            187,
+            186,
+            185
+          ],
+          "checks": "Unlit perimeter opposite the current LED arc"
+        }
+      ]
+    }
+  ]
+}

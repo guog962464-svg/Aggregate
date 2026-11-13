@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('示例 Git CLI'), findsWidgets);
     await tester.tap(find.text('设置').first);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('跟随 macOS 系统'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
@@ -130,7 +130,7 @@ void main() {
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('跟随 macOS 系统'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
@@ -212,9 +212,9 @@ void main() {
     await tester.tap(find.byTooltip('收藏 查看 Git 状态'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.bySemanticsLabel('深色主题'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.bySemanticsLabel('外观主题'));
+    await tester.pump(const Duration(milliseconds: 600));
     expect(
       (await runtime.loadPreferences()).appearance,
       AppearancePreference.dark,
