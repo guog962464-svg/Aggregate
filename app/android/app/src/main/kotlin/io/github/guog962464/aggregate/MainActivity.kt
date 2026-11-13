@@ -13,7 +13,10 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         nodeProbeChannel = NodeProbeChannel(this, flutterEngine.dartExecutor.binaryMessenger)
-        hostDeviceKeyStoreChannel = HostDeviceKeyStoreChannel(flutterEngine.dartExecutor.binaryMessenger)
+        hostDeviceKeyStoreChannel = HostDeviceKeyStoreChannel(
+            this,
+            flutterEngine.dartExecutor.binaryMessenger,
+        )
         hostDiscoveryChannel = HostDiscoveryChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         documentContentChannel = AndroidDocumentContentChannel(
             this,

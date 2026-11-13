@@ -1,5 +1,6 @@
 package io.github.guog962464.aggregate
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
@@ -13,9 +14,13 @@ import java.security.PrivateKey
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.util.concurrent.Executors
+import java.util.UUID
 
 /** Keeps the Android Host identity private key inside Android Keystore. */
-internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
+internal class HostDeviceKeyStoreChannel(
+    private val context: Context,
+    messenger: BinaryMessenger,
+) :
     MethodChannel.MethodCallHandler,
     AutoCloseable {
     private val channel = MethodChannel(messenger, "aggregate/host_identity")
@@ -29,6 +34,7 @@ internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "loadOrCreate" -> execute(result) { loadOrCreate() }
+            "rotate" -> execute(result) { rotate() }
             "sign" -> {
                 val encoded = call.argument<String>("message")
                 if (encoded == null) {
@@ -38,7 +44,11 @@ internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
                 }
             }
             "delete" -> execute(result) {
-                keyStore().deleteEntry(KEY_ALIAS)
+                val store = keyStore()
+                store.aliases().toList()
+                    .filter { it == KEY_ALIAS || it.startsWith(ROTATED_ALIAS_PREFIX) }
+                    .forEach(store::deleteEntry)
+                preferences().edit().remove(ACTIVE_ALIAS_KEY).commit()
                 true
             }
             else -> result.notImplemented()
@@ -60,21 +70,55 @@ internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
 
     private fun loadOrCreate(): Map<String, String> {
         val store = keyStore()
-        if (!store.containsAlias(KEY_ALIAS)) {
-            val generator = KeyPairGenerator.getInstance("EC", "AndroidKeyStore")
-            generator.initialize(
-                android.security.keystore.KeyGenParameterSpec.Builder(
-                    KEY_ALIAS,
-                    android.security.keystore.KeyProperties.PURPOSE_SIGN,
-                )
-                    .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
-                    .setDigests(android.security.keystore.KeyProperties.DIGEST_SHA256)
-                    .build(),
-            )
-            generator.generateKeyPair()
+        val alias = activeAlias()
+        ensureKey(store, alias)
+        if (preferences().getString(ACTIVE_ALIAS_KEY, null) == null) {
+            preferences().edit().putString(ACTIVE_ALIAS_KEY, alias).commit()
         }
+        return identityFor(store, alias)
+    }
 
-        val publicKey = store.getCertificate(KEY_ALIAS)?.publicKey
+    /**
+     * Generates a replacement before switching the active alias. If generation
+     * or the preference commit fails, the current identity remains usable.
+     */
+    private fun rotate(): Map<String, String> {
+        val store = keyStore()
+        val previousAlias = activeAlias()
+        val nextAlias = "$ROTATED_ALIAS_PREFIX${UUID.randomUUID()}"
+        ensureKey(store, nextAlias)
+        val nextIdentity = identityFor(store, nextAlias)
+        if (!preferences().edit().putString(ACTIVE_ALIAS_KEY, nextAlias).commit()) {
+            store.deleteEntry(nextAlias)
+            error("Unable to activate the replacement device identity")
+        }
+        if (previousAlias != nextAlias) {
+            try {
+                store.deleteEntry(previousAlias)
+            } catch (_: Exception) {
+                // The new alias is active; an orphaned old key is never selected.
+            }
+        }
+        return nextIdentity
+    }
+
+    private fun ensureKey(store: KeyStore, alias: String) {
+        if (store.containsAlias(alias)) return
+        val generator = KeyPairGenerator.getInstance("EC", "AndroidKeyStore")
+        generator.initialize(
+            android.security.keystore.KeyGenParameterSpec.Builder(
+                alias,
+                android.security.keystore.KeyProperties.PURPOSE_SIGN,
+            )
+                .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+                .setDigests(android.security.keystore.KeyProperties.DIGEST_SHA256)
+                .build(),
+        )
+        generator.generateKeyPair()
+    }
+
+    private fun identityFor(store: KeyStore, alias: String): Map<String, String> {
+        val publicKey = store.getCertificate(alias)?.publicKey
             ?: error("Missing device identity certificate")
         val encoded = publicKey.encoded
         val deviceSuffix = MessageDigest.getInstance("SHA-256")
@@ -90,7 +134,7 @@ internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
     private fun sign(encodedMessage: String): String {
         val message = Base64.decode(encodedMessage, Base64.NO_WRAP)
         require(message.isNotEmpty() && message.size <= MAX_SIGNING_BYTES)
-        val privateKey = keyStore().getKey(KEY_ALIAS, null) as? PrivateKey
+        val privateKey = keyStore().getKey(activeAlias(), null) as? PrivateKey
             ?: error("Missing device identity key")
         val signature = Signature.getInstance("SHA256withECDSA").run {
             initSign(privateKey)
@@ -104,6 +148,14 @@ internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
         load(null)
     }
 
+    private fun activeAlias(): String =
+        preferences().getString(ACTIVE_ALIAS_KEY, null) ?: KEY_ALIAS
+
+    private fun preferences() = context.getSharedPreferences(
+        PREFERENCES_NAME,
+        Context.MODE_PRIVATE,
+    )
+
     override fun close() {
         channel.setMethodCallHandler(null)
         executor.shutdownNow()
@@ -111,6 +163,9 @@ internal class HostDeviceKeyStoreChannel(messenger: BinaryMessenger) :
 
     private companion object {
         const val KEY_ALIAS = "aggregate.host.device.p256.v1"
+        const val ROTATED_ALIAS_PREFIX = "aggregate.host.device.p256.rotated."
+        const val ACTIVE_ALIAS_KEY = "active_key_alias"
+        const val PREFERENCES_NAME = "aggregate.host.identity"
         const val MAX_SIGNING_BYTES = 1024 * 1024
     }
 }

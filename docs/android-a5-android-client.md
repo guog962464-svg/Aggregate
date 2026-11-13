@@ -27,7 +27,7 @@
 
 - 本轮 Mac 与 Android 处于不同 LAN 子网，手机同时启用 VPN，设备之间没有可用路由。USB 隧道已验证 Android Keystore 签名、Mac CryptoKit 验签、证书 pin、Mac 人工批准、challenge/`host.hello`、断开/重连和撤销；直接 LAN WSS、真实 Bonjour/NSD 地址发现与网络切换仍未验收。后续需要同一可互通 LAN 上使用未改写的原始邀请验证完整发现路径。
 - 没有可用的 16 KB 页实体设备。当前 APK native library 的 ELF 和 ZIP 对齐均通过静态检查，但 16 KB 设备的安装、加载、运行以及 JNI/相机/NSD smoke 仍是外部验收门槛。
-- 尚未验证 Release/signed App 的 macOS 本地网络权限及 Android Release 包；设备密钥轮换 UX、Host 完整 RPC handler、A5.5 普通 CLI/TUI/MCP/网易云流程仍未完成。
+- Android 全局设备身份轮换确认 UI 和 Keystore 别名切换已实现并由 fake/Widget 测试覆盖；真实 Keystore 轮换未在当前手机触发。Mac TLS 身份轮换 UX、Release/signed App 的 macOS 本地网络权限及 Android Release 包、Host 完整 RPC handler、A5.5 普通 CLI/TUI/MCP/网易云流程仍未完成。
 
 ## 复验
 

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 abstract interface class AndroidHostIdentityPort {
   Future<AndroidHostPublicIdentity> loadOrCreate();
+  Future<AndroidHostPublicIdentity> rotate();
   Future<Uint8List> sign(Uint8List message);
 }
 
@@ -14,10 +15,14 @@ final class AndroidHostDeviceIdentity implements AndroidHostIdentityPort {
   final MethodChannel _channel;
 
   @override
-  Future<AndroidHostPublicIdentity> loadOrCreate() async {
-    final result = await _channel.invokeMapMethod<String, Object?>(
-      'loadOrCreate',
-    );
+  Future<AndroidHostPublicIdentity> loadOrCreate() =>
+      _readIdentity('loadOrCreate');
+
+  @override
+  Future<AndroidHostPublicIdentity> rotate() => _readIdentity('rotate');
+
+  Future<AndroidHostPublicIdentity> _readIdentity(String method) async {
+    final result = await _channel.invokeMapMethod<String, Object?>(method);
     if (result == null ||
         result['deviceId'] is! String ||
         result['publicKeySpki'] is! String) {

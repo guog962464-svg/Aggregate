@@ -67,6 +67,49 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('权限拒绝 · 1 个局域网地址'), findsOneWidget);
   });
+
+  testWidgets('requires confirmation before rotating the phone identity', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(375, 812);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final manager = _FakeHostManager();
+    addTearDown(manager.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.8)),
+          child: Scaffold(
+            body: SingleChildScrollView(
+              child: AndroidHostSettingsPanel(hostManager: manager),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.ensureVisible(find.text('轮换手机身份密钥'));
+    await tester.tap(find.text('轮换手机身份密钥'));
+    await tester.pumpAndSettle();
+    expect(find.text('轮换手机身份密钥？'), findsOneWidget);
+    expect(manager.identityRotations, 0);
+
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(manager.identityRotations, 0);
+
+    tester.view.physicalSize = const Size(844, 390);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('轮换手机身份密钥'));
+    await tester.tap(find.text('轮换手机身份密钥'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('轮换并清除记录'));
+    await tester.pumpAndSettle();
+    expect(manager.identityRotations, 1);
+    expect(find.text('手机身份已轮换。请在各 Mac 上撤销旧授权，再重新配对。'), findsOneWidget);
+  });
 }
 
 final class _FakeHostManager implements AndroidHostManagerPort {
@@ -75,6 +118,7 @@ final class _FakeHostManager implements AndroidHostManagerPort {
   final _statusChanges = StreamController<AndroidHostStatusChange>.broadcast();
   String? requestedDisplayName;
   AndroidHostStatus? statusOverride;
+  int identityRotations = 0;
 
   StreamController<AndroidHostStatusChange> get statusChangesController =>
       _statusChanges;
@@ -149,6 +193,17 @@ final class _FakeHostManager implements AndroidHostManagerPort {
   Future<void> remove(String hostId) async {
     _hosts.removeWhere((host) => host.hostId == hostId);
     _connected.remove(hostId);
+  }
+
+  @override
+  Future<AndroidHostIdentityRotationResult> rotateDeviceIdentity() async {
+    identityRotations++;
+    _hosts.clear();
+    _connected.clear();
+    return const AndroidHostIdentityRotationResult(
+      deviceId: 'device-abcdefabcdefabcdefabcdefabcdefab',
+      localHostRecordsCleared: true,
+    );
   }
 
   @override

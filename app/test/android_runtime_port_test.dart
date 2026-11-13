@@ -696,6 +696,13 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   Future<void> remove(String hostId) async => disconnect(hostId);
 
   @override
+  Future<AndroidHostIdentityRotationResult> rotateDeviceIdentity() async =>
+      const AndroidHostIdentityRotationResult(
+        deviceId: 'device-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        localHostRecordsCleared: true,
+      );
+
+  @override
   Future<void> dispose() async {
     await _notifications.close();
     await _statusChanges.close();

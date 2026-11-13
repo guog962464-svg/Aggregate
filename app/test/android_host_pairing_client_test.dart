@@ -134,6 +134,21 @@ void main() {
     },
   );
 
+  test('rotates the device identity through the identity port', () async {
+    final identity = _FakeIdentity();
+    final client = AndroidHostPairingClient(identity: identity);
+    final original = await identity.loadOrCreate();
+
+    final rotated = await client.rotateDeviceIdentity();
+
+    expect(rotated.deviceId, isNot(original.deviceId));
+    expect(
+      rotated.deviceId,
+      HostPairingProtocol.deviceIdForPublicKey(rotated.publicKeySpki),
+    );
+    expect(identity.rotationCount, 1);
+  });
+
   test(
     'persists public pairing metadata and reloads it without a session',
     () async {
@@ -173,6 +188,46 @@ void main() {
       await restored.remove(_hostId);
       expect(restored.hosts, isEmpty);
       await restored.dispose();
+    },
+  );
+
+  test(
+    'identity rotation clears saved hosts and closes their sessions',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-host-rotation-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final identity = _FakeIdentity();
+      final connector = _FakeConnector();
+      final store = AndroidRuntimeStore(directory);
+      final manager = AndroidHostManager(
+        store,
+        pairingClient: AndroidHostPairingClient(
+          identity: identity,
+          connector: connector,
+          now: () => _now,
+        ),
+        now: () => _now,
+      );
+      await manager.load();
+      final invitation = _invitation();
+      await manager.completePairing(
+        invitation: invitation,
+        displayName: '家庭 Mac',
+      );
+      final oldDeviceId = (await identity.loadOrCreate()).deviceId;
+
+      final result = await manager.rotateDeviceIdentity();
+
+      expect(result.deviceId, isNot(oldDeviceId));
+      expect(result.localHostRecordsCleared, isTrue);
+      expect(manager.hosts, isEmpty);
+      expect(manager.isConnected(_hostId), isFalse);
+      expect(connector.sockets.single.isClosed, isTrue);
+      final registry = await store.read('hosts') as Map<String, Object?>;
+      expect(registry['hosts'], isEmpty);
+      await manager.dispose();
     },
   );
 
@@ -243,13 +298,23 @@ final class _FakeIdentity implements AndroidHostIdentityPort {
     List<int>.generate(91, (index) => index + 1),
   );
 
-  final _publicKey = Uint8List.fromList(
-    List<int>.generate(91, (index) => index + 1),
+  int rotationCount = 0;
+
+  Uint8List get _publicKey => Uint8List.fromList(
+    List<int>.generate(91, (index) => index + 1 + rotationCount),
   );
+
+  String get _deviceId => HostPairingProtocol.deviceIdForPublicKey(_publicKey);
 
   @override
   Future<AndroidHostPublicIdentity> loadOrCreate() async =>
-      AndroidHostPublicIdentity(deviceId: deviceId, publicKeySpki: _publicKey);
+      AndroidHostPublicIdentity(deviceId: _deviceId, publicKeySpki: _publicKey);
+
+  @override
+  Future<AndroidHostPublicIdentity> rotate() async {
+    rotationCount++;
+    return loadOrCreate();
+  }
 
   @override
   Future<Uint8List> sign(Uint8List message) async =>

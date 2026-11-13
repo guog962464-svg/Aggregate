@@ -369,6 +369,21 @@ final class AndroidHostPairingClient {
   final Duration handshakeTimeout;
   final Duration rpcTimeout;
 
+  Future<AndroidHostPublicIdentity> rotateDeviceIdentity() async {
+    try {
+      final device = await identity.rotate();
+      if (HostPairingProtocol.deviceIdForPublicKey(device.publicKeySpki) !=
+          device.deviceId) {
+        throw const FormatException();
+      }
+      return device;
+    } on Object {
+      throw const AndroidHostPairingException(
+        AndroidHostPairingFailure.invalidDeviceIdentity,
+      );
+    }
+  }
+
   Future<AndroidHostPairingReceipt> requestPairing({
     required AndroidHostInvitation invitation,
     required String displayName,

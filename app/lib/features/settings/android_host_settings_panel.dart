@@ -190,6 +190,62 @@ class _AndroidHostSettingsPanelState extends State<AndroidHostSettingsPanel> {
     }
   }
 
+  Future<void> _rotateIdentity() async {
+    if (_busy) return;
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('轮换手机身份密钥？'),
+        content: const Text(
+          '这会更换 Android Keystore 中的设备签名密钥，并断开、清除这台手机保存的所有 Mac Host 记录。每台 Mac 上的旧设备授权仍需在 Mac Host 设置中撤销；之后需要重新请求配对并由 Mac 批准。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('轮换并清除记录'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await widget.hostManager.rotateDeviceIdentity();
+      if (!mounted) return;
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.localHostRecordsCleared
+                ? '手机身份已轮换。请在各 Mac 上撤销旧授权，再重新配对。'
+                : '身份已轮换，但本机 Host 记录未能全部清除；请检查并移除旧记录。',
+          ),
+          backgroundColor: result.localHostRecordsCleared
+              ? null
+              : theme.colorScheme.errorContainer,
+        ),
+      );
+    } on AndroidHostPairingException catch (error) {
+      if (mounted) setState(() => _error = _messageFor(error.failure));
+    } on Object {
+      if (mounted) setState(() => _error = '轮换手机身份密钥失败；现有 Host 配对未更改。');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   String _messageFor(AndroidHostPairingFailure failure) => switch (failure) {
     AndroidHostPairingFailure.invalidInvitation =>
       '二维码内容无效或不受支持，请从 Mac Host 设置重新生成。',
@@ -371,6 +427,19 @@ class _AndroidHostSettingsPanelState extends State<AndroidHostSettingsPanel> {
               ),
             );
           }),
+        const SizedBox(height: 24),
+        Text('手机设备身份', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(
+          '身份密钥保存在 Android Keystore。轮换会影响所有 Mac Host 配对。',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : _rotateIdentity,
+          icon: const Icon(Icons.key_off_outlined),
+          label: const Text('轮换手机身份密钥'),
+        ),
       ],
     );
   }

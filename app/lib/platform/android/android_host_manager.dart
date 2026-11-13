@@ -23,6 +23,16 @@ final class AndroidHostStatusChange {
   final AndroidHostStatus status;
 }
 
+final class AndroidHostIdentityRotationResult {
+  const AndroidHostIdentityRotationResult({
+    required this.deviceId,
+    required this.localHostRecordsCleared,
+  });
+
+  final String deviceId;
+  final bool localHostRecordsCleared;
+}
+
 abstract interface class AndroidHostManagerPort {
   List<AndroidPairedHost> get hosts;
   bool isConnected(String hostId);
@@ -49,6 +59,7 @@ abstract interface class AndroidHostManagerPort {
   Future<AndroidPairedHost> connect(String hostId);
   Future<void> disconnect(String hostId);
   Future<void> remove(String hostId);
+  Future<AndroidHostIdentityRotationResult> rotateDeviceIdentity();
   Future<void> dispose();
 }
 
@@ -498,6 +509,50 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     await session?.close();
     _setStatus(hostId, AndroidHostStatus.offline);
   });
+
+  @override
+  Future<AndroidHostIdentityRotationResult> rotateDeviceIdentity() =>
+      _mutate(() async {
+        final identity = await pairingClient.rotateDeviceIdentity();
+        var localHostRecordsCleared = true;
+        try {
+          await _store.write('hosts', {
+            'schemaVersion': 1,
+            'hosts': const <Object?>[],
+          });
+        } on Object {
+          localHostRecordsCleared = false;
+        }
+
+        final hostIds = _hosts.keys.toList();
+        for (final watch in _sessionWatches.values.toList()) {
+          try {
+            await watch.cancel();
+          } on Object {
+            // Continue closing all sessions after a failed stream cleanup.
+          }
+        }
+        _sessionWatches.clear();
+        for (final session in _sessions.values.toList()) {
+          try {
+            await session.close();
+          } on Object {
+            // The identity has changed; no previous session may remain active.
+          }
+        }
+        _sessions.clear();
+        _hosts.clear();
+        for (final hostId in hostIds) {
+          _setStatus(hostId, AndroidHostStatus.offline);
+        }
+        if (!localHostRecordsCleared) {
+          notices.add('手机身份已轮换，但 Host 列表没有写入清理结果；请移除可能重新出现的旧记录。');
+        }
+        return AndroidHostIdentityRotationResult(
+          deviceId: identity.deviceId,
+          localHostRecordsCleared: localHostRecordsCleared,
+        );
+      });
 
   Future<void> _persist() async {
     try {
