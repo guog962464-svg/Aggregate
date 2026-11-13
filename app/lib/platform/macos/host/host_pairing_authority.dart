@@ -438,13 +438,13 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
   final Map<String, _ChallengeRecord> _challenges = {};
   final Map<String, _SessionRecord> _sessions = {};
   final Set<String> _revokedDevices = {};
-  final _revocations = StreamController<String>.broadcast(sync: true);
+  final _authorizationChanges = StreamController<String>.broadcast(sync: true);
   Future<void>? _loadOperation;
   Future<void> _tail = Future<void>.value();
 
   Future<void> initialize() => _serialize(_ensureLoaded);
 
-  Stream<String> watchRevocations() => _revocations.stream;
+  Stream<String> watchAuthorizationChanges() => _authorizationChanges.stream;
 
   Future<List<HostDeviceGrant>> pairedDevices() => _serialize(() async {
     await _ensureLoaded();
@@ -584,7 +584,52 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
     _grants[deviceId] = grant;
     _revokedDevices.remove(deviceId);
     _pending.remove(deviceId);
+    setupCoordinator?.admitPairedDevice(deviceId);
     return grant;
+  });
+
+  /// Replaces the scopes on an existing paired identity without rotating its
+  /// public key. Existing authenticated sessions are discarded so an open
+  /// stream cannot continue under the previous grant.
+  Future<HostDeviceGrant> updateDeviceGrant(
+    String deviceId, {
+    required Set<HostGrantScope> scopes,
+    required Map<String, Set<PermissionLevel>> connectionPermissions,
+  }) => _serialize(() async {
+    await _ensureLoaded();
+    final current = _grants[deviceId];
+    if (current == null || _revokedDevices.contains(deviceId)) {
+      throw const HostPairingException(HostPairingError.notPaired);
+    }
+    final updated = HostDeviceGrant(
+      deviceId: current.deviceId,
+      publicKeySpki: current.publicKeySpki,
+      displayName: current.displayName,
+      platform: current.platform,
+      approvedAt: current.approvedAt,
+      scopes: scopes,
+      connectionPermissions: connectionPermissions,
+    );
+    try {
+      await store.save(updated);
+    } catch (_) {
+      throw const HostPairingException(HostPairingError.storageFailure);
+    }
+    _grants[deviceId] = updated;
+    _challenges.removeWhere((_, challenge) => challenge.deviceId == deviceId);
+    _sessions.removeWhere((_, session) => session.session.deviceId == deviceId);
+    try {
+      await setupCoordinator?.closeDevice(deviceId);
+      setupCoordinator?.admitPairedDevice(deviceId);
+    } catch (_) {
+      setupCoordinator?.admitPairedDevice(deviceId);
+      _authorizationChanges.add(deviceId);
+      throw const HostPairingException(
+        HostPairingError.revocationCleanupFailed,
+      );
+    }
+    _authorizationChanges.add(deviceId);
+    return updated;
   });
 
   Future<void> rejectPending(String deviceId) => _serialize(() async {
@@ -762,7 +807,7 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
     _pending.remove(deviceId);
     _challenges.removeWhere((_, challenge) => challenge.deviceId == deviceId);
     _sessions.removeWhere((_, session) => session.session.deviceId == deviceId);
-    _revocations.add(deviceId);
+    _authorizationChanges.add(deviceId);
     try {
       await setupCoordinator?.closeDevice(deviceId);
       await onDeviceRevoked?.call(deviceId);

@@ -191,6 +191,50 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     );
   }
 
+  Future<void> _configurePairedGrant(HostDeviceGrant grant) async {
+    if (_busy) return;
+    List<Connection> connections;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      connections = await widget.loadConnections();
+    } catch (_) {
+      if (mounted) setState(() => _error = '无法读取 Mac 连接，暂时不能配置权限。');
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    final selection = await showDialog<_HostGrantSelection>(
+      context: context,
+      builder: (context) => _HostGrantDialog(
+        connections: connections,
+        initialScopes: grant.scopes,
+        initialConnectionPermissions: grant.connectionPermissions,
+        saveLabel: '保存权限',
+      ),
+    );
+    if (selection == null || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.pairingControl.updateDeviceGrant(
+        grant.deviceId,
+        scopes: selection.scopes,
+        connectionPermissions: selection.connectionPermissions,
+      );
+      await _refreshPairings(force: true);
+    } catch (_) {
+      if (mounted) setState(() => _error = '保存设备权限失败，请刷新后重试。');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _reject(HostPendingPairing request) async {
     if (_busy) return;
     setState(() {
@@ -530,9 +574,18 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     ),
-    trailing: TextButton(
-      onPressed: _busy ? null : () => _revoke(grant),
-      child: const Text('撤销'),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton(
+          onPressed: _busy ? null : () => _configurePairedGrant(grant),
+          child: const Text('修改权限'),
+        ),
+        TextButton(
+          onPressed: _busy ? null : () => _revoke(grant),
+          child: const Text('撤销'),
+        ),
+      ],
     ),
   );
 }
@@ -548,17 +601,52 @@ final class _HostGrantSelection {
 }
 
 class _HostGrantDialog extends StatefulWidget {
-  const _HostGrantDialog({required this.connections});
+  const _HostGrantDialog({
+    required this.connections,
+    this.initialScopes = const {HostGrantScope.readConnections},
+    this.initialConnectionPermissions = const {},
+    this.saveLabel = '批准所选权限',
+  });
 
   final List<Connection> connections;
+  final Set<HostGrantScope> initialScopes;
+  final Map<String, Set<PermissionLevel>> initialConnectionPermissions;
+  final String saveLabel;
 
   @override
   State<_HostGrantDialog> createState() => _HostGrantDialogState();
 }
 
 class _HostGrantDialogState extends State<_HostGrantDialog> {
-  final Set<HostGrantScope> _scopes = {HostGrantScope.readConnections};
+  final Set<HostGrantScope> _scopes = {};
+  final Set<HostGrantScope> _preservedUnavailableScopes = {};
   final Map<String, Set<PermissionLevel>> _connectionPermissions = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _preservedUnavailableScopes.addAll(
+      widget.initialScopes.difference({
+        HostGrantScope.readConnections,
+        HostGrantScope.connectionSetup,
+        HostGrantScope.connectionManagement,
+        HostGrantScope.account,
+        HostGrantScope.terminal,
+        HostGrantScope.activityClear,
+      }),
+    );
+    _scopes.addAll(
+      widget.initialScopes.difference(_preservedUnavailableScopes),
+    );
+    final availableConnectionIds = widget.connections
+        .map((connection) => connection.id.value)
+        .toSet();
+    for (final entry in widget.initialConnectionPermissions.entries) {
+      if (availableConnectionIds.contains(entry.key)) {
+        _connectionPermissions[entry.key] = {...entry.value};
+      }
+    }
+  }
 
   bool get _needsConnectionSelection =>
       _scopes.contains(HostGrantScope.connectionManagement) ||
@@ -589,7 +677,10 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
   }
 
   void _finish() {
-    final scopes = Set<HostGrantScope>.unmodifiable(_scopes);
+    final scopes = Set<HostGrantScope>.unmodifiable({
+      ..._scopes,
+      ..._preservedUnavailableScopes,
+    });
     final permissions = Map<String, Set<PermissionLevel>>.unmodifiable({
       for (final entry in _connectionPermissions.entries)
         entry.key: Set<PermissionLevel>.unmodifiable(entry.value),
@@ -647,7 +738,14 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
                   enabled: false,
                   leading: const Icon(Icons.lock_outline),
                   title: const Text('内容传输'),
-                  subtitle: Text('尚未开放', style: theme.textTheme.bodySmall),
+                  subtitle: Text(
+                    _preservedUnavailableScopes.contains(
+                          HostGrantScope.contentTransfer,
+                        )
+                        ? '已有授权会保留；相关接口尚未开放。'
+                        : '尚未开放',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
                 const Divider(),
                 Text('逐连接权限', style: theme.textTheme.titleSmall),
@@ -711,7 +809,7 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
         ),
         FilledButton(
           onPressed: canApprove ? _finish : null,
-          child: const Text('批准所选权限'),
+          child: Text(widget.saveLabel),
         ),
       ],
     );

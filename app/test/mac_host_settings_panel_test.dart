@@ -55,6 +55,14 @@ void main() {
     expect(find.text('待处理设备'), findsOneWidget);
     expect(find.text('Pixel 9'), findsOneWidget);
 
+    await tester.tap(find.text('修改权限'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('连接向导'));
+    await tester.tap(find.text('保存权限'));
+    await tester.pumpAndSettle();
+    expect(pairing.updatedDeviceIds, [pairing.deviceId]);
+    expect(pairing.approvedScopes, {HostGrantScope.readConnections});
+
     await tester.tap(find.text('撤销').last);
     await tester.pumpAndSettle();
     expect(pairing.revokedDeviceIds, isEmpty);
@@ -183,6 +191,7 @@ final class _FakePairingControl implements HostPairingControlPort {
   var invitationCalls = 0;
   Set<HostGrantScope> approvedScopes = const {};
   Map<String, Set<PermissionLevel>> approvedConnectionPermissions = const {};
+  final List<String> updatedDeviceIds = [];
   final List<String> revokedDeviceIds = [];
 
   @override
@@ -236,6 +245,33 @@ final class _FakePairingControl implements HostPairingControlPort {
     );
     _grants.add(grant);
     return grant;
+  }
+
+  @override
+  Future<HostDeviceGrant> updateDeviceGrant(
+    String requestedDeviceId, {
+    required Set<HostGrantScope> scopes,
+    required Map<String, Set<PermissionLevel>> connectionPermissions,
+  }) async {
+    updatedDeviceIds.add(requestedDeviceId);
+    approvedScopes = Set.unmodifiable(scopes);
+    approvedConnectionPermissions = connectionPermissions;
+    final index = _grants.indexWhere(
+      (grant) => grant.deviceId == requestedDeviceId,
+    );
+    if (index < 0) throw StateError('device is not paired');
+    final previous = _grants[index];
+    final updated = HostDeviceGrant(
+      deviceId: previous.deviceId,
+      publicKeySpki: previous.publicKeySpki,
+      displayName: previous.displayName,
+      platform: previous.platform,
+      approvedAt: previous.approvedAt,
+      scopes: scopes,
+      connectionPermissions: connectionPermissions,
+    );
+    _grants[index] = updated;
+    return updated;
   }
 
   @override

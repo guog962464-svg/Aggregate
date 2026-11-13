@@ -73,6 +73,11 @@ abstract interface class HostPairingControlPort {
     Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   });
+  Future<HostDeviceGrant> updateDeviceGrant(
+    String deviceId, {
+    required Set<HostGrantScope> scopes,
+    required Map<String, Set<PermissionLevel>> connectionPermissions,
+  });
   Future<List<HostDeviceGrant>> pairedDevices();
   Future<void> revokeDevice(String deviceId);
 }
@@ -200,7 +205,7 @@ final class HostWssTransport
   final Map<String, int> _connectionsByDevice = {};
   final Map<String, int> _pendingUpgradesByAddress = {};
   HostWssServices? _services;
-  StreamSubscription<String>? _revocationSubscription;
+  StreamSubscription<String>? _authorizationChangeSubscription;
   List<HostWssEndpoint> _endpoints = const [];
   Future<void>? _startOperation;
   Future<void>? _stopOperation;
@@ -237,6 +242,17 @@ final class HostWssTransport
     Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) async => _requireServices().pairing.approvePending(
+    deviceId,
+    scopes: scopes,
+    connectionPermissions: connectionPermissions,
+  );
+
+  @override
+  Future<HostDeviceGrant> updateDeviceGrant(
+    String deviceId, {
+    required Set<HostGrantScope> scopes,
+    required Map<String, Set<PermissionLevel>> connectionPermissions,
+  }) => _requireServices().pairing.updateDeviceGrant(
     deviceId,
     scopes: scopes,
     connectionPermissions: connectionPermissions,
@@ -298,9 +314,9 @@ final class HostWssTransport
       _services = services;
       _servers.addAll(boundServers);
       _endpoints = List.unmodifiable(boundEndpoints);
-      _revocationSubscription = services.pairing.watchRevocations().listen(
-        _disconnectDevice,
-      );
+      _authorizationChangeSubscription = services.pairing
+          .watchAuthorizationChanges()
+          .listen(_disconnectDevice);
       for (final server in boundServers) {
         server.listen(_handleRequest, onError: (Object _, StackTrace _) {});
       }
@@ -316,9 +332,9 @@ final class HostWssTransport
       _accepting = true;
     } catch (_) {
       try {
-        await _revocationSubscription?.cancel();
+        await _authorizationChangeSubscription?.cancel();
       } catch (_) {}
-      _revocationSubscription = null;
+      _authorizationChangeSubscription = null;
       _services = null;
       _endpoints = const [];
       _servers.clear();
@@ -368,11 +384,11 @@ final class HostWssTransport
     _pendingUpgradesByAddress.clear();
     var shutdownFailed = false;
     try {
-      await _revocationSubscription?.cancel();
+      await _authorizationChangeSubscription?.cancel();
     } catch (_) {
       shutdownFailed = true;
     }
-    _revocationSubscription = null;
+    _authorizationChangeSubscription = null;
     try {
       await bonjourPublisher.stop();
     } catch (_) {
@@ -842,7 +858,12 @@ final class HostWssTransport
     for (final entry in _connections.entries.toList()) {
       if (entry.value.deviceId != deviceId) continue;
       entry.value.session = null;
-      unawaited(entry.key.close(WebSocketStatus.policyViolation, 'Revoked'));
+      unawaited(
+        entry.key.close(
+          WebSocketStatus.policyViolation,
+          'Authorization changed; reconnect',
+        ),
+      );
     }
   }
 

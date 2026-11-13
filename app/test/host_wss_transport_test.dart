@@ -92,7 +92,7 @@ void main() {
   );
 
   test(
-    'pairs, authenticates, dispatches signed RPC and disconnects on revoke',
+    'disconnects active sockets after grant changes and device revocation',
     () async {
       await transport.start();
       final invitation = await transport.createInvitation();
@@ -253,12 +253,39 @@ void main() {
       await secondSocket.close();
       await secondIterator.cancel();
 
-      await transport.revokeDevice(deviceId);
+      await transport.updateDeviceGrant(
+        deviceId,
+        scopes: const {HostGrantScope.readConnections},
+        connectionPermissions: const {},
+      );
       expect(
         await iterator.moveNext().timeout(const Duration(seconds: 2)),
         isFalse,
       );
       await iterator.cancel();
+      expect(await transport.pairedDevices(), hasLength(1));
+
+      final reconnectedSocket = await connect(invitation.endpoints.single.uri);
+      final reconnectedIterator = StreamIterator<Object?>(reconnectedSocket);
+      reconnectedSocket.add(
+        HostRpcCodec.encodeFrame({
+          'jsonrpc': '2.0',
+          'id': 'auth-begin-after-update',
+          'method': 'host.auth.begin',
+          'params': {'deviceId': deviceId},
+        }),
+      );
+      final reconnectedChallenge = await _readResponse(reconnectedIterator);
+      expect(reconnectedChallenge['result'], isA<Map<String, Object?>>());
+
+      await transport.revokeDevice(deviceId);
+      expect(
+        await reconnectedIterator.moveNext().timeout(
+          const Duration(seconds: 2),
+        ),
+        isFalse,
+      );
+      await reconnectedIterator.cancel();
     },
   );
 }

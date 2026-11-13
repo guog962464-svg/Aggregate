@@ -80,6 +80,17 @@ final class MacHostModule implements HostControlPort, HostPairingControlPort {
   );
 
   @override
+  Future<HostDeviceGrant> updateDeviceGrant(
+    String deviceId, {
+    required Set<HostGrantScope> scopes,
+    required Map<String, Set<PermissionLevel>> connectionPermissions,
+  }) => _pairingControl.updateDeviceGrant(
+    deviceId,
+    scopes: scopes,
+    connectionPermissions: connectionPermissions,
+  );
+
+  @override
   Future<List<HostDeviceGrant>> pairedDevices() =>
       _pairingControl.pairedDevices();
 

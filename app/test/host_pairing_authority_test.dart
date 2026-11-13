@@ -209,6 +209,63 @@ void main() {
     },
   );
 
+  test('updates a paired grant and invalidates its existing session', () async {
+    await approve();
+    final previous = (await authority.pairedDevices()).single;
+    final challenge = await authority.issueChallenge(deviceId);
+    final proof = HostPairingProtocol.authenticationProof(
+      hostId: hostId,
+      deviceId: deviceId,
+      connectionId: challenge.connectionId,
+      challenge: challenge.challenge,
+    );
+    final session = await authority.completeChallenge(
+      connectionId: challenge.connectionId,
+      signatureDer: _signature(proof),
+    );
+    final authorizationChange = authority.watchAuthorizationChanges().first;
+
+    final updated = await authority.updateDeviceGrant(
+      deviceId,
+      scopes: const {HostGrantScope.readConnections},
+      connectionPermissions: const {},
+    );
+
+    expect(await authorizationChange, deviceId);
+    expect(updated.publicKeySpki, previous.publicKeySpki);
+    expect(updated.approvedAt, previous.approvedAt);
+    expect(updated.scopes, {HostGrantScope.readConnections});
+    expect((await store.readAll()).single.toJson(), updated.toJson());
+    expect(
+      await authority.isAuthorized(
+        deviceId: deviceId,
+        method: 'setup.adapters',
+        params: const {},
+      ),
+      isFalse,
+    );
+    await expectLater(
+      authority.authenticateRequest(
+        HostSignedRpcEnvelope(
+          hostId: hostId,
+          deviceId: deviceId,
+          sessionId: session.sessionId,
+          timestampSeconds: now.millisecondsSinceEpoch ~/ 1000,
+          nonce: _token('after-grant-update'),
+          payload: '{}',
+          signatureDer: const [],
+        ),
+      ),
+      throwsA(
+        isA<HostPairingException>().having(
+          (error) => error.error,
+          'error',
+          HostPairingError.expiredSession,
+        ),
+      ),
+    );
+  });
+
   test('saving a manifest requires per-connection external write', () async {
     var invitation = await authority.createInvitation();
     await authority.submitPairingRequest(pairingRequest(invitation));
