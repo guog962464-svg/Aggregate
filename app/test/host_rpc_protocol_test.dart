@@ -276,6 +276,76 @@ void main() {
       );
     });
 
+    test('keeps setup URLs public and secret values in a bounded side map', () {
+      final request = HostRpcCodec.decodeRequest(
+        jsonEncode({
+          'jsonrpc': '2.0',
+          'id': 'req-1',
+          'method': 'setup.test',
+          'params': {
+            'operationId': 'op-1',
+            'draft': {
+              'adapterId': 'mcp-http',
+              'label': 'Remote MCP',
+              'fieldValues': {},
+              'url': 'https://mcp.example.test/api',
+            },
+            'secretValues': {'authToken': 's' * (32 * 1024)},
+          },
+        }),
+      );
+      final draft = HostSetupDraftPayload.fromJson(request.params['draft']);
+      expect(draft.url, 'https://mcp.example.test/api');
+      expect(request.params['secretValues'], isA<Map>());
+
+      for (final invalid in [
+        {
+          'adapterId': 'mcp-http',
+          'label': 'Remote MCP',
+          'fieldValues': <String, String>{},
+          'url': 'https://user:password@mcp.example.test/api',
+        },
+        {
+          'adapterId': 'mcp-http',
+          'label': 'Remote MCP',
+          'fieldValues': <String, String>{},
+          'url': 'file:///Users/host/secret',
+        },
+      ]) {
+        expect(
+          () => HostRpcCodec.decodeRequest(
+            jsonEncode({
+              'jsonrpc': '2.0',
+              'id': 'req-1',
+              'method': 'setup.test',
+              'params': {'operationId': 'op-1', 'draft': invalid},
+            }),
+          ),
+          throwsA(isA<HostRpcProtocolException>()),
+        );
+      }
+      expect(
+        () => HostRpcCodec.decodeRequest(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'id': 'req-1',
+            'method': 'setup.test',
+            'params': {
+              'operationId': 'op-1',
+              'draft': {
+                'adapterId': 'mcp-http',
+                'label': 'Remote MCP',
+                'fieldValues': {},
+                'url': 'https://mcp.example.test/api',
+              },
+              'secretValues': {'authToken': 's' * (32 * 1024 + 1)},
+            },
+          }),
+        ),
+        throwsA(isA<HostRpcProtocolException>()),
+      );
+    });
+
     test('manifest DTOs carry executable references instead of Mac paths', () {
       final manifest = <String, Object?>{
         'schemaVersion': 1,

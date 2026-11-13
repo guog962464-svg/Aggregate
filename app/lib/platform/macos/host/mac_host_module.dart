@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import 'host_control_port.dart';
+import 'host_setup_coordinator.dart';
 import 'host_transport_port.dart';
 
 /// Runtime capabilities the Host will dispatch through in later A5 stages.
@@ -28,10 +29,14 @@ final class MacHostRuntimeBindings {
 /// Stopping this module closes only Host-owned transport resources. The local
 /// UI continues to own and dispose the runtime.
 final class MacHostModule implements HostControlPort {
-  MacHostModule({required this.runtimeBindings, required this.hostTransport});
+  MacHostModule({required this.runtimeBindings, required this.hostTransport})
+    : setupCoordinator = HostSetupCoordinator(
+        setup: runtimeBindings.connectionSetup,
+      );
 
   final MacHostRuntimeBindings runtimeBindings;
   final HostTransportPort hostTransport;
+  final HostSetupCoordinator setupCoordinator;
   final _changes = StreamController<HostStatus>.broadcast(sync: true);
   HostStatus _status = const HostStatus(HostPhase.stopped);
   Future<void> _operationTail = Future<void>.value();
@@ -94,10 +99,14 @@ final class MacHostModule implements HostControlPort {
 
   @override
   Future<void> stop() => _serialize(() async {
-    if (_status.phase == HostPhase.stopped) return;
+    if (_status.phase == HostPhase.stopped) {
+      await setupCoordinator.closeAll();
+      return;
+    }
     _publish(const HostStatus(HostPhase.stopping));
     try {
       await hostTransport.stop();
+      await setupCoordinator.closeAll();
       _publish(const HostStatus(HostPhase.stopped));
     } catch (_) {
       _publish(

@@ -29,7 +29,8 @@ enum HostRpcErrorCode {
   cursorExpired(-32005, 'Event cursor expired'),
   payloadTooLarge(-32006, 'Payload too large'),
   operationNotFound(-32007, 'Operation not found'),
-  operationLedgerFull(-32008, 'Operation ledger is full');
+  operationLedgerFull(-32008, 'Operation ledger is full'),
+  resourceLimitExceeded(-32009, 'Host resource limit exceeded');
 
   const HostRpcErrorCode(this.value, this.message);
 
@@ -44,6 +45,7 @@ enum HostRpcValueKind {
   boolean,
   object,
   stringMap,
+  secretStringMap,
   capabilityId,
   resourceRef,
   promptRef,
@@ -87,7 +89,7 @@ const _identifier = HostRpcValueKind.identifier;
 const _int = HostRpcValueKind.integer;
 const _bool = HostRpcValueKind.boolean;
 const _obj = HostRpcValueKind.object;
-const _strings = HostRpcValueKind.stringMap;
+const _secretStrings = HostRpcValueKind.secretStringMap;
 const _capabilityId = HostRpcValueKind.capabilityId;
 const _resourceRef = HostRpcValueKind.resourceRef;
 const _promptRef = HostRpcValueKind.promptRef;
@@ -133,7 +135,7 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
     const HostRpcMethodDefinition('setup.test', [
       _op,
       HostRpcParameter('draft', _setupDraft),
-      HostRpcParameter('secretValues', _strings, required: false),
+      HostRpcParameter('secretValues', _secretStrings, required: false),
     ]),
     const HostRpcMethodDefinition('setup.save', [_op, _draftHandle]),
     const HostRpcMethodDefinition('setup.discard', [_op, _draftHandle]),
@@ -256,6 +258,7 @@ final class HostSetupDraftPayload {
     required this.adapterId,
     required this.label,
     required this.fieldValues,
+    this.url,
     this.executableRef,
     this.manifestRef,
     this.arguments = const [],
@@ -264,6 +267,7 @@ final class HostSetupDraftPayload {
   final String adapterId;
   final String label;
   final Map<String, String> fieldValues;
+  final String? url;
   final String? executableRef;
   final String? manifestRef;
   final List<String> arguments;
@@ -272,6 +276,7 @@ final class HostSetupDraftPayload {
     'adapterId': adapterId,
     'label': label,
     'fieldValues': fieldValues,
+    if (url != null) 'url': url,
     if (executableRef != null) 'executableRef': executableRef,
     if (manifestRef != null) 'manifestRef': manifestRef,
     if (arguments.isNotEmpty) 'arguments': arguments,
@@ -286,6 +291,7 @@ final class HostSetupDraftPayload {
           'adapterId',
           'label',
           'fieldValues',
+          'url',
           'executableRef',
           'manifestRef',
           'arguments',
@@ -296,6 +302,9 @@ final class HostSetupDraftPayload {
         (json['label']! as String).trim().isEmpty ||
         (json['label']! as String).length > 100 ||
         !_isStringMap(json['fieldValues']) ||
+        (json['url'] != null &&
+            (json['url'] is! String ||
+                !_isHostHttpUrl(json['url']! as String))) ||
         (json['executableRef'] != null &&
             (json['executableRef'] is! String ||
                 !_validRpcId(json['executableRef']! as String))) ||
@@ -319,6 +328,7 @@ final class HostSetupDraftPayload {
       fieldValues: Map.unmodifiable(
         (json['fieldValues']! as Map).cast<String, String>(),
       ),
+      url: json['url'] as String?,
       executableRef: json['executableRef'] as String?,
       manifestRef: json['manifestRef'] as String?,
       arguments: List.unmodifiable(
@@ -693,6 +703,7 @@ abstract final class HostRpcCodec {
         HostRpcValueKind.boolean => value is bool,
         HostRpcValueKind.object => value is Map,
         HostRpcValueKind.stringMap => _isStringMap(value),
+        HostRpcValueKind.secretStringMap => _isSecretStringMap(value),
         HostRpcValueKind.capabilityId => _isCapabilityId(value),
         HostRpcValueKind.resourceRef => _isResourceRef(value),
         HostRpcValueKind.promptRef => _isPromptRef(value),
@@ -761,6 +772,31 @@ bool _isStringMap(Object? value) =>
           entry.value is String &&
           (entry.value as String).length <= 4096,
     );
+
+bool _isSecretStringMap(Object? value) =>
+    value is Map &&
+    value.length <= 16 &&
+    value.entries.every(
+      (entry) =>
+          entry.key is String &&
+          _validRpcId(entry.key as String) &&
+          entry.value is String &&
+          (entry.value as String).length <= 32 * 1024 &&
+          !(entry.value as String).contains('\u0000'),
+    );
+
+bool _isHostHttpUrl(String value) {
+  if (value.isEmpty ||
+      value.length > 2048 ||
+      RegExp(r'[\x00-\x1f\x7f]').hasMatch(value)) {
+    return false;
+  }
+  final uri = Uri.tryParse(value);
+  return uri != null &&
+      uri.hasAuthority &&
+      const {'http', 'https'}.contains(uri.scheme) &&
+      uri.userInfo.isEmpty;
+}
 
 bool _isCapabilityId(Object? value) {
   if (value is! Map ||

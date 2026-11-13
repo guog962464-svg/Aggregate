@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate/platform/macos/host/host_control_port.dart';
+import 'package:aggregate/platform/macos/host/host_rpc_protocol.dart';
 import 'package:aggregate/platform/macos/host/host_transport_port.dart';
 import 'package:aggregate/platform/macos/host/mac_host_module.dart';
 import 'package:aggregate/platform/macos/local_runtime_port.dart';
@@ -155,6 +156,48 @@ void main() {
     },
   );
 
+  test('Host stop discards its device-bound setup drafts', () async {
+    final runtime = _UnusedRuntime();
+    final module = MacHostModule(
+      runtimeBindings: MacHostRuntimeBindings(
+        runtime: runtime,
+        connectionSetup: runtime,
+        accounts: runtime,
+      ),
+      hostTransport: _FakeHostTransport(),
+    );
+    await module.start();
+    final executable = await module.setupCoordinator.detectExecutable(
+      deviceId: 'device-1',
+      adapterId: 'cli',
+    );
+    final tested = await module.setupCoordinator.testConnectionSetup(
+      deviceId: 'device-1',
+      draft: HostSetupDraftPayload(
+        adapterId: 'cli',
+        label: 'CLI',
+        fieldValues: const {},
+        executableRef: executable!.executableRef,
+      ),
+    );
+
+    await module.stop();
+    expect(runtime.discardedSetupDrafts, ['setup-draft-1']);
+    await expectLater(
+      module.setupCoordinator.saveConnectionSetup(
+        deviceId: 'device-1',
+        draftHandle: tested.draftHandle!,
+      ),
+      throwsA(
+        isA<HostRpcProtocolException>().having(
+          (error) => error.code,
+          'code',
+          HostRpcErrorCode.operationNotFound,
+        ),
+      ),
+    );
+  });
+
   test('Host stop leaves the app-owned MacRuntime usable', () async {
     final directory = await Directory.systemTemp.createTemp(
       'aggregate-mac-host-',
@@ -220,6 +263,44 @@ final class _FakeHostTransport implements HostTransportPort {
 
 final class _UnusedRuntime
     implements RuntimePort, ConnectionSetupPort, ConnectionAccountPort {
+  final discardedSetupDrafts = <String>[];
+
+  @override
+  List<ConnectionAdapter> get connectionAdapters => const [
+    ConnectionAdapter(
+      id: 'cli',
+      label: 'CLI',
+      kind: ConnectionKind.cli,
+      autoDetectExecutable: true,
+    ),
+  ];
+
+  @override
+  Future<String?> detectExecutable(String adapterId) async => '/usr/bin/printf';
+
+  @override
+  Future<ConnectionSetupReport> testConnectionSetup(
+    ConnectionSetupDraft draft,
+  ) async => const ConnectionSetupReport(
+    draftId: 'setup-draft-1',
+    checks: [],
+    canSave: true,
+  );
+
+  @override
+  Future<Connection> saveConnectionSetup(String draftId) async =>
+      const Connection(
+        id: ConnectionId('connection-1'),
+        kind: ConnectionKind.cli,
+        label: 'CLI',
+        location: '/usr/bin/printf',
+      );
+
+  @override
+  Future<void> discardConnectionSetup(String draftId) async {
+    discardedSetupDrafts.add(draftId);
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

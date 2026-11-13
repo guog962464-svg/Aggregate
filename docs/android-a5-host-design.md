@@ -131,4 +131,5 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 33 个封闭的 v1 方法定义、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
 - `app/lib/platform/macos/host/host_jcs.dart` 按 RFC 8785 对 method 与参数（去除 `operationId`）生成 SHA-256 操作哈希；外层设备签名仍按上文对收到的原始 payload 字节计算。
 - `app/lib/platform/macos/host/host_operation_ledger.dart` 以 `(deviceId, operationId)` 隔离记录开始/完成/结果未知状态，不持久化请求参数、结果或秘密。启动时把遗留 `started` 记录改为 `outcomeUnknown`，绝不自动重放。账本上限为 10,000 条或 4 MiB，达到上限后拒绝新操作。
-- 验收只证明协议组件和文件账本的本地单元行为；账本尚未接入 `MacHostModule`、dispatcher、设备授权或生产存储目录权限，生产 transport 仍拒绝启动。凭证字段按 adapter catalog 分离、draftHandle 设备绑定、Host grant 检查、实际内容分块传输和 listener 交互仍需后续阶段实现与验收。不能据此宣称手机已能连接或 Host 端副作用已获得生产级幂等保护。
+- `app/lib/platform/macos/host/host_setup_coordinator.dart` 是 A5.3 进行中的 Host 向导核心：只公开固定 adapter allowlist；仅返回绑定设备和 adapter 的随机 `executableRef`，不返回 Mac 路径；适配器字段决定公开值和秘密值的分离，secret map 单值不超过 32 KiB；`draftHandle` 绑定设备并在 10 分钟后失效。结果检查文本和保存连接摘要脱敏。Host stop 与设备撤销清理可安全丢弃的草稿；保存异常按结果未知处理，不重试也不删除可能已被连接引用的 profile。
+- 验收只证明协议、账本及向导 coordinator 的本地单元行为；账本和 coordinator 尚未接入 RPC dispatcher、设备认证/授权策略或生产存储目录权限，生产 transport 仍拒绝启动。通用 CLI 的 Host 程序登记、manifest/content transfer、dispatcher 访问控制和真正的配对加密传输仍待实现与验收。不能据此宣称手机已能连接或 Host 端副作用已获得生产级授权。
