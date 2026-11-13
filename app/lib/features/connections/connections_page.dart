@@ -9,6 +9,7 @@ import '../../widgets/page_state.dart';
 import '../../widgets/capability_row.dart';
 import 'action_editor_dialog.dart';
 import 'connection_setup_dialog.dart';
+import 'connection_setup_target_dialog.dart';
 
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({
@@ -52,11 +53,6 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   }
 
   Future<void> add({ConnectionKind initialKind = ConnectionKind.cli}) async {
-    final allowedKinds = widget.runtime.features.connectionKinds;
-    if (allowedKinds.isEmpty) return;
-    if (!allowedKinds.contains(initialKind)) {
-      initialKind = ConnectionKind.values.firstWhere(allowedKinds.contains);
-    }
     if (widget.runtime.isPreview) {
       await showDialog<void>(
         context: context,
@@ -70,15 +66,44 @@ class ConnectionsPageState extends State<ConnectionsPage> {
     try {
       final Connection? connection;
       if (widget.runtime case final ConnectionSetupPort setup) {
+        final ConnectionSetupPort selectedSetup;
+        if (widget.runtime case final ConnectionSetupTargetPort targetPort) {
+          final targets = await targetPort.listSetupTargets();
+          if (!mounted) return;
+          final target = await showConnectionSetupTargetDialog(
+            context,
+            targets,
+          );
+          if (target == null) return;
+          selectedSetup = await targetPort.setupForTarget(target);
+          if (!mounted) return;
+        } else {
+          selectedSetup = setup;
+        }
+        final allowedKinds = selectedSetup.connectionAdapters
+            .map((adapter) => adapter.kind)
+            .toSet();
+        if (allowedKinds.isEmpty) {
+          setState(() => error = '此运行端没有可用的连接适配器。');
+          return;
+        }
+        if (!allowedKinds.contains(initialKind)) {
+          initialKind = ConnectionKind.values.firstWhere(allowedKinds.contains);
+        }
         connection = await showDialog<Connection>(
           context: context,
           builder: (_) => ConnectionSetupDialog(
-            setup: setup,
+            setup: selectedSetup,
             initialKind: initialKind,
             allowedKinds: allowedKinds,
           ),
         );
       } else {
+        final allowedKinds = widget.runtime.features.connectionKinds;
+        if (allowedKinds.isEmpty) return;
+        if (!allowedKinds.contains(initialKind)) {
+          initialKind = ConnectionKind.values.firstWhere(allowedKinds.contains);
+        }
         final spec = await showDialog<ConnectionSpec>(
           context: context,
           builder: (_) => AddConnectionDialog(
@@ -166,7 +191,9 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   @override
   Widget build(BuildContext context) => PageFrame(
     title: '连接',
-    subtitle: widget.runtime.isPreview
+    subtitle: widget.runtime is ConnectionSetupTargetPort
+        ? '管理本机 HTTP MCP 与配对 Mac Host 连接。'
+        : widget.runtime.isPreview
         ? '预览连接。'
         : widget.runtime.features.connectionKinds.isEmpty
         ? '此运行端的连接功能尚未开放。'

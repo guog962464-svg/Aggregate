@@ -79,7 +79,7 @@ void main() {
         'permissionLevel': 'read',
         'arguments': {'query': 'hello'},
       });
-      expect(hostRpcMethodCatalog.keys, hasLength(37));
+      expect(hostRpcMethodCatalog.keys, hasLength(38));
       expect(
         hostRpcMethodCatalog['operation.read']!.requiresOperationId,
         isFalse,

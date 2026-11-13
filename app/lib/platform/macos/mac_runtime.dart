@@ -25,7 +25,11 @@ File? _bundledCliLauncher() {
 }
 
 final class MacRuntime
-    implements RuntimePort, ConnectionAccountPort, ConnectionSetupPort {
+    implements
+        RuntimePort,
+        ConnectionAccountPort,
+        ConnectionSetupPort,
+        ExecutableLookupPort {
   MacRuntime._(this.dataDirectory, this._credentials, this._cliLauncher);
 
   static Future<MacRuntime> open({
@@ -407,6 +411,26 @@ final class MacRuntime
         }
       } on FileSystemException {
         // Continue to the next installation location.
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<String?> findExecutable(String name) async {
+    if (!RegExp(r'^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$').hasMatch(name)) {
+      throw const FormatException('程序名称无效');
+    }
+    for (final directory in _environment()['PATH']!.split(':')) {
+      if (!directory.startsWith('/')) continue;
+      final path = '$directory/$name';
+      try {
+        final stat = await File(path).stat();
+        if (stat.type == FileSystemEntityType.file && stat.mode & 0x49 != 0) {
+          return path;
+        }
+      } on FileSystemException {
+        // Continue through the Host PATH entries.
       }
     }
     return null;

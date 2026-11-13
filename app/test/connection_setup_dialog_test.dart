@@ -3,7 +3,8 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-final class _SetupFixture implements ConnectionSetupPort {
+final class _SetupFixture
+    implements ConnectionSetupPort, ConnectionSetupExecutableSelectionPort {
   _SetupFixture({
     this.withField = false,
     this.autoDetect = false,
@@ -65,6 +66,24 @@ final class _SetupFixture implements ConnectionSetupPort {
   @override
   Future<String?> detectExecutable(String adapterId) async =>
       autoDetect ? '/usr/bin/printf' : null;
+
+  @override
+  Future<DetectedExecutableSelection?> detectExecutableSelection(
+    String adapterId, {
+    String? executableName,
+  }) async {
+    if (executionTarget.kind == ExecutionTargetKind.host &&
+        executableName?.isNotEmpty == true) {
+      return const DetectedExecutableSelection(
+        displayLocation: 'Mac 主机 · CLI 程序',
+        reference: 'host-executable-ref',
+      );
+    }
+    final path = await detectExecutable(adapterId);
+    return path == null
+        ? null
+        : DetectedExecutableSelection(displayLocation: path, path: path);
+  }
 
   @override
   Future<ConnectionSetupReport> testConnectionSetup(
@@ -211,7 +230,7 @@ void main() {
     },
   );
 
-  testWidgets('phone form stays usable and keeps Host path on the Host', (
+  testWidgets('phone form finds a Host executable without selecting a path', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -245,13 +264,17 @@ void main() {
     expect(find.byTooltip('关闭添加连接'), findsOneWidget);
     expect(find.byIcon(Icons.folder_open_outlined), findsNothing);
     await tester.enterText(find.widgetWithText(TextField, '名称'), 'Mac 工具');
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Host 程序绝对路径'),
-      '/usr/bin/git',
-    );
+    await tester.enterText(find.widgetWithText(TextField, 'Host 程序名称'), 'git');
+    final detect = find.byTooltip('在 Mac Host 查找程序');
+    await tester.ensureVisible(detect);
+    await tester.tap(detect);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('实际路径不会传回手机'), findsOneWidget);
     await tester.tap(find.text('测试连接'));
     await tester.pumpAndSettle();
     expect(setup.latest?.spec.executionTarget.hostId, 'paired-mac-1');
+    expect(setup.latest?.spec.executable, isNull);
+    expect(setup.latest?.executableReference, 'host-executable-ref');
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsNothing);
@@ -315,6 +338,10 @@ void main() {
     );
     await tester.tap(find.text('打开'));
     await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.byType(DropdownButtonFormField<String>)).dy,
+      greaterThan(tester.getRect(find.byType(AppBar)).bottom),
+    );
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
     await tester.pumpAndSettle();
     final saveButton = find.widgetWithText(FilledButton, '保存连接');

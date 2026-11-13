@@ -18,7 +18,11 @@ import 'android_runtime_store.dart';
 /// Android runtime combining local HTTP MCP and paired Mac Host execution.
 final class AndroidRuntimePort
     with WidgetsBindingObserver
-    implements RuntimePort, ConnectionSetupPort, RuntimeChangeSource {
+    implements
+        RuntimePort,
+        ConnectionSetupPort,
+        ConnectionSetupTargetPort,
+        RuntimeChangeSource {
   AndroidRuntimePort._(
     AndroidRuntimeStore store,
     this._credentials,
@@ -153,6 +157,77 @@ final class AndroidRuntimePort
       kind: ConnectionKind.mcpHttp,
     ),
   ];
+
+  @override
+  Future<List<ConnectionSetupTargetOption>> listSetupTargets() async => [
+    const ConnectionSetupTargetOption(
+      target: ExecutionTarget.device,
+      label: '此 Android 设备',
+      detail: '本机 HTTP MCP 连接',
+    ),
+    for (final host in hostManager.hosts) _hostSetupTargetOption(host),
+  ];
+
+  ConnectionSetupTargetOption _hostSetupTargetOption(AndroidPairedHost host) {
+    final status = hostManager.statusFor(host.hostId);
+    final selectable =
+        hostManager.isConnected(host.hostId) &&
+        !{
+          AndroidHostStatus.authenticationInvalid,
+          AndroidHostStatus.versionIncompatible,
+          AndroidHostStatus.outcomeUnknown,
+        }.contains(status);
+    final detail = switch (status) {
+      AndroidHostStatus.online => 'Mac Host 在线 · 由 Mac 执行配置检查',
+      AndroidHostStatus.connecting => '正在连接 Mac Host',
+      AndroidHostStatus.authenticationInvalid => '认证失效 · 请重新连接或配对',
+      AndroidHostStatus.versionIncompatible => '版本不兼容 · 请升级两端应用',
+      AndroidHostStatus.permissionDenied => '部分 Host 权限受限 · 可尝试仍获准的功能',
+      AndroidHostStatus.timedOut => '上次请求超时 · 请重新连接后使用',
+      AndroidHostStatus.outcomeUnknown => '上次保存结果未知 · 请先检查 Mac',
+      AndroidHostStatus.offline => 'Mac Host 离线 · 请先连接',
+    };
+    return ConnectionSetupTargetOption(
+      target: ExecutionTarget.host(host.hostId),
+      label: host.displayName,
+      detail: detail,
+      selectable: selectable,
+    );
+  }
+
+  @override
+  Future<ConnectionSetupPort> setupForTarget(ExecutionTarget target) async {
+    if (target.kind == ExecutionTargetKind.device) return this;
+    final hostId = target.hostId!;
+    final host = hostManager.hosts
+        .where((item) => item.hostId == hostId)
+        .firstOrNull;
+    if (host == null) throw StateError('配对的 Mac Host 不存在');
+    if (!hostManager.isConnected(hostId)) {
+      throw StateError(_hostStatusDiagnostic(hostManager.statusFor(hostId)));
+    }
+    try {
+      final response = await hostManager.call(
+        hostId,
+        'setup.adapters',
+        const {},
+      );
+      final rawAdapters = response['adapters'];
+      if (rawAdapters is! List) {
+        throw const FormatException('Mac Host 适配器目录无效');
+      }
+      final adapters = rawAdapters
+          .map((raw) => _decodeHostConnectionAdapter(raw, hostId))
+          .toList(growable: false);
+      if (adapters.isEmpty) throw StateError('Mac Host 没有可用的连接适配器');
+      return _AndroidHostConnectionSetupPort(this, host, adapters);
+    } on AndroidHostRpcException catch (error) {
+      if (error.code == -32002) {
+        throw StateError('Mac Host 尚未授权“连接向导”，请在 Mac 上更新此设备的权限。');
+      }
+      rethrow;
+    }
+  }
 
   Future<void> _load() async {
     await _store.directory.create(recursive: true);
@@ -332,6 +407,47 @@ final class AndroidRuntimePort
         protocolVersion: remote.protocolVersion,
         diagnostic: remote.diagnostic,
       );
+
+  Connection _acceptHostSetupResult(
+    AndroidPairedHost host,
+    ConnectionAdapter adapter,
+    Map<String, Object?> result,
+  ) {
+    final remoteId = result['connectionId'];
+    final label = result['label'];
+    final kindName = result['kind'];
+    final statusName = result['status'];
+    if (remoteId is! String ||
+        !RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$').hasMatch(remoteId) ||
+        label is! String ||
+        label.trim().isEmpty ||
+        label.length > 100 ||
+        kindName != adapter.kind.name ||
+        statusName is! String) {
+      throw const FormatException('Mac Host 保存连接结果无效');
+    }
+    final status = ConnectionStatus.values
+        .where((value) => value.name == statusName)
+        .firstOrNull;
+    if (status == null) throw const FormatException('Mac Host 连接状态无效');
+    final remote = _AndroidRemoteConnection(
+      hostId: host.hostId,
+      remoteId: remoteId,
+      connection: Connection(
+        id: ConnectionId(_remoteConnectionKey(host.hostId, remoteId)),
+        kind: adapter.kind,
+        label: label,
+        location: 'Mac Host',
+        executionTarget: ExecutionTarget.host(host.hostId),
+        status: status,
+      ),
+    );
+    _remoteConnections[remote.connection.id.value] = remote;
+    _remoteConnectionsByHost.putIfAbsent(host.hostId, () => {})[remoteId] =
+        remote;
+    if (!_changes.isClosed) _changes.add(null);
+    return remote.connection;
+  }
 
   String _remoteConnectionKey(String hostId, String connectionId) =>
       'remote:$hostId:$connectionId';
@@ -1402,4 +1518,346 @@ final class _AndroidRemoteCapability {
   final String hostId;
   final CapabilityId remoteId;
   final Capability capability;
+}
+
+final class _AndroidHostConnectionSetupPort
+    implements ConnectionSetupPort, ConnectionSetupExecutableSelectionPort {
+  _AndroidHostConnectionSetupPort(this.runtime, this.host, this.adapters);
+
+  final AndroidRuntimePort runtime;
+  final AndroidPairedHost host;
+  final List<ConnectionAdapter> adapters;
+  final Map<String, Set<String>> _executableReferences = {};
+  final Map<String, _AndroidHostSetupDraft> _drafts = {};
+
+  @override
+  List<ConnectionAdapter> get connectionAdapters => adapters;
+
+  @override
+  Future<String?> detectExecutable(String adapterId) async =>
+      (await detectExecutableSelection(adapterId))?.path;
+
+  @override
+  Future<DetectedExecutableSelection?> detectExecutableSelection(
+    String adapterId, {
+    String? executableName,
+  }) async {
+    final adapter = _adapter(adapterId);
+    final String method;
+    final Map<String, Object?> params;
+    if (executableName != null) {
+      if (!{
+            ConnectionKind.cli,
+            ConnectionKind.mcpStdio,
+          }.contains(adapter.kind) ||
+          adapter.autoDetectExecutable) {
+        throw const FormatException('此适配器不支持按命令名称查找');
+      }
+      method = 'setup.resolveExecutable';
+      params = {'adapterId': adapterId, 'executableName': executableName};
+    } else {
+      if (!adapter.autoDetectExecutable) return null;
+      method = 'setup.detectExecutable';
+      params = {'adapterId': adapterId};
+    }
+    final response = await runtime.hostManager.call(
+      host.hostId,
+      method,
+      params,
+    );
+    if (response['detected'] != true) return null;
+    final reference = response['executableRef'];
+    final displayLocation = response['displayLocation'];
+    final expiresAtValue = response['expiresAt'];
+    if (reference is! String ||
+        !RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$').hasMatch(reference) ||
+        displayLocation is! String ||
+        displayLocation.isEmpty ||
+        displayLocation.length > 200 ||
+        expiresAtValue is! String) {
+      throw const FormatException('Mac Host 程序查找结果无效');
+    }
+    final expiresAt = DateTime.tryParse(expiresAtValue);
+    if (expiresAt == null || !expiresAt.isAfter(DateTime.now())) {
+      throw const FormatException('Mac Host 程序引用已过期');
+    }
+    _executableReferences.putIfAbsent(adapterId, () => {}).add(reference);
+    return DetectedExecutableSelection(
+      displayLocation: displayLocation,
+      reference: reference,
+    );
+  }
+
+  @override
+  Future<ConnectionSetupReport> testConnectionSetup(
+    ConnectionSetupDraft draft,
+  ) async {
+    final adapter = _adapter(draft.adapterId);
+    if (draft.spec.executionTarget != ExecutionTarget.host(host.hostId) ||
+        draft.spec.kind != adapter.kind ||
+        draft.spec.executable != null ||
+        draft.spec.workingDirectory != null ||
+        draft.spec.manifestPath != null ||
+        draft.spec.profileId != null) {
+      throw const FormatException('Host 连接表单包含不支持的运行端字段');
+    }
+    if (adapter.kind != ConnectionKind.mcpHttp &&
+        (draft.executableReference == null ||
+            !_executableReferences[adapter.id]!.contains(
+              draft.executableReference,
+            ))) {
+      throw const FormatException('请先通过 Mac Host 查找并确认程序');
+    }
+    final fieldKeys = adapter.fields.map((field) => field.key).toSet();
+    if (draft.values.keys.any((key) => !fieldKeys.contains(key))) {
+      throw const FormatException('连接表单包含未知字段');
+    }
+    final publicValues = <String, String>{};
+    final secretValues = <String, String>{};
+    for (final field in adapter.fields) {
+      final value = draft.values[field.key];
+      if (value == null) continue;
+      if (field.kind == SetupFieldKind.secret) {
+        secretValues[field.key] = value;
+      } else {
+        publicValues[field.key] = value;
+      }
+    }
+    if (adapter.kind == ConnectionKind.mcpHttp &&
+        draft.spec.authToken?.isNotEmpty == true) {
+      secretValues['authToken'] = draft.spec.authToken!;
+    }
+    final payload = <String, Object?>{
+      'adapterId': adapter.id,
+      'label': draft.spec.label,
+      'fieldValues': publicValues,
+      if (adapter.kind == ConnectionKind.mcpHttp) 'url': draft.spec.url,
+      if (draft.executableReference != null)
+        'executableRef': draft.executableReference,
+      if (draft.spec.arguments.isNotEmpty) 'arguments': draft.spec.arguments,
+    };
+    final response = await runtime.hostManager.call(host.hostId, 'setup.test', {
+      'operationId': runtime._newHostOperationId(),
+      'draft': payload,
+      if (secretValues.isNotEmpty) 'secretValues': secretValues,
+    }, sideEffect: true);
+    final canSave = response['canSave'];
+    final rawChecks = response['checks'];
+    if (canSave is! bool || rawChecks is! List) {
+      throw const FormatException('Mac Host 连接测试结果无效');
+    }
+    final checks = rawChecks.map(_decodeHostSetupCheck).toList(growable: false);
+    if (!canSave) {
+      return ConnectionSetupReport(
+        draftId: runtime._newId('host-setup'),
+        checks: checks,
+        canSave: false,
+      );
+    }
+    final handle = response['draftHandle'];
+    if (handle is! String ||
+        !RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$').hasMatch(handle)) {
+      throw const FormatException('Mac Host 测试草稿引用无效');
+    }
+    final localDraftId = runtime._newId('host-setup');
+    _drafts[localDraftId] = _AndroidHostSetupDraft(
+      adapter: adapter,
+      handle: handle,
+      expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+    );
+    return ConnectionSetupReport(
+      draftId: localDraftId,
+      checks: checks,
+      canSave: true,
+    );
+  }
+
+  @override
+  Future<Connection> saveConnectionSetup(String draftId) async {
+    final draft = _drafts[draftId];
+    if (draft == null) throw StateError('Mac Host 测试草稿已过期，请重新测试');
+    if (draft.savedConnection case final connection?) return connection;
+    if (draft.saveOutcomeUnknown) {
+      throw const ConnectionSetupOutcomeUnknown();
+    }
+    if (!draft.expiresAt.isAfter(DateTime.now())) {
+      _drafts.remove(draftId);
+      throw StateError('Mac Host 测试草稿已过期，请重新测试');
+    }
+    final operationId = draft.saveOperationId ??= runtime._newHostOperationId();
+    try {
+      final response = await runtime.hostManager.call(
+        host.hostId,
+        'setup.save',
+        {'operationId': operationId, 'draftHandle': draft.handle},
+        sideEffect: true,
+      );
+      if (response['replayed'] == true) {
+        throw const ConnectionSetupOutcomeUnknown();
+      }
+      draft.savedConnection = runtime._acceptHostSetupResult(
+        host,
+        draft.adapter,
+        response,
+      );
+      _drafts.remove(draftId);
+      return draft.savedConnection!;
+    } on AndroidHostRpcException catch (error) {
+      if ({-32004, -32603}.contains(error.code)) {
+        draft.saveOutcomeUnknown = true;
+        throw const ConnectionSetupOutcomeUnknown();
+      }
+      await discardConnectionSetup(draftId);
+      rethrow;
+    } on ConnectionSetupOutcomeUnknown {
+      draft.saveOutcomeUnknown = true;
+      throw const ConnectionSetupOutcomeUnknown();
+    } on Object {
+      draft.saveOutcomeUnknown = true;
+      throw const ConnectionSetupOutcomeUnknown();
+    }
+  }
+
+  @override
+  Future<void> discardConnectionSetup(String draftId) async {
+    final draft = _drafts.remove(draftId);
+    if (draft == null || draft.saveOutcomeUnknown) return;
+    try {
+      await runtime.hostManager.call(host.hostId, 'setup.discard', {
+        'operationId': runtime._newHostOperationId(),
+        'draftHandle': draft.handle,
+      }, sideEffect: true);
+    } on Object {
+      // The Host expires unclaimed setup drafts and never stores client secrets.
+    }
+  }
+
+  ConnectionAdapter _adapter(String adapterId) =>
+      adapters.where((adapter) => adapter.id == adapterId).firstOrNull ??
+      (throw const FormatException('Mac Host 适配器不存在'));
+}
+
+final class _AndroidHostSetupDraft {
+  _AndroidHostSetupDraft({
+    required this.adapter,
+    required this.handle,
+    required this.expiresAt,
+  });
+
+  final ConnectionAdapter adapter;
+  final String handle;
+  final DateTime expiresAt;
+  String? saveOperationId;
+  Connection? savedConnection;
+  bool saveOutcomeUnknown = false;
+}
+
+ConnectionAdapter _decodeHostConnectionAdapter(Object? value, String hostId) {
+  if (value is! Map || value.keys.any((key) => key is! String)) {
+    throw const FormatException('Mac Host 适配器条目无效');
+  }
+  final json = value.cast<String, Object?>();
+  final id = json['id'];
+  final label = json['label'];
+  final kindName = json['kind'];
+  final defaultLabel = json['defaultLabel'];
+  final description = json['description'];
+  final allowedKinds = const {
+    'netease-music': ConnectionKind.cli,
+    'cli': ConnectionKind.cli,
+    'mcp-stdio': ConnectionKind.mcpStdio,
+    'mcp-http': ConnectionKind.mcpHttp,
+  };
+  final expectedKind = id is String ? allowedKinds[id] : null;
+  if (id is! String ||
+      expectedKind == null ||
+      kindName != expectedKind.name ||
+      label is! String ||
+      label.trim().isEmpty ||
+      label.length > 100 ||
+      defaultLabel != null &&
+          (defaultLabel is! String ||
+              defaultLabel.trim().isEmpty ||
+              defaultLabel.length > 100) ||
+      description != null &&
+          (description is! String || description.length > 500) ||
+      json['fields'] is! List ||
+      json['showGenericCliFields'] is! bool ||
+      json['autoDetectExecutable'] is! bool) {
+    throw const FormatException('Mac Host 适配器元数据无效');
+  }
+  final fields = <SetupField>[];
+  final fieldKeys = <String>{};
+  for (final rawField in json['fields']! as List) {
+    if (rawField is! Map || rawField.keys.any((key) => key is! String)) {
+      throw const FormatException('Mac Host 字段元数据无效');
+    }
+    final field = rawField.cast<String, Object?>();
+    final key = field['key'];
+    final fieldLabel = field['label'];
+    final kindValue = field['kind'];
+    final required = field['required'];
+    final readFileContent = field['readFileContent'];
+    final kind = SetupFieldKind.values
+        .where((candidate) => candidate.name == kindValue)
+        .firstOrNull;
+    if (key is! String ||
+        key.isEmpty ||
+        key.length > 128 ||
+        !fieldKeys.add(key) ||
+        fieldLabel is! String ||
+        fieldLabel.trim().isEmpty ||
+        fieldLabel.length > 100 ||
+        kind == null ||
+        required is! bool ||
+        readFileContent is! bool ||
+        kind == SetupFieldKind.file && !readFileContent ||
+        field['hint'] != null &&
+            (field['hint'] is! String ||
+                (field['hint'] as String).length > 500)) {
+      throw const FormatException('Mac Host 字段元数据无效');
+    }
+    fields.add(
+      SetupField(
+        key: key,
+        label: fieldLabel,
+        kind: kind,
+        required: required,
+        hint: field['hint'] as String?,
+        readFileContent: readFileContent,
+      ),
+    );
+  }
+  return ConnectionAdapter(
+    id: id,
+    label: label,
+    kind: expectedKind,
+    executionTarget: ExecutionTarget.host(hostId),
+    fields: List.unmodifiable(fields),
+    defaultLabel: defaultLabel as String?,
+    description: description as String?,
+    showGenericCliFields: json['showGenericCliFields']! as bool,
+    autoDetectExecutable: json['autoDetectExecutable']! as bool,
+  );
+}
+
+SetupCheck _decodeHostSetupCheck(Object? value) {
+  if (value is! Map || value.keys.any((key) => key is! String)) {
+    throw const FormatException('Mac Host 检查项无效');
+  }
+  final json = value.cast<String, Object?>();
+  final label = json['label'];
+  final statusName = json['status'];
+  final detail = json['detail'];
+  final status = SetupCheckStatus.values
+      .where((candidate) => candidate.name == statusName)
+      .firstOrNull;
+  if (label is! String ||
+      detail is! String ||
+      status == null ||
+      label.length > 100 ||
+      detail.length > 500) {
+    throw const FormatException('Mac Host 检查项无效');
+  }
+  return SetupCheck(label, status, detail);
 }

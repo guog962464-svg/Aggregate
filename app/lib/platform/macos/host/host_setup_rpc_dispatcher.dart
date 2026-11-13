@@ -9,6 +9,7 @@ const _hostSetupRpcMethods = {
   'operation.read',
   'setup.adapters',
   'setup.detectExecutable',
+  'setup.resolveExecutable',
   'setup.test',
   'setup.save',
   'setup.discard',
@@ -143,6 +144,16 @@ final class HostSetupRpcDispatcher implements HostRpcDispatcherPort {
         final detected = await setup.detectExecutable(
           deviceId: deviceId,
           adapterId: request.params['adapterId']! as String,
+        );
+        return {
+          'detected': detected != null,
+          if (detected != null) ...detected.toJson(),
+        };
+      case 'setup.resolveExecutable':
+        final detected = await setup.resolveExecutable(
+          deviceId: deviceId,
+          adapterId: request.params['adapterId']! as String,
+          executableName: request.params['executableName']! as String,
         );
         return {
           'detected': detected != null,

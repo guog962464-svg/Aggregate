@@ -433,7 +433,6 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     if ({
       AndroidHostStatus.authenticationInvalid,
       AndroidHostStatus.versionIncompatible,
-      AndroidHostStatus.permissionDenied,
       AndroidHostStatus.outcomeUnknown,
     }.contains(_statuses[hostId])) {
       return;

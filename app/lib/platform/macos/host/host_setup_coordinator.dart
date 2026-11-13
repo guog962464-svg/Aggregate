@@ -239,6 +239,43 @@ final class HostSetupCoordinator {
     if (!path.startsWith('/') || path.contains('\u0000')) {
       _throw(HostRpcErrorCode.internalError);
     }
+    return _issueExecutableReference(deviceId, adapterId, path);
+  });
+
+  Future<HostDetectedExecutable?> resolveExecutable({
+    required String deviceId,
+    required String adapterId,
+    required String executableName,
+  }) => _serialize(() async {
+    _validateDeviceId(deviceId);
+    _ensureDeviceOpen(deviceId);
+    await _sweepExpired();
+    final adapter = _adapter(adapterId);
+    if (adapter.autoDetectExecutable ||
+        !{ConnectionKind.cli, ConnectionKind.mcpStdio}.contains(adapter.kind) ||
+        !RegExp(r'^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$')
+            .hasMatch(executableName)) {
+      _throw(HostRpcErrorCode.invalidParams);
+    }
+    final lookup = setup;
+    if (lookup is! ExecutableLookupPort) {
+      _throw(HostRpcErrorCode.internalError);
+    }
+    final path = await (lookup as ExecutableLookupPort).findExecutable(
+      executableName,
+    );
+    if (path == null) return null;
+    if (!path.startsWith('/') || path.contains('\u0000')) {
+      _throw(HostRpcErrorCode.internalError);
+    }
+    return _issueExecutableReference(deviceId, adapterId, path);
+  });
+
+  HostDetectedExecutable _issueExecutableReference(
+    String deviceId,
+    String adapterId,
+    String path,
+  ) {
     for (final entry in _executables.entries.toList()) {
       final record = entry.value;
       if (record.deviceId == deviceId && record.adapterId == adapterId) {
@@ -261,7 +298,7 @@ final class HostSetupCoordinator {
       displayLocation: 'Mac 主机 · ${_programLabel(adapterId)}',
       expiresAt: expiry,
     );
-  });
+  }
 
   Future<HostSetupTestResult> testConnectionSetup({
     required String deviceId,

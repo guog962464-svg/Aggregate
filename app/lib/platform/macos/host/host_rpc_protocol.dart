@@ -159,6 +159,10 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
     const HostRpcMethodDefinition('setup.detectExecutable', [
       HostRpcParameter('adapterId', _identifier, maxLength: 128),
     ]),
+    const HostRpcMethodDefinition('setup.resolveExecutable', [
+      HostRpcParameter('adapterId', _identifier, maxLength: 128),
+      HostRpcParameter('executableName', _str, maxLength: 128),
+    ]),
     const HostRpcMethodDefinition('setup.test', [
       _op,
       HostRpcParameter('draft', _setupDraft),

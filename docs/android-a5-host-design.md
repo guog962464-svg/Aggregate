@@ -73,7 +73,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 | --- | --- | --- |
 | Host 元数据 | `host.hello`、`host.status` | 返回稳定 `hostId`、协议主版本、Host 名称和在线能力；不返回密钥或 Home 路径。 |
 | 连接 | `connection.list`、`connection.refresh`、`connection.remove`、`connection.move` | 只操作 Host 连接；ID 在 Android 侧加 Host 来源前缀，Mac 持久化原始 ID。删除必须清理 Mac 自有凭证/profile。 |
-| 向导 | `setup.adapters`、`setup.detectExecutable`、`setup.test`、`setup.save`、`setup.discard` | 返回 Host 适配器目录；草稿句柄由 Host 签发并绑定设备身份；适配器必须在 Host 白名单内。CLI 只接受 Host `executableRef`，不接受任意路径。 |
+| 向导 | `setup.adapters`、`setup.detectExecutable`、`setup.resolveExecutable`、`setup.test`、`setup.save`、`setup.discard` | 返回 Host 适配器目录；草稿句柄由 Host 签发并绑定设备身份。CLI 自动检测或按 basename 查找都只返回短期 opaque `executableRef` 和可展示位置，不向 Android 返回 Mac 路径。适配器必须在 Host 白名单内。 |
 | 能力与结果 | `capability.search`、`run.invoke`、`run.subscribe`、`run.cancel`、`run.listRecent`、`activity.clear`、`resource.read`、`prompt.get` | 能力/运行必须属于已授权连接；`permissionGranted` 仅在 Host 自身权限策略允许后传给 `RuntimePort`。 |
 | 动作清单 | `manifest.get`、`manifest.save`、`manifest.readContent`、`manifest.exportContent` | 连接必须是已授权 CLI；文件内容经显式内容传输或一次性 Host 文件句柄，绝不把 Mac 路径当 Android 本地路径。 |
 | 账号 | `account.read`、`account.beginLogin`、`account.waitLogin`、`account.logout` | 仅暴露 Mac 已实现并验证的账号适配器；登录的 PTY/配置/profile 留在 Mac。登出需要对应设备授权和用户确认。 |
@@ -128,11 +128,11 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 ## A5.2 实现状态（2026-11-13）
 
-- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 37 个封闭的 v1 方法定义（由初始 33 项增加 operation.read 与配对/认证入口）、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
+- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 38 个封闭的 v1 方法定义（由初始 33 项增加 operation.read、配对/认证入口与 Host 命令名查找）、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
 - `app/lib/platform/macos/host/host_jcs.dart` 按 RFC 8785 对 method 与参数（去除 `operationId`）生成 SHA-256 操作哈希；外层设备签名仍按上文对收到的原始 payload 字节计算。
 - `app/lib/platform/macos/host/host_operation_ledger.dart` 以 `(deviceId, operationId)` 隔离记录开始/完成/结果未知状态，不持久化请求参数、结果或秘密。启动时把遗留 `started` 记录改为 `outcomeUnknown`，绝不自动重放。账本上限为 10,000 条或 4 MiB，达到上限后拒绝新操作。
 - `app/lib/platform/macos/host/host_setup_coordinator.dart` 是 A5.3 进行中的 Host 向导核心：只公开固定 adapter allowlist；仅返回绑定设备和 adapter 的随机 `executableRef`，不返回 Mac 路径；适配器字段决定公开值和秘密值的分离，secret map 单值不超过 32 KiB；`draftHandle` 绑定设备并在 10 分钟后失效。结果检查文本和保存连接摘要脱敏。Host stop 与设备撤销清理可安全丢弃的草稿；保存异常按结果未知处理，不重试也不删除可能已被连接引用的 profile。
-- `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read` 与 setup RPC 分发（当前协议目录共 37 项）和 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
+- `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read` 与 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
 - A5.2/A5.3 的早期验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为。当前 production factory 已把配对 authority、签名验证、文件账本、setup dispatcher 与 `HostRuntimeRpcDispatcher` 接入 WSS。runtime dispatcher 覆盖连接目录、能力搜索/调用/结果订阅/取消、活动清理、MCP 资源/提示、账号和终端；调用权限会由 Mac 按能力实际声明等级再次检查。`manifest.get` 与 `manifest.save` 已实现；`manifest.readContent` / `manifest.exportContent` 的内容传输 handler 仍未实现。Mac 新设备审批 UI 已支持连接向导、连接管理、账号、终端、活动清理，以及按连接配置 read/localControl/externalWrite；保存动作清单要求连接管理 scope 与目标连接 externalWrite 双重授权。内容传输尚未开放，既有设备权限暂需撤销后重新配对调整。生产 Bonjour/LAN、Release 权限和 Android RemoteRuntime 客户端端到端仍未验收，因此这不是 Host 全功能可用的结论。
 
 ## A5.5 Host runtime RPC 实现进度（2026-11-13）
@@ -152,6 +152,15 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 配对面板区分离线、连接中、在线、认证失效、版本不兼容、权限拒绝、超时与执行结果未知。Runtime 状态变化触发 Flutter shell 重载连接和能力目录。
 - `HostRuntimeRpcDispatcher.connection.list` 现在逐连接检查 read grant；未授权连接不会将名称和类型暴露给设备。
 - 自动化覆盖 authenticated session notification、Android Host connection/capability/invoke/event 路由、运行历史及 status mapping、配对面板状态显示和逐连接 read 过滤。Android→Mac production WSS 的真实 RPC 尚未验收；Host LAN/Bonjour、活动恢复、账号、终端、连接向导与 manifest 内容传输也未包含在 A6.1。
+
+## A6.2 Android 连接向导进度（2026-11-13）
+
+- Android 添加连接先选择执行设备，再显示对应的适配器和字段：本机仅开放 HTTP MCP；配对 Mac Host 提供 Host 白名单中的 HTTP MCP、普通 CLI、stdio MCP 和网易云适配器。连接页已说明本机与 Mac Host 两类连接。
+- Host 自动检测仍由 Mac 执行。普通 CLI/stdio MCP 可在手机输入命令 basename，请 Mac Host 按其 PATH 解析；Android 只接收短期 opaque `executableRef` 和经过检查的展示位置。Host executable path、Mac 工作目录和 manifest path 不进入 Android 草稿或手机文件选择器。
+- Host 连接向导的 `connectionSetup` scope 与 `readConnections` scope 相互独立。某个 RPC 的权限拒绝不再永久污染整台 Host 的连接状态；仍在线且可连接的 Host 可以继续尝试其他已授权功能，具体 RPC 仍由 Host 授权。适配器的可选 label/description 也经过类型与长度验证。
+- 保存异常或 RPC 结果未知时，Android 不自动重试 `setup.save`，提示用户先检查 Mac Host；新适配器的公开/秘密字段仍按字段元数据拆分。
+- 新增 target-first 小屏连接流程测试、横屏 1.35 字体缩放布局测试、Host 命令名解析/opaque 引用路由测试、保存结果未知禁止重试测试、权限隔离回归测试及 Host RPC schema 测试。验收：Flutter 全套 156 项通过，`flutter analyze --no-pub` 无问题；Android arm64 Debug APK 和 macOS Debug app 构建成功；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB USB 真机安装并启动，MainActivity 为 resumed，最近 250 条 logcat 未发现 FATAL/崩溃；设备上实际打开 target picker 并确认全屏手机布局及本机 HTTP MCP 目标；发现并修复连接表单首个“适配器”浮动标签顶部裁切，重建后复查标签完整、底部按钮可见。未配对 Host，因此未验收本轮 Android 到生产 WSS 的 Host 向导端到端；没有 16 KB 实体设备。
+- 本地 JS 适配器仍未加入 Android 产品目录。A4.3 的 `json5.bin` 仅是固定 Debug 实验入口，只有 A3.6 的稳定维护来源、许可/发行审查及 16 KB 真机门槛通过后，才另行开放。
 
 ## A5.4 配对实现进度（2026-11-13）
 

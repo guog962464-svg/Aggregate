@@ -66,6 +66,46 @@ void main() {
         );
       },
     );
+
+    test(
+      'resolves a typed command name on the Host without returning its path',
+      () async {
+        final setup = _SetupFixture();
+        final coordinator = HostSetupCoordinator(setup: setup);
+        final result = await coordinator.resolveExecutable(
+          deviceId: 'device-1',
+          adapterId: 'cli',
+          executableName: 'custom-cli',
+        );
+
+        expect(result, isNotNull);
+        expect(result!.executableRef, matches(RegExp(r'^[a-f0-9]{48}$')));
+        expect(result.displayLocation, 'Mac 主机 · CLI 程序');
+        expect(result.toJson().toString(), isNot(contains('/Users/host/bin')));
+        await expectLater(
+          coordinator.resolveExecutable(
+            deviceId: 'device-1',
+            adapterId: 'cli',
+            executableName: '/Users/host/bin/custom-cli',
+          ),
+          throwsA(_rpcCode(HostRpcErrorCode.invalidParams)),
+        );
+
+        await coordinator.testConnectionSetup(
+          deviceId: 'device-1',
+          draft: HostSetupDraftPayload(
+            adapterId: 'cli',
+            label: 'Custom CLI',
+            fieldValues: const {},
+            executableRef: result.executableRef,
+          ),
+        );
+        expect(
+          setup.latestDraft!.spec.executable,
+          '/Users/host/bin/custom-cli',
+        );
+      },
+    );
   });
 
   group('Host setup coordinator', () {
@@ -399,7 +439,7 @@ void main() {
 Matcher _rpcCode(HostRpcErrorCode code) =>
     isA<HostRpcProtocolException>().having((error) => error.code, 'code', code);
 
-final class _SetupFixture implements ConnectionSetupPort {
+final class _SetupFixture implements ConnectionSetupPort, ExecutableLookupPort {
   _SetupFixture({
     this.includeUnlistedAdapter = false,
     this.includePathAdapter = false,
@@ -471,6 +511,10 @@ final class _SetupFixture implements ConnectionSetupPort {
   @override
   Future<String?> detectExecutable(String adapterId) async =>
       adapterId == 'netease-music' ? detectedPath : null;
+
+  @override
+  Future<String?> findExecutable(String name) async =>
+      name == 'custom-cli' ? '/Users/host/bin/custom-cli' : null;
 
   @override
   Future<ConnectionSetupReport> testConnectionSetup(

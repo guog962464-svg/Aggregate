@@ -51,11 +51,66 @@ final class ConnectionSetupDraft {
     required this.adapterId,
     required this.spec,
     this.values = const {},
+    this.executableReference,
   });
 
   final String adapterId;
   final ConnectionSpec spec;
   final Map<String, String> values;
+
+  /// Optional short-lived executable reference issued by the target runtime.
+  /// It is never part of a saved connection.
+  final String? executableReference;
+}
+
+final class ConnectionSetupTargetOption {
+  const ConnectionSetupTargetOption({
+    required this.target,
+    required this.label,
+    required this.detail,
+    this.selectable = true,
+  });
+
+  final ExecutionTarget target;
+  final String label;
+  final String detail;
+  final bool selectable;
+}
+
+abstract interface class ConnectionSetupTargetPort {
+  Future<List<ConnectionSetupTargetOption>> listSetupTargets();
+  Future<ConnectionSetupPort> setupForTarget(ExecutionTarget target);
+}
+
+final class DetectedExecutableSelection {
+  const DetectedExecutableSelection({
+    required this.displayLocation,
+    this.path,
+    this.reference,
+  });
+
+  final String displayLocation;
+  final String? path;
+  final String? reference;
+}
+
+abstract interface class ConnectionSetupExecutableSelectionPort {
+  Future<DetectedExecutableSelection?> detectExecutableSelection(
+    String adapterId, {
+    String? executableName,
+  });
+}
+
+abstract interface class ExecutableLookupPort {
+  /// Finds a runtime-local command name without exposing its path to callers.
+  Future<String?> findExecutable(String name);
+}
+
+final class ConnectionSetupOutcomeUnknown implements Exception {
+  const ConnectionSetupOutcomeUnknown();
+
+  @override
+  String toString() => 'Connection setup save outcome is unknown';
 }
 
 enum SetupCheckStatus { passed, actionRequired, failed }

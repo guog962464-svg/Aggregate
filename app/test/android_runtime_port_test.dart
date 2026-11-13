@@ -117,6 +117,138 @@ void main() {
       );
     },
   );
+
+  test(
+    'loads Host setup fields and keeps executable paths on the Host',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-host-setup-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final manager = _FakeRemoteHostManager();
+      final runtime = await AndroidRuntimePort.open(
+        dataDirectory: directory,
+        hostManager: manager,
+      );
+      addTearDown(runtime.dispose);
+
+      final targets = await runtime.listSetupTargets();
+      expect(targets, hasLength(2));
+      expect(targets.first.target, ExecutionTarget.device);
+      expect(targets.last.target, ExecutionTarget.host(_hostId));
+      final localSetup = await runtime.setupForTarget(ExecutionTarget.device);
+      expect(localSetup.connectionAdapters.map((item) => item.id), [
+        'mcp-http',
+      ]);
+
+      final hostSetup = await runtime.setupForTarget(
+        ExecutionTarget.host(_hostId),
+      );
+      expect(hostSetup.connectionAdapters.map((item) => item.id), [
+        'netease-music',
+        'cli',
+        'mcp-stdio',
+        'mcp-http',
+      ]);
+      final executable =
+          await (hostSetup as ConnectionSetupExecutableSelectionPort)
+              .detectExecutableSelection('cli', executableName: 'custom-cli');
+      expect(executable?.reference, 'opaque-executable-ref');
+      expect(executable?.path, isNull);
+
+      final report = await hostSetup.testConnectionSetup(
+        ConnectionSetupDraft(
+          adapterId: 'cli',
+          executableReference: executable!.reference,
+          spec: ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Custom CLI',
+            executionTarget: ExecutionTarget.host(_hostId),
+            arguments: const ['--version'],
+          ),
+        ),
+      );
+      expect(report.canSave, isTrue);
+      expect(
+        manager.lastSetupTestDraft?['executableRef'],
+        executable.reference,
+      );
+      expect(manager.lastSetupTestDraft.toString(), isNot(contains('/Users/')));
+
+      final connection = await hostSetup.saveConnectionSetup(report.draftId);
+      expect(connection.id.value, 'remote:$_hostId:mac-custom-cli');
+      expect(connection.executionTarget, ExecutionTarget.host(_hostId));
+      expect(connection.location, 'Mac Host');
+
+      manager.failSetupSave = true;
+      final unknownReport = await hostSetup.testConnectionSetup(
+        ConnectionSetupDraft(
+          adapterId: 'cli',
+          executableReference: executable.reference,
+          spec: ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Uncertain CLI',
+            executionTarget: ExecutionTarget.host(_hostId),
+          ),
+        ),
+      );
+      await expectLater(
+        hostSetup.saveConnectionSetup(unknownReport.draftId),
+        throwsA(isA<ConnectionSetupOutcomeUnknown>()),
+      );
+      await expectLater(
+        hostSetup.saveConnectionSetup(unknownReport.draftId),
+        throwsA(isA<ConnectionSetupOutcomeUnknown>()),
+      );
+      expect(
+        manager.methods.where((method) => method == 'setup.save'),
+        hasLength(2),
+      );
+    },
+  );
+
+  test(
+    'a scoped Host permission denial does not disable other Host scopes',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-host-scoped-permission-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final manager = _FakeRemoteHostManager()
+        ..status = AndroidHostStatus.permissionDenied;
+      final runtime = await AndroidRuntimePort.open(
+        dataDirectory: directory,
+        hostManager: manager,
+      );
+      addTearDown(runtime.dispose);
+
+      final hostTarget = (await runtime.listSetupTargets()).last;
+      expect(hostTarget.selectable, isTrue);
+      expect(
+        (await runtime.setupForTarget(hostTarget.target)).connectionAdapters,
+        hasLength(4),
+      );
+    },
+  );
+
+  test('rejects malformed optional Host adapter metadata', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'aggregate-android-host-invalid-adapter-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final manager = _FakeRemoteHostManager()
+      ..invalidAdapterOptionalField = true;
+    final runtime = await AndroidRuntimePort.open(
+      dataDirectory: directory,
+      hostManager: manager,
+    );
+    addTearDown(runtime.dispose);
+
+    await expectLater(
+      runtime.setupForTarget(ExecutionTarget.host(_hostId)),
+      throwsFormatException,
+    );
+  });
 }
 
 const _hostId = 'host-0123456789abcdef0123456789abcdef';
@@ -138,7 +270,11 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   );
   final methods = <String>[];
   var connected = true;
+  var failSetupSave = false;
+  var invalidAdapterOptionalField = false;
+  AndroidHostStatus status = AndroidHostStatus.online;
   Map<String, Object?>? lastInvocationCapability;
+  Map<String, Object?>? lastSetupTestDraft;
 
   @override
   List<AndroidPairedHost> get hosts => [
@@ -158,9 +294,8 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   bool isConnected(String hostId) => connected && hostId == _hostId;
 
   @override
-  AndroidHostStatus statusFor(String hostId) => isConnected(hostId)
-      ? AndroidHostStatus.online
-      : AndroidHostStatus.offline;
+  AndroidHostStatus statusFor(String hostId) =>
+      isConnected(hostId) ? status : AndroidHostStatus.offline;
 
   @override
   Stream<AndroidHostStatusChange> get statusChanges => _statusChanges.stream;
@@ -214,6 +349,79 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
           'subscriptionId': 'sub-opaque',
           'runId': {'value': 'mac-run-1'},
         };
+      case 'setup.adapters':
+        return {
+          'adapters': [
+            {
+              'id': 'netease-music',
+              'label': '网易云音乐',
+              'kind': 'cli',
+              'fields': [
+                {
+                  'key': 'appId',
+                  'label': 'App ID',
+                  'kind': 'text',
+                  'required': true,
+                  'readFileContent': false,
+                },
+                {
+                  'key': 'privateKey',
+                  'label': 'Private Key',
+                  'kind': 'secret',
+                  'required': true,
+                  'readFileContent': true,
+                },
+              ],
+              'defaultLabel': invalidAdapterOptionalField ? 42 : '网易云音乐',
+              'description': '在 Mac Host 配置',
+              'showGenericCliFields': false,
+              'autoDetectExecutable': true,
+            },
+            for (final adapter in [
+              ('cli', '自定义 CLI', 'cli', true),
+              ('mcp-stdio', 'stdio MCP', 'mcpStdio', true),
+              ('mcp-http', 'HTTP MCP', 'mcpHttp', false),
+            ])
+              {
+                'id': adapter.$1,
+                'label': adapter.$2,
+                'kind': adapter.$3,
+                'fields': <Object?>[],
+                'showGenericCliFields': adapter.$4,
+                'autoDetectExecutable': false,
+              },
+          ],
+        };
+      case 'setup.resolveExecutable':
+        return {
+          'detected': true,
+          'executableRef': 'opaque-executable-ref',
+          'displayLocation': 'Mac 主机 · CLI 程序',
+          'expiresAt': DateTime.now()
+              .add(const Duration(minutes: 10))
+              .toUtc()
+              .toIso8601String(),
+        };
+      case 'setup.test':
+        lastSetupTestDraft = (params['draft']! as Map).cast<String, Object?>();
+        return {
+          'canSave': true,
+          'draftHandle': 'opaque-setup-draft',
+          'checks': [
+            {'label': '程序检查', 'status': 'passed', 'detail': '检查通过。'},
+          ],
+        };
+      case 'setup.save':
+        if (failSetupSave) throw const AndroidHostRpcException(-32004);
+        return {
+          'connectionId': 'mac-custom-cli',
+          'kind': 'cli',
+          'label': 'Custom CLI',
+          'status': 'ready',
+          'executionLocation': 'Mac 主机',
+        };
+      case 'setup.discard':
+        return const {'discarded': true};
       default:
         return const {};
     }

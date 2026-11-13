@@ -49,7 +49,7 @@ void main() {
     () async {
       final adaptersResponse = await dispatch('setup.adapters', const {});
       final adapters = adaptersResponse['result']! as Map<String, Object?>;
-      expect(adapters['adapters'], hasLength(1));
+      expect(adapters['adapters'], hasLength(2));
 
       final detectedResponse = await dispatch('setup.detectExecutable', {
         'adapterId': 'netease-music',
@@ -59,6 +59,14 @@ void main() {
       expect(detected.toString(), isNot(contains(_SetupFixture.path)));
       expect(authorizer.lastParams!.containsKey('secretValues'), isFalse);
 
+      final resolvedResponse = await dispatch('setup.resolveExecutable', {
+        'adapterId': 'cli',
+        'executableName': 'custom-cli',
+      });
+      final resolved = resolvedResponse['result']! as Map<String, Object?>;
+      expect(resolved['detected'], isTrue);
+      expect(resolved.toString(), isNot(contains('/Users/host/bin')));
+
       expect(
         await dispatcher.dispatch(
           _frame('host.status', const {}),
@@ -66,7 +74,11 @@ void main() {
         ),
         isNull,
       );
-      expect(authorizer.methods, ['setup.adapters', 'setup.detectExecutable']);
+      expect(authorizer.methods, [
+        'setup.adapters',
+        'setup.detectExecutable',
+        'setup.resolveExecutable',
+      ]);
     },
   );
 
@@ -226,7 +238,7 @@ final class _Authorizer implements HostRpcAuthorizationPort {
   }
 }
 
-final class _SetupFixture implements ConnectionSetupPort {
+final class _SetupFixture implements ConnectionSetupPort, ExecutableLookupPort {
   static const path = '/Users/host/bin/ncm-cli';
   var detectCount = 0;
   var testCount = 0;
@@ -251,6 +263,7 @@ final class _SetupFixture implements ConnectionSetupPort {
       autoDetectExecutable: true,
       showGenericCliFields: false,
     ),
+    ConnectionAdapter(id: 'cli', label: 'Custom CLI', kind: ConnectionKind.cli),
   ];
 
   @override
@@ -258,6 +271,10 @@ final class _SetupFixture implements ConnectionSetupPort {
     detectCount++;
     return adapterId == 'netease-music' ? path : null;
   }
+
+  @override
+  Future<String?> findExecutable(String name) async =>
+      name == 'custom-cli' ? '/Users/host/bin/custom-cli' : null;
 
   @override
   Future<ConnectionSetupReport> testConnectionSetup(

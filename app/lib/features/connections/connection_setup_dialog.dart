@@ -43,7 +43,8 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
   int detectionRequest = 0;
   bool detectingExecutable = false;
   String? executableHint;
-  String? autoDetectedPath;
+  DetectedExecutableSelection? detectedExecutable;
+  String? detectedExecutableInput;
 
   @override
   void initState() {
@@ -91,36 +92,85 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
   }
 
   void _executableChanged() {
-    if (executable.text != autoDetectedPath) {
-      autoDetectedPath = null;
+    if (detectedExecutable != null &&
+        executable.text != detectedExecutableInput) {
+      detectedExecutable = null;
+      detectedExecutableInput = null;
       executableHint = null;
     }
   }
 
   Future<void> _detectExecutable() async {
-    if (!adapter.autoDetectExecutable) return;
+    final lookupByName =
+        adapter.executionTarget.kind == ExecutionTargetKind.host &&
+        !adapter.autoDetectExecutable &&
+        {ConnectionKind.cli, ConnectionKind.mcpStdio}.contains(adapter.kind);
+    if (!adapter.autoDetectExecutable && !lookupByName) return;
     final adapterId = adapter.id;
     final original = executable.text;
+    if (lookupByName && original.trim().isEmpty) {
+      setState(() => executableHint = '请输入 Mac Host 上的程序名称后再查找');
+      return;
+    }
     final request = ++detectionRequest;
     setState(() {
       detectingExecutable = true;
-      executableHint = '正在查找已安装的程序…';
+      executableHint = adapter.executionTarget.kind == ExecutionTargetKind.host
+          ? '正在 Mac Host 上查找程序…'
+          : '正在查找已安装的程序…';
     });
     try {
-      final path = await widget.setup.detectExecutable(adapterId);
+      final DetectedExecutableSelection? selection;
+      if (widget.setup case final ConnectionSetupExecutableSelectionPort port) {
+        selection = await port.detectExecutableSelection(
+          adapterId,
+          executableName: lookupByName ? original.trim() : null,
+        );
+      } else {
+        final path = await widget.setup.detectExecutable(adapterId);
+        selection = path == null
+            ? null
+            : DetectedExecutableSelection(displayLocation: path, path: path);
+      }
       if (!mounted || request != detectionRequest || adapter.id != adapterId) {
         return;
       }
-      if (path != null && path.startsWith('/')) {
+      final validPath = selection?.path?.startsWith('/') ?? false;
+      final validReference = selection?.reference?.isNotEmpty ?? false;
+      if (selection != null && (validPath || validReference)) {
         if (executable.text == original && original.isEmpty) {
-          autoDetectedPath = path;
-          executable.text = path;
+          if (selection.path != null) {
+            detectedExecutable = selection;
+            executable.text = selection.path!;
+            detectedExecutableInput = executable.text;
+          } else if (lookupByName) {
+            detectedExecutable = selection;
+            detectedExecutableInput = original;
+          } else {
+            detectedExecutable = selection;
+            detectedExecutableInput = selection.displayLocation;
+            executable.text = selection.displayLocation;
+          }
+        } else if (lookupByName && executable.text == original) {
+          detectedExecutable = selection;
+          detectedExecutableInput = original;
         }
-        setState(
-          () => executableHint = executable.text == path ? '已自动找到官方程序' : null,
-        );
+        setState(() {
+          executableHint = lookupByName
+              ? 'Mac Host 已找到程序；实际路径不会传回手机。'
+              : adapter.executionTarget.kind == ExecutionTargetKind.host
+              ? 'Mac Host 已找到程序。'
+              : executable.text == selection?.path
+              ? '已自动找到官方程序'
+              : null;
+        });
       } else {
-        setState(() => executableHint = '未找到官方程序，请手动选择');
+        setState(
+          () => executableHint =
+              adapter.executionTarget.kind == ExecutionTargetKind.host
+              ? 'Mac Host 未找到该程序，请检查名称或授权。'
+              : '未找到官方程序，请手动选择',
+        );
       }
     } catch (_) {
       if (mounted && request == detectionRequest) {
@@ -179,13 +229,25 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
       }
     }
     final kind = adapter.kind;
+    final hostExecutableReference =
+        adapter.executionTarget.kind == ExecutionTargetKind.host &&
+            kind != ConnectionKind.mcpHttp
+        ? detectedExecutable?.reference
+        : null;
+    if (adapter.executionTarget.kind == ExecutionTargetKind.host &&
+        kind != ConnectionKind.mcpHttp &&
+        hostExecutableReference == null) {
+      throw const FormatException('请先通过 Mac Host 查找并确认程序');
+    }
     return ConnectionSetupDraft(
       adapterId: adapter.id,
+      executableReference: hostExecutableReference,
       spec: ConnectionSpec(
         kind: kind,
         label: label.text.trim(),
         executionTarget: adapter.executionTarget,
-        executable: kind == ConnectionKind.mcpHttp
+        executable:
+            kind == ConnectionKind.mcpHttp || hostExecutableReference != null
             ? null
             : executable.text.trim(),
         arguments: parsed,
@@ -263,8 +325,21 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
       );
       report = null;
       if (mounted) Navigator.pop(context, connection);
+    } on ConnectionSetupOutcomeUnknown {
+      if (mounted) {
+        setState(() {
+          report = null;
+          error = '保存结果未知。请先在 Mac Host 检查连接列表，再决定是否重新配置。';
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => error = '保存失败，请重试连接测试。');
+      unawaited(widget.setup.discardConnectionSetup(current!.draftId));
+      if (mounted) {
+        setState(() {
+          report = null;
+          error = '保存失败，请重新测试连接后再试。';
+        });
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -277,6 +352,8 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     bool secret = false,
     int lines = 1,
     String? hint,
+    String? detectTooltip,
+    bool readOnly = false,
     VoidCallback? choose,
     VoidCallback? detect,
   }) => Padding(
@@ -284,6 +361,7 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     child: TextField(
       controller: controller,
       maxLines: lines,
+      readOnly: readOnly,
       obscureText: secret && lines == 1,
       decoration: InputDecoration(
         labelText: title,
@@ -295,7 +373,7 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                 children: [
                   if (detect != null)
                     IconButton(
-                      tooltip: '自动检测程序',
+                      tooltip: detectTooltip ?? '自动检测程序',
                       onPressed: detect,
                       icon: const Icon(Icons.manage_search_outlined),
                     ),
@@ -321,9 +399,17 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     final canChooseRuntimePath =
         adapter.executionTarget.kind == ExecutionTargetKind.device &&
         Theme.of(context).platform != TargetPlatform.android;
+    final hostTarget = adapter.executionTarget.kind == ExecutionTargetKind.host;
+    final hostCommandLookup =
+        hostTarget &&
+        !adapter.autoDetectExecutable &&
+        {ConnectionKind.cli, ConnectionKind.mcpStdio}.contains(adapter.kind);
+    final canDetectExecutable =
+        adapter.autoDetectExecutable || hostCommandLookup;
     final form = SizedBox(
       width: compact ? double.infinity : 520,
       child: SingleChildScrollView(
+        padding: const EdgeInsets.only(top: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,10 +428,12 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                       detectionRequest++;
                       detectingExecutable = false;
                       executableHint = null;
-                      if (executable.text == autoDetectedPath) {
+                      if (detectedExecutable != null &&
+                          executable.text == detectedExecutableInput) {
                         executable.clear();
                       }
-                      autoDetectedPath = null;
+                      detectedExecutable = null;
+                      detectedExecutableInput = null;
                       final previousDefault = adapter.defaultLabel;
                       if (previousDefault != null &&
                           label.text == previousDefault) {
@@ -370,24 +458,35 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                 token,
                 'Bearer Token（可选）',
                 secret: true,
-                hint: '测试时使用，保存后写入当前设备的安全存储。',
+                hint: hostTarget
+                    ? '经配对通道发送；保存后由 Mac Host 管理凭证。'
+                    : '测试时使用，保存后写入当前设备的安全存储。',
               ),
             ] else ...[
               _field(
                 executable,
-                adapter.executionTarget.kind == ExecutionTargetKind.host
-                    ? 'Host 程序绝对路径'
+                hostTarget
+                    ? adapter.autoDetectExecutable
+                          ? 'Host 上的程序'
+                          : 'Host 程序名称'
                     : '程序绝对路径',
                 file: canChooseRuntimePath,
-                hint: adapter.autoDetectExecutable ? executableHint : null,
-                detect: adapter.autoDetectExecutable && !detectingExecutable
+                readOnly: hostTarget && adapter.autoDetectExecutable,
+                hint: canDetectExecutable
+                    ? executableHint ??
+                          (hostCommandLookup
+                              ? '输入 Mac Host PATH 中的命令名；不会读取手机文件路径。'
+                              : null)
+                    : null,
+                detectTooltip: hostTarget ? '在 Mac Host 查找程序' : null,
+                detect: canDetectExecutable && !detectingExecutable
                     ? () => unawaited(_detectExecutable())
                     : null,
               ),
               if (adapter.showGenericCliFields) ...[
                 _field(arguments, '启动参数 JSON 数组'),
-                _field(directory, '工作目录（可选）'),
-                if (adapter.kind == ConnectionKind.cli)
+                if (!hostTarget) _field(directory, '工作目录（可选）'),
+                if (adapter.kind == ConnectionKind.cli && !hostTarget)
                   _field(manifest, '动作清单 JSON（可选）', file: canChooseRuntimePath),
               ],
             ],
