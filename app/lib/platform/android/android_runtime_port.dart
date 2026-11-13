@@ -13,6 +13,7 @@ import 'package:mcp_dart/src/shared/json_schema/json_schema_validator.dart';
 import 'android_credential_store.dart';
 import 'android_host_manager.dart';
 import 'android_host_pairing_client.dart';
+import 'android_mcp_http_client.dart';
 import 'android_mcp_session.dart';
 import 'android_runtime_store.dart';
 
@@ -1301,6 +1302,18 @@ final class AndroidRuntimePort
               )
             : null,
       );
+    } on AndroidMcpConcurrencyLimitException catch (error) {
+      if (!run.terminal) {
+        _emit(
+          run,
+          RunState.failed,
+          failure: RuntimeFailure(
+            RuntimeErrorCode.connectionFailed,
+            '当前 MCP 请求较多（上限 ${error.limit}），本次未发送，请稍后重试。',
+            phase: 'call',
+          ),
+        );
+      }
     } on TimeoutException {
       if (!run.terminal) {
         _emit(

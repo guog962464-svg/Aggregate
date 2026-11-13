@@ -84,6 +84,88 @@ void main() {
   });
 
   test(
+    'caps concurrent MCP POST requests until response streams settle',
+    () async {
+      final source = StreamController<List<int>>();
+      final limiter = AndroidMcpRequestLimiter(maxConcurrentRequests: 1);
+      var sends = 0;
+      final client = AndroidMcpHttpClient(
+        inner: _StreamClient((request) async {
+          sends++;
+          if (sends == 1) {
+            return http.StreamedResponse(source.stream, 200, request: request);
+          }
+          return http.StreamedResponse(
+            const Stream<List<int>>.empty(),
+            200,
+            request: request,
+          );
+        }),
+        requestLimiter: limiter,
+      );
+      final secondClient = AndroidMcpHttpClient(
+        inner: _StreamClient((request) async {
+          sends++;
+          return http.StreamedResponse(
+            const Stream<List<int>>.empty(),
+            200,
+            request: request,
+          );
+        }),
+        requestLimiter: limiter,
+      );
+      addTearDown(client.close);
+      addTearDown(secondClient.close);
+
+      final first = await client.send(http.Request('POST', Uri.parse(uri)));
+      expect(limiter.activeRequests, 1);
+      await expectLater(
+        secondClient.send(http.Request('POST', Uri.parse(uri))),
+        throwsA(
+          isA<AndroidMcpConcurrencyLimitException>().having(
+            (error) => error.limit,
+            'limit',
+            1,
+          ),
+        ),
+      );
+      expect(sends, 1);
+
+      final done = Completer<void>();
+      first.stream.listen((_) {}, onDone: done.complete);
+      await source.close();
+      await done.future;
+      expect(limiter.activeRequests, 0);
+
+      final next = await secondClient.send(
+        http.Request('POST', Uri.parse(uri)),
+      );
+      await next.stream.drain<void>();
+      expect(sends, 2);
+      expect(limiter.activeRequests, 0);
+    },
+  );
+
+  test('closing a client releases its in-flight POST permits', () async {
+    final limiter = AndroidMcpRequestLimiter(maxConcurrentRequests: 1);
+    final client = AndroidMcpHttpClient(
+      inner: _StreamClient(
+        (request) async => http.StreamedResponse(
+          const Stream<List<int>>.empty(),
+          200,
+          request: request,
+        ),
+      ),
+      requestLimiter: limiter,
+    );
+
+    await client.send(http.Request('POST', Uri.parse(uri)));
+    expect(limiter.activeRequests, 1);
+    client.close();
+    expect(limiter.activeRequests, 0);
+  });
+
+  test(
     'forwards a stream error and still closes when the source is done',
     () async {
       final source = StreamController<List<int>>();

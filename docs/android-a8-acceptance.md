@@ -6,7 +6,7 @@
 
 ### 检查范围与方法
 
-此前 Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bbe4ed665`，覆盖 Android/Flutter Runtime、配对 Mac Host、Node/npm 探针、密钥/日志、构建与分发配置。该工作台扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终标记为 failed，不能作为无漏洞结论。本轮工作树差异审查 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已完成：审阅 92 项源文件 inventory，0 项可报告漏洞；覆盖状态为 partial，保留外部 HTTPS 当前版本复验、MCP 并发/超时取消语义、Host 账本恢复三个后续问题。审查针对 base `bd8034286ac168c596def1f09ab3960ce01d4e0e` 的冻结工作树快照，不是全仓库审计，也不能替代 16 KB 设备或生产服务验收。没有正式签名的 Android Release，也没有 16 KB 页实体设备。
+此前 Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bbe4ed665`，覆盖 Android/Flutter Runtime、配对 Mac Host、Node/npm 探针、密钥/日志、构建与分发配置。该工作台扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终标记为 failed，不能作为无漏洞结论。本轮工作树差异审查 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已完成：审阅 92 项源文件 inventory，0 项可报告漏洞；覆盖状态为 partial。原报告保留外部 HTTPS 当前版本复验、MCP 并发/超时取消语义、Host 账本恢复三个后续问题。扫描快照之后，本轮增加了 Android 全局 POST 并发上限和协议级请求 deadline/HTTP abort 回归测试，并补充 Host 账本人工恢复流程；这些后续材料不属于原报告覆盖。扫描针对 base `bd8034286ac168c596def1f09ab3960ce01d4e0e` 的冻结工作树快照，不是全仓库审计，也不能替代 16 KB 设备或生产服务验收。没有正式签名的 Android Release，也没有 16 KB 页实体设备。
 
 ### 运行时、npm 与许可证
 
@@ -45,12 +45,24 @@ A8.2 普通 arm64 APK 与固定 Node Debug 探针曾通过静态对齐检查。�
 | ID | 原严重性 | 本轮处置与剩余边界 |
 | --- | --- | --- |
 | A8SEC-1 | 中 | **已缓解。** Android Runtime 拒绝所有非回环 `http://` MCP 地址（无论是否带 Token）；Android Network Security Config 全局禁用明文，仅对精确 `localhost` 与 `127.0.0.1` 开放。新建和旧存储配置均经过相同校验；错误配置会备份并拒绝加载。单测与 LGE AN10 实机验证远程 HTTP 拒绝、回环 HTTP 仍可用。 |
-| A8SEC-2 | 中 | **攻击放大路径已修复，账本容量仍有限。** 已配对且获 `connectionSetup` 的设备对不存在/过期草稿执行 `setup.discard` 时直接返回幂等成功，不写持久 operation ledger；200 个不同 operation ID 回归测试确认不创建记录。真实授权 mutation 仍受全 Host 共享的 10,000 条/4 MiB 硬上限约束，达到上限后新 mutation 安全失败；没有自动压缩或专门管理员恢复 UI。该剩余容量限制应在上线前纳入 Host 管理与恢复设计。 |
-| A8SEC-3 | 低 | **已缓解并覆盖边界测试。** Android MCP HTTP transport 在 JSON/SSE 解码前限制每个响应 8 MiB、取消超限流并拒绝重定向。发现层限制每类最多 20 页、总能力 1,000 个、目录总量 4 MiB、schema 256 KiB、字段 16 KiB、cursor 4 KiB、提示参数 64 个。自动化测试覆盖 1,001 个工具目录拒绝；LGE AN10 真机返回 8 MiB+1 响应时在解码前被拒绝。 |
+| A8SEC-2 | 中 | **攻击放大路径已修复，账本容量仍有限。** 已配对且获 `connectionSetup` 的设备对不存在/过期草稿执行 `setup.discard` 时直接返回幂等成功，不写持久 operation ledger；200 个不同 operation ID 回归测试确认不创建记录。真实授权 mutation 仍受全 Host 共享的 10,000 条/4 MiB 硬上限约束，达到上限后新 mutation 安全失败。下方定义了人工恢复步骤；操作流程尚未在生产 Host 演练，没有自动压缩或管理员恢复 UI。 |
+| A8SEC-3 | 低 | **已缓解并覆盖边界测试。** Android MCP HTTP transport 在 JSON/SSE 解码前限制每个响应 8 MiB、取消超限流并拒绝重定向；跨所有 Android 会话的并发 POST 上限为 16，超额请求在发送前失败。MCP operation/discovery 使用协议级 deadline；超时时触发请求 abort 并关闭该会话，调用仍记录为结果未知，不自动重放。发现层限制每类最多 20 页、总能力 1,000 个、目录总量 4 MiB、schema 256 KiB、字段 16 KiB、cursor 4 KiB、提示参数 64 个。自动化测试覆盖 1,001 个工具目录拒绝、跨客户端并发上限、deadline 后 AbortableRequest 中止；既有 LGE AN10 真机曾验证 8 MiB+1 响应在解码前被拒绝。 |
+
+#### Host operation ledger 达到容量后的人工恢复
+
+`operationLedgerFull` 会拒绝新的真实 mutation；当前没有自动回收或设置页重置按钮。为保留幂等防重放语义，不应在复用原 Host/配对身份的同时直接删除账本。若实验 Host 触顶，按以下维护流程恢复；此流程需 Host 管理员手动执行，尚未做生产演练：
+
+1. 停止 Mac Host 并备份 Host 状态目录和 `operations.json`，将副本放在活动 Host 目录之外并限制访问。
+2. 检查账本中的 `started` / `outcomeUnknown` 记录。逐项通过对应服务确认实际结果；仍无法确认的操作保持未解决，不清空账本或重放 mutation。
+3. 在 Mac Host 设置中撤销所有已配对设备。对每个客户端轮换本机配对密钥，使其重新配对时生成新的 `deviceId`；Android 需要清理应用数据并重新配置连接/凭证。未能轮换密钥或确认撤权时，不继续维护操作。
+4. 将旧 `operations.json` 归档到 Host 活动目录之外，再启动 Host。仅批准新密钥身份，核对新 `deviceId` 后恢复 mutation。不要复用旧设备密钥、旧配对会话或任何未解决操作 ID。
+5. 保留旧账本备份和维护记录；若无法确认每台旧设备已撤权或轮换，保持 Host 停止并升级人工处理，不要手工改写账本内容。
+
+这只是容量触顶后的人工恢复方案，不提供无损在线压缩，也不代表已测试的产品 UI。Host ledger 文件在重启时会把残留 `started` 记录标为 `outcomeUnknown`，仍需逐项解决。
 
 A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的不存在草稿放大方式已移除，Host 全局账本仍保留有限容量。其它经核对不作为本次漏洞报告：Host stdio 启动受已授权 `connectionSetup` 权限约束；Host 内容读取受配对和逐连接授权约束；npm audit 命中的是独立 Debug fixture；Release 签名身份、16 KB 实机及真实服务闭环仍未完成。
 
-差异审查对 HTTP 响应包装流中的错误完成行为曾记录一个候选：如果下游收到错误但继续监听，原实现不会发出结束事件。逐条检查 `mcp_dart` JSON/SSE 消费路径后确认产品当前消费者会在错误后终止或取消订阅，因此该候选不构成可达安全漏洞。审查快照之后，仍修正了包装层的通用 Stream 语义，并新增回归用例验证错误、后续数据和 `onDone` 均按源流顺序传递；这项修正由后续本地测试验收，不属于上述冻结快照。
+差异审查对 HTTP 响应包装流中的错误完成行为曾记录一个候选：如果下游收到错误但继续监听，原实现不会发出结束事件。逐条检查 `mcp_dart` JSON/SSE 消费路径后确认产品当前消费者会在错误后终止或取消订阅，因此该候选不构成可达安全漏洞。审查快照之后，修正了包装层的 Stream 语义并新增错误/数据/`onDone` 回归；也增加跨 Android 会话的并发 POST 上限，以及 MCP protocol deadline、AbortableRequest 中止和超时会话关闭测试。这些后续变更不属于原扫描快照。
 
 旧 Codex Security 扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终为 failed，其 0 findings 不能作为无风险结论。本轮差异扫描 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已正常完成并生成报告；报告路径见工作区外的 Codex Security scan artifacts。它没有验证 16 KB 设备行为或外部 HTTPS 本轮实机闭环。
 
@@ -71,7 +83,7 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 
 ## 本轮验证
 
-- Flutter 全量测试：208 项通过，包含 HTTP 包装流错误后继续传递数据和 `onDone` 的回归用例。
+- Flutter 全量测试：211 项通过，包含 HTTP 包装流错误后继续传递数据和 `onDone`、跨会话并发上限、timeout 后请求 abort 的回归用例。
 - `flutter analyze --no-pub`：无问题。
 - Dart format、公共层边界检查、15 项共享包测试：通过。
 - Android arm64 Debug APK、Release APK/AAB 与 macOS Debug 构建：通过；macOS 构建有 `mobile_scanner` 使用 macOS 10.15 弃用 API 的既有编译警告。

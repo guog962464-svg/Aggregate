@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate_domain/aggregate_domain.dart';
+import 'package:http/http.dart' as http;
 import 'package:mcp_dart/mcp_dart.dart' as mcp;
 
 import 'android_mcp_http_client.dart';
@@ -15,6 +16,8 @@ const _maxMcpSchemaBytes = 256 * 1024;
 const _maxMcpFieldBytes = 16 * 1024;
 const _maxMcpCursorBytes = 4096;
 const _maxMcpPromptArguments = 64;
+const _mcpDiscoveryTimeout = Duration(seconds: 10);
+const _mcpOperationTimeout = Duration(seconds: 30);
 
 final class AndroidMcpSession {
   AndroidMcpSession._(this.client, this.capabilities);
@@ -27,8 +30,10 @@ final class AndroidMcpSession {
   static Future<AndroidMcpSession> connect(
     String id,
     Uri endpoint,
-    String? token,
-  ) async {
+    String? token, {
+    http.Client? httpClient,
+    AndroidMcpRequestLimiter? requestLimiter,
+  }) async {
     final client = mcp.McpClient(
       const mcp.Implementation(name: 'aggregate-android', version: '0.3.0'),
     );
@@ -41,7 +46,10 @@ final class AndroidMcpSession {
               : {
                   'headers': {'Authorization': 'Bearer $token'},
                 },
-          httpClient: AndroidMcpHttpClient(),
+          httpClient: AndroidMcpHttpClient(
+            inner: httpClient,
+            requestLimiter: requestLimiter,
+          ),
         ),
       );
       await client.connect(transport).timeout(const Duration(seconds: 12));
@@ -91,13 +99,13 @@ final class AndroidMcpSession {
         if (++pageCount > _maxMcpPagesPerList) {
           throw const FormatException('MCP 工具目录页数超过 Android 限制');
         }
-        final page = await client
-            .listTools(
-              params: cursor == null
-                  ? null
-                  : mcp.ListToolsRequest(cursor: cursor),
-            )
-            .timeout(const Duration(seconds: 10));
+        final page = await client.listTools(
+          params: cursor == null ? null : mcp.ListToolsRequest(cursor: cursor),
+          options: const mcp.RequestOptions(
+            timeout: _mcpDiscoveryTimeout,
+            maxTotalTimeout: _mcpDiscoveryTimeout,
+          ),
+        );
         for (final tool in page.tools) {
           final title = tool.title ?? tool.name;
           final description = tool.description ?? 'MCP 工具';
@@ -134,13 +142,15 @@ final class AndroidMcpSession {
         if (++pageCount > _maxMcpPagesPerList) {
           throw const FormatException('MCP 资源目录页数超过 Android 限制');
         }
-        final page = await client
-            .listResources(
-              params: cursor == null
-                  ? null
-                  : mcp.ListResourcesRequest(cursor: cursor),
-            )
-            .timeout(const Duration(seconds: 10));
+        final page = await client.listResources(
+          params: cursor == null
+              ? null
+              : mcp.ListResourcesRequest(cursor: cursor),
+          options: const mcp.RequestOptions(
+            timeout: _mcpDiscoveryTimeout,
+            maxTotalTimeout: _mcpDiscoveryTimeout,
+          ),
+        );
         for (final resource in page.resources) {
           final title = resource.title ?? resource.name;
           final description = resource.description ?? resource.uri;
@@ -171,13 +181,15 @@ final class AndroidMcpSession {
         if (++pageCount > _maxMcpPagesPerList) {
           throw const FormatException('MCP 提示目录页数超过 Android 限制');
         }
-        final page = await client
-            .listPrompts(
-              params: cursor == null
-                  ? null
-                  : mcp.ListPromptsRequest(cursor: cursor),
-            )
-            .timeout(const Duration(seconds: 10));
+        final page = await client.listPrompts(
+          params: cursor == null
+              ? null
+              : mcp.ListPromptsRequest(cursor: cursor),
+          options: const mcp.RequestOptions(
+            timeout: _mcpDiscoveryTimeout,
+            maxTotalTimeout: _mcpDiscoveryTimeout,
+          ),
+        );
         for (final prompt in page.prompts) {
           final promptArguments = prompt.arguments ?? <mcp.PromptArgument>[];
           if (promptArguments.length > _maxMcpPromptArguments) {
@@ -225,11 +237,16 @@ final class AndroidMcpSession {
 
   Future<({List<ResultBlock> blocks, bool isError})> call(
     String name,
-    JsonMap arguments,
-  ) async {
-    final result = await client
-        .callTool(mcp.CallToolRequest(name: name, arguments: arguments))
-        .timeout(const Duration(seconds: 30));
+    JsonMap arguments, {
+    Duration timeout = _mcpOperationTimeout,
+  }) async {
+    final result = await _withRequestTimeout(
+      timeout,
+      (options) => client.callTool(
+        mcp.CallToolRequest(name: name, arguments: arguments),
+        options: options,
+      ),
+    );
     return (
       blocks: ResultNormalizer.fromMcp(
         Map<String, Object?>.from(result.toJson()),
@@ -238,29 +255,57 @@ final class AndroidMcpSession {
     );
   }
 
-  Future<List<ResultBlock>> readResource(Uri uri) async {
-    final result = await client
-        .readResource(mcp.ReadResourceRequest(uri: uri.toString()))
-        .timeout(const Duration(seconds: 30));
+  Future<List<ResultBlock>> readResource(
+    Uri uri, {
+    Duration timeout = _mcpOperationTimeout,
+  }) async {
+    final result = await _withRequestTimeout(
+      timeout,
+      (options) => client.readResource(
+        mcp.ReadResourceRequest(uri: uri.toString()),
+        options,
+      ),
+    );
     return [
       for (final content in result.toJson()['contents'] as List? ?? const [])
         ResultBlock(ResultKind.json, content),
     ];
   }
 
-  Future<List<ResultBlock>> getPrompt(String name, JsonMap arguments) async {
-    final result = await client
-        .getPrompt(
-          mcp.GetPromptRequest(
-            name: name,
-            arguments: arguments.map((key, value) => MapEntry(key, '$value')),
-          ),
-        )
-        .timeout(const Duration(seconds: 30));
+  Future<List<ResultBlock>> getPrompt(
+    String name,
+    JsonMap arguments, {
+    Duration timeout = _mcpOperationTimeout,
+  }) async {
+    final result = await _withRequestTimeout(
+      timeout,
+      (options) => client.getPrompt(
+        mcp.GetPromptRequest(
+          name: name,
+          arguments: arguments.map((key, value) => MapEntry(key, '$value')),
+        ),
+        options,
+      ),
+    );
     return [
       for (final message in result.toJson()['messages'] as List? ?? const [])
         ResultBlock(ResultKind.json, message),
     ];
+  }
+
+  Future<T> _withRequestTimeout<T>(
+    Duration timeout,
+    Future<T> Function(mcp.RequestOptions options) request,
+  ) async {
+    try {
+      return await request(
+        mcp.RequestOptions(timeout: timeout, maxTotalTimeout: timeout),
+      );
+    } on mcp.McpError catch (error) {
+      if (error.code != mcp.ErrorCode.requestTimeout.value) rethrow;
+      await close();
+      throw TimeoutException(error.message, timeout);
+    }
   }
 
   Future<void> close() => client.close();
