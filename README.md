@@ -1,28 +1,112 @@
 # Aggregate
 
-macOS 优先的 CLI/MCP 功能聚合 App。公共层保留跨端接口，当前只构建和验收 macOS。连接后直接进入对应的音乐、CLI 或 MCP 首页；跨连接搜索、通用运行页和动作编辑器仍可使用。当前目标是受信任环境中的预览验收，正式分发暂缓。
+[![macOS checks](https://github.com/guog962464-svg/Aggregate/actions/workflows/macos.yml/badge.svg)](https://github.com/guog962464-svg/Aggregate/actions/workflows/macos.yml)
+[GitHub](https://github.com/guog962464-svg/Aggregate) · [Gitee](https://gitee.com/shi-shan/aggregate)
 
-## 当前不足与限制
+**Aggregate 是一个以 macOS 为当前发布目标的 CLI / MCP 能力工作台。**它把本机命令行工具、MCP 服务和它们公开的功能汇集到统一目录中，帮助用户搜索能力、填写参数、确认权限、执行操作并查看结果。
 
-- **端与连接范围：**目前只有 macOS 运行端；Windows、Linux、移动端和 Web 尚未构建或验收，独立远程 Host 也未实现。本地 CLI 可以通过终端使用，但 CLI 没有统一的能力发现协议；要把具体命令变成可搜索、可填写参数的图形化动作，仍需动作清单或可靠的机器可读元数据。MCP 当前接入 stdio 与 Streamable HTTP；HTTP 认证只支持静态 Bearer Token，浏览器 OAuth 尚未实现。
-- **网易云账号与搜索：**音乐功能依赖本机 `@music163/ncm-cli` 和 `mpv`。新版添加流程可在 App 内输入 App ID 与 Private Key，先测试本机配置，再保存独立账号目录；保存后在播放器内扫码登录。旧连接仍使用原来的 CLI 配置。每条连接的 CLI 仍只保留一个当前登录账号，Aggregate 无法查询昵称或保存多个账号供一键切回。2026-11-10 本机旧连接的新账号已扫码登录，但 CLI 接口清单返回“用户未授权当前接口”，`ncm-cli commands` 未列出 `search`。扫码登录、开放平台应用凭证和搜索接口可用性是不同条件；见[故障排查](docs/troubleshooting.md)。新版添加流程的真实私钥、扫码和搜索接口链路尚待在当前 Mac 人工验收。
-- **验收与分发：**当前 Mac 上的播放、播控和实际出声已由用户在 App 内人工验收；早先 CLI 自动探针曾出现播放状态与空队列不一致，尚未形成稳定的自动回归证据。VoiceOver 搜索结果已能在原生辅助功能树中到达和激活，完整朗读与焦点顺序巡检仍待完成。Intel Mac、macOS 12 和独立系统用户未做实机验收。预览包仅使用 ad hoc 签名，尚无 Developer ID 签名和 Apple 公证，不作为正式分发包；详见[发布检查](docs/release-checklist.md)。
+项目使用 Flutter 与 Dart 开发。CLI 和 MCP 仍由各自的程序或服务执行，Aggregate 负责连接管理、能力发现、交互和运行状态呈现。网易云音乐是内置的示例连接器。
 
-- [阶段 0 实施与验证报告](docs/phase0-report.md)
-- [阶段 1 实施与验证报告](docs/phase1-report.md)
-- [阶段 2 进度与使用说明](docs/phase2-progress.md)
-- [阶段 3 进度与网易云使用说明](docs/phase3-progress.md)
-- [阶段 4 跨端公共层准备与验证](docs/phase4-common-layer.md)
-- [阶段 5 连接即空间的 UI 改版](docs/phase5-contextual-ui.md)
-- [macOS 使用手册](docs/user-guide.md)
-- [故障排查](docs/troubleshooting.md)
-- [连接器作者指南](docs/connector-author-guide.md)
-- [发布检查](docs/release-checklist.md)
-- [macOS 首版架构与阶段计划](docs/architecture.md)
-- [五页 UI 设计](docs/ui-design.md)
-- [契约 v1](docs/contracts-v1.md)
-- [ADR 0001](docs/decisions/0001-phase0.md)
+## 项目能做什么
 
-唯一 App 在 `app/`，公共包在 `packages/`，可重复的 MCP/CLI/PTY 探针在 `spikes/phase0/`。仓库根目录执行 `sh tool/check.sh` 完成格式、分析、边界、测试与 macOS Debug 构建。依赖由根目录的 `pubspec.lock` 锁定。
+- **接入 CLI：**登记本机命令行程序，直接在终端视图中运行命令或交互式 TUI；也可通过动作清单声明常用命令的参数、输入校验、输出类型和权限，再生成图形化表单。
+- **接入 MCP：**连接本地 stdio Server 或远程 Streamable HTTP Server，发现 MCP tools、resources、resource templates 和 prompts，并按能力 schema 展示表单、内容与结果。
+- **统一查找与调用：**跨连接搜索能力，按连接用途显示音乐、CLI 或 MCP 首页；支持最近使用、收藏、调用进度、取消和结果查看。
+- **连接预检与诊断：**添加连接时先测试、再保存。CLI 会检查程序和动作清单；MCP 会握手并发现能力；连接页提供健康状态、能力列表和诊断信息。
+- **权限与活动记录：**运行前展示连接来源和权限要求；写入或控制类操作需要确认。活动记录提供状态、时间和来源，不保存调用参数或结果正文。
+- **网易云音乐示例：**通过官方 `@music163/ncm-cli` 与 `mpv` 提供账号扫码登录、歌曲搜索、播放和队列控制界面。功能可用性取决于本机依赖、账号配置及服务端授权。
 
-当前 macOS App 默认连接真实本机 Runtime。测试和预览入口使用 `createPreviewRuntime()`；该样本位于 `app/lib/preview/`。
+通用 CLI 没有统一的参数描述协议，因此 Aggregate 可以提供原生命令和终端入口；要生成可搜索、可填写参数的图形化动作，需要连接器动作清单或可靠的机器可读元数据。动作清单格式见 [`connectors/manifest.schema.json`](connectors/manifest.schema.json)，示例见 [`connectors/examples/`](connectors/examples/)。
+
+## 使用流程
+
+```text
+添加 CLI / MCP 连接
+        ↓
+测试连接并保存
+        ↓
+搜索连接公开的功能
+        ↓
+填写参数并确认权限
+        ↓
+运行、查看结果与活动状态
+```
+
+音乐连接会打开播放器首页；普通 CLI 连接显示命令和动作；MCP 连接按工具、资源和提示组织内容。需要终端交互的命令可在 PTY 终端视图中运行。
+
+## 架构概览
+
+```text
+Flutter App（连接、搜索、表单、终端、结果与活动界面）
+                          │
+                    RuntimePort 契约
+                          │
+         ┌────────────────┴────────────────┐
+         │                                 │
+ macOS 本地运行端（当前发布目标）    Android 适配与 Mac Host（实验阶段）
+ CLI / PTY / stdio MCP / HTTP MCP     本机 HTTP MCP / 配对与远程调用
+```
+
+共享 Dart 契约、领域模型和 Flutter 组件描述连接、能力、权限与运行状态；平台运行端负责进程、终端、凭证和网络接线。公共层避免依赖 macOS API，便于后续复用。Android 相关代码已进入仓库，但仍按实验阶段验证，不属于当前发布范围。
+
+### 主要目录
+
+| 路径 | 内容 |
+| --- | --- |
+| `app/` | Flutter App、功能页面以及 macOS / Android 平台适配 |
+| `packages/aggregate_contracts/` | Runtime、连接、能力、权限与事件等公共契约 |
+| `packages/aggregate_domain/` | 搜索、状态、权限和结果等领域逻辑 |
+| `packages/aggregate_connectors/` | CLI 动作清单和连接器定义 |
+| `packages/aggregate_runtime/` | 公共运行时与预览实现 |
+| `connectors/` | 清单 JSON Schema 和连接器示例 |
+| `spikes/phase0/` | MCP、CLI 与 PTY 的技术验证样本 |
+| `docs/` | 架构、使用、连接器开发、平台计划和验收记录 |
+
+## 平台与当前状态
+
+- **macOS：**当前发布目标。支持本机 CLI、交互式 PTY、stdio MCP 和远程 Streamable HTTP MCP。macOS 上网易云连接的播放与播控已由用户在 App 内验收。
+- **Android：**仓库包含 Android 客户端和 Mac Host 远程运行实现，覆盖本机 HTTP MCP、配对流程、连接向导、活动、账号与终端等部分能力。仍在阶段性开发；production WSS 下完整 CLI、网易云账号与音频链路尚未完成真机端到端验收，16 KB 页面设备也未验收。请参阅 [Android 适配计划](docs/android-adaptation-plan.md) 和 [Mac Host 设计与进展](docs/android-a5-host-design.md)。
+- **Windows、Linux、iOS 与 Web：**没有当前版本的构建或验收承诺。
+
+已知边界：
+
+- 远程 HTTP MCP 当前使用静态 Bearer Token；浏览器 OAuth 登录尚未实现。
+- 网易云功能依赖 Node.js、`@music163/ncm-cli`、`mpv` 及可用的账号和服务端接口权限。
+- Android 目前不是正式发布版本；设备端通用 npm/CLI 运行能力、直接 LAN/Bonjour Host 闭环和 16 KB 真机兼容仍有未完成门槛。
+- 当前 macOS 预览构建使用 ad hoc 签名，尚未完成 Developer ID 签名和 Apple 公证，不作为正式分发包。
+
+## 开发与运行
+
+### 环境要求
+
+- macOS 开发环境与 Xcode
+- Flutter 3.47.8（Dart 3.13.7）
+- 网易云连接需要额外安装 Node.js、`mpv` 和官方 `@music163/ncm-cli`
+
+### 获取源码
+
+```sh
+git clone https://github.com/guog962464-svg/Aggregate.git
+# 或使用 Gitee 镜像：
+# git clone https://gitee.com/shi-shan/aggregate.git
+cd Aggregate
+flutter pub get --enforce-lockfile
+cd app
+flutter run -d macos
+```
+
+也可以从仓库根目录运行 `sh tool/check.sh`。该脚本会按锁文件解析依赖、检查格式与静态分析、验证公共层依赖边界、运行公共包和 Flutter 测试，并构建 macOS Debug App。CI 使用同一套检查流程，配置见 [`.github/workflows/macos.yml`](.github/workflows/macos.yml)。
+
+## 文档
+
+- [macOS 使用手册](docs/user-guide.md)：安装预览包、添加连接、查找功能和使用网易云播放器。
+- [架构说明](docs/architecture.md)：产品边界、运行时接口、分层和实现决策。
+- [故障排查](docs/troubleshooting.md)：CLI 路径、MCP 连接、权限和网易云问题。
+- [连接器作者指南](docs/connector-author-guide.md)：动作清单与 MCP Server 接入约定。
+- [发布检查](docs/release-checklist.md)：当前构建、签名和发布验收状态。
+- [Android 适配计划](docs/android-adaptation-plan.md)：Android 实验阶段与验收门槛。
+
+## 项目镜像
+
+- GitHub：<https://github.com/guog962464-svg/Aggregate>
+- Gitee：<https://gitee.com/shi-shan/aggregate>
