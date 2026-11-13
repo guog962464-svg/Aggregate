@@ -1,6 +1,6 @@
 # Android A3：Node 原生桥探针记录
 
-> 2026-11-11。A3 进行中；默认 Debug 实验候选已更新至 fogtape Node 24.22.1 预发布。A3.1–A3.5 的固定探针范围已在 4 KB arm64 真机通过，包括运行中的 60 秒后台、后台进程终止后的重启及升级后陈旧探针文件替换。`am kill` 不等同真实低内存终止。A3.6 的 arm64/x86_64 成品静态对齐通过，16 KB 真机加载尚未验证。探针与用户可见 CLI 能力保持隔离。
+> 更新于 2026-11-13。A3 进行中；默认 Debug 实验候选是 fogtape Node 24.22.1 预发布。A3.1–A3.5 的固定探针范围已在 4 KB arm64 真机通过，包括运行中的 60 秒后台、后台进程终止后的重启及升级后陈旧探针文件替换。`am kill` 不等同真实低内存终止。A3.6 已复核 arm64 Debug APK/AAB 的 ELF、RELRO 与 ZIP/container 静态对齐；16 KB 真机加载、当前安全版运行时、完整许可和 Release 成品仍未验收。探针与用户可见 CLI 能力保持隔离。详见 [A3.6 运行时研究与静态记录](android-a3-runtime-research.md)。
 
 ## 当前基线
 
@@ -51,9 +51,9 @@ fogtape ZIP 为 112,853,733 字节，本地 SHA-256 与 Release API 摘要同为
 - LGE AN10 真机当前返回 `v24.22.1`、`file=ok`、`network=network-ok`、退出码 0。当前候选单次 Activity 冷启动 `am start -W` TotalTime 515 ms；Service 启动到 Node 结果 416 ms；结果后 Service PSS 58,171 KB/RSS 113,900 KB；arm64 独立 Debug APK 98,126,840 字节。均为单次观测，不是性能分布或产品包指标。旧 Node 18 候选的耗时和内存不用于当前判断。
 - `verify_device.py` 安装 Debug APK，运行一次，单独杀 `:node` 进程并等待新代际再次成功；主进程 PID 保持不变。随后整 App `force-stop`、同包重装及 HOME 后 `am kill` 主进程和 `:node` 进程，各自重新进入并成功运行新代际，测试结束卸载实验 App。`am kill` 是系统命令触发的后台终止，不是内存压力下的 LMK；重启由重新进入触发，不证明后台自动重连。
 - `verify_upgrade.py` 使用 Gradle 属性将独立探针 App 构建成 `versionCode` 1 和 2，真机安装 1、运行 Node，再把入口、结果和事件文件均改成陈旧标记，保留私有数据原位升级至 2 并再次运行。PackageManager 报告 1→2，新 Service 代际成功运行，三份陈旧文件均被替换且无额外探针文件；测试结束卸载实验 App。两包除了版本元数据没有业务代码差异，尚不覆盖脚本格式迁移或真实产品升级。
-- `flutter build apk --debug --no-pub` 通过，Aggregate 普通 APK 不含 Node 探针库。默认 arm64 探针 AAB 经 bundletool 1.18.3 报 `PAGE_ALIGNMENT_16K`，由其生成的 universal APK 通过 `zipalign -c -P 16 4`。另以 `-Pa3ProbeAllAbis=true` 构建三 ABI AAB：九个原生库均进入成品，AAB 配置和 universal APK ZIP 对齐通过；arm64 与 x86_64 的全部库以及 armeabi-v7a 的 JNI/Node 库 ELF LOAD 段为 `0x4000`，但 NDK r28c 提供的 armeabi-v7a `libc++_shared.so` 为 `0x1000`。故不能声称三 ABI 的每个库均通过 16 KB ELF 静态门槛；默认发行范围仍仅 arm64。16 KB 真机及其他 ABI 真机加载未验证。
+- `flutter build apk --debug --no-pub` 通过，Aggregate 普通 APK 不含 Node 探针库。2026-11-13 默认 arm64 探针 Debug APK/AAB 的三个库均通过 NDK r28c `llvm-readelf -lW` 检查：全部 `PT_LOAD` 的 `p_align=0x4000` 且 offset/virtual address 余数相符；GNU_RELRO 结束于所属 writable LOAD 末尾，下一 writable LOAD 位于向上取整的 16 KB 页边界之后。探针 APK 及普通 Flutter Debug APK 均通过 `zipalign -c -P 16 4`；AAB 经 Bundletool 1.18.3 `validate` 成功且配置为 `PAGE_ALIGNMENT_16K`。`prepare.sh` 校验 Node archive、Node LICENSE 和 NDK LLVM NOTICE 的 SHA-256，并把两份 NOTICE/许可文本打入 APK/AAB。另以 `-Pa3ProbeAllAbis=true` 构建三 ABI Debug APK/AAB：九个原生库进入产物，AAB 配置和 universal APK ZIP 对齐通过；arm64/x86_64 全部库及 armeabi-v7a 的 JNI/Node 库 `PT_LOAD` 为 `0x4000`，NDK r28c 提供的 armeabi-v7a `libc++_shared.so` 为 `0x1000`。默认包仍仅 arm64。以上均为 Debug 静态检查，不代表 Release 包或 16 KB 真机加载通过。
 
-复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径] [同标签 LICENSE]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。ZIP 和 LICENSE 可省略以下载固定版本；都校验固定 SHA-256。脚本使用当前连接的真机；没有启动模拟器。
+复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径] [同标签 LICENSE]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。ZIP 和 LICENSE 可省略以下载固定版本；脚本校验 Node archive、同标签 LICENSE 和锁定 NDK LLVM NOTICE 的 SHA-256。脚本使用当前连接的真机；没有启动模拟器。
 
 ## Flutter Debug 测试通道
 

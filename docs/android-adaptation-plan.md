@@ -127,7 +127,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ### A3：`nodejs-mobile` 原生桥探针
 
-**状态：**进行中；候选库核验、4 KB 真机 Service/JNI 实验及可选 Flutter Debug 通道见 [A3 探针记录](android-a3-probe.md)。固定 JS 脚本的就绪、事件、取消、入口校验、60 秒运行中后台、20 次重入、后台 `am kill` 后重启及升级后陈旧文件替换已在真机通过；真实 LMK、可发布原生库与 16 KB 真机仍未验收。当前 Node 24.22.1 预发布候选的 arm64/x86_64 成品原生库静态 16 KB 对齐通过；32 位 `libc++_shared.so` 仅 4 KB 对齐。
+**状态：**进行中；候选库核验、4 KB 真机 Service/JNI 实验及可选 Flutter Debug 通道见 [A3 探针记录](android-a3-probe.md)。固定 JS 脚本的就绪、事件、取消、入口校验、60 秒运行中后台、20 次重入、后台 `am kill` 后重启及升级后陈旧文件替换已在真机通过；真实 LMK、可发布原生库与 16 KB 真机仍未验收。2026-11-13 的 arm64 Debug APK/AAB 静态检查通过；三 ABI 实验确认 armeabi-v7a 的 `libc++_shared.so` 仍是 4 KB 对齐。当前 Node 24.22.1-0 仍为预发布且落后官方 Node 24 安全版本，A3.6 保持开放。详见 [A3.6 运行时研究与静态记录](android-a3-runtime-research.md)。
 
 **依赖：**A1，可与 A2、A5 并行。探针保持独立，不先绑定完整 UI。
 
@@ -136,7 +136,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - [x] A3.3 通过 Binder/平台通道把固定探针的 `console`、文件读写、网络请求、异常与取消事件返回 Dart。实验用应用私有 JSONL 文件在 Service 内转发事件，不对外开放回环通信端口；进程级取消仍报告结果未知。
 - [x] A3.4 把固定探针的运行端能力查询与唯一受控入口列成桥接协议；不把 `ConnectionSetupPort` 的 `cli`/`mcp-stdio` 适配器暴露给用户。新 Service 代际拒绝旧代际请求及任何草稿/profile 引用；真实包与 profile 语义留待 A4。
 - [x] A3.5 在现有 4 KB arm64 真机测冷启动与内存单次样本、进程崩溃和恢复、20 次进入/退出、60 秒运行中后台、`am kill` 后重新进入及升级后陈旧探针资源替换。真实内存压力 LMK、产品配置迁移和更长后台策略属于后续目标环境验收，不能由本次模拟。
-- [ ] A3.6 检查 `.so` ELF 与 APK/AAB 的 16 KB 对齐，并在目标 4 KB 与 16 KB 真机加载；记录每个 ABI 的结果。当前 Node 24.22.1 预发布的三 ABI 成品 APK/AAB ZIP 对齐通过；arm64/x86_64 所有原生库 ELF 为 16 KB 对齐，armeabi-v7a 的 NDK `libc++_shared.so` 为 4 KB。arm64 仅在 4 KB 真机加载；LICENSE 已校验并随实验 APK 打包。稳定发布资格、完整分发许可、16 KB 真机及其他 ABI 真机加载待测。
+- [ ] A3.6 静态部分于 2026-11-13 复核通过：默认 arm64 Debug APK/AAB 的三个 `.so` 全部 `PT_LOAD` 均为 `p_align=0x4000`、offset/virtual address 余数相符，GNU_RELRO 边界符合 Android 指南；探针与普通 Flutter Debug APK 均通过 `zipalign -c -P 16 4`，Bundletool 1.18.3 AAB `validate` 通过并报告 `PAGE_ALIGNMENT_16K`。三 ABI Debug 试包的 APK/AAB 容器对齐通过，但 armeabi-v7a NDK `libc++_shared.so` 仍为 `0x1000`，故默认范围只含 arm64。`prepare.sh` 固定校验 Node archive、同标签 LICENSE、NDK LLVM NOTICE 并随 APK/AAB 打包两份声明。仍需取得维护、安全 patch 同步的 Android runtime、完成第三方依赖许可清单和 Release 成品检查、在 16 KB 真机加载；x86_64/32-bit 真机加载也未验证。证据及 SHA-256 见 [A3.6 运行时研究与静态记录](android-a3-runtime-research.md)。
 
 **交付物：**最小探针、版本/体积/性能表、原生兼容报告。**通过门槛：**目标设备上稳定启动、通信、失败恢复；能取得可维护的原生库且满足分发要求。**停止条件：**维护版本、16 KB、崩溃隔离或生命周期任一关键项无可行方案时，不进入本地 Node 产品化。
 
