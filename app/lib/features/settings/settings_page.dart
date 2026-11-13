@@ -4,6 +4,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../app/shortcut_scheme.dart';
 import '../../widgets/page_frame.dart';
+import 'appearance_selector.dart';
 
 const _appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '开发版');
 
@@ -67,31 +68,15 @@ class SettingsPage extends StatelessWidget {
       const SizedBox(height: 8),
       const Text('主题选择保存在本机。'),
       const SizedBox(height: 16),
-      SegmentedButton<AppearancePreference>(
-        segments: [
-          ButtonSegment(
-            value: AppearancePreference.system,
-            label: Text(
-              defaultTargetPlatform == TargetPlatform.macOS
-                  ? '跟随 macOS 系统'
-                  : '跟随系统',
-            ),
-            icon: const Icon(Icons.brightness_auto_outlined),
+      Center(
+        child: AppearanceSelector(
+          appearance: preferences.appearance,
+          systemLabel: defaultTargetPlatform == TargetPlatform.macOS
+              ? '跟随 macOS 系统'
+              : '跟随系统',
+          onChanged: (appearance) => onPreferencesChanged(
+            preferences.copyWith(appearance: appearance),
           ),
-          const ButtonSegment(
-            value: AppearancePreference.light,
-            label: Text('浅色'),
-            icon: Icon(Icons.light_mode_outlined),
-          ),
-          const ButtonSegment(
-            value: AppearancePreference.dark,
-            label: Text('深色'),
-            icon: Icon(Icons.dark_mode_outlined),
-          ),
-        ],
-        selected: {preferences.appearance},
-        onSelectionChanged: (selection) => onPreferencesChanged(
-          preferences.copyWith(appearance: selection.first),
         ),
       ),
       const SizedBox(height: 32),

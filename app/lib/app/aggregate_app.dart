@@ -80,6 +80,11 @@ class _AggregateAppState extends State<AggregateApp> {
     AppearancePreference.dark => ThemeMode.dark,
   };
 
+  Duration _themeAnimationDuration(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+      ? Duration.zero
+      : const Duration(milliseconds: 560);
+
   void searchAll() {
     navigatorKey.currentState?.popUntil((route) => route.isFirst);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -94,6 +99,8 @@ class _AggregateAppState extends State<AggregateApp> {
     theme: AggregateTheme.light,
     darkTheme: AggregateTheme.dark,
     themeMode: themeMode,
+    themeAnimationDuration: _themeAnimationDuration(context),
+    themeAnimationCurve: Curves.easeInOutCubic,
     navigatorKey: navigatorKey,
     scaffoldMessengerKey: messengerKey,
     builder: (context, child) => CallbackShortcuts(
