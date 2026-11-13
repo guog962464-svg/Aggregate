@@ -7,6 +7,7 @@ import 'package:aggregate/platform/macos/host/host_tls_identity.dart';
 import 'package:aggregate/platform/macos/host/host_wss_transport.dart';
 import 'package:aggregate/platform/macos/host/mac_host_wss_transport_factory.dart';
 import 'package:aggregate/platform/macos/mac_runtime.dart';
+import 'package:aggregate/platform/host/host_wss_protocol.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -30,6 +31,7 @@ void main() {
       identityStore: HostTlsIdentityStore(provider: identityProvider),
       pairingStore: InMemoryHostPairingStore(),
       signatureVerifier: const _UnusedSignatureVerifier(),
+      requestedPort: 0,
     );
 
     try {
@@ -46,6 +48,35 @@ void main() {
       await directory.delete(recursive: true);
     }
   });
+
+  test(
+    'production factory uses a stable port for saved Android peers',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-host-fixed-port-',
+      );
+      final runtime = await MacRuntime.open(dataDirectory: directory);
+      final transport = createMacHostWssTransport(
+        runtime: runtime,
+        setupCoordinator: HostSetupCoordinator(setup: runtime),
+        bindAddressProvider: const _LoopbackAddressProvider(),
+        bonjourPublisher: const NoopHostBonjourPublisher(),
+        identityStore: HostTlsIdentityStore(
+          provider: _FixtureIdentityProvider(
+            certificatePem: await File('test/fixtures/host_test_cert.pem')
+                .readAsString(),
+            privateKeyPem: await File('test/fixtures/host_test_key.pem')
+                .readAsString(),
+          ),
+        ),
+        pairingStore: InMemoryHostPairingStore(),
+        signatureVerifier: const _UnusedSignatureVerifier(),
+      );
+      expect((transport as HostWssTransport).requestedPort, hostWssDefaultPort);
+      await runtime.dispose();
+      await directory.delete(recursive: true);
+    },
+  );
 }
 
 final class _FixtureIdentityProvider implements HostTlsIdentityProvider {

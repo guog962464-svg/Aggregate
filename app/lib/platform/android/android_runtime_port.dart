@@ -10,6 +10,7 @@ import 'package:mcp_dart/mcp_dart.dart' as mcp;
 import 'package:mcp_dart/src/shared/json_schema/json_schema_validator.dart';
 
 import 'android_credential_store.dart';
+import 'android_host_manager.dart';
 import 'android_mcp_session.dart';
 import 'android_runtime_store.dart';
 
@@ -17,7 +18,12 @@ import 'android_runtime_store.dart';
 final class AndroidRuntimePort
     with WidgetsBindingObserver
     implements RuntimePort, ConnectionSetupPort {
-  AndroidRuntimePort._(this._store, this._credentials, this._draftTtl);
+  AndroidRuntimePort._(
+    AndroidRuntimeStore store,
+    this._credentials,
+    this._draftTtl,
+  ) : _store = store,
+      hostManager = AndroidHostManager(store);
 
   static Future<AndroidRuntimePort> open({
     Directory? dataDirectory,
@@ -26,11 +32,13 @@ final class AndroidRuntimePort
   }) async {
     WidgetsFlutterBinding.ensureInitialized();
     final directory = dataDirectory ?? await getApplicationSupportDirectory();
+    final store = AndroidRuntimeStore(directory);
     final runtime = AndroidRuntimePort._(
-      AndroidRuntimeStore(directory),
+      store,
       credentialStore ?? const SecureAndroidCredentialStore(),
       draftTtl,
     );
+    await runtime.hostManager.load();
     await runtime._load();
     WidgetsBinding.instance.addObserver(runtime);
     return runtime;
@@ -39,6 +47,7 @@ final class AndroidRuntimePort
   final AndroidRuntimeStore _store;
   final AndroidCredentialStore _credentials;
   final Duration _draftTtl;
+  final AndroidHostManager hostManager;
   final _entries = <String, _AndroidEntry>{};
   final _drafts = <String, _AndroidDraft>{};
   final _savingDrafts = <String>{};
@@ -69,6 +78,7 @@ final class AndroidRuntimePort
     for (final entry in _entries.values) {
       await entry.session?.close();
     }
+    await hostManager.dispose();
     await _store.flush();
     await _events.close();
   }

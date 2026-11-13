@@ -66,25 +66,30 @@ final class HostBonjourChannel {
       self.publishCompletion = completion
       self.pendingRegistrations = interfaceIndices.count
       let name = "Aggregate-" + String(hostId.suffix(8))
+      let hostIdAttribute = "hostId=\(hostId)"
+      let hostIdBytes = Array(hostIdAttribute.utf8)
+      let txtRecord = Data([UInt8(hostIdBytes.count)] + hostIdBytes)
 
       for interfaceIndex in interfaceIndices {
         var reference: DNSServiceRef?
-        let status = name.withCString { namePointer in
-          "_aggregate-host._tcp.".withCString { typePointer in
-            DNSServiceRegister(
-              &reference,
-              0,
-              UInt32(interfaceIndex),
-              namePointer,
-              typePointer,
-              "local.",
-              nil,
-              UInt16(port).bigEndian,
-              0,
-              nil,
-              Self.registrationReply,
-              Unmanaged.passUnretained(self).toOpaque()
-            )
+        let status = txtRecord.withUnsafeBytes { txtPointer in
+          name.withCString { namePointer in
+            "_aggregate-host._tcp.".withCString { typePointer in
+              DNSServiceRegister(
+                &reference,
+                0,
+                UInt32(interfaceIndex),
+                namePointer,
+                typePointer,
+                "local.",
+                nil,
+                UInt16(port).bigEndian,
+                UInt16(txtRecord.count),
+                txtPointer.baseAddress,
+                Self.registrationReply,
+                Unmanaged.passUnretained(self).toOpaque()
+              )
+            }
           }
         }
         guard status == kDNSServiceErr_NoError, let reference else {

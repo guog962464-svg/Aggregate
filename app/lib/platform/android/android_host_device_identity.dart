@@ -2,12 +2,18 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-final class AndroidHostDeviceIdentity {
+abstract interface class AndroidHostIdentityPort {
+  Future<AndroidHostPublicIdentity> loadOrCreate();
+  Future<Uint8List> sign(Uint8List message);
+}
+
+final class AndroidHostDeviceIdentity implements AndroidHostIdentityPort {
   const AndroidHostDeviceIdentity({MethodChannel? channel})
     : _channel = channel ?? const MethodChannel('aggregate/host_identity');
 
   final MethodChannel _channel;
 
+  @override
   Future<AndroidHostPublicIdentity> loadOrCreate() async {
     final result = await _channel.invokeMapMethod<String, Object?>(
       'loadOrCreate',
@@ -29,6 +35,7 @@ final class AndroidHostDeviceIdentity {
     return identity;
   }
 
+  @override
   Future<Uint8List> sign(Uint8List message) async {
     if (message.isEmpty || message.length > 1024 * 1024) {
       throw ArgumentError.value(message.length, 'message.length');

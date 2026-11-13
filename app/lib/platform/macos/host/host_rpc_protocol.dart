@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:aggregate_connectors/aggregate_connectors.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
-const hostProtocolVersion = 1;
+import '../../host/host_wss_protocol.dart';
+
 const hostRpcMaxFrameBytes = 1024 * 1024;
 const maxHostEventSequence = 9007199254740991;
 const _maxJsonDepth = 64;

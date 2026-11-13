@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate/platform/host/host_pairing_protocol.dart';
+import 'package:aggregate/platform/host/host_wss_protocol.dart';
 import 'package:aggregate/platform/macos/host/host_device_signature_verifier.dart';
 import 'package:aggregate/platform/macos/host/host_operation_ledger.dart';
 import 'package:aggregate/platform/macos/host/host_pairing_authority.dart';

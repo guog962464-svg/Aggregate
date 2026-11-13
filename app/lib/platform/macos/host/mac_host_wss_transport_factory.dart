@@ -10,6 +10,7 @@ import 'host_transport_port.dart';
 import 'host_wss_transport.dart';
 import '../mac_runtime.dart';
 import 'mac_host_bonjour_publisher.dart';
+import '../../host/host_wss_protocol.dart';
 
 HostTransportPort createMacHostWssTransport({
   required MacRuntime runtime,
@@ -20,6 +21,7 @@ HostTransportPort createMacHostWssTransport({
   HostTlsIdentityStore? identityStore,
   HostPairingStore? pairingStore,
   HostDeviceSignatureVerifier? signatureVerifier,
+  int requestedPort = hostWssDefaultPort,
 }) {
   final tlsIdentityStore = identityStore ?? HostTlsIdentityStore();
   final hostPairingStore = pairingStore ?? const MacKeychainHostPairingStore();
@@ -54,5 +56,6 @@ HostTransportPort createMacHostWssTransport({
     },
     bindAddressProvider: bindAddressProvider,
     bonjourPublisher: discoveryPublisher,
+    requestedPort: requestedPort,
   );
 }

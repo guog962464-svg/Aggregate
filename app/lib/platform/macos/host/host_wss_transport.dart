@@ -11,9 +11,7 @@ import 'host_setup_rpc_dispatcher.dart';
 import 'host_tls_identity.dart';
 import 'host_transport_port.dart';
 import '../../host/host_pairing_protocol.dart';
-
-const hostWssSubprotocol = 'aggregate-host.v1';
-const hostBonjourServiceType = '_aggregate-host._tcp';
+import '../../host/host_wss_protocol.dart';
 
 typedef HostWssServicesLoader = Future<HostWssServices> Function();
 
@@ -41,7 +39,7 @@ final class HostWssEndpoint {
   final int interfaceIndex;
 
   Uri get uri =>
-      Uri(scheme: 'wss', host: address.address, port: port, path: '/host');
+      Uri(scheme: 'wss', host: address.address, port: port, path: hostWssPath);
 
   JsonMap toJson() => {'uri': uri.toString()};
 }
