@@ -4,6 +4,7 @@ import FlutterMacOS
 class MainFlutterWindow: NSWindow {
   private var hostIdentityChannel: HostTlsIdentityChannel?
   private var hostSignatureChannel: HostDeviceSignatureChannel?
+  private var hostPairingStoreChannel: HostPairingStoreChannel?
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -16,6 +17,9 @@ class MainFlutterWindow: NSWindow {
       messenger: flutterViewController.engine.binaryMessenger
     )
     hostSignatureChannel = HostDeviceSignatureChannel(
+      messenger: flutterViewController.engine.binaryMessenger
+    )
+    hostPairingStoreChannel = HostPairingStoreChannel(
       messenger: flutterViewController.engine.binaryMessenger
     )
 

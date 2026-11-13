@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:aggregate/platform/macos/host/host_device_signature_verifier.dart';
+import 'package:aggregate/platform/macos/host/host_pairing_authority.dart';
 import 'package:aggregate/platform/macos/host/host_tls_identity.dart';
+import 'package:aggregate/platform/host/host_pairing_protocol.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -98,5 +100,37 @@ void main() {
     final loadedRotation = await identities.loadOrCreate();
     expect(loadedRotation.hostId, rotated.hostId);
     expect(loadedRotation.certificateSha256, rotated.certificateSha256);
+
+    const devicePublicKey =
+        'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFzccygtE2fioNux4FgJ07FEIj5YlwLPF+2Dly7FntiLHhNLSRjORgAXdfE1J21cxZb+Ebce8Ub+e6oG8k5BNXQ==';
+    final publicKeySpki = base64Decode(devicePublicKey);
+    final deviceId = HostPairingProtocol.deviceIdForPublicKey(publicKeySpki);
+    const pairingStore = MacKeychainHostPairingStore();
+    final priorRecords = await pairingStore.readAll();
+    HostDeviceGrant? prior;
+    for (final record in priorRecords) {
+      if (record.deviceId == deviceId) prior = record;
+    }
+    final testGrant = HostDeviceGrant(
+      deviceId: deviceId,
+      publicKeySpki: publicKeySpki,
+      displayName: 'Fixture Android device',
+      platform: 'android',
+      approvedAt: DateTime.now().toUtc(),
+      scopes: const {HostGrantScope.readConnections},
+    );
+    try {
+      await pairingStore.save(testGrant);
+      final persisted = (await pairingStore.readAll()).singleWhere(
+        (record) => record.deviceId == deviceId,
+      );
+      expect(persisted.toJson(), testGrant.toJson());
+    } finally {
+      if (prior == null) {
+        await pairingStore.remove(deviceId);
+      } else {
+        await pairingStore.save(prior);
+      }
+    }
   });
 }
