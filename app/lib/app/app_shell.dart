@@ -59,9 +59,27 @@ class AppShellState extends State<AppShell> {
   final connectionsKey = GlobalKey<ConnectionsPageState>();
   final activityKey = GlobalKey<ActivityPageState>();
 
+  static const _mobileSections = [
+    Section.workspace,
+    Section.connections,
+    Section.activity,
+    Section.settings,
+  ];
+
+  bool get _mobilePlatform => switch (defaultTargetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS => true,
+    _ => false,
+  };
+
+  int get _mobileSelectedIndex {
+    final index = _mobileSections.indexOf(selected);
+    return index < 0 ? 0 : index;
+  }
+
   @override
   void initState() {
     super.initState();
+    if (_mobilePlatform) selected = Section.workspace;
     reloadConnectionHomes(selectInitial: true);
     final runtime = widget.runtime;
     if (runtime is RuntimeChangeSource) {
@@ -89,7 +107,7 @@ class AppShellState extends State<AppShell> {
         preferred != oldWidget.preferences.preferredConnectionId &&
         connectionHomes.any((item) => item.id.value == preferred)) {
       selectedConnectionId = preferred;
-      selected = Section.home;
+      selected = _mobilePlatform ? Section.workspace : Section.home;
     }
   }
 
@@ -123,7 +141,7 @@ class AppShellState extends State<AppShell> {
               : connections.firstOrNull?.id.value;
         }
         if (selectInitial || selected == Section.home && !selectedStillExists) {
-          selected = selectedConnectionId == null
+          selected = selectedConnectionId == null || _mobilePlatform
               ? Section.workspace
               : Section.home;
         }
@@ -156,10 +174,15 @@ class AppShellState extends State<AppShell> {
 
   void select(Section section) => setState(() => selected = section);
 
+  void selectMobileDestination(int index) {
+    if (index < 0 || index >= _mobileSections.length) return;
+    select(_mobileSections[index]);
+  }
+
   void selectConnection(Connection connection) {
     setState(() {
       selectedConnectionId = connection.id.value;
-      selected = Section.home;
+      selected = _mobilePlatform ? Section.workspace : Section.home;
     });
     widget.onPreferencesChanged(
       widget.preferences.copyWith(preferredConnectionId: connection.id.value),
@@ -169,7 +192,7 @@ class AppShellState extends State<AppShell> {
   void connectionAdded(Connection connection) {
     setState(() {
       selectedConnectionId = connection.id.value;
-      selected = Section.home;
+      selected = _mobilePlatform ? Section.connections : Section.home;
     });
     widget.onPreferencesChanged(
       widget.preferences.copyWith(preferredConnectionId: connection.id.value),
@@ -195,6 +218,35 @@ class AppShellState extends State<AppShell> {
 
   Future<void> openCapability(Capability capability) async {
     await Navigator.of(context).pushNamed('/run', arguments: capability);
+    if (!mounted) return;
+    activityKey.currentState?.reload();
+    workspaceKey.currentState?.reloadCatalog();
+    reloadConnectionHomes();
+  }
+
+  Future<void> openConnectionWorkspace(Connection connection) async {
+    final experience = experienceFor(connection, catalog);
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(connection.label)),
+          bottomNavigationBar: experience == ConnectionExperience.music
+              ? null
+              : MusicMiniPlayer(session: widget.musicSession),
+          body: ConnectionHomePage(
+            key: ValueKey('mobile-connection-${connection.id.value}'),
+            connection: connection,
+            capabilities: catalog,
+            runtime: widget.runtime,
+            musicSession: widget.musicSession,
+            onOpen: openCapability,
+            onAccountChanged: () {
+              unawaited(refreshAfterAccountChange(connection.id));
+            },
+          ),
+        ),
+      ),
+    );
     if (!mounted) return;
     activityKey.currentState?.reload();
     workspaceKey.currentState?.reloadCatalog();
@@ -284,6 +336,90 @@ class AppShellState extends State<AppShell> {
     ),
   );
 
+  Widget _mobileNavigationRail({required bool extended}) => NavigationRail(
+    selectedIndex: _mobileSelectedIndex,
+    extended: extended,
+    labelType: extended ? null : NavigationRailLabelType.all,
+    onDestinationSelected: selectMobileDestination,
+    destinations: const [
+      NavigationRailDestination(
+        icon: Icon(Icons.search_outlined),
+        selectedIcon: Icon(Icons.search),
+        label: Text('功能'),
+      ),
+      NavigationRailDestination(
+        icon: Icon(Icons.hub_outlined),
+        selectedIcon: Icon(Icons.hub),
+        label: Text('连接'),
+      ),
+      NavigationRailDestination(
+        icon: Icon(Icons.history_outlined),
+        selectedIcon: Icon(Icons.history),
+        label: Text('活动'),
+      ),
+      NavigationRailDestination(
+        icon: Icon(Icons.tune_outlined),
+        selectedIcon: Icon(Icons.tune),
+        label: Text('设置'),
+      ),
+    ],
+  );
+
+  Widget _pageStack(Connection? connection) => IndexedStack(
+    index: selected.index,
+    children: [
+      if (connection != null)
+        ConnectionHomePage(
+          key: ValueKey('home-${connection.id.value}'),
+          connection: connection,
+          capabilities: catalog,
+          runtime: widget.runtime,
+          musicSession: widget.musicSession,
+          onOpen: openCapability,
+          onAccountChanged: () {
+            unawaited(refreshAfterAccountChange(connection.id));
+          },
+        )
+      else if (homesLoading)
+        const Center(child: CircularProgressIndicator())
+      else if (homesError != null)
+        Center(child: Text('加载连接失败：$homesError'))
+      else
+        const Center(child: Text('添加连接后，在这里使用它。')),
+      WorkspacePage(
+        key: workspaceKey,
+        runtime: widget.runtime,
+        onOpen: openCapability,
+        onAddConnection: addConnection,
+        favoriteKeys: widget.preferences.favoriteCapabilityKeys,
+        onFavoriteChanged: setFavorite,
+        autofocusSearch: selected == Section.workspace,
+      ),
+      ConnectionsPage(
+        key: connectionsKey,
+        runtime: widget.runtime,
+        onOpen: openCapability,
+        onOpenConnection: _mobilePlatform ? openConnectionWorkspace : null,
+        onAdded: connectionAdded,
+        onChanged: () {
+          reloadConnectionHomes();
+          workspaceKey.currentState?.reloadCatalog();
+        },
+      ),
+      ActivityPage(
+        key: activityKey,
+        runtime: widget.runtime,
+        onOpen: openCapability,
+      ),
+      SettingsPage(
+        preferences: widget.preferences,
+        onPreferencesChanged: widget.onPreferencesChanged,
+        onClearActivity: widget.onClearActivity,
+        platformSections: widget.platformSettingsSections,
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final connection = activeConnection;
@@ -295,15 +431,69 @@ class AppShellState extends State<AppShell> {
       autofocus: true,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 760;
-          final mobileInput = switch (defaultTargetPlatform) {
-            TargetPlatform.android || TargetPlatform.iOS => true,
-            _ => false,
-          };
-          return Scaffold(
-            bottomNavigationBar: onMusicHome
+          final width = constraints.maxWidth;
+          final compact = width < 760;
+          final mobileInput = _mobilePlatform;
+          final mobilePhone = _mobilePlatform && width < 600;
+          final mobileRail = _mobilePlatform && width >= 600;
+          final extendedRail = _mobilePlatform && width >= 840;
+          final hideBottomChrome =
+              _mobilePlatform && MediaQuery.of(context).viewInsets.bottom > 0;
+          final Widget? bottomNavigationBar;
+          if (mobilePhone) {
+            bottomNavigationBar = hideBottomChrome
+                ? const SizedBox.shrink()
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!onMusicHome)
+                        MusicMiniPlayer(
+                          session: widget.musicSession,
+                          includeBottomSafeArea: false,
+                        ),
+                      NavigationBar(
+                        selectedIndex: _mobileSelectedIndex,
+                        onDestinationSelected: selectMobileDestination,
+                        labelBehavior:
+                            NavigationDestinationLabelBehavior.alwaysShow,
+                        destinations: const [
+                          NavigationDestination(
+                            icon: Icon(Icons.search_outlined),
+                            selectedIcon: Icon(Icons.search),
+                            label: '功能',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.hub_outlined),
+                            selectedIcon: Icon(Icons.hub),
+                            label: '连接',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.history_outlined),
+                            selectedIcon: Icon(Icons.history),
+                            label: '活动',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.tune_outlined),
+                            selectedIcon: Icon(Icons.tune),
+                            label: '设置',
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+          } else if (_mobilePlatform) {
+            bottomNavigationBar = hideBottomChrome
+                ? const SizedBox.shrink()
+                : onMusicHome
                 ? null
-                : MusicMiniPlayer(session: widget.musicSession),
+                : MusicMiniPlayer(session: widget.musicSession);
+          } else {
+            bottomNavigationBar = onMusicHome
+                ? null
+                : MusicMiniPlayer(session: widget.musicSession);
+          }
+          return Scaffold(
+            bottomNavigationBar: bottomNavigationBar,
             appBar: AppBar(
               toolbarHeight: 64,
               title: const Text(
@@ -332,12 +522,14 @@ class AppShellState extends State<AppShell> {
                 const SizedBox(width: 20),
               ],
             ),
-            drawer: compact
+            drawer: !_mobilePlatform && compact
                 ? Drawer(child: SafeArea(child: navigation(compact: true)))
                 : null,
             body: Row(
               children: [
-                if (!compact)
+                if (mobileRail)
+                  _mobileNavigationRail(extended: extendedRail)
+                else if (!_mobilePlatform && !compact)
                   SizedBox(
                     width: 200,
                     child: Material(
@@ -345,61 +537,7 @@ class AppShellState extends State<AppShell> {
                       child: navigation(compact: false),
                     ),
                   ),
-                Expanded(
-                  child: IndexedStack(
-                    index: selected.index,
-                    children: [
-                      if (connection != null)
-                        ConnectionHomePage(
-                          key: ValueKey('home-${connection.id.value}'),
-                          connection: connection,
-                          capabilities: catalog,
-                          runtime: widget.runtime,
-                          musicSession: widget.musicSession,
-                          onOpen: openCapability,
-                          onAccountChanged: () {
-                            unawaited(refreshAfterAccountChange(connection.id));
-                          },
-                        )
-                      else if (homesLoading)
-                        const Center(child: CircularProgressIndicator())
-                      else if (homesError != null)
-                        Center(child: Text('加载连接失败：$homesError'))
-                      else
-                        const Center(child: Text('添加连接后，在这里使用它。')),
-                      WorkspacePage(
-                        key: workspaceKey,
-                        runtime: widget.runtime,
-                        onOpen: openCapability,
-                        onAddConnection: addConnection,
-                        favoriteKeys: widget.preferences.favoriteCapabilityKeys,
-                        onFavoriteChanged: setFavorite,
-                        autofocusSearch: selected == Section.workspace,
-                      ),
-                      ConnectionsPage(
-                        key: connectionsKey,
-                        runtime: widget.runtime,
-                        onOpen: openCapability,
-                        onAdded: connectionAdded,
-                        onChanged: () {
-                          reloadConnectionHomes();
-                          workspaceKey.currentState?.reloadCatalog();
-                        },
-                      ),
-                      ActivityPage(
-                        key: activityKey,
-                        runtime: widget.runtime,
-                        onOpen: openCapability,
-                      ),
-                      SettingsPage(
-                        preferences: widget.preferences,
-                        onPreferencesChanged: widget.onPreferencesChanged,
-                        onClearActivity: widget.onClearActivity,
-                        platformSections: widget.platformSettingsSections,
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _pageStack(connection)),
               ],
             ),
           );

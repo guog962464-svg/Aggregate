@@ -7,6 +7,8 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
+
 void main() {
   test('music home follows presentation metadata, not a connection name', () {
     const namedMusic = Connection(
@@ -85,7 +87,7 @@ void main() {
     expect(find.byTooltip('收起迷你播放器'), findsNothing);
     expect(tester.takeException(), isNull);
     semantics.dispose();
-  });
+  }, variant: _macOS);
 
   testWidgets('CLI and MCP connections use their own functional homes', (
     tester,
@@ -103,7 +105,7 @@ void main() {
     expect(find.text('提示'), findsOneWidget);
     expect(find.text('两个整数相加'), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 
   testWidgets('the last selected connection opens after restart', (
     tester,
@@ -123,7 +125,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('命令与动作'), findsWidgets);
     expect(find.text('音乐播放器'), findsNothing);
-  });
+  }, variant: _macOS);
 
   testWidgets('music controls ask once per connection in this app session', (
     tester,
@@ -157,5 +159,5 @@ void main() {
     await tester.tap(find.text('暂停'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('暂停？'), findsNothing);
-  });
+  }, variant: _macOS);
 }

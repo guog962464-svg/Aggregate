@@ -189,3 +189,10 @@ flowchart LR
 3. 运行详情显示执行端、权限和可恢复状态；用 shell 级 run coordinator 管理离开页面后的长任务/取消/活动重新订阅，并明确结果正文当前不持久化。
 4. 连接、活动与音乐页按四个窄屏任务重组；播放器/迷你播放器与导航、IME、安全区协调。手机本地音频仍是独立路线，未验收前隐藏本机出声能力声明。
 5. A7.6 用真实连接名、schema、错误 Token、Host 离线、Node 不可用和大输出，在竖/横屏、分屏、浅/深色、大字体和 TalkBack 下走完整任务，并存实际设备截图。A6.5 widget 测试不替代真实 Android IME/远程 PTY 验收。
+
+### A7.2 导航与页面组合验收（2026-11-14）
+
+- Android/iOS 手机壳以“功能、连接、活动、设置”为一级目的地，启动后进入全局功能工作台；新增连接后仍留在连接列表。既有 macOS 壳仍按连接首页、抽屉/侧栏方式工作。
+- `<600 dp` 使用 Material `NavigationBar`，键盘弹出时隐藏底部导航和迷你播放器；`600–839 dp` 使用带标签的 `NavigationRail`；`≥840 dp` 使用扩展 Rail。连接列表可推入连接专属工作区，网易云连接进入播放器；普通连接工作区保留可见的迷你播放器入口。
+- 全量 Flutter 168 项通过，`flutter analyze --no-pub` 无问题，Android arm64 Debug APK 与 macOS Debug app 构建通过。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机安装并启动，`MainActivity` 位于前台，设备截图确认全局功能页与四项底部导航可见；Build Tools 36.0.0 `zipalign -c -P 16 4` 检查通过。
+- 连接详情导航、Android phone/tablet 断点、IME 隐藏和 macOS 桌面回归由 Widget 测试覆盖；本轮未连接 production WSS Host，也没有 16 KB 实体设备，不能据此认定真实远程 Host 流程或 16 KB 运行验收通过。

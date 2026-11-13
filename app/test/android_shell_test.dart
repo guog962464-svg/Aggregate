@@ -5,6 +5,8 @@ import 'package:aggregate/platform/android/android_runtime_port.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const _android = TargetPlatformVariant({TargetPlatform.android});
+
 void main() {
   late Directory directory;
   late AndroidRuntimePort runtime;
@@ -17,9 +19,7 @@ void main() {
     await directory.delete(recursive: true);
   });
 
-  testWidgets('Android shell navigates the shared compact layout', (
-    tester,
-  ) async {
+  testWidgets('Android shell uses task navigation on a phone', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -28,13 +28,12 @@ void main() {
     });
     await tester.pumpWidget(AggregateApp(runtime: runtime));
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.menu), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byTooltip('添加连接'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.menu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('管理连接'));
+    await tester.tap(find.text('连接').last);
     await tester.pumpAndSettle();
     expect(find.byTooltip('添加连接'), findsOneWidget);
+    expect(find.byType(Drawer), findsNothing);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _android);
 }

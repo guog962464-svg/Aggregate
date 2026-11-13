@@ -60,7 +60,7 @@ void main() {
     await tester.pumpWidget(AggregateApp(runtime: runtime));
     await tester.pumpAndSettle();
     expect(find.text('添加连接'), findsNothing);
-    await tester.tap(find.text('管理连接').first);
+    await tester.tap(find.text('连接').last);
     await tester.pumpAndSettle();
     expect(find.text('添加连接'), findsNothing);
   });

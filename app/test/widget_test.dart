@@ -3,10 +3,11 @@ import 'package:aggregate/app/app_shell.dart';
 import 'package:aggregate/features/connections/connections_page.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
   Widget preview() => AggregateApp(runtime: createPreviewRuntime());
@@ -24,7 +25,7 @@ void main() {
       Theme.of(tester.element(find.byType(AppShell))).brightness,
       Brightness.dark,
     );
-  });
+  }, variant: _macOS);
 
   testWidgets('wide shell shows all primary pages', (tester) async {
     tester.view.physicalSize = const Size(1024, 768);
@@ -40,9 +41,9 @@ void main() {
     expect(find.text('示例 Git CLI'), findsWidgets);
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
-    expect(find.text('跟随系统'), findsOneWidget);
+    expect(find.text('跟随 macOS 系统'), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 
   testWidgets('compact drawer navigates and closes', (tester) async {
     tester.view.physicalSize = const Size(640, 600);
@@ -57,7 +58,7 @@ void main() {
     expect(find.text('还没有运行记录。'), findsOneWidget);
     expect(find.byType(Drawer), findsNothing);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 
   testWidgets('search, validate, run and see result through RuntimePort', (
     tester,
@@ -92,7 +93,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('add'), findsWidgets);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 
   testWidgets('keyboard search opens the first result', (tester) async {
     await tester.pumpWidget(preview());
@@ -105,7 +106,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('查看 Git 状态'), findsWidgets);
     expect(find.text('参数'), findsOneWidget);
-  });
+  }, variant: _macOS);
 
   for (final width in [800.0, 1024.0, 1440.0]) {
     testWidgets('shell fits ${width.toInt()} width', (tester) async {
@@ -116,7 +117,7 @@ void main() {
       await tester.pumpWidget(preview());
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-    });
+    }, variant: _macOS);
   }
 
   testWidgets('compact settings fit', (tester) async {
@@ -130,35 +131,30 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
-    expect(find.text('跟随系统'), findsOneWidget);
+    expect(find.text('跟随 macOS 系统'), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 
   testWidgets('command K focuses accessible workspace search from run', (
     tester,
   ) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-    try {
-      await tester.pumpWidget(preview());
-      await tester.pumpAndSettle();
-      await openAll(tester);
-      await tester.enterText(find.byKey(const Key('global-search')), 'Git');
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('查看 Git 状态'));
-      await tester.pumpAndSettle();
-      expect(find.text('参数'), findsOneWidget);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('global-search'));
-      expect(search, findsOneWidget);
-      expect(Focus.of(tester.element(search)).hasFocus, isTrue);
-      expect(tester.testTextInput.isVisible, isTrue);
-    } finally {
-      debugDefaultTargetPlatformOverride = null;
-    }
-  });
+    await tester.pumpWidget(preview());
+    await tester.pumpAndSettle();
+    await openAll(tester);
+    await tester.enterText(find.byKey(const Key('global-search')), 'Git');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('查看 Git 状态'));
+    await tester.pumpAndSettle();
+    expect(find.text('参数'), findsOneWidget);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await tester.pumpAndSettle();
+    final search = find.byKey(const Key('global-search'));
+    expect(search, findsOneWidget);
+    expect(Focus.of(tester.element(search)).hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+  }, variant: _macOS);
 
   testWidgets('add connection dialog validates required fields', (
     tester,
@@ -204,7 +200,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(submitted?.label, '本机工具');
     expect(submitted?.executable, '/usr/bin/env');
-  });
+  }, variant: _macOS);
 
   testWidgets('favorite and appearance persist in the runtime', (tester) async {
     final runtime = createPreviewRuntime();
@@ -236,7 +232,7 @@ void main() {
       Brightness.dark,
     );
     expect(find.text('收藏的功能'), findsOneWidget);
-  });
+  }, variant: _macOS);
 
   testWidgets('music result opens mini player and refreshes state', (
     tester,
@@ -259,7 +255,7 @@ void main() {
     expect(find.text('示例歌曲'), findsWidgets);
     expect(find.text('播放中'), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 
   testWidgets('music search results can start a playable song', (tester) async {
     tester.view.physicalSize = const Size(1024, 768);
@@ -283,5 +279,5 @@ void main() {
     expect(find.byTooltip('收起迷你播放器'), findsOneWidget);
     expect(find.text('示例歌曲'), findsWidgets);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: _macOS);
 }

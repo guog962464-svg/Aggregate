@@ -33,9 +33,14 @@ Future<void> confirmMusicControl(
 }
 
 class MusicMiniPlayer extends StatelessWidget {
-  const MusicMiniPlayer({super.key, required this.session});
+  const MusicMiniPlayer({
+    super.key,
+    required this.session,
+    this.includeBottomSafeArea = true,
+  });
 
   final MusicSession session;
+  final bool includeBottomSafeArea;
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -51,6 +56,7 @@ class MusicMiniPlayer extends StatelessWidget {
         color: scheme.surface,
         child: SafeArea(
           top: false,
+          bottom: includeBottomSafeArea,
           child: Container(
             constraints: const BoxConstraints(minHeight: 68),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

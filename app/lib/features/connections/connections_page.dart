@@ -10,17 +10,20 @@ import '../../widgets/capability_row.dart';
 import 'action_editor_dialog.dart';
 import 'connection_setup_dialog.dart';
 import 'connection_setup_target_dialog.dart';
+import 'connection_experience.dart';
 
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({
     super.key,
     required this.runtime,
     required this.onOpen,
+    this.onOpenConnection,
     this.onChanged,
     this.onAdded,
   });
   final RuntimePort runtime;
   final ValueChanged<Capability> onOpen;
+  final ValueChanged<Connection>? onOpenConnection;
   final VoidCallback? onChanged;
   final ValueChanged<Connection>? onAdded;
 
@@ -360,6 +363,22 @@ class ConnectionsPageState extends State<ConnectionsPage> {
             Text(
               '连接诊断：${connection.diagnostic}',
               style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          if (widget.onOpenConnection != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: () => widget.onOpenConnection!(connection),
+              icon: Icon(
+                experienceFor(connection, catalog) == ConnectionExperience.music
+                    ? Icons.music_note_outlined
+                    : Icons.open_in_new,
+              ),
+              label: Text(
+                experienceFor(connection, catalog) == ConnectionExperience.music
+                    ? '打开播放器'
+                    : '打开连接工作区',
+              ),
             ),
           ],
           const SizedBox(height: 20),
