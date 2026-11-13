@@ -1,14 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:aggregate/features/connections/connection_setup_dialog.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final class _SetupFixture
     implements ConnectionSetupPort, ConnectionSetupExecutableSelectionPort {
   _SetupFixture({
     this.withField = false,
+    this.withFileContent = false,
     this.autoDetect = false,
     this.httpOnly = false,
     this.actionRequired = false,
@@ -16,6 +19,7 @@ final class _SetupFixture
     this.saveCompleter,
   });
   final bool withField;
+  final bool withFileContent;
   final bool autoDetect;
   final bool httpOnly;
   final bool actionRequired;
@@ -41,6 +45,26 @@ final class _SetupFixture
             label: '可检测程序',
             kind: ConnectionKind.cli,
             autoDetectExecutable: true,
+          ),
+        ]
+      : withFileContent
+      ? [
+          ConnectionAdapter(
+            id: 'host-secret',
+            label: 'Host Secret',
+            kind: ConnectionKind.mcpHttp,
+            executionTarget: ExecutionTarget.host(
+              'host-0123456789abcdef0123456789abcdef',
+            ),
+            fields: [
+              SetupField(
+                key: 'privateKey',
+                label: 'Private Key',
+                kind: SetupFieldKind.secret,
+                required: true,
+                readFileContent: true,
+              ),
+            ],
           ),
         ]
       : withField
@@ -132,6 +156,58 @@ final class _SetupFixture
 }
 
 void main() {
+  testWidgets('Android document content stays in memory and clears on close', (
+    tester,
+  ) async {
+    const channel = MethodChannel('aggregate/document_content');
+    const fixture = 'A8.3 in-memory private-key fixture';
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          expect(call.method, 'pickSmallText');
+          return Uint8List.fromList(utf8.encode(fixture));
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+
+    final setup = _SetupFixture(withFileContent: true);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<Connection>(
+                context: context,
+                builder: (_) => ConnectionSetupDialog(setup: setup),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'HTTP URL'),
+      'https://mcp.example.test',
+    );
+    await tester.tap(find.byTooltip('选择Private Key'));
+    await tester.pumpAndSettle();
+
+    final privateKeyField = find.widgetWithText(TextField, 'Private Key');
+    final secretController = tester
+        .widget<TextField>(privateKeyField)
+        .controller!;
+    expect(secretController.text, fixture);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(secretController.text, isEmpty);
+    expect(setup.latest, isNull);
+  });
+
   testWidgets('actionRequired account check stays visible and incomplete', (
     tester,
   ) async {

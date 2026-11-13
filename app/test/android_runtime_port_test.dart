@@ -122,6 +122,50 @@ void main() {
   );
 
   test(
+    'revoked Host authorization never reroutes a connection to Android',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-host-revoked-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final manager = _FakeRemoteHostManager();
+      final runtime = await AndroidRuntimePort.open(
+        dataDirectory: directory,
+        hostManager: manager,
+      );
+      addTearDown(runtime.dispose);
+
+      final connection = (await runtime.listConnections()).single;
+      final capability = (await runtime.searchCapabilities(
+        const SearchQuery('search'),
+      )).single;
+      expect(connection.executionTarget, ExecutionTarget.host(_hostId));
+
+      final changed = runtime.changes.first;
+      manager.revokeAuthorization();
+      await changed;
+
+      final unavailable = (await runtime.listConnections()).single;
+      expect(unavailable.id.value, connection.id.value);
+      expect(unavailable.executionTarget, ExecutionTarget.host(_hostId));
+      expect(unavailable.status, ConnectionStatus.unavailable);
+      expect(unavailable.diagnostic, contains('认证'));
+      expect(
+        await runtime.searchCapabilities(const SearchQuery('search')),
+        isEmpty,
+      );
+
+      final run = await runtime.invoke(capability.id, const {});
+      final result = await runtime
+          .watchRun(run.id)
+          .firstWhere((event) => event.state == RunState.failed);
+      expect(result.failure?.code, RuntimeErrorCode.connectionFailed);
+      expect(manager.methods, isNot(contains('run.invoke')));
+      expect(await runtime.listConnections(), hasLength(1));
+    },
+  );
+
+  test(
     'routes Host activity, account, and terminal APIs by source ID',
     () async {
       final directory = await Directory.systemTemp.createTemp(
@@ -400,6 +444,7 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   final methods = <String>[];
   final sideEffectCalls = <String>[];
   var connected = true;
+  var authorizationRevoked = false;
   var failSetupSave = false;
   var invalidAdapterOptionalField = false;
   AndroidHostStatus status = AndroidHostStatus.online;
@@ -428,8 +473,13 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   bool isConnected(String hostId) => connected && hostId == _hostId;
 
   @override
-  AndroidHostStatus statusFor(String hostId) =>
-      isConnected(hostId) ? status : AndroidHostStatus.offline;
+  AndroidHostStatus statusFor(String hostId) => hostId == _hostId
+      ? authorizationRevoked
+            ? AndroidHostStatus.authenticationInvalid
+            : connected
+            ? status
+            : AndroidHostStatus.offline
+      : AndroidHostStatus.offline;
 
   @override
   Stream<AndroidHostStatusChange> get statusChanges => _statusChanges.stream;
@@ -628,8 +678,17 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   @override
   Future<void> disconnect(String hostId) async {
     connected = false;
+    status = AndroidHostStatus.offline;
     _statusChanges.add(
       AndroidHostStatusChange(hostId, AndroidHostStatus.offline),
+    );
+  }
+
+  void revokeAuthorization() {
+    connected = false;
+    authorizationRevoked = true;
+    _statusChanges.add(
+      AndroidHostStatusChange(_hostId, AndroidHostStatus.authenticationInvalid),
     );
   }
 

@@ -97,6 +97,54 @@ mcp.McpServer _server() {
 }
 
 void main() {
+  test('Android does not persist Mac targets or connector profiles', () async {
+    final root = await Directory.systemTemp.createTemp(
+      'aggregate-android-profile-boundary-',
+    );
+    final credentials = _MemoryCredentials();
+    final runtime = await AndroidRuntimePort.open(
+      dataDirectory: root,
+      credentialStore: credentials,
+    );
+    try {
+      for (final spec in [
+        const ConnectionSpec(
+          kind: ConnectionKind.mcpHttp,
+          label: 'Mac profile',
+          url: 'https://example.test/mcp',
+          authToken: 'private-token',
+          profileId: 'mac-profile-1',
+        ),
+        ConnectionSpec(
+          kind: ConnectionKind.mcpHttp,
+          label: 'Wrong target',
+          url: 'https://example.test/mcp',
+          authToken: 'private-token',
+          executionTarget: ExecutionTarget.host(
+            'host-0123456789abcdef0123456789abcdef',
+          ),
+        ),
+      ]) {
+        final report = await runtime.testConnectionSetup(
+          ConnectionSetupDraft(adapterId: 'mcp-http', spec: spec),
+        );
+        expect(report.canSave, isFalse);
+        expect(report.checks.single.detail, isNot(contains('private-token')));
+      }
+
+      expect(await runtime.listConnections(), isEmpty);
+      expect(credentials.values, isEmpty);
+      expect(await File('${root.path}/connections.json').exists(), isFalse);
+      expect(
+        await Directory('${root.path}/connector-profiles').exists(),
+        isFalse,
+      );
+    } finally {
+      await runtime.dispose();
+      await root.delete(recursive: true);
+    }
+  });
+
   test(
     'draft expires and is discarded on background or process restart',
     () async {

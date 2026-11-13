@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Shared form: platform adapters supply the fields and perform the probe.
 class ConnectionSetupDialog extends StatefulWidget {
@@ -238,6 +239,13 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
       unawaited(widget.setup.discardConnectionSetup(report!.draftId));
     }
     for (final controller in _controllers) {
+      controller.removeListener(_changed);
+    }
+    executable.removeListener(_executableChanged);
+    for (final field in adapter.fields) {
+      if (field.kind == SetupFieldKind.secret) extra[field.key]?.clear();
+    }
+    for (final controller in _controllers) {
       controller.dispose();
     }
     super.dispose();
@@ -249,6 +257,30 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
   }
 
   Future<void> _chooseFieldContent(TextEditingController controller) async {
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      try {
+        final bytes = await const MethodChannel('aggregate/document_content')
+            .invokeMethod<Uint8List>('pickSmallText');
+        if (bytes == null || !mounted) return;
+        if (bytes.length > 32 * 1024) {
+          setState(() => error = 'Private Key 文件不能超过 32 KiB');
+          return;
+        }
+        controller.text = utf8.decode(bytes);
+      } on PlatformException catch (cause) {
+        if (mounted) {
+          setState(
+            () => error = cause.code == 'file_too_large'
+                ? 'Private Key 文件不能超过 32 KiB'
+                : '无法读取所选文件，请重新选择。',
+          );
+        }
+      } on FormatException {
+        if (mounted) setState(() => error = '所选文件不是有效的 UTF-8 文本。');
+      }
+      return;
+    }
+
     final file = await openFile();
     if (file == null) return;
     if (await file.length() > 32 * 1024) {

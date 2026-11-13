@@ -199,7 +199,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 - [x] A8.1 跑公共契约测试、Widget 测试、Android 构建、macOS 回归；在 LGE AN10 真机完成 versionCode 8→9 覆盖升级、进程强停/冷启动、清除数据/首次启动；用无凭证旧版连接记录验证 Android Runtime 读取缺少 `executionTarget` 的数据，现有契约测试确认默认迁移到设备端。15 项契约/领域/连接器/Runtime 测试、189 项 Widget 测试、analyze、边界检查、Android arm64/macOS Debug 构建和 APK `zipalign -P 16` 均通过。限制：真机原有配置为空，迁移使用合成记录；未重启整台设备。全量 `tool/check.sh` 的格式步骤会触及当前未提交主题切换文件，故拆开运行剩余门禁，跟踪中的 Dart 源格式检查通过。
 - [x] A8.2 覆盖 arm64 目标 ABI、4 KB 真机与 16 KB 静态兼容性、Node 长后台/崩溃恢复、Wi‑Fi 断开/恢复、Host 离线/撤销测试、凭证与运行资源清理、大结果处理。普通 arm64 APK 的 7 个 `.so` 与固定 Node Debug 探针 APK 的 10 个 `.so` 均通过 NDK `llvm-readelf` 的 16 KB `LOAD`/GNU_RELRO 检查及 Build Tools `zipalign -P 16`；LGE AN10 上真实 4 KB 页，真实 16 KB 系统运行仍待设备。70 秒 Node 请求在 HOME 后运行并于 60 秒后回前台成功；Wi‑Fi 下本机 MCP 服务断线后恢复并再次调用成功。Host 退出/撤销由 Android 运行时与 WSS/配对测试覆盖，未连接 production Host。
-- [ ] A8.3 覆盖连接向导的草稿过期、重复保存、进程被杀、Host 撤销、文件 URI 授权失效与账号 profile 删除；检查没有残留私钥/Token、错误执行端或孤立配置。
+- [x] A8.3 覆盖连接向导草稿过期/重复保存/进程被杀、Host 撤权、文档 URI 授权及 profile 清理。LGE AN10 上选择系统文档后只把 ≤32 KiB 内容读入内存；无持久 URI grant、Android app cache 无测试内容副本。强停仍持有未保存 HTTP MCP 草稿的进程后，应用私有目录没有 `connections.json` 或 profile 文件。自动化验证 Host 撤权不回落到手机执行、Android 拒绝 Mac `profileId`/Host 目标落为本机配置；Mac NCM 连接删除后 profile 目录与测试密钥文件清理。200 项 Flutter 测试、15 项共享包测试、analyze、公共层边界、Android arm64/macOS Debug 构建通过。限制：本阶段未连接 production Mac Host；Host 撤权由协议/WSS 测试和 Android Runtime fake 覆盖。受控杀进程测试按设计被 ADB 强停，测试进程报告未完成；强停前后私有存储检查通过。
 - [ ] A8.4 复查原生库与 npm 依赖版本/许可证/漏洞响应、密钥和日志、动态代码分发政策、APK/AAB 体积与签名；发布渠道对应规则以当时官方要求再核对。
 - [ ] A8.5 更新用户指南：Android 能力边界、Host 配对、包的安装方式、执行位置、网易云声音输出位置及故障排查；内部记录各项真机通过/未通过证据。
 

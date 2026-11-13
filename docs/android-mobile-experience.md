@@ -243,3 +243,12 @@ flowchart LR
 - 真机 Node Debug 探针仅运行固定 `a3-fixed` 入口：普通包“探针不可用”通过；启用探针后，固定脚本正常调用/事件、异常、取消、运行中 crash 后 `outcomeUnknown` 与下一代恢复、20 次连续新代际调用均通过。70 秒请求在 JS ready 后退到 HOME，等待 60 秒再回前台，原请求成功完成；完成后未发现遗留 Aggregate/`:node` 进程。此探针仍明确为 `npm=false`、`cli=false`、`profiles=false`，不代表产品包开放 Node/npm/任意 CLI。
 - 真机 Wi‑Fi 开/关专项使用 Mac 同网段的临时本机 MCP 服务（无用户凭证）：关 Wi‑Fi 后已保存连接刷新为不可用，恢复 Wi‑Fi 后连接重新 ready 并再次调用成功。另 4 项 Android HTTP MCP 真机集成测试通过：凭证安全存储往返/删除且 Token 不进入 JSON、取消后的结果未知、401 脱敏、静默服务超时和测试后移除临时连接。测试运行器卸载了临时包；随后普通 `versionCode=10` arm64 APK 已安装、清数据并启动，Wi‑Fi 恢复开启。
 - Host 退出、远端终端清理、设备撤销和权限撤销由 Android 配对/Host WSS 运行时测试覆盖，未在实体设备配对生产 Mac Host；大结果折叠/展开由 Android 调用页 Widget 测试覆盖。Node 后台样本最长 70 秒、重复 20 次，不等于长时数小时或真实 LMK 压力；无 production WSS/NCM 账号，也未做 16 KB 系统运行验收。
+
+### A8.3 草稿、授权和 profile 清理验收（2026-11-14）
+
+- 检查锁定的 `file_selector_android 0.5.2+11` 后发现，Android 通用文件选择插件会把 `content://` 文档复制到应用 cache 再返回 `XFile`；原来的 Host 私钥字段读取完成后未清理这份副本。Android Host 文件内容字段现改用 Flutter 调用的窄原生通道：系统 `ACTION_OPEN_DOCUMENT` 结果直接经 `ContentResolver` 流式读取到最多 32 KiB 的内存缓冲区，不申请持久 URI grant、不落盘、不保留 URI；读失败时仅返回脱敏错误。Secret 输入在测试成功或向导关闭时清空。其他平台继续走原有 `file_selector` 路径。
+- 草稿与副作用：Android HTTP 草稿过期、后台、运行时重开后不可保存；重复保存只保存一次，第二次失败；保存中丢弃回滚凭证。另在真机建立含测试 Token 的未保存 MCP 草稿后执行 `am force-stop`；强停后的 app 私有 `files/` 仅有验收 marker 和 Flutter 安装标记，没有 `connections.json` 或 connector profile 文件。Android Host 撤权 Runtime 测试显示远端连接仍标记 Host 执行目标、状态为认证失效、调用失败且不会调用本机 Runtime；Mac Pairing Authority/WSS 撤销测试覆盖 grant 清除与活动会话失效。
+- profile/凭证边界：Android `testConnectionSetup` 拒绝非设备执行目标和任意 `profileId`，失败不创建连接 JSON、凭证或 profile 目录；Mac NCM Runtime 测试覆盖丢弃临时 profile、仅保存已测试配置、连接删除后递归 profile 目录清理及私钥临时文件不落盘。Android HTTP 真机用例覆盖 Token 安全存储/删除，启动时孤立凭证清理仍由 Android Runtime 测试覆盖。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机通过系统文档选择器选择无敏感测试文件；Integration Test 收到字节内容，随后扫描 Aggregate app cache 未发现测试文本。测试文件已从 Downloads 删除；A8.3 后普通 versionCode 11、targetSdk 36 APK 重新安装、清数据并启动，Activity 回到前台，未见 AndroidRuntime/Flutter 崩溃日志。文件选择在读取结束后立即丢弃 URI；本轮没有模拟外部 provider 主动撤销读取期间授权，应用也不会保留该授权供后续访问。
+- 验证：全量 Flutter 测试 200 项、共享 contracts/domain/connectors/runtime 测试 15 项、`flutter analyze --no-pub`、公共层边界检查、`git diff --check`、Android arm64 Debug 与 macOS Debug 构建通过。A8.3 改动的 Dart 文件格式通过；全跟踪文件格式检查仍报告既有 `app/integration_test/android_node_probe_test.dart` 有 formatter 差异，工作树另有未提交主题切换文件会阻挡整合格式门禁；均未纳入或格式化用户主题修改。受控进程终止测试由 ADB 强停，Flutter 集成测试框架因此报告测试未完成；强停前 marker 确认草稿已经测试，强停后检查应用私有文件目录通过。
+- 范围限制：没有在本阶段连接 production Mac Host；撤权跨端行为由 Host 协议/WSS 测试和 Android Runtime fake 覆盖。真机有 4 KB 页，未有 16 KB 设备；未据此声称 16 KB 系统运行通过。内存中的 Dart 字符串不做底层 RAM 擦除保证，验收针对的是文件/凭证/URI 持久化与逻辑生命周期。
