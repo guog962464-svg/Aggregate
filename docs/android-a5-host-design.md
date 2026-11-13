@@ -91,7 +91,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 1. Host 只有在 Mac 用户主动开启时才创建 WSS listener。它生成稳定随机 `hostId`，TLS server key/certificate 由 macOS Keychain 保护；Listener 运行时才将必要密钥材料载入进程内存，停止时清理。默认不随登录后台启动。
 2. Mac 展示一次性配对 QR 和待批准设备。QR 中包含 Host ID、发现信息、TLS 证书 SHA-256 指纹及 5 分钟有效、单次可用的邀请 nonce；不含长期设备凭证。Bonjour 仅用于发现在线地址，不代表信任。
-3. Android 首次配对时在 Android Keystore 生成 P-256 请求签名密钥，发送公钥、随机 `deviceId` 和邀请 nonce。Mac 显示设备名称、平台及短确认码，由 Mac 用户批准后，按连接和权限等级发放最小 grant；默认只给读取，外部写入、终端、账号管理和连接管理需额外授权。
+3. Android 首次配对时在 Android Keystore 生成 P-256 请求签名密钥，发送公钥、由公钥摘要派生的稳定 `deviceId` 和邀请 nonce。Mac 显示设备名称、平台及短确认码，由 Mac 用户批准后，按连接和权限等级发放最小 grant；默认只给读取，外部写入、终端、账号管理和连接管理需额外授权。
 4. Android 对每个 RPC 请求签署规范化的 method、request ID、operation ID、时间戳、nonce 和 body SHA-256。Host 验证设备公钥、时间窗、nonce 未重放、请求大小和 grant，再进入 dispatcher。TLS 的 Host 身份以扫描时记录的证书指纹固定；不能对任意证书返回接受。
 5. Mac 的“已配对设备”设置可撤销设备；撤销立即终止其 WebSocket、清理该设备草稿/一次性引用并关闭它拥有的终端。Host 证书轮换必须通过 Mac 用户确认后让设备重新配对，不能静默改 pin。
 
@@ -140,4 +140,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `app/android/app/src/main/kotlin/io/github/guog962464/aggregate/HostDeviceKeyStoreChannel.kt` 使用 Android Keystore 生成 P-256 `PURPOSE_SIGN` 私钥，SHA-256/ECDSA 签名只经 MethodChannel 返回；Dart 侧只接触 X.509 SPKI 公钥、按公钥摘要派生的 device ID 和 DER 签名。应用层从不读取私钥字节。密钥删除后再创建会产生新的 device ID。
 - `app/lib/platform/android/android_host_device_identity.dart` 暴露最小身份 API 并限制消息/响应大小；`app/integration_test/android_host_identity_test.dart` 覆盖身份稳定读取、签名输出、密钥删除和身份轮换。
 - 验收：Flutter 3.47.8 / Dart 3.13.7；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真实 USB 设备上，`flutter test --no-pub integration_test/android_host_identity_test.dart -d AEMN022427001360` 通过。未使用模拟器。该集成测试确认 Keystore 操作可用和签名格式大小，不单独证明 Host 端验证结果、硬件安全级别、配对审批、授权策略或传输安全。
-- 后续仍需实现并验收 Mac Host 稳定身份/TLS pin、一次性邀请和用户批准、持久 grant、随机 challenge 与逐请求签名验证、时间窗/nonce 重放保护、撤销断开及 WSS listener。完成上述链路前生产 transport 保持 fail-closed。
+- `app/lib/platform/macos/host/host_tls_identity.dart` 通过 MethodChannel 读取 Mac Host 身份，校验 Host ID 和 PEM 结构，以证书 DER 计算 SHA-256 pin，并在创建 TLS context 前验证证书与私钥可被 Dart TLS 接受。`app/macos/Runner/HostTlsIdentityChannel.swift` 使用 macOS Security.framework 在 Keychain 生成/读取 P-256 私钥与稳定 Host ID/自签名证书；身份操作使用串行队列，避免并发首次启动产生互相覆盖的身份。
+- `app/integration_test/macos_host_tls_identity_test.dart` 在本机真实 Keychain provider 下连续读取身份，启动 loopback WSS，客户端仅按精确证书 SHA-256 pin 接受并完成消息回环。Flutter TLS listener 与证书集成测试通过。此项只证明本机回环，不是 LAN listener、配对授权或生产发布验收。为适配 `dart:io SecurityContext`，Keychain 中的私钥会在运行期导出至 Mac App 进程内存；没有验证 Secure Enclave 硬件保护，也未实现轮换确认 UI。
+- 当前验证：`flutter analyze --no-pub` 通过；`flutter test --no-pub --reporter expanded` 全量 113 项通过；Mac loopback WSS 集成测试通过；LGE AN10 真实设备身份集成测试通过。未用模拟器、16 KB 设备或 Release/signed app 测试。
+- 后续仍需实现并验收一次性邀请、Mac 用户批准、持久 grant、随机 challenge 与逐请求签名验证、时间窗/nonce 重放保护、撤销时断开并清理会话，以及受批准签名与本地网络隐私配置约束的 WSS listener。完成上述链路前生产 transport 保持 fail-closed。
