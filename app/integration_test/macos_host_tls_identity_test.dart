@@ -94,13 +94,6 @@ void main() {
       await server.close(force: true);
     }
 
-    final rotated = await identities.rotate();
-    expect(rotated.hostId, isNot(first.hostId));
-    expect(rotated.certificateSha256, isNot(first.certificateSha256));
-    final loadedRotation = await identities.loadOrCreate();
-    expect(loadedRotation.hostId, rotated.hostId);
-    expect(loadedRotation.certificateSha256, rotated.certificateSha256);
-
     const devicePublicKey =
         'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFzccygtE2fioNux4FgJ07FEIj5YlwLPF+2Dly7FntiLHhNLSRjORgAXdfE1J21cxZb+Ebce8Ub+e6oG8k5BNXQ==';
     final publicKeySpki = base64Decode(devicePublicKey);

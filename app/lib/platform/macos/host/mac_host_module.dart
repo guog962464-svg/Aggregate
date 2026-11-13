@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import 'host_control_port.dart';
+import 'host_pairing_authority.dart';
 import 'host_setup_coordinator.dart';
 import 'host_transport_port.dart';
+import 'host_wss_transport.dart';
 
 /// Runtime capabilities the Host will dispatch through in later A5 stages.
 /// These ports must refer to the same app-owned runtime instance.
@@ -28,11 +30,14 @@ final class MacHostRuntimeBindings {
 ///
 /// Stopping this module closes only Host-owned transport resources. The local
 /// UI continues to own and dispose the runtime.
-final class MacHostModule implements HostControlPort {
-  MacHostModule({required this.runtimeBindings, required this.hostTransport})
-    : setupCoordinator = HostSetupCoordinator(
-        setup: runtimeBindings.connectionSetup,
-      );
+final class MacHostModule implements HostControlPort, HostPairingControlPort {
+  MacHostModule({
+    required this.runtimeBindings,
+    required this.hostTransport,
+    HostSetupCoordinator? setupCoordinator,
+  }) : setupCoordinator =
+           setupCoordinator ??
+           HostSetupCoordinator(setup: runtimeBindings.connectionSetup);
 
   final MacHostRuntimeBindings runtimeBindings;
   final HostTransportPort hostTransport;
@@ -40,6 +45,47 @@ final class MacHostModule implements HostControlPort {
   final _changes = StreamController<HostStatus>.broadcast(sync: true);
   HostStatus _status = const HostStatus(HostPhase.stopped);
   Future<void> _operationTail = Future<void>.value();
+
+  HostPairingControlPort get _pairingControl {
+    final transport = hostTransport;
+    if (transport is HostPairingControlPort) {
+      return transport as HostPairingControlPort;
+    }
+    throw const HostControlException(
+      HostControlErrorCode.pairingAuthenticationRequired,
+    );
+  }
+
+  @override
+  Future<HostWssPairingInvitation> createInvitation() =>
+      _pairingControl.createInvitation();
+
+  @override
+  Future<List<HostPendingPairing>> pendingRequests() =>
+      _pairingControl.pendingRequests();
+
+  @override
+  Future<void> rejectPending(String deviceId) =>
+      _pairingControl.rejectPending(deviceId);
+
+  @override
+  Future<HostDeviceGrant> approvePending(
+    String deviceId, {
+    Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
+    Map<String, Set<PermissionLevel>> connectionPermissions = const {},
+  }) => _pairingControl.approvePending(
+    deviceId,
+    scopes: scopes,
+    connectionPermissions: connectionPermissions,
+  );
+
+  @override
+  Future<List<HostDeviceGrant>> pairedDevices() =>
+      _pairingControl.pairedDevices();
+
+  @override
+  Future<void> revokeDevice(String deviceId) =>
+      _pairingControl.revokeDevice(deviceId);
 
   @override
   HostStatus get status => _status;

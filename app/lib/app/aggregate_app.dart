@@ -11,9 +11,14 @@ import 'shortcut_scheme.dart';
 import 'theme.dart';
 
 class AggregateApp extends StatefulWidget {
-  const AggregateApp({super.key, required this.runtime});
+  const AggregateApp({
+    super.key,
+    required this.runtime,
+    this.platformSettingsSections = const [],
+  });
 
   final RuntimePort runtime;
+  final List<Widget> platformSettingsSections;
 
   @override
   State<AggregateApp> createState() => _AggregateAppState();
@@ -106,6 +111,7 @@ class _AggregateAppState extends State<AggregateApp> {
             onPreferencesChanged: (value) => unawaited(_savePreferences(value)),
             onClearActivity: _clearActivity,
             musicSession: musicSession,
+            platformSettingsSections: widget.platformSettingsSections,
           ),
         );
       }

@@ -305,8 +305,8 @@ final class _LoopbackAddressProvider implements HostWssBindAddressProvider {
   const _LoopbackAddressProvider();
 
   @override
-  Future<List<InternetAddress>> addresses() async => [
-    InternetAddress.loopbackIPv4,
+  Future<List<HostWssBindTarget>> addresses() async => [
+    HostWssBindTarget(address: InternetAddress.loopbackIPv4, interfaceIndex: 1),
   ];
 }
 

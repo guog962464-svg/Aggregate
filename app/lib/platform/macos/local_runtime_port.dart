@@ -1,7 +1,8 @@
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
-import 'host/host_control_port.dart';
+import 'host/host_setup_coordinator.dart';
 import 'host/host_transport_port.dart';
+import 'host/mac_host_wss_transport_factory.dart';
 import 'host/mac_host_module.dart';
 import 'mac_runtime.dart';
 import 'keychain_credential_store.dart';
@@ -11,22 +12,52 @@ final class LocalRuntimePort
   LocalRuntimePort.live(
     MacRuntime runtime, {
     HostTransportPort hostTransport = const PairingRequiredHostTransport(),
-  }) : _delegate = runtime,
-       hostControl = MacHostModule(
-         runtimeBindings: MacHostRuntimeBindings(
-           runtime: runtime,
-           connectionSetup: runtime,
-           accounts: runtime,
-         ),
-         hostTransport: hostTransport,
-       );
+  }) : _delegate = runtime {
+    final setupCoordinator = HostSetupCoordinator(setup: runtime);
+    hostControl = MacHostModule(
+      runtimeBindings: MacHostRuntimeBindings(
+        runtime: runtime,
+        connectionSetup: runtime,
+        accounts: runtime,
+      ),
+      setupCoordinator: setupCoordinator,
+      hostTransport: hostTransport,
+    );
+  }
 
-  static Future<LocalRuntimePort> createLive() async => LocalRuntimePort.live(
-    await MacRuntime.open(credentialStore: const KeychainCredentialStore()),
-  );
+  static Future<LocalRuntimePort> createLive() async {
+    final runtime = await MacRuntime.open(
+      credentialStore: const KeychainCredentialStore(),
+    );
+    final setupCoordinator = HostSetupCoordinator(setup: runtime);
+    return LocalRuntimePort._withHost(
+      runtime,
+      setupCoordinator,
+      createMacHostWssTransport(
+        runtime: runtime,
+        setupCoordinator: setupCoordinator,
+      ),
+    );
+  }
+
+  LocalRuntimePort._withHost(
+    MacRuntime runtime,
+    HostSetupCoordinator setupCoordinator,
+    HostTransportPort hostTransport,
+  ) : _delegate = runtime {
+    hostControl = MacHostModule(
+      runtimeBindings: MacHostRuntimeBindings(
+        runtime: runtime,
+        connectionSetup: runtime,
+        accounts: runtime,
+      ),
+      setupCoordinator: setupCoordinator,
+      hostTransport: hostTransport,
+    );
+  }
 
   final RuntimePort _delegate;
-  final HostControlPort hostControl;
+  late final MacHostModule hostControl;
 
   ConnectionSetupPort get _setup => _delegate as ConnectionSetupPort;
 

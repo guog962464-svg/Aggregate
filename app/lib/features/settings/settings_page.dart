@@ -13,11 +13,13 @@ class SettingsPage extends StatelessWidget {
     required this.preferences,
     required this.onPreferencesChanged,
     required this.onClearActivity,
+    this.platformSections = const [],
   });
 
   final UserPreferences preferences;
   final ValueChanged<UserPreferences> onPreferencesChanged;
   final Future<void> Function() onClearActivity;
+  final List<Widget> platformSections;
 
   Future<void> clearActivity(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -137,6 +139,12 @@ class SettingsPage extends StatelessWidget {
           label: const Text('清空活动记录'),
         ),
       ),
+      for (final section in platformSections) ...[
+        const SizedBox(height: 32),
+        const Divider(),
+        const SizedBox(height: 24),
+        section,
+      ],
       const SizedBox(height: 32),
       const Divider(),
       const SizedBox(height: 24),

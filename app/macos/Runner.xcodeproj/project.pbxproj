@@ -30,6 +30,7 @@
 		A5F400000000000000000001 /* HostTlsIdentityChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F400000000000000000002 /* HostTlsIdentityChannel.swift */; };
 		A5F400000000000000000003 /* HostDeviceSignatureChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F400000000000000000004 /* HostDeviceSignatureChannel.swift */; };
 		A5F400000000000000000005 /* HostPairingStoreChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F400000000000000000006 /* HostPairingStoreChannel.swift */; };
+		A5F400000000000000000007 /* HostBonjourChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F400000000000000000008 /* HostBonjourChannel.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 /* End PBXBuildFile section */
 
@@ -77,6 +78,7 @@
 		A5F400000000000000000002 /* HostTlsIdentityChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostTlsIdentityChannel.swift; sourceTree = "<group>"; };
 		A5F400000000000000000004 /* HostDeviceSignatureChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostDeviceSignatureChannel.swift; sourceTree = "<group>"; };
 		A5F400000000000000000006 /* HostPairingStoreChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostPairingStoreChannel.swift; sourceTree = "<group>"; };
+		A5F400000000000000000008 /* HostBonjourChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostBonjourChannel.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
 		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
 		33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Flutter-Generated.xcconfig"; path = "ephemeral/Flutter-Generated.xcconfig"; sourceTree = "<group>"; };
@@ -177,6 +179,7 @@
 				A5F400000000000000000002 /* HostTlsIdentityChannel.swift */,
 				A5F400000000000000000004 /* HostDeviceSignatureChannel.swift */,
 				A5F400000000000000000006 /* HostPairingStoreChannel.swift */,
+				A5F400000000000000000008 /* HostBonjourChannel.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -383,6 +386,7 @@
 				A5F400000000000000000001 /* HostTlsIdentityChannel.swift in Sources */,
 				A5F400000000000000000003 /* HostDeviceSignatureChannel.swift in Sources */,
 				A5F400000000000000000005 /* HostPairingStoreChannel.swift in Sources */,
+				A5F400000000000000000007 /* HostBonjourChannel.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);

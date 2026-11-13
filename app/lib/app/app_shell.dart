@@ -34,12 +34,14 @@ class AppShell extends StatefulWidget {
     required this.onPreferencesChanged,
     required this.onClearActivity,
     required this.musicSession,
+    this.platformSettingsSections = const [],
   });
   final RuntimePort runtime;
   final UserPreferences preferences;
   final ValueChanged<UserPreferences> onPreferencesChanged;
   final Future<void> Function() onClearActivity;
   final MusicSession musicSession;
+  final List<Widget> platformSettingsSections;
   @override
   State<AppShell> createState() => AppShellState();
 }
@@ -376,6 +378,7 @@ class AppShellState extends State<AppShell> {
                         preferences: widget.preferences,
                         onPreferencesChanged: widget.onPreferencesChanged,
                         onClearActivity: widget.onClearActivity,
+                        platformSections: widget.platformSettingsSections,
                       ),
                     ],
                   ),

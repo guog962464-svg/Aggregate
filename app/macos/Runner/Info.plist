@@ -28,5 +28,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Aggregate 使用本地网络发布 Mac Host 服务，供已配对的 Android 设备发现和安全连接。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_aggregate-host._tcp</string>
+	</array>
 </dict>
 </plist>

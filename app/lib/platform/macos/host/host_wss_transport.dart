@@ -30,10 +30,15 @@ final class HostWssServices {
 }
 
 final class HostWssEndpoint {
-  const HostWssEndpoint({required this.address, required this.port});
+  const HostWssEndpoint({
+    required this.address,
+    required this.port,
+    required this.interfaceIndex,
+  });
 
   final InternetAddress address;
   final int port;
+  final int interfaceIndex;
 
   Uri get uri =>
       Uri(scheme: 'wss', host: address.address, port: port, path: '/host');
@@ -61,8 +66,31 @@ final class HostWssPairingInvitation {
   });
 }
 
+abstract interface class HostPairingControlPort {
+  Future<HostWssPairingInvitation> createInvitation();
+  Future<List<HostPendingPairing>> pendingRequests();
+  Future<void> rejectPending(String deviceId);
+  Future<HostDeviceGrant> approvePending(
+    String deviceId, {
+    Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
+    Map<String, Set<PermissionLevel>> connectionPermissions = const {},
+  });
+  Future<List<HostDeviceGrant>> pairedDevices();
+  Future<void> revokeDevice(String deviceId);
+}
+
+final class HostWssBindTarget {
+  const HostWssBindTarget({
+    required this.address,
+    required this.interfaceIndex,
+  });
+
+  final InternetAddress address;
+  final int interfaceIndex;
+}
+
 abstract interface class HostWssBindAddressProvider {
-  Future<List<InternetAddress>> addresses();
+  Future<List<HostWssBindTarget>> addresses();
 }
 
 /// Uses only private IPv4 addresses on physical `en*` macOS interfaces.
@@ -72,16 +100,22 @@ final class PrivateMacHostWssBindAddressProvider
   const PrivateMacHostWssBindAddressProvider();
 
   @override
-  Future<List<InternetAddress>> addresses() async {
+  Future<List<HostWssBindTarget>> addresses() async {
     final interfaces = await NetworkInterface.list(
       type: InternetAddressType.IPv4,
       includeLoopback: false,
     );
-    final found = <String, InternetAddress>{};
+    final found = <String, HostWssBindTarget>{};
     for (final interface in interfaces) {
       if (!RegExp(r'^en[0-9]+$').hasMatch(interface.name)) continue;
-      for (final address in interface.addresses) {
-        if (_isPrivateIpv4(address)) found[address.address] = address;
+      for (final interfaceAddress in interface.addresses) {
+        final address = interfaceAddress;
+        if (_isPrivateIpv4(address)) {
+          found['${interface.index}:${address.address}'] = HostWssBindTarget(
+            address: address,
+            interfaceIndex: interface.index,
+          );
+        }
       }
     }
     return List.unmodifiable(found.values.take(8));
@@ -102,7 +136,11 @@ final class PrivateMacHostWssBindAddressProvider
 }
 
 abstract interface class HostBonjourPublisher {
-  Future<void> publish({required String hostId, required int port});
+  Future<void> publish({
+    required String hostId,
+    required int port,
+    required List<int> interfaceIndices,
+  });
   Future<void> stop();
 }
 
@@ -110,7 +148,11 @@ final class NoopHostBonjourPublisher implements HostBonjourPublisher {
   const NoopHostBonjourPublisher();
 
   @override
-  Future<void> publish({required String hostId, required int port}) async {}
+  Future<void> publish({
+    required String hostId,
+    required int port,
+    required List<int> interfaceIndices,
+  }) async {}
 
   @override
   Future<void> stop() async {}
@@ -118,7 +160,8 @@ final class NoopHostBonjourPublisher implements HostBonjourPublisher {
 
 /// Pinned TLS WebSocket listener. It binds only to caller-approved interface
 /// addresses; it never listens on `anyIPv4` or a public address.
-final class HostWssTransport implements HostTransportPort {
+final class HostWssTransport
+    implements HostTransportPort, HostPairingControlPort {
   HostWssTransport({
     required this.loadServices,
     required this.bindAddressProvider,
@@ -168,6 +211,7 @@ final class HostWssTransport implements HostTransportPort {
   bool get isRunning => _accepting;
   List<HostWssEndpoint> get endpoints => List.unmodifiable(_endpoints);
 
+  @override
   Future<HostWssPairingInvitation> createInvitation() async {
     final services = _services;
     if (!_accepting || services == null || _endpoints.isEmpty) {
@@ -181,9 +225,15 @@ final class HostWssTransport implements HostTransportPort {
     );
   }
 
+  @override
   Future<List<HostPendingPairing>> pendingRequests() async =>
       _requireServices().pairing.pendingRequests();
 
+  @override
+  Future<void> rejectPending(String deviceId) =>
+      _requireServices().pairing.rejectPending(deviceId);
+
+  @override
   Future<HostDeviceGrant> approvePending(
     String deviceId, {
     Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
@@ -194,9 +244,11 @@ final class HostWssTransport implements HostTransportPort {
     connectionPermissions: connectionPermissions,
   );
 
+  @override
   Future<List<HostDeviceGrant>> pairedDevices() async =>
       _requireServices().pairing.pairedDevices();
 
+  @override
   Future<void> revokeDevice(String deviceId) async =>
       _requireServices().pairing.revokeDevice(deviceId);
 
@@ -214,20 +266,21 @@ final class HostWssTransport implements HostTransportPort {
     if (_accepting) return;
     final services = await loadServices();
     await services.pairing.initialize();
-    final addresses = await _validatedAddresses(
+    final targets = await _validatedAddresses(
       await bindAddressProvider.addresses(),
     );
-    if (addresses.isEmpty) {
+    if (targets.isEmpty) {
       throw const HostControlException(HostControlErrorCode.transportFailure);
     }
 
     final boundServers = <HttpServer>[];
+    final boundEndpoints = <HostWssEndpoint>[];
     try {
       final context = services.identity.createServerContext();
       var port = requestedPort;
-      for (final address in addresses) {
+      for (final target in targets) {
         final server = await HttpServer.bindSecure(
-          address,
+          target.address,
           port,
           context,
           backlog: 32,
@@ -235,14 +288,18 @@ final class HostWssTransport implements HostTransportPort {
         );
         if (port == 0) port = server.port;
         boundServers.add(server);
+        boundEndpoints.add(
+          HostWssEndpoint(
+            address: server.address,
+            port: server.port,
+            interfaceIndex: target.interfaceIndex,
+          ),
+        );
       }
 
       _services = services;
       _servers.addAll(boundServers);
-      _endpoints = List.unmodifiable([
-        for (final server in boundServers)
-          HostWssEndpoint(address: server.address, port: server.port),
-      ]);
+      _endpoints = List.unmodifiable(boundEndpoints);
       _revocationSubscription = services.pairing.watchRevocations().listen(
         _disconnectDevice,
       );
@@ -253,17 +310,27 @@ final class HostWssTransport implements HostTransportPort {
       await bonjourPublisher.publish(
         hostId: services.identity.hostId,
         port: servicePort,
+        interfaceIndices: boundEndpoints
+            .map((endpoint) => endpoint.interfaceIndex)
+            .toSet()
+            .toList(growable: false),
       );
       _accepting = true;
     } catch (_) {
-      await _revocationSubscription?.cancel();
+      try {
+        await _revocationSubscription?.cancel();
+      } catch (_) {}
       _revocationSubscription = null;
       _services = null;
       _endpoints = const [];
       _servers.clear();
-      await bonjourPublisher.stop();
+      try {
+        await bonjourPublisher.stop();
+      } catch (_) {}
       for (final server in boundServers) {
-        await server.close(force: true);
+        try {
+          await server.close(force: true);
+        } catch (_) {}
       }
       throw const HostControlException(HostControlErrorCode.transportFailure);
     }
@@ -294,15 +361,31 @@ final class HostWssTransport implements HostTransportPort {
     _connectionsByAddress.clear();
     _connectionsByDevice.clear();
     _pendingUpgradesByAddress.clear();
-    await _revocationSubscription?.cancel();
+    var shutdownFailed = false;
+    try {
+      await _revocationSubscription?.cancel();
+    } catch (_) {
+      shutdownFailed = true;
+    }
     _revocationSubscription = null;
-    await bonjourPublisher.stop();
+    try {
+      await bonjourPublisher.stop();
+    } catch (_) {
+      shutdownFailed = true;
+    }
     for (final server in _servers) {
-      await server.close(force: true);
+      try {
+        await server.close(force: true);
+      } catch (_) {
+        shutdownFailed = true;
+      }
     }
     _servers.clear();
     _endpoints = const [];
     _services = null;
+    if (shutdownFailed) {
+      throw const HostControlException(HostControlErrorCode.transportFailure);
+    }
   }
 
   HostWssServices _requireServices() {
@@ -315,16 +398,20 @@ final class HostWssTransport implements HostTransportPort {
     return services;
   }
 
-  Future<List<InternetAddress>> _validatedAddresses(
-    List<InternetAddress> candidates,
+  Future<List<HostWssBindTarget>> _validatedAddresses(
+    List<HostWssBindTarget> candidates,
   ) async {
-    final result = <String, InternetAddress>{};
-    for (final address in candidates) {
+    final result = <String, HostWssBindTarget>{};
+    for (final candidate in candidates) {
+      final address = candidate.address;
       if (address.type != InternetAddressType.IPv4 ||
           (!address.isLoopback && !_isPrivateIpv4(address))) {
         throw const HostControlException(HostControlErrorCode.transportFailure);
       }
-      result[address.address] = address;
+      if (candidate.interfaceIndex < 1) {
+        throw const HostControlException(HostControlErrorCode.transportFailure);
+      }
+      result['${candidate.interfaceIndex}:${address.address}'] = candidate;
       if (result.length > 8) {
         throw const HostControlException(HostControlErrorCode.transportFailure);
       }

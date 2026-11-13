@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
 
 import 'app/aggregate_app.dart';
+import 'features/settings/mac_host_settings_panel.dart';
+import 'platform/macos/local_runtime_port.dart';
 import 'platform/runtime_factory.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final runtime = await createRuntimePort();
-  runApp(AggregateApp(runtime: runtime));
+  final settingsSections = switch (runtime) {
+    LocalRuntimePort(:final hostControl) => [
+      MacHostSettingsPanel(
+        hostControl: hostControl,
+        pairingControl: hostControl,
+      ),
+    ],
+    _ => const <Widget>[],
+  };
+  runApp(
+    AggregateApp(runtime: runtime, platformSettingsSections: settingsSections),
+  );
 }
