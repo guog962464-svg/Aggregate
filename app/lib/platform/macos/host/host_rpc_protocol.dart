@@ -79,9 +79,11 @@ final class HostRpcMethodDefinition {
   final String name;
   final List<HostRpcParameter> parameters;
 
-  bool get requiresOperationId => parameters.any(
-    (parameter) => parameter.name == 'operationId' && parameter.required,
-  );
+  bool get requiresOperationId =>
+      name != 'operation.read' &&
+      parameters.any(
+        (parameter) => parameter.name == 'operationId' && parameter.required,
+      );
 }
 
 const _str = HostRpcValueKind.string;
@@ -120,6 +122,7 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
       HostRpcParameter('protocolVersion', _int),
     ]),
     const HostRpcMethodDefinition('host.status', []),
+    const HostRpcMethodDefinition('operation.read', [_op]),
     const HostRpcMethodDefinition('connection.list', []),
     const HostRpcMethodDefinition('connection.refresh', [_op, _connectionId]),
     const HostRpcMethodDefinition('connection.remove', [_op, _connectionId]),

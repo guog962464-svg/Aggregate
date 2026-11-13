@@ -239,6 +239,32 @@ final class FileHostOperationLedger {
     return _records[_recordKey(deviceId, operationId)];
   }
 
+  Future<HostOperationRecord> markOutcomeUnknown({
+    required String deviceId,
+    required String operationId,
+  }) => _serialize(() async {
+    _validateIdentifier(deviceId);
+    _validateIdentifier(operationId);
+    final key = _recordKey(deviceId, operationId);
+    final previous = _records[key];
+    if (previous == null) {
+      throw const HostOperationLedgerException(
+        HostRpcErrorCode.operationNotFound,
+      );
+    }
+    if (previous.state != HostOperationState.started) return previous;
+
+    final unknown = previous.withState(HostOperationState.outcomeUnknown);
+    _records[key] = unknown;
+    try {
+      await _persist();
+    } catch (_) {
+      _records[key] = previous;
+      throw const HostOperationLedgerException(HostRpcErrorCode.internalError);
+    }
+    return unknown;
+  });
+
   Future<void> _persist() async {
     final json = {
       'schemaVersion': 1,

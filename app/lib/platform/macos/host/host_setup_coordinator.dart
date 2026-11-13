@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
@@ -587,7 +586,7 @@ final class HostSetupCoordinator {
 
   String _newReference() {
     final bytes = List<int>.generate(24, (_) => _random.nextInt(256));
-    return base64UrlEncode(bytes).replaceAll('=', '');
+    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 
   static String _key(String deviceId, String reference) =>

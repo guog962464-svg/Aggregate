@@ -54,7 +54,7 @@ void main() {
         );
 
         expect(result, isNotNull);
-        expect(result!.executableRef, matches(RegExp(r'^[A-Za-z0-9_-]{32}$')));
+        expect(result!.executableRef, matches(RegExp(r'^[a-f0-9]{48}$')));
         expect(result.displayLocation, 'Mac 主机 · ncm-cli');
         expect(
           result.toJson().toString(),

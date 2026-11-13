@@ -77,7 +77,16 @@ void main() {
         },
         'arguments': {'query': 'hello'},
       });
-      expect(hostRpcMethodCatalog.keys, hasLength(33));
+      expect(hostRpcMethodCatalog.keys, hasLength(34));
+      expect(
+        hostRpcMethodCatalog['operation.read']!.requiresOperationId,
+        isFalse,
+      );
+      final statusRequest = HostRpcCodec.decodeRequest(
+        '{"jsonrpc":"2.0","id":"req-2","method":"operation.read","params":{"operationId":"op-1"}}',
+      );
+      expect(statusRequest.operationId, 'op-1');
+      expect(statusRequest.operationPayload['params'], isEmpty);
       expect(
         () => hostRpcMethodCatalog['arbitrary.shell'] =
             const HostRpcMethodDefinition('arbitrary.shell', []),
