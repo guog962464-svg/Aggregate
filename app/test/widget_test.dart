@@ -213,7 +213,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('深色'));
+    await tester.tap(find.bySemanticsLabel('深色主题'));
     await tester.pumpAndSettle();
     expect(
       (await runtime.loadPreferences()).appearance,
