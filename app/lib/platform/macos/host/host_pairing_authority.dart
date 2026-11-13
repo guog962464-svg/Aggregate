@@ -786,17 +786,89 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
     if (method == 'operation.read' || method.startsWith('setup.')) {
       return grant.scopes.contains(HostGrantScope.connectionSetup);
     }
+    if (method == 'capability.search' || method == 'run.listRecent') {
+      return grant.scopes.contains(HostGrantScope.readConnections);
+    }
+    if (method == 'runtime.connection.read') {
+      final connectionId = params['connectionId'];
+      if (!grant.scopes.contains(HostGrantScope.readConnections) ||
+          connectionId is! String) {
+        return false;
+      }
+      final permissions = grant.connectionPermissions[connectionId];
+      return permissions == null
+          ? grant.connectionPermissions.isEmpty
+          : permissions.contains(PermissionLevel.read);
+    }
+    if (method == 'runtime.connection.invoke') {
+      final connectionId = params['connectionId'];
+      final permissionName = params['permissionLevel'];
+      if (!grant.scopes.contains(HostGrantScope.readConnections) ||
+          connectionId is! String ||
+          permissionName is! String) {
+        return false;
+      }
+      final permission = PermissionLevel.values.where(
+        (value) => value.name == permissionName,
+      );
+      if (permission.length != 1 ||
+          permission.single == PermissionLevel.unknown) {
+        return false;
+      }
+      if (permission.single == PermissionLevel.read) {
+        final permissions = grant.connectionPermissions[connectionId];
+        return permissions == null
+            ? grant.connectionPermissions.isEmpty
+            : permissions.contains(PermissionLevel.read);
+      }
+      return grant.permitsInvocation(connectionId, permission.single);
+    }
+    if (method == 'run.invoke' ||
+        method == 'run.subscribe' ||
+        method == 'run.cancel' ||
+        method == 'resource.read' ||
+        method == 'prompt.get') {
+      if (!grant.scopes.contains(HostGrantScope.readConnections)) return false;
+      final connectionId = _connectionIdForRuntimeRequest(params);
+      if (connectionId == null) {
+        // run.subscribe/cancel are checked again by the dispatcher after it
+        // resolves the device-owned RunId to its connection and permission.
+        return method == 'run.subscribe' || method == 'run.cancel';
+      }
+      final permissionName = params['permissionLevel'];
+      if (permissionName == null) {
+        // The transport sees only the wire payload. The dispatcher performs
+        // the decisive check after resolving the capability's declared level.
+        return method != 'run.invoke';
+      }
+      final permission = PermissionLevel.values.where(
+        (value) => value.name == permissionName,
+      );
+      if (permission.length != 1 ||
+          permission.single == PermissionLevel.unknown) {
+        return false;
+      }
+      if (permission.single == PermissionLevel.read) {
+        final connectionGrant = grant.connectionPermissions[connectionId];
+        return connectionGrant == null
+            ? true
+            : connectionGrant.contains(PermissionLevel.read);
+      }
+      return grant.permitsInvocation(connectionId, permission.single);
+    }
     if (method == 'connection.list') {
       return grant.scopes.contains(HostGrantScope.readConnections);
     }
     if (method == 'connection.refresh') {
       final connectionId = params['connectionId'];
-      return grant.scopes.contains(HostGrantScope.readConnections) &&
-          connectionId is String &&
-          grant.connectionPermissions[connectionId]?.contains(
-                PermissionLevel.read,
-              ) ==
-              true;
+      if (!grant.scopes.contains(HostGrantScope.readConnections) ||
+          connectionId is! String) {
+        return false;
+      }
+      final permissions = grant.connectionPermissions[connectionId];
+      return permissions == null
+          ? grant.connectionPermissions.isEmpty
+          : permissions.contains(PermissionLevel.read);
     }
     if (method == 'connection.remove' || method == 'connection.move') {
       final connectionId = params['connectionId'];
@@ -804,8 +876,45 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
           connectionId is String &&
           grant.connectionPermissions.containsKey(connectionId);
     }
+    if (method == 'activity.clear') {
+      return grant.scopes.contains(HostGrantScope.activityClear);
+    }
+    if (method == 'manifest.get') {
+      return grant.scopes.contains(HostGrantScope.readConnections);
+    }
+    if (method == 'manifest.save') {
+      return grant.scopes.contains(HostGrantScope.connectionManagement);
+    }
+    if (method == 'manifest.readContent' ||
+        method == 'manifest.exportContent') {
+      return grant.scopes.contains(HostGrantScope.contentTransfer);
+    }
+    if (method.startsWith('account.')) {
+      return grant.scopes.contains(HostGrantScope.account);
+    }
+    if (method.startsWith('terminal.')) {
+      return grant.scopes.contains(HostGrantScope.terminal);
+    }
     return false;
   });
+
+  String? _connectionIdForRuntimeRequest(JsonMap params) {
+    final direct = params['connectionId'];
+    if (direct is String) return direct;
+    final capability = params['capability'];
+    if (capability is Map && capability['connection'] is Map) {
+      final value = (capability['connection'] as Map)['value'];
+      if (value is String) return value;
+    }
+    final ref = params['ref'];
+    if (ref is Map && ref['capability'] is Map) {
+      final nested = (ref['capability'] as Map)['connection'];
+      if (nested is Map && nested['value'] is String) {
+        return nested['value'] as String;
+      }
+    }
+    return null;
+  }
 
   Future<void> _ensureLoaded() => _loadOperation ??= _loadRecords();
 

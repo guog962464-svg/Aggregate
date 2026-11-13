@@ -103,6 +103,35 @@ void main() {
     },
   );
 
+  test('terminal output stream closes when its CLI process exits', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'aggregate-terminal-stream-',
+    );
+    final runtime = await MacRuntime.open(dataDirectory: directory);
+    try {
+      final connection = await runtime.addConnection(
+        const ConnectionSpec(
+          kind: ConnectionKind.cli,
+          label: 'Terminal fixture',
+          executable: '/usr/bin/printf',
+        ),
+      );
+      final terminal = await runtime.openTerminal(
+        CliCommand(connection.id, const ['terminal-output']),
+      );
+      final output = await runtime
+          .watchTerminal(terminal)
+          .toList()
+          .timeout(const Duration(seconds: 5));
+      expect(output.join(), contains('terminal-output'));
+      expect(output.join(), contains('进程退出'));
+      await runtime.closeTerminal(terminal);
+    } finally {
+      await runtime.dispose();
+      await directory.delete(recursive: true);
+    }
+  });
+
   test(
     'stores HTTP token outside config and removes it with connection',
     () async {

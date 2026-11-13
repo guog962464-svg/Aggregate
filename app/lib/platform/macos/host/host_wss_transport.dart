@@ -350,9 +350,16 @@ final class HostWssTransport
       try {
         await entry.key.close(WebSocketStatus.goingAway, 'Host stopped');
       } catch (_) {}
-      final sessionId = entry.value.session?.sessionId;
+      final sessionId = entry.value.authenticatedSessionId;
       if (sessionId != null) {
         await _services?.pairing.closeSession(sessionId);
+        final deviceId = entry.value.deviceId;
+        if (deviceId != null) {
+          await _services?.dispatcher.closeSession(
+            authenticatedDeviceId: deviceId,
+            sessionId: sessionId,
+          );
+        }
       }
     }
     _connections.clear();
@@ -505,8 +512,15 @@ final class HostWssTransport
             _decrement(_connectionsByDevice, context.deviceId!);
           }
           final sessionId = context.session?.sessionId;
+          final authenticatedSessionId = context.authenticatedSessionId;
           if (sessionId != null) {
             await _services?.pairing.closeSession(sessionId);
+          }
+          if (authenticatedSessionId != null && context.deviceId != null) {
+            await _services?.dispatcher.closeSession(
+              authenticatedDeviceId: context.deviceId!,
+              sessionId: authenticatedSessionId,
+            );
           }
         }
       }
@@ -565,7 +579,9 @@ final class HostWssTransport
         return;
       }
       final session = await _completeAuthentication(proof, challenge);
-      context.session = session;
+      context
+        ..session = session
+        ..authenticatedSessionId = session.sessionId;
       _sendSuccess(context.socket, proof.id, {
         'deviceId': session.deviceId,
         'sessionId': session.sessionId,
@@ -733,6 +749,19 @@ final class HostWssTransport
       final response = await _services!.dispatcher.dispatch(
         authenticated.payload,
         authenticatedDeviceId: authenticated.deviceId,
+        sessionId: context.authenticatedSessionId,
+        notify: (notification) {
+          try {
+            context.socket.add(HostRpcCodec.encodeFrame(notification));
+          } catch (_) {
+            unawaited(
+              context.socket.close(
+                WebSocketStatus.messageTooBig,
+                'Host event too large',
+              ),
+            );
+          }
+        },
       );
       context.socket.add(
         response ??
@@ -809,6 +838,7 @@ final class HostWssTransport
   }
 
   void _disconnectDevice(String deviceId) {
+    unawaited(_services?.dispatcher.revokeDevice(deviceId));
     for (final entry in _connections.entries.toList()) {
       if (entry.value.deviceId != deviceId) continue;
       entry.value.session = null;
@@ -861,4 +891,5 @@ final class _HostWssConnection {
   String? deviceId;
   bool deviceSlotReserved = false;
   HostAuthenticatedSession? session;
+  String? authenticatedSessionId;
 }

@@ -154,6 +154,58 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        await authority.isAuthorized(
+          deviceId: deviceId,
+          method: 'runtime.connection.invoke',
+          params: const {
+            'connectionId': 'connection-a',
+            'permissionLevel': 'read',
+          },
+        ),
+        isTrue,
+      );
+      expect(
+        await authority.isAuthorized(
+          deviceId: deviceId,
+          method: 'runtime.connection.invoke',
+          params: const {
+            'connectionId': 'connection-a',
+            'permissionLevel': 'externalWrite',
+          },
+        ),
+        isFalse,
+      );
+      expect(
+        await authority.isAuthorized(
+          deviceId: deviceId,
+          method: 'run.invoke',
+          params: const {
+            'capability': {
+              'connection': {'value': 'connection-a'},
+              'kind': 'mcpTool',
+              'name': 'host-ref',
+            },
+            'permissionLevel': 'read',
+          },
+        ),
+        isTrue,
+      );
+      expect(
+        await authority.isAuthorized(
+          deviceId: deviceId,
+          method: 'run.invoke',
+          params: const {
+            'capability': {
+              'connection': {'value': 'connection-a'},
+              'kind': 'mcpTool',
+              'name': 'host-ref',
+            },
+            'permissionLevel': 'externalWrite',
+          },
+        ),
+        isFalse,
+      );
     },
   );
 

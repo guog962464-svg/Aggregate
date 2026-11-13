@@ -29,7 +29,16 @@ abstract interface class HostRpcDispatcherPort {
   Future<String?> dispatch(
     String frame, {
     required String authenticatedDeviceId,
+    String? sessionId,
+    void Function(JsonMap notification)? notify,
   });
+
+  Future<void> closeSession({
+    required String authenticatedDeviceId,
+    required String sessionId,
+  });
+
+  Future<void> revokeDevice(String deviceId);
 }
 
 /// Dispatches the setup RPC subset. The caller must pass a device ID obtained
@@ -50,6 +59,8 @@ final class HostSetupRpcDispatcher implements HostRpcDispatcherPort {
   Future<String?> dispatch(
     String frame, {
     required String authenticatedDeviceId,
+    String? sessionId,
+    void Function(JsonMap notification)? notify,
   }) async {
     HostRpcRequest request;
     try {
@@ -92,6 +103,15 @@ final class HostSetupRpcDispatcher implements HostRpcDispatcherPort {
       );
     }
   }
+
+  @override
+  Future<void> closeSession({
+    required String authenticatedDeviceId,
+    required String sessionId,
+  }) async {}
+
+  @override
+  Future<void> revokeDevice(String deviceId) async {}
 
   Future<Object?> _dispatchAuthorized(
     HostRpcRequest request,

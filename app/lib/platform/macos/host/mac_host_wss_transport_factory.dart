@@ -5,6 +5,7 @@ import 'host_operation_ledger.dart';
 import 'host_pairing_authority.dart';
 import 'host_setup_coordinator.dart';
 import 'host_setup_rpc_dispatcher.dart';
+import 'host_runtime_rpc_dispatcher.dart';
 import 'host_tls_identity.dart';
 import 'host_transport_port.dart';
 import 'host_wss_transport.dart';
@@ -44,11 +45,18 @@ HostTransportPort createMacHostWssTransport({
       final ledger = await FileHostOperationLedger.open(
         File('${hostDirectory.path}/operations.json'),
       );
+      final setupDispatcher = HostSetupRpcDispatcher(
+        setup: setupCoordinator,
+        ledger: ledger,
+        authorization: pairing,
+      );
       return HostWssServices(
         identity: identity,
         pairing: pairing,
-        dispatcher: HostSetupRpcDispatcher(
-          setup: setupCoordinator,
+        dispatcher: HostRuntimeRpcDispatcher(
+          runtime: runtime,
+          accounts: runtime,
+          setupDispatcher: setupDispatcher,
           ledger: ledger,
           authorization: pairing,
         ),

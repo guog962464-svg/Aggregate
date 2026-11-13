@@ -2004,6 +2004,7 @@ final class MacRuntime
       session.done.then((exit) {
         if (!terminal.output.isClosed) {
           terminal.output.add('\r\n[进程退出：$exit]\r\n');
+          unawaited(terminal.output.close());
         }
       }),
     );
@@ -2017,7 +2018,11 @@ final class MacRuntime
   Stream<String> watchTerminal(TerminalSession session) {
     final terminal = _terminal(session);
     return Stream.multi((controller) {
-      final sub = terminal.output.stream.listen(controller.add);
+      final sub = terminal.output.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
       controller.add(terminal.buffer.toString());
       controller.onCancel = sub.cancel;
     });
@@ -2062,7 +2067,7 @@ final class MacRuntime
     }
     await terminal.session.close();
     await terminal.subscription?.cancel();
-    await terminal.output.close();
+    if (!terminal.output.isClosed) await terminal.output.close();
   }
 
   Future<void> dispose() async {

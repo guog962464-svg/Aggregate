@@ -213,6 +213,7 @@ void main() {
             'kind': 'mcpTool',
             'name': 'search',
           },
+          'permissionLevel': 'externalWrite',
           'arguments': {},
         },
       });

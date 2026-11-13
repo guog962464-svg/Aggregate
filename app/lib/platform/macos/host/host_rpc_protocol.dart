@@ -172,6 +172,7 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
     const HostRpcMethodDefinition('run.invoke', [
       _op,
       HostRpcParameter('capability', _capabilityId),
+      HostRpcParameter('permissionLevel', _str, maxLength: 32),
       HostRpcParameter('arguments', _obj),
     ]),
     const HostRpcMethodDefinition('run.subscribe', [

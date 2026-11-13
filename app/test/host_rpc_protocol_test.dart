@@ -61,6 +61,7 @@ void main() {
               'kind': 'mcpTool',
               'name': 'search',
             },
+            'permissionLevel': 'read',
             'arguments': {'query': 'hello'},
           },
         }),
@@ -75,6 +76,7 @@ void main() {
           'kind': 'mcpTool',
           'name': 'search',
         },
+        'permissionLevel': 'read',
         'arguments': {'query': 'hello'},
       });
       expect(hostRpcMethodCatalog.keys, hasLength(37));
