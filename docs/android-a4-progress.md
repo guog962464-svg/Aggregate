@@ -25,7 +25,29 @@
 
 - npm registry 当前 latest 仍为 0.1.7，要求 Node >=18，bin 为 `dist/index.js`；直接包 1,299,976 字节、解包 3,164,804 字节，仅 4 个文件，未捆绑依赖。运行依赖包括 `@clack/prompts`、`commander`、`fluent-ffmpeg`、`ffprobe-static`、`qrcode-terminal` 等。
 - npm README 将本地播放的 mpv 列为系统要求；`fluent-ffmpeg` 2.1.3 的 `lib/processor.js` 调用 `child_process.spawn`。`ffprobe-static` 3.1.0 的 tarball 为 121,756,431 字节、解包 351,499,535 字节；其 `index.js` 只接受 darwin/linux/win32 并按平台/架构拼接二进制路径，tarball 仅含 macOS arm64/x64、Linux ia32/x64、Windows ia32/x64 二进制，没有 Android 或 Linux arm64 目录。由包清单推断，当前依赖链不能直接构成手机本地播放器；Android 上 `os.platform()` 的实际值和安装/调用失败阶段仍须在真机确认。
-- 这是一项包清单/README/依赖源码静态审查，未运行 `ncm-cli`、未安装依赖、未执行 npm 生命周期脚本，也没有验证登录、搜索、播放或出声。A4.6 仍未通过。
+- 上述内容最初是包清单/README/依赖源码静态审查；随后已增加下方独立 Debug 真机样本。静态结果本身不代表登录、搜索、播放或出声通过。
+- 2026-11-13 重新核对 npm registry 并下载 `@music163/ncm-cli@0.1.7` 发布 tarball：SHA-512 与 registry integrity `sha512-2J1FKl8BxdNDjC9aAJ8WiTypWsfhyKUcS7UErYbNDNOhqD7eXCyGSOfUeMZYWhHy+CcxNllNFDhdFLqq5zS3tw==` 一致；解包仍为 4 个文件，tarball 约 1.3 MB、解包约 3.2 MB，入口 `dist/index.js` 约 1.99 MB、TUI bundle 约 1.17 MB，两个 JS 文件 `node --check` 通过。package 声明 Node >=18、14 个直接运行依赖、没有 `preinstall`/`install`/`postinstall` 生命周期脚本；依赖版本使用范围而非 lockfile，设备样本需固定解析后的 lockfile 并禁用安装脚本。
+- 同日 registry 元数据确认 `ffprobe-static@3.1.0` 为 11 个文件、解包 351,499,535 字节，integrity 为 `sha512-Dvpa9uhVMOYivhHKWLGDoa512J751qN1WZAIO+Xw4L/mrUSPxS4DApzSUDbCFE/LUq2+xYnznEahTd63AqBSpA==`。测试安装会涉及约 122 MB 压缩包及约 351 MB 解包内容；连接真机后先检查应用私有存储余量，再运行固定 npm 安装样本。
+- 来源：[npm 上的 `@music163/ncm-cli@0.1.7`](https://www.npmjs.com/package/@music163/ncm-cli/v/0.1.7)、[npm 上的 `ffprobe-static@3.1.0`](https://www.npmjs.com/package/ffprobe-static/v/3.1.0)。
+
+## A4.6 `ncm-cli` Debug 真机样本（2026-11-13）
+
+- 设备：LGE AN10 / Android 15 / API 35 / arm64-v8a / 4096-byte pages；Debug 独立 `nodeprobe`，内嵌 Node v24.22.1（`process.versions.mobile=24.22.1-0`），npm 12.2.2。未启动模拟器。
+- 真实发布包 `@music163/ncm-cli@0.1.7` 的 registry SHA-512 与元数据相同。测试使用 lockfile v3（75 个包记录，SHA-256 `64b01d9e8f90ea92086d4e8950e891a630b85922528b50224d5c2522e2296f7a`）、`npm ci --ignore-scripts` 和应用私有缓存；首次安装在真机完成，74 个依赖包写入私有目录，node_modules 约 385 MB，npm cache 约 128 MB。固定包完整性、已安装版本和 CLI 文件存在均由设备内摘要/清单确认。后续重复 `npm ci` 的一轮虽写完包文件，但 npm 日志停在 `silly ADD`、Node 未发终态事件；因此重复安装/Node 退出的稳定性不算通过。该样本不执行 npm 生命周期脚本，也不验证 Play 分发资格。
+- 固定 CLI 动作均通过 Binder/Messenger 返回终态；结果如下：
+
+| 操作 | 真机观察 | 结论 |
+| --- | --- | --- |
+| `ncm-cli --version` | stdout 为 `0.1.7`，退出码 0；平台为 `android` | 入口能运行和返回结果 |
+| `ncm-cli --help` | 帮助文本有输出，但同时报告 API key 未设置和 `Unsupported platform`，退出码 1 | 初始化阶段已有配置/平台阻断 |
+| `ncm-cli configure` | 提示配置向导需要交互式 TTY；本桥接 `stdin/stdout` 均非 TTY；另报告 `Unsupported platform` | 不能在当前 Node Service 直接走交互式配置 |
+| `ncm-cli login --help` | 帮助文本有输出，因 API key/平台检查退出码 1 | 只验证帮助，不执行登录；未输入或记录用户凭证 |
+| README 示例 `search song --keyword 林俊杰` | `unknown command 'search'`，退出码 1 | README 命令和发布包实际注册命令不一致，未发生搜索请求 |
+| `ncm-cli tui` | 报告 mpv 未安装，退出码 1 | TUI/本机播放器无法启动 |
+
+- 依赖定位：Android 下 CLI 输出 `Unsupported platform`；结合 `ffprobe-static@3.1.0` 的平台白名单（不含 Android/arm64）判断，它是当前音频依赖链的确定性兼容阻断。`fluent-ffmpeg` 仍需调用 `child_process.spawn`，而前述 A4.5 已发现 Node Service 不能可靠启动应用私有 Node 子进程；此项是依赖边界证据，不是本轮单独调用 ffmpeg 的结果。TUI 明确因缺少 mpv 退出。由于平台检查、API key 和播放器三项前置条件未满足，本轮不执行实际登录、播放控制、音频请求或出声测试，也不保存任何账号/App 密钥。
+- **阶段结论：A4.6 部分真机验收完成，整体未通过。** 单台 4 KB arm64 真机证明 npm 安装后可以启动并调用此包的版本/帮助入口；当前包无法在 Android 上完成可用的配置、搜索和本地播放链路。真实登录、搜索、播放控制、声音仍未验收；不应把此 npm 包列为 Android 本地能力。A4.7 需依据该边界形成 T1/T2/T3 的本地/Host/不支持决策。A3.6 的稳定维护库与真实 16 KB 设备门槛仍未完成。
+- 复现入口：`app/android/nodeprobe/prepare_a4_ncm.sh`、`app/android/nodeprobe/verify_a4_ncm.py`。从 `app/android/` 运行 `./gradlew :nodeprobe:assembleDebug --offline`，再运行 `nodeprobe/prepare_a4_ncm.sh` 和 `python3 nodeprobe/verify_a4_ncm.py`。验证器只对固定 action 开放运行；成功后卸载独立 Debug 探针。应用不使用或归档用户登录凭证。
 
 ## A4.4 分发与安全规则（2026-11-12 查阅）
 
@@ -59,4 +81,4 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 ## 下一步
 
 1. A4.3 的 profile 契约和隔离 Debug 生命周期验收已通过；结果与限制记录在 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md)。产品连接器仍不开放此探针。
-2. A4.4 受限 Debug npm 实验与 A4.5 固定 API 边界样本已完成；继续 A4.6 真机检查 `@music163/ncm-cli`，再由 A4.7 形成“本地 / Host / 不支持”与发布能力决策。A4.4/A4.5 的失败、设备范围和文档差异不得反向打开用户可见适配器；A3.6 的 16 KB 真机和稳定发布库门槛仍未完成。
+2. A4.4 受限 Debug npm 实验、A4.5 固定 API 边界样本已完成；A4.6 已在 LGE AN10 Android 15/API 35、arm64、4 KB 页运行固定包和 CLI 样本，但配置 TTY、Android 平台依赖、README 搜索命令差异和 mpv 阻断了业务链路，真实账号/搜索/播放/声音未验证。A4.7 的本地/Host/不支持决策已记录于 [ADR 0003](decisions/0003-android-local-execution.md)。A4.4/A4.5/A4.6 的失败、设备范围和文档差异不得反向打开用户可见适配器。后续产品门槛为 A3.6 维护版运行时与真实 16 KB 页设备，以及 A5/A6 Host 交付。

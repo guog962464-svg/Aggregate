@@ -26,6 +26,7 @@ public final class ProbeActivity extends Activity {
     private boolean cancelSent;
     private boolean npmRequestSent;
     private boolean boundaryRequestSent;
+    private boolean ncmRequestSent;
     private final Messenger incoming = new Messenger(new Handler(Looper.getMainLooper(), this::handle));
     private boolean bound;
     private final ServiceConnection connection = new ServiceConnection() {
@@ -40,6 +41,10 @@ public final class ProbeActivity extends Activity {
             if ("a4-boundary".equals(probe)) {
                 if (boundaryRequestSent) return;
                 boundaryRequestSent = true;
+            }
+            if ("a4-ncm".equals(probe)) {
+                if (ncmRequestSent) return;
+                ncmRequestSent = true;
             }
             nodeService = new Messenger(binder);
             try {
@@ -83,7 +88,8 @@ public final class ProbeActivity extends Activity {
         request.arg1 = requestId;
         request.replyTo = incoming;
         if ("a4-json5".equals(probe) || "a4-json5-cli".equals(probe)
-                || "a4-npm".equals(probe) || "a4-boundary".equals(probe)) {
+                || "a4-npm".equals(probe) || "a4-boundary".equals(probe)
+                || "a4-ncm".equals(probe)) {
             Bundle arguments = new Bundle();
             arguments.putString("entrypoint", probe);
             if ("a4-json5-cli".equals(probe)) {
@@ -94,6 +100,11 @@ public final class ProbeActivity extends Activity {
                 arguments.putBoolean("autoClose", true);
             } else if ("a4-boundary".equals(probe)) {
                 arguments.putString("boundaryAction", getIntent().getStringExtra("boundaryAction"));
+                arguments.putBoolean("autoClose", true);
+            } else if ("a4-ncm".equals(probe)) {
+                arguments.putString("ncmAction", getIntent().getStringExtra("ncmAction"));
+                arguments.putString("ncmPlayArgumentsJson",
+                        getIntent().getStringExtra("ncmPlayArgumentsJson"));
                 arguments.putBoolean("autoClose", true);
             }
             request.setData(arguments);

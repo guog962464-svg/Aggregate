@@ -10,3 +10,6 @@
 /src/main/assets/a4-npm-manifest.json
 /src/main/assets/a4-npm-install-script.tgz
 /src/main/assets/a4-boundary-native-addon.node
+/src/main/assets/a4-ncm-package.json
+/src/main/assets/a4-ncm-package-lock.json
+/src/main/assets/a4-ncm-manifest.json
