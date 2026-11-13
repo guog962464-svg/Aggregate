@@ -111,7 +111,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 | 子阶段 | 交付 | 关闭条件 |
 | --- | --- | --- |
 | A5.1 | `HostControlPort`、复用 MacRuntime 的 `MacHostModule`、显式 start/stop 生命周期；默认关闭。生产 listener 在 A5.4 配对认证完成前保持禁用。 | 不能创建第二个 MacRuntime；服务停止不破坏本机连接；启动/停止序列化，启动失败会回滚。 |
-| A5.2 | JSON-RPC v1 的 DTO/方法目录、错误、事件游标、operationId 和协议兼容规则。 | 协议测试覆盖拒绝未知方法/版本、无效 schema、重复写操作、断线结果未知。 |
+| A5.2 | JSON-RPC v1 的 DTO/方法目录、错误、事件游标、operationId、规范化哈希和协议兼容规则。 | 协议测试覆盖拒绝未知方法/版本、重复字段与无效 schema、请求/响应帧限制、重复写操作冲突和进程重启后的结果未知。 |
 | A5.3 | Host adapter allowlist、executableRef、设备绑定 draftHandle、凭证传输与 Mac 端授权。 | 不接受任意路径/命令；秘密不落日志、Activity 或持久草稿。 |
 | A5.4 | Keychain/Android Keystore 设备身份、一次性配对、最小 grant、撤销/重连/轮换。 | 未批准设备无法执行；撤销立即断开并清理关联资源。 |
 | A5.5 | 真机普通 CLI、TUI、stdio/HTTP MCP、网易云向导以及未授权/越权/重复请求样本。 | 手机能在标注 Mac 执行的位置完成允许流程，Host 失败不改成本地执行。 |
@@ -125,3 +125,10 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - [RFC 8785：JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785) 可用于计算稳定的 `payloadHash`；签名本身以外层封装中的精确 `payload` UTF-8 字节为对象，不依赖字段排序。
 
 此文是接口与威胁边界设计，不是实现或安全审计结论。Dart listener 的 TLS 最低版本、macOS Keychain 身份装载、Mac 本地网络授权弹窗和 Android Keystore 签名必须在 A5 实际代码与设备上逐项验证。
+
+## A5.2 实现状态（2026-11-13）
+
+- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 33 个封闭的 v1 方法定义、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
+- `app/lib/platform/macos/host/host_jcs.dart` 按 RFC 8785 对 method 与参数（去除 `operationId`）生成 SHA-256 操作哈希；外层设备签名仍按上文对收到的原始 payload 字节计算。
+- `app/lib/platform/macos/host/host_operation_ledger.dart` 以 `(deviceId, operationId)` 隔离记录开始/完成/结果未知状态，不持久化请求参数、结果或秘密。启动时把遗留 `started` 记录改为 `outcomeUnknown`，绝不自动重放。账本上限为 10,000 条或 4 MiB，达到上限后拒绝新操作。
+- 验收只证明协议组件和文件账本的本地单元行为；账本尚未接入 `MacHostModule`、dispatcher、设备授权或生产存储目录权限，生产 transport 仍拒绝启动。凭证字段按 adapter catalog 分离、draftHandle 设备绑定、Host grant 检查、实际内容分块传输和 listener 交互仍需后续阶段实现与验收。不能据此宣称手机已能连接或 Host 端副作用已获得生产级幂等保护。

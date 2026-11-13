@@ -158,10 +158,10 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 **依赖：**A1 的执行目标契约，可与 A3/A4 并行。
 
-**状态：**进行中。2026-11-13 已完成 [A5 Host 模块与配对协议设计基线 v0.1](android-a5-host-design.md)，并实现 A5.1 生命周期模块。`LocalRuntimePort` 将同一个 `MacRuntime` 注入 `MacHostModule`；start/stop 串行化，启动失败回滚，停止 Host 不释放本机运行时。生产 transport 在 A5.4 配对认证未就绪时拒绝启动，尚无 WSS/Bonjour listener；不能把测试 transport 验收当成手机可连接。A5.2–A5.5 的协议分发、配对、授权、向导和真机验收仍待办。
+**状态：**进行中。2026-11-13 已完成 [A5 Host 模块与配对协议设计基线 v0.1](android-a5-host-design.md)、A5.1 生命周期模块和 A5.2 协议核心。`LocalRuntimePort` 将同一个 `MacRuntime` 注入 `MacHostModule`；start/stop 串行化，启动失败回滚，停止 Host 不释放本机运行时。A5.2 已实现封闭的 33 方法 JSON-RPC v1 schema、事件游标、JCS 操作哈希和设备范围幂等账本，并通过本地测试；尚未接入 dispatcher、配对授权或生产存储路径。生产 transport 在 A5.4 配对认证未就绪时拒绝启动，尚无 WSS/Bonjour listener；不能把协议/账本单测当成手机可连接或生产授权验收。A5.3–A5.5 的 dispatch、凭证与草稿生命周期、配对、授权、向导和真机验收仍待办。
 
 - [x] A5.1 在现有 `MacRuntime` 外增加 Host 服务入口；沿用同一进程、PTY、MCP 和连接存储，只允许后续 dispatcher 访问已登记操作，不接收任意 shell 字符串。Mac 继续拥有 CLI 程序、工作目录、独立 profile 和密钥配置。控制状态与 transport 接缝已实现；测试覆盖并发 start、状态变更、启动失败回滚、配对未就绪时拒绝启动，并在 Host stop 后成功运行本机 CLI。生产 listener 尚未实现，须等 A5.4 配对认证就绪后启用。
-- [ ] A5.2 定义协议版本与对象：适配器目录、程序检测、草稿测试/保存/丢弃、连接目录、能力、调用参数、`RunId`/事件、取消、终端、账号、文件传输、错误码和执行位置；处理重复请求与外部写入后结果未知。
+- [x] A5.2 已实现封闭的 JSON-RPC v1 方法/参数目录（33 个方法）、稳定错误码、Host 路径不出线的 setup/manifest DTO、运行/终端事件序号游标、1 MiB 双向帧限制、64 层请求 JSON 深度限制、重复 JSON key 拒绝、JCS 操作 payload 哈希和文件型幂等账本。相同 `(deviceId, operationId, payloadHash)` 不重复执行；同 ID 不同参数拒绝；进程重启时遗留 `started` 标为 `outcomeUnknown`。18 项协议/账本测试已通过；完整项目验收记录和限制见 [A5 Host 设计与实现状态](android-a5-host-design.md)。账本、协议尚未接入 dispatcher、认证/授权、权限受限的正式存储目录或生产 listener；实际文件内容分块传输也未实现，不代表 Host 可联网。
 - [ ] A5.3 在 Host 侧执行 `detectExecutable` 和网易云配置测试；手机显示 Mac 程序位置及检查状态。私钥/Token 只经配对加密通道传送，限制大小并脱敏日志；草稿 ID 绑定设备身份，过期、断线或撤销配对时清理。
 - [ ] A5.4 实现首次配对、Mac 上确认、设备身份、密钥轮换/撤销与重连；限制输出、并发、超时和资源占用。连接删除同步清理 Mac 自有的独立配置，不能把 profile 目录复制到手机。
 - [ ] A5.5 使用普通 CLI、TUI、stdio MCP、HTTP MCP 与网易云向导检查“检测 → 测试 → 保存 → 调用/登录 → 断线/丢弃”；验证未配对、越权和重复保存。
