@@ -144,6 +144,31 @@ void main() {
     },
   );
 
+  test(
+    'missing setup discards do not consume durable operation records',
+    () async {
+      final responses = await Future.wait([
+        for (var index = 0; index < 200; index++)
+          dispatch('setup.discard', {
+            'operationId': 'op-missing-$index',
+            'draftHandle': 'missing-draft-$index',
+          }),
+      ]);
+
+      expect(responses, hasLength(200));
+      expect(
+        responses.every(
+          (response) =>
+              (response['result']! as Map<String, Object?>)['discarded'] ==
+              true,
+        ),
+        isTrue,
+      );
+      expect(setupPort.discardedDrafts, isEmpty);
+      expect(await File('${directory.path}/operations.json').exists(), isFalse);
+    },
+  );
+
   test('marks a failed save outcome unknown and never retries it', () async {
     final detected = await dispatch('setup.detectExecutable', {
       'adapterId': 'netease-music',

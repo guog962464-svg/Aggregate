@@ -749,13 +749,15 @@ final class AndroidRuntimePort
         uri.fragment.isNotEmpty) {
       throw const FormatException('请输入有效的 HTTP(S) MCP 地址，且不要把凭证写入 URL');
     }
-    if (spec.authToken?.trim().isNotEmpty == true &&
-        uri.scheme == 'http' &&
-        uri.host != 'localhost' &&
-        !(InternetAddress.tryParse(uri.host)?.isLoopback ?? false)) {
-      throw const FormatException('带凭证的远程 MCP 地址必须使用 HTTPS');
+    if (uri.scheme == 'http' && !_isLoopbackMcpHost(uri.host)) {
+      throw const FormatException(
+        '远程 MCP 地址必须使用 HTTPS；HTTP 仅允许 localhost 或 127.0.0.1',
+      );
     }
   }
+
+  bool _isLoopbackMcpHost(String host) =>
+      host.toLowerCase() == 'localhost' || host == '127.0.0.1';
 
   ConnectionSpec _storedSpec(ConnectionSpec spec) => ConnectionSpec(
     kind: ConnectionKind.mcpHttp,
@@ -956,7 +958,7 @@ final class AndroidRuntimePort
         '连接名称应为 1–100 个字符',
         '新连接需要重新输入 Bearer Token',
         '请输入有效的 HTTP(S) MCP 地址，且不要把凭证写入 URL',
-        '带凭证的远程 MCP 地址必须使用 HTTPS',
+        '远程 MCP 地址必须使用 HTTPS；HTTP 仅允许 localhost 或 127.0.0.1',
       };
       if (safeMessages.contains(cause.message)) return cause.message;
     }

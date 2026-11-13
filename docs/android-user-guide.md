@@ -6,7 +6,7 @@
 
 | 能力 | 运行位置 | 当前状态 |
 | --- | --- | --- |
-| Streamable HTTP MCP | Android 手机 | 已在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机完成回环与外部 HTTPS 连接闭环。外部地址使用 HTTPS；不要把 Token 放进 URL。 |
+| Streamable HTTP MCP | Android 手机 | A2.6 曾在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机完成回环与外部 HTTPS 闭环；A8.4 本轮外部 HTTPS 用例因未设置 `A2_EXTERNAL_MCP_URL` 跳过，故当前响应限额改动尚未在该外部地址复验。远程地址必须使用 HTTPS；不要把 Token 放进 URL。 |
 | Mac CLI、TUI、stdio MCP | 已配对的 Mac Host | Android 不在手机上启动这些命令。Mac 必须在线、Host 服务必须启动，且本次配对授权必须覆盖目标连接和操作。 |
 | 网易云 CLI 与音乐 | 配对 Mac Host | 账号配置、CLI 和播放由 Mac 持有；实际声音从 Mac 的音频输出设备播放。 |
 | Android 本机 Node/npm/任意 CLI | 不支持 | Node/npm 与固定样本仅用于独立 Debug 探针。用户不能在正式 Android App 中执行 `npm install`、任意 npm CLI、TUI 或 stdio Server。 |
@@ -23,9 +23,9 @@ flutter build apk --debug --no-pub
 adb install -r build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-该 APK 使用 Android Debug 测试签名，仅供授权的内部设备验证。当前主 App Debug APK 为 99,506,706 字节（2026-11-14 本地构建）；实际大小会随构建依赖和 Flutter 工具链变化。不要将这份包称为 Release 候选包。
+该 APK 使用 Android Debug 测试签名，仅供授权的内部设备验证。当前 arm64 主 App Debug APK 为 124,368,287 字节（2026-11-14 本地构建）；实际大小会随构建依赖和 Flutter 工具链变化。不要将这份包称为 Release 候选包。
 
-当前 Release 构建尚不能作为分发包：`app/android/app/build.gradle.kts` 把 Release 指向 Debug 签名；本机 `flutter build apk --release --no-pub` 又因生成注册表引用 Release classpath 中不存在的 `integration_test` 而失败。仓库没有有效的发布签名身份或可验证的 Android Release AAB。
+Release APK/AAB 现已可构建，AAB 通过 Bundletool 1.18.3 校验；APK/AAB 保持未签名，仓库没有有效的发布签名身份，因此仍不能作为分发包。也没有 16 KB 页真机运行验收。
 
 ## 配对 Mac Host
 

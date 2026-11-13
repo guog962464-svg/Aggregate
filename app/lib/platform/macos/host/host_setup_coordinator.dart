@@ -396,6 +396,19 @@ final class HostSetupCoordinator {
     _drafts.remove(key);
   });
 
+  /// Reports whether an unexpired setup draft exists for this paired device.
+  /// Missing handles are intentionally cheap to check so idempotent no-op
+  /// discards do not need durable operation-ledger entries.
+  Future<bool> hasConnectionSetupDraft({
+    required String deviceId,
+    required String draftHandle,
+  }) => _serialize(() async {
+    _validateDeviceId(deviceId);
+    _ensureDeviceOpen(deviceId);
+    await _sweepExpired();
+    return _drafts.containsKey(_key(deviceId, draftHandle));
+  });
+
   /// Clears all references and tested drafts when Host stops.
   Future<void> closeAll() => _serialize(() async {
     _executables.clear();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:aggregate/platform/android/android_credential_store.dart';
@@ -448,6 +449,21 @@ void main() {
         );
         expect(invalid.canSave, isFalse);
         expect(invalid.checks.single.detail, isNot(contains('private-token')));
+        final cleartextWithoutToken = await runtime.testConnectionSetup(
+          const ConnectionSetupDraft(
+            adapterId: 'mcp-http',
+            spec: ConnectionSpec(
+              kind: ConnectionKind.mcpHttp,
+              label: 'Remote cleartext without token',
+              url: 'http://example.com/mcp',
+            ),
+          ),
+        );
+        expect(cleartextWithoutToken.canSave, isFalse);
+        expect(
+          cleartextWithoutToken.checks.single.detail,
+          contains('必须使用 HTTPS'),
+        );
         final listener = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
         final port = listener.port;
         await listener.close();
@@ -497,6 +513,44 @@ void main() {
       }
     },
   );
+
+  test('backs up a saved non-loopback cleartext MCP endpoint', () async {
+    final root = await Directory.systemTemp.createTemp(
+      'aggregate-a2-insecure-saved-',
+    );
+    final spec = const ConnectionSpec(
+      kind: ConnectionKind.mcpHttp,
+      label: '旧远程 HTTP',
+      url: 'http://example.com/mcp',
+    );
+    await File('${root.path}/connections.json').writeAsString(
+      jsonEncode({
+        'schemaVersion': 1,
+        'connections': [
+          {'id': 'old-http', 'spec': spec.toJson()},
+        ],
+      }),
+    );
+    final runtime = await AndroidRuntimePort.open(
+      dataDirectory: root,
+      credentialStore: _MemoryCredentials(),
+    );
+    try {
+      expect(await runtime.listConnections(), isEmpty);
+      expect(runtime.startupNotices.join(' '), contains('已备份原文件'));
+      expect(runtime.startupNotices.join(' '), contains('连接配置无法读取'));
+      expect(
+        Directory(root.path)
+            .listSync()
+            .whereType<File>()
+            .any((file) => file.path.contains('connections.json.damaged-')),
+        isTrue,
+      );
+    } finally {
+      await runtime.dispose();
+      await root.delete(recursive: true);
+    }
+  });
 
   test('drafts clear on background and preferences survive restart', () async {
     final root = await Directory.systemTemp.createTemp('aggregate-a2-pref-');

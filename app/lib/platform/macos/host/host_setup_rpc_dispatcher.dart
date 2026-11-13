@@ -181,6 +181,16 @@ final class HostSetupRpcDispatcher implements HostRpcDispatcherPort {
         });
       case 'setup.discard':
         final draftHandle = request.params['draftHandle']! as String;
+        if (!await setup.hasConnectionSetupDraft(
+          deviceId: deviceId,
+          draftHandle: draftHandle,
+        )) {
+          // Discarding an absent (or expired) opaque handle is already
+          // idempotent. Avoid persisting a caller-controlled operation ID for
+          // this no-op, which would let one paired device fill the shared
+          // durable ledger without creating any drafts.
+          return {'discarded': true};
+        }
         return _executeOperation(request, deviceId, () async {
           await setup.discardConnectionSetup(
             deviceId: deviceId,

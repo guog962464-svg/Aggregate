@@ -36,10 +36,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (providers.gradleProperty("aggregateIsolatedIntegration").orNull == "true") {
+                // Keep Flutter integration-test install/cleanup separate from
+                // the user's installed Aggregate app and Android Keystore data.
+                applicationIdSuffix = ".integration"
+            }
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Release artifacts stay unsigned until a production signing key is
+            // supplied through a separately managed signing configuration.
         }
     }
 }

@@ -1,12 +1,12 @@
 # Android A8 发布前检查与文档验收
 
-> 检查日期：2026-11-14。A8.4 安全/发行审查及 A8.5 内部指南已完成；Android Release 验收未通过。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
+> 检查日期：2026-11-14。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
 
 ## A8.4 安全、依赖与分发检查
 
 ### 检查范围与方法
 
-Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bbe4ed665`，覆盖 Android/Flutter Runtime、配对 Mac Host、Node/npm 探针、密钥/日志、构建与分发配置。重点安全路径及调用关系经过源代码审查；跟踪库存为 363 个文件，图像等非可执行资产不作为源代码检查。扫描结论不声称对全部 363 个文件逐行人工审计。没有生产 Android Release 工件，也没有 16 KB 页实体设备。扫描工作台 ID：`be3aab55-1467-4e8c-b571-0a56f577389d`；扫描最终标记为 failed，未保存这三项审查发现到工作台。
+此前 Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bbe4ed665`，覆盖 Android/Flutter Runtime、配对 Mac Host、Node/npm 探针、密钥/日志、构建与分发配置。该工作台扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终标记为 failed，不能作为无漏洞结论。本轮工作树差异审查 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已完成：审阅 92 项源文件 inventory，0 项可报告漏洞；覆盖状态为 partial，保留外部 HTTPS 当前版本复验、MCP 并发/超时取消语义、Host 账本恢复三个后续问题。审查针对 base `bd8034286ac168c596def1f09ab3960ce01d4e0e` 的冻结工作树快照，不是全仓库审计，也不能替代 16 KB 设备或生产服务验收。没有正式签名的 Android Release，也没有 16 KB 页实体设备。
 
 ### 运行时、npm 与许可证
 
@@ -28,27 +28,31 @@ Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bb
 
 | 工件 | 大小 | 签名/用途 |
 | --- | ---: | --- |
-| 主 App Debug APK：`app/build/app/outputs/flutter-apk/app-debug.apk` | 99,506,706 bytes | `apksigner` 验证通过，使用 Android Debug 证书；仅内部测试 |
+| 主 App Debug APK：`app/build/app/outputs/flutter-apk/app-debug.apk` | 124,368,287 bytes | arm64 本轮构建，`apksigner` 验证通过，使用 Android Debug 证书；仅内部测试 |
 | 独立 NodeProbe Debug APK：`app/build/nodeprobe/outputs/apk/debug/nodeprobe-debug.apk` | 290,622,972 bytes | Android Debug 证书；包含实验运行时，不是主 App 产品包 |
 | 独立 NodeProbe Debug AAB：`app/build/nodeprobe/outputs/bundle/debug/nodeprobe-debug.aab` | 39,012,187 bytes | Debug 探针 Bundle，不是发布 AAB |
+| 主 App Release APK：`app/build/app/outputs/flutter-apk/app-release.apk` | 27,572,424 bytes | Release 构建成功；保持未签名，不能分发 |
+| 主 App Release AAB：`app/build/app/outputs/bundle/release/app-release.aab` | 25,305,762 bytes | Bundletool 1.18.3 校验通过；保持未签名，不能上传商店 |
 
-主 App 没有可供验收的 Release APK/AAB。当前 `app/android/app/build.gradle.kts` 显式将 Release signingConfig 指向 Debug 签名。`flutter build apk --release --no-pub` 在 `:app:compileReleaseJavaWithJavac` 失败：生成的 `GeneratedPluginRegistrant.java` 引用了 Release compile classpath 不包含的 `integration_test`。`flutter pub get --offline --enforce-lockfile` 后重试仍失败，且用户现有 `pubspec.lock` 字节未改变。不能把 Debug 签名或未生成的 Release 文件称作发布签名验收通过。Android 官方说明 Debug 证书不适于多数商店发布。[Android app signing](https://developer.android.com/studio/publish/app-signing)
+通过 `app/android/app/src/release/java/dev/flutter/plugins/integration_test/IntegrationTestPlugin.java` 为 Flutter 生成注册表中的 dev-only 项提供 Release 专用空实现；测试插件本身仍不进入 Release compile classpath。Release APK/AAB 均成功构建，`GeneratedPluginRegistrant` 注册该空实现，不包含测试通道方法。移除了 Release 使用 Debug 签名的配置；当前 APK/AAB 经 `apksigner`/`jarsigner` 核验为未签名。仓库没有正式发布密钥，因此不生成或宣称签名候选包已通过。[Android app signing](https://developer.android.com/studio/publish/app-signing)
 
-A8.2 的普通 arm64 APK 与固定 Node Debug 探针原生库通过 ELF 16 KB 对齐检查和 `zipalign -P 16`；手头 LGE AN10 实机仍为 4 KB 页。未有 16 KB 页设备，不能声明 16 KB 系统运行通过。Android 官方指南列出面向 API 35+ 应用的 Play 适配时限为 2027-02-01；正式发行前应复核最新日期并在 16 KB 环境做运行验收。[Android 16 KB page-size guidance](https://developer.android.com/guide/practices/page-sizes)
+A8.2 普通 arm64 APK 与固定 Node Debug 探针曾通过静态对齐检查。本轮主 App Release APK 和 AAB 各含 7 个 arm64 原生库；NDK 28.2.13676358 `llvm-readobj` 检查全部 `PT_LOAD` 均满足 16 KB 对齐，APK 的 Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过。LGE AN10 实机仍是 4 KB 页，没有 16 KB 页设备，不能声明 16 KB 系统运行通过。正式发行前须在 16 KB 环境做运行验收。[Android 16 KB page-size guidance](https://developer.android.com/guide/practices/page-sizes)
 
 ### 仍需处理的安全发现
 
-以下发现来自源代码审查，本轮只记录和分级，未修改运行时行为：
+以下发现来自此前源代码审查。本轮实现并复测对应缓解措施：
 
-| ID | 严重性 | 影响与条件 | 发行前处理 |
-| --- | --- | --- | --- |
-| A8SEC-1 | 中 | Android 接受非回环 HTTP MCP；只有新建连接中带临时 Bearer Token 时才拒绝远程 HTTP。选择此类地址后，请求和返回数据可被同网段观察或篡改。用户需主动配置该端点；回环 HTTP 有本机服务用途。 | 对非回环明文 HTTP 默认拒绝，或在 UI 显示明确风险并要求确认；保存凭证后的重载连接也使用同一 TLS 校验。 |
-| A8SEC-2 | 中 | 已批准且含 `connectionSetup` scope 的配对设备可发出大量不同 `setup.discard` operation ID；即使草稿不存在，也会经共享 Host operation ledger 写入持久记录。账本达到 10,000 条或 4 MiB 后，Host 新 mutation 返回 `operationLedgerFull`，影响所有配对设备。需要有效配对和授权，非未认证远程攻击。 | 加每设备/方法配额；在保留重放/结果未知语义的前提下实现安全压缩/保留策略，并定义管理员恢复方式。 |
-| A8SEC-3 | 低 | 已配置的恶意或被攻陷 MCP Server 可返回超大发现页/schema/工具结果。HTTP transport 会把完整响应流 join 后再 JSON decode；调用层的分页上限限制页数，没有限制响应字节、单页条数或总结果大小，预览截断发生在解析/序列化之后，可能耗尽内存或卡死 App。 | 在传输层限制响应字节；限制工具/资源/提示及 schema 数量/长度；在解码、图片转换、预览前限制 MCP 结果体积。 |
+| ID | 原严重性 | 本轮处置与剩余边界 |
+| --- | --- | --- |
+| A8SEC-1 | 中 | **已缓解。** Android Runtime 拒绝所有非回环 `http://` MCP 地址（无论是否带 Token）；Android Network Security Config 全局禁用明文，仅对精确 `localhost` 与 `127.0.0.1` 开放。新建和旧存储配置均经过相同校验；错误配置会备份并拒绝加载。单测与 LGE AN10 实机验证远程 HTTP 拒绝、回环 HTTP 仍可用。 |
+| A8SEC-2 | 中 | **攻击放大路径已修复，账本容量仍有限。** 已配对且获 `connectionSetup` 的设备对不存在/过期草稿执行 `setup.discard` 时直接返回幂等成功，不写持久 operation ledger；200 个不同 operation ID 回归测试确认不创建记录。真实授权 mutation 仍受全 Host 共享的 10,000 条/4 MiB 硬上限约束，达到上限后新 mutation 安全失败；没有自动压缩或专门管理员恢复 UI。该剩余容量限制应在上线前纳入 Host 管理与恢复设计。 |
+| A8SEC-3 | 低 | **已缓解并覆盖边界测试。** Android MCP HTTP transport 在 JSON/SSE 解码前限制每个响应 8 MiB、取消超限流并拒绝重定向。发现层限制每类最多 20 页、总能力 1,000 个、目录总量 4 MiB、schema 256 KiB、字段 16 KiB、cursor 4 KiB、提示参数 64 个。自动化测试覆盖 1,001 个工具目录拒绝；LGE AN10 真机返回 8 MiB+1 响应时在解码前被拒绝。 |
 
-修复或完成经审查的风险例外后，才可撤销对应 Android 发行阻塞。其他经核对不作为本次漏洞报告：Host stdio 启动受用户明确授予的 `connectionSetup` 权限约束；Host 内容读取受配对和逐连接授权约束；npm audit 命中的是独立 Debug fixture；Debug 签名和 `integration_test` 构建错误属于当前发行阻塞。
+A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的不存在草稿放大方式已移除，Host 全局账本仍保留有限容量。其它经核对不作为本次漏洞报告：Host stdio 启动受已授权 `connectionSetup` 权限约束；Host 内容读取受配对和逐连接授权约束；npm audit 命中的是独立 Debug fixture；Release 签名身份、16 KB 实机及真实服务闭环仍未完成。
 
-Codex Security 工作台扫描 ID 为 `be3aab55-1467-4e8c-b571-0a56f577389d`；最终语义草稿因原有候选项未关联到报告发现/处置而被工作台拒绝，达到允许的纠正提交次数后，扫描被标记为 failed。工作台生成了一份失败状态报告，但该报告包含 0 项保留发现并明确说明不能由此得出无漏洞结论。**不要把该工作台扫描状态视为通过或已封存。**以上三项源代码审查发现及证据保存在本验收文档中；如后续需要有效的工作台扫描报告，应启动新扫描并按候选 ID 逐项关联发现/处置。
+差异审查对 HTTP 响应包装流中的错误完成行为曾记录一个候选：如果下游收到错误但继续监听，原实现不会发出结束事件。逐条检查 `mcp_dart` JSON/SSE 消费路径后确认产品当前消费者会在错误后终止或取消订阅，因此该候选不构成可达安全漏洞。审查快照之后，仍修正了包装层的通用 Stream 语义，并新增回归用例验证错误、后续数据和 `onDone` 均按源流顺序传递；这项修正由后续本地测试验收，不属于上述冻结快照。
+
+旧 Codex Security 扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终为 failed，其 0 findings 不能作为无风险结论。本轮差异扫描 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已正常完成并生成报告；报告路径见工作区外的 Codex Security scan artifacts。它没有验证 16 KB 设备行为或外部 HTTPS 本轮实机闭环。
 
 ### 官方核验来源
 
@@ -63,14 +67,15 @@ Codex Security 工作台扫描 ID 为 `be3aab55-1467-4e8c-b571-0a56f577389d`；�
 - 新增 [Android 内部测试指南](android-user-guide.md)，说明只安装 Debug APK、HTTP MCP/Host/音乐的运行位置、配对与最小权限、实际音频输出位置及能力边界。
 - 更新[跨平台故障排查](troubleshooting.md#android-内部测试)，加入 Host、HTTPS/Token、任意 CLI/npm、Node 探针、音乐出声和运行结果待确认的处理步骤。
 - macOS [用户指南](user-guide.md)仍对应当前产品版本；其中明确 Android 文档仅供内部实验使用。
-- A7/A8.1–A8.3 已记录 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的安装、运行、HTTP MCP、配对、UI/IME、生命周期及存储验证。没有 16 KB 真机、TalkBack 服务、生产 Host LAN/Bonjour、实际音乐账号和真实 Android Release 包；这些项目仍未验收。
+- A7/A8.1–A8.3 已记录 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的安装、运行、HTTP MCP、配对、UI/IME、生命周期及存储验证。本轮 Android HTTP MCP Integration Test 文件 4 项通过，外部 HTTPS 用例因未设置 `A2_EXTERNAL_MCP_URL` 跳过。没有 16 KB 真机、TalkBack 服务、生产 Host LAN/Bonjour、实际音乐账号或签名 Release；这些项目仍未验收。
 
 ## 本轮验证
 
-- Flutter 全量测试：200 项通过。
+- Flutter 全量测试：208 项通过，包含 HTTP 包装流错误后继续传递数据和 `onDone` 的回归用例。
 - `flutter analyze --no-pub`：无问题。
-- `flutter pub get --offline --enforce-lockfile`：成功，未改动已有 `pubspec.lock`。
-- 主 App Release APK：未通过；失败原因见上文 `integration_test` 注册表错误。无 Release AAB 可签名或测量。
-- 本机 Android Debug APK 构建、签名与工件尺寸：已核对；Debug 签名不等同发布身份。
-- A8.2 静态 16 KB ELF/ZIP 对齐：沿用已归档证据；没有可补做的 16 KB 实机运行验证。
-- 未使用模拟器。
+- Dart format、公共层边界检查、15 项共享包测试：通过。
+- Android arm64 Debug APK、Release APK/AAB 与 macOS Debug 构建：通过；macOS 构建有 `mobile_scanner` 使用 macOS 10.15 弃用 API 的既有编译警告。
+- Bundletool 1.18.3 `validate`、APK `zipalign -P 16`、Release APK/AAB 内 7 个 arm64 原生库的 16 KB ELF `PT_LOAD` 检查：通过。Release 工件未签名；无正式签名身份。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机：HTTP MCP 集成文件 4 项通过、外部 HTTPS 用例因未设置环境变量跳过。测试后主包被移除，已重装 versionCode 12 Debug APK 并启动。第一次未隔离集成测试删除了旧 versionCode 11 App 数据及旧 Android Keystore 配对身份；隔离后缀也未能保证主包留存。重装后未重新建立 Host 配对；后续未再运行会安装/卸载 App 的真机集成命令。未使用模拟器。
+- HTTP 包装流修正发生在差异扫描快照封存之后；本地测试覆盖了修正，但扫描报告不包含该后续变更。
+- 用户已有 root `pubspec.lock` 镜像 URL 改动保持未暂存；任务只提交 MCP path override 对应 lock hunk。

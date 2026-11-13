@@ -9,3 +9,6 @@ workspace:
   - packages/aggregate_connectors
   - packages/aggregate_runtime
   - spikes/phase0
+dependency_overrides:
+  mcp_dart:
+    path: packages/mcp_dart

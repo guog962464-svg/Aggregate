@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:aggregate/platform/android/android_mcp_http_client.dart';
+import 'package:aggregate/platform/android/android_mcp_session.dart';
 import 'package:aggregate/platform/android/android_runtime_port.dart';
 import 'package:aggregate/features/connections/connection_setup_dialog.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
@@ -134,6 +136,21 @@ void main() {
       var runtime = await AndroidRuntimePort.open();
       ConnectionId? added;
       try {
+        final insecureRemote = await runtime.testConnectionSetup(
+          const ConnectionSetupDraft(
+            adapterId: 'mcp-http',
+            spec: ConnectionSpec(
+              kind: ConnectionKind.mcpHttp,
+              label: '拒绝远程明文',
+              url: 'http://example.com/mcp',
+            ),
+          ),
+        );
+        expect(insecureRemote.canSave, isFalse);
+        expect(
+          insecureRemote.checks.last.detail,
+          contains('必须使用 HTTPS'),
+        );
         final report = await runtime.testConnectionSetup(
           ConnectionSetupDraft(
             adapterId: 'mcp-http',
@@ -191,6 +208,62 @@ void main() {
       }
     });
   });
+
+  testWidgets('physical Android bounds MCP responses before JSON decoding', (
+    tester,
+  ) async {
+    expect(Platform.isAndroid, isTrue);
+    await tester.runAsync(() async {
+      final largeText = 'x' * (androidMcpMaxResponseBytes + 1);
+      final server = mcp.StreamableMcpServer(
+        serverFactory: (_) {
+          final fixture = mcp.McpServer(
+            const mcp.Implementation(
+              name: 'android-response-limit',
+              version: '1.0.0',
+            ),
+            options: const mcp.McpServerOptions(
+              protocol: mcp.McpProtocol.stable,
+            ),
+          );
+          fixture.registerTool(
+            'large',
+            inputSchema: mcp.JsonSchema.object(properties: {}),
+            callback: (args, extra) async => mcp.CallToolResult.fromContent([
+              mcp.TextContent(text: largeText),
+            ]),
+          );
+          return fixture;
+        },
+        host: '127.0.0.1',
+        port: 0,
+        path: '/mcp',
+        allowedHosts: const {'127.0.0.1'},
+      );
+      await server.start();
+      AndroidMcpSession? session;
+      try {
+        session = await AndroidMcpSession.connect(
+          'a8-response-limit',
+          Uri.parse('http://127.0.0.1:${server.boundPort}/mcp'),
+          null,
+        );
+        await expectLater(
+          session.call('large', const {}),
+          throwsA(
+            isA<mcp.McpError>().having(
+              (error) => error.message,
+              'message',
+              contains('response exceeds the 8388608 byte limit'),
+            ),
+          ),
+        );
+      } finally {
+        await session?.close();
+        await server.stop();
+      }
+    });
+  }, skip: !Platform.isAndroid);
 
   testWidgets('physical Android rejects 401 and times out a silent server', (
     tester,

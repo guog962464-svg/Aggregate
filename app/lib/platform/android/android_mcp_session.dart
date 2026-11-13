@@ -1,8 +1,20 @@
 import 'dart:async';
 
+import 'dart:convert';
+
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate_domain/aggregate_domain.dart';
 import 'package:mcp_dart/mcp_dart.dart' as mcp;
+
+import 'android_mcp_http_client.dart';
+
+const _maxMcpPagesPerList = 20;
+const _maxMcpCapabilities = 1000;
+const _maxMcpCatalogBytes = 4 * 1024 * 1024;
+const _maxMcpSchemaBytes = 256 * 1024;
+const _maxMcpFieldBytes = 16 * 1024;
+const _maxMcpCursorBytes = 4096;
+const _maxMcpPromptArguments = 64;
 
 final class AndroidMcpSession {
   AndroidMcpSession._(this.client, this.capabilities);
@@ -23,13 +35,14 @@ final class AndroidMcpSession {
     try {
       final transport = mcp.StreamableHttpClientTransport(
         endpoint,
-        opts: token == null
-            ? null
-            : mcp.StreamableHttpClientTransportOptions(
-                requestInit: {
+        opts: mcp.StreamableHttpClientTransportOptions(
+          requestInit: token == null
+              ? null
+              : {
                   'headers': {'Authorization': 'Bearer $token'},
                 },
-              ),
+          httpClient: AndroidMcpHttpClient(),
+        ),
       );
       await client.connect(transport).timeout(const Duration(seconds: 12));
       final capabilities = await _discover(id, client);
@@ -45,10 +58,39 @@ final class AndroidMcpSession {
     mcp.McpClient client,
   ) async {
     final capabilities = <Capability>[];
+    var catalogBytes = 0;
+    void appendCapability(
+      Capability capability,
+      Iterable<String> fields, {
+      int schemaBytes = 0,
+    }) {
+      var recordBytes = schemaBytes;
+      if (schemaBytes > _maxMcpSchemaBytes) {
+        throw const FormatException('MCP 功能参数结构超过 Android 限制');
+      }
+      for (final field in fields) {
+        final fieldBytes = utf8.encode(field).length;
+        if (fieldBytes > _maxMcpFieldBytes) {
+          throw const FormatException('MCP 功能说明超过 Android 限制');
+        }
+        recordBytes += fieldBytes;
+      }
+      if (capabilities.length >= _maxMcpCapabilities ||
+          recordBytes > _maxMcpCatalogBytes - catalogBytes) {
+        throw const FormatException('MCP 功能目录超过 Android 限制');
+      }
+      catalogBytes += recordBytes;
+      capabilities.add(capability);
+    }
+
     String? cursor;
     final seen = <String>{};
     if (client.getServerCapabilities()?.tools != null) {
+      var pageCount = 0;
       do {
+        if (++pageCount > _maxMcpPagesPerList) {
+          throw const FormatException('MCP 工具目录页数超过 Android 限制');
+        }
         final page = await client
             .listTools(
               params: cursor == null
@@ -57,28 +99,41 @@ final class AndroidMcpSession {
             )
             .timeout(const Duration(seconds: 10));
         for (final tool in page.tools) {
-          capabilities.add(
+          final title = tool.title ?? tool.name;
+          final description = tool.description ?? 'MCP 工具';
+          final inputSchema = Map<String, Object?>.from(
+            tool.inputSchema.toJson(),
+          );
+          final schemaBytes = utf8.encode(jsonEncode(inputSchema)).length;
+          appendCapability(
             Capability(
               id: CapabilityId(
                 ConnectionId(id),
                 CapabilityKind.mcpTool,
                 tool.name,
               ),
-              title: tool.title ?? tool.name,
-              description: tool.description ?? 'MCP 工具',
+              title: title,
+              description: description,
               permission: PermissionLevel.unknown,
-              inputSchema: Map<String, Object?>.from(tool.inputSchema.toJson()),
+              inputSchema: inputSchema,
             ),
+            [tool.name, title, description],
+            schemaBytes: schemaBytes,
           );
         }
         cursor = page.nextCursor;
-      } while (cursor != null && seen.add(cursor) && seen.length < 100);
+        _validateNextCursor(cursor, seen, pageCount);
+      } while (cursor != null);
     }
 
     cursor = null;
     seen.clear();
     if (client.getServerCapabilities()?.resources != null) {
+      var pageCount = 0;
       do {
+        if (++pageCount > _maxMcpPagesPerList) {
+          throw const FormatException('MCP 资源目录页数超过 Android 限制');
+        }
         final page = await client
             .listResources(
               params: cursor == null
@@ -87,27 +142,35 @@ final class AndroidMcpSession {
             )
             .timeout(const Duration(seconds: 10));
         for (final resource in page.resources) {
-          capabilities.add(
+          final title = resource.title ?? resource.name;
+          final description = resource.description ?? resource.uri;
+          appendCapability(
             Capability(
               id: CapabilityId(
                 ConnectionId(id),
                 CapabilityKind.mcpResource,
                 resource.uri,
               ),
-              title: resource.title ?? resource.name,
-              description: resource.description ?? resource.uri,
+              title: title,
+              description: description,
               permission: PermissionLevel.read,
             ),
+            [resource.name, resource.uri, title, description],
           );
         }
         cursor = page.nextCursor;
-      } while (cursor != null && seen.add(cursor) && seen.length < 100);
+        _validateNextCursor(cursor, seen, pageCount);
+      } while (cursor != null);
     }
 
     cursor = null;
     seen.clear();
     if (client.getServerCapabilities()?.prompts != null) {
+      var pageCount = 0;
       do {
+        if (++pageCount > _maxMcpPagesPerList) {
+          throw const FormatException('MCP 提示目录页数超过 Android 限制');
+        }
         final page = await client
             .listPrompts(
               params: cursor == null
@@ -116,35 +179,46 @@ final class AndroidMcpSession {
             )
             .timeout(const Duration(seconds: 10));
         for (final prompt in page.prompts) {
+          final promptArguments = prompt.arguments ?? <mcp.PromptArgument>[];
+          if (promptArguments.length > _maxMcpPromptArguments) {
+            throw const FormatException('MCP 提示参数数量超过 Android 限制');
+          }
           final properties = <String, Object?>{};
           final required = <String>[];
-          for (final argument in prompt.arguments ?? <mcp.PromptArgument>[]) {
+          for (final argument in promptArguments) {
             properties[argument.name] = {
               'type': 'string',
               'title': argument.title ?? argument.name,
             };
             if (argument.required == true) required.add(argument.name);
           }
-          capabilities.add(
+          final title = prompt.title ?? prompt.name;
+          final description = prompt.description ?? 'MCP 提示';
+          final inputSchema = {
+            'type': 'object',
+            'properties': properties,
+            'required': required,
+          };
+          final schemaBytes = utf8.encode(jsonEncode(inputSchema)).length;
+          appendCapability(
             Capability(
               id: CapabilityId(
                 ConnectionId(id),
                 CapabilityKind.mcpPrompt,
                 prompt.name,
               ),
-              title: prompt.title ?? prompt.name,
-              description: prompt.description ?? 'MCP 提示',
+              title: title,
+              description: description,
               permission: PermissionLevel.read,
-              inputSchema: {
-                'type': 'object',
-                'properties': properties,
-                'required': required,
-              },
+              inputSchema: inputSchema,
             ),
+            [prompt.name, title, description, ...properties.keys],
+            schemaBytes: schemaBytes,
           );
         }
         cursor = page.nextCursor;
-      } while (cursor != null && seen.add(cursor) && seen.length < 100);
+        _validateNextCursor(cursor, seen, pageCount);
+      } while (cursor != null);
     }
     return capabilities;
   }
@@ -190,4 +264,13 @@ final class AndroidMcpSession {
   }
 
   Future<void> close() => client.close();
+}
+
+void _validateNextCursor(String? cursor, Set<String> seen, int pageCount) {
+  if (cursor == null) return;
+  if (pageCount >= _maxMcpPagesPerList ||
+      utf8.encode(cursor).length > _maxMcpCursorBytes ||
+      !seen.add(cursor)) {
+    throw const FormatException('MCP 目录分页超过 Android 限制');
+  }
 }
