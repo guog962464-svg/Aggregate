@@ -234,3 +234,12 @@ flowchart LR
 - `flutter build apk --debug --target-platform android-arm64 --no-pub --build-number=9` 产出 arm64 APK（versionCode 9、versionName 0.3.7）；`zipalign -c -P 16 4` 通过。macOS Debug app 构建成功。Build Tools 36.0.0。16 KB 静态对齐只覆盖 APK 内 `.so` 的 ZIP 布局检查，不作为 16 KB 系统运行证明。
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB：已安装 versionCode 8 后用 versionCode 9 覆盖安装，Android Package Manager `Success`，`MainActivity` 冷启动成功；应用配置文件哈希在升级前后相同。随后对连接配置缺少 `executionTarget` 的旧格式 `mcpHttp` 样本冷启动应用，连接页显示该记录且没有 AndroidRuntime 崩溃；契约单测确认旧记录目标默认为此设备。样本使用本机拒绝连接端口，不含 token/密钥，验收后再次 `pm clear` 并冷启动，确认样本被清除、主 Activity resumed。设备原有 Host 列表为 0，因此未迁移真实配对或用户连接；重启验证针对应用进程，未重启整台手机。
 - 不使用模拟器。无 16 KB 页真机；未验证 production WSS、真实 Host 撤销、真实 NCM 账号或应用升级后的凭证恢复。测试样本已清除，Android 应用处于空配置首次启动状态。
+
+### A8.2 运行稳定性与页大小验收（2026-11-14）
+
+- 当前工作树全量 Flutter 测试 196 项通过（新增主题实验测试也包含在内）；`flutter analyze --no-pub`、公共层边界、tracked-source Dart 格式、`git diff --check` 通过；Android arm64 与 macOS Debug 构建成功。A8.1 的合并 `tool/check.sh` 格式步骤仍会扫描未提交主题文件并报告格式差异，其他门禁已独立通过；没有格式化或提交这些工作区主题文件。
+- 普通 Aggregate APK 只包含 `arm64-v8a`；Android NDK 28.2.13676358 抽出的 7 个 `.so`，以及仅 Debug 固定 Node 探针 APK 抽出的 10 个 `.so`，各自 `PT_LOAD` 对齐均至少 16 KB、offset/virtual-address 页内余数一致；所有 GNU_RELRO 边界符合 16 KB 规则；两种 APK 均通过 Build Tools 36.0.0 `zipalign -c -P 16 4`。普通 APK 不含 `libnode.so`/Node JNI 桥。Android 官方指南要求同时检查 ELF `LOAD`/RELRO 与 APK 中原生库 ZIP 对齐，[指南](https://developer.android.com/guide/practices/page-sizes)。
+- LGE AN10 / Android 15 / API 35 / arm64 的实际 `getconf PAGE_SIZE` 为 4096。没有 16 KB 设备，故 ELF/RELRO/ZIP 静态通过不表示 16 KB 系统启动或运行通过；没有构建 32 位或 x86 产品 ABI。
+- 真机 Node Debug 探针仅运行固定 `a3-fixed` 入口：普通包“探针不可用”通过；启用探针后，固定脚本正常调用/事件、异常、取消、运行中 crash 后 `outcomeUnknown` 与下一代恢复、20 次连续新代际调用均通过。70 秒请求在 JS ready 后退到 HOME，等待 60 秒再回前台，原请求成功完成；完成后未发现遗留 Aggregate/`:node` 进程。此探针仍明确为 `npm=false`、`cli=false`、`profiles=false`，不代表产品包开放 Node/npm/任意 CLI。
+- 真机 Wi‑Fi 开/关专项使用 Mac 同网段的临时本机 MCP 服务（无用户凭证）：关 Wi‑Fi 后已保存连接刷新为不可用，恢复 Wi‑Fi 后连接重新 ready 并再次调用成功。另 4 项 Android HTTP MCP 真机集成测试通过：凭证安全存储往返/删除且 Token 不进入 JSON、取消后的结果未知、401 脱敏、静默服务超时和测试后移除临时连接。测试运行器卸载了临时包；随后普通 `versionCode=10` arm64 APK 已安装、清数据并启动，Wi‑Fi 恢复开启。
+- Host 退出、远端终端清理、设备撤销和权限撤销由 Android 配对/Host WSS 运行时测试覆盖，未在实体设备配对生产 Mac Host；大结果折叠/展开由 Android 调用页 Widget 测试覆盖。Node 后台样本最长 70 秒、重复 20 次，不等于长时数小时或真实 LMK 压力；无 production WSS/NCM 账号，也未做 16 KB 系统运行验收。
