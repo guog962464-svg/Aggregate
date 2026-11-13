@@ -11,34 +11,53 @@ import 'package:mcp_dart/src/shared/json_schema/json_schema_validator.dart';
 
 import 'android_credential_store.dart';
 import 'android_host_manager.dart';
+import 'android_host_pairing_client.dart';
 import 'android_mcp_session.dart';
 import 'android_runtime_store.dart';
 
-/// Android local HTTP MCP runtime; Node and Host remain separate stages.
+/// Android runtime combining local HTTP MCP and paired Mac Host execution.
 final class AndroidRuntimePort
     with WidgetsBindingObserver
-    implements RuntimePort, ConnectionSetupPort {
+    implements RuntimePort, ConnectionSetupPort, RuntimeChangeSource {
   AndroidRuntimePort._(
     AndroidRuntimeStore store,
     this._credentials,
     this._draftTtl,
-  ) : _store = store,
-      hostManager = AndroidHostManager(store);
+    this.hostManager,
+  ) : _store = store {
+    _hostStatusSubscription = hostManager.statusChanges.listen(
+      _onHostStatusChange,
+    );
+  }
+
+  void _onHostStatusChange(AndroidHostStatusChange change) {
+    if (!hostManager.hosts.any((host) => host.hostId == change.hostId)) {
+      _remoteConnectionsByHost.remove(change.hostId);
+      _remoteConnections.removeWhere((_, item) => item.hostId == change.hostId);
+      _remoteCapabilities.removeWhere(
+        (_, capability) => capability.hostId == change.hostId,
+      );
+    }
+    if (!_changes.isClosed) _changes.add(null);
+  }
 
   static Future<AndroidRuntimePort> open({
     Directory? dataDirectory,
     AndroidCredentialStore? credentialStore,
+    AndroidHostManagerPort? hostManager,
     Duration draftTtl = const Duration(minutes: 10),
   }) async {
     WidgetsFlutterBinding.ensureInitialized();
     final directory = dataDirectory ?? await getApplicationSupportDirectory();
     final store = AndroidRuntimeStore(directory);
+    final manager = hostManager ?? AndroidHostManager(store);
     final runtime = AndroidRuntimePort._(
       store,
       credentialStore ?? const SecureAndroidCredentialStore(),
       draftTtl,
+      manager,
     );
-    await runtime.hostManager.load();
+    if (manager case final AndroidHostManager concrete) await concrete.load();
     await runtime._load();
     WidgetsBinding.instance.addObserver(runtime);
     return runtime;
@@ -47,13 +66,20 @@ final class AndroidRuntimePort
   final AndroidRuntimeStore _store;
   final AndroidCredentialStore _credentials;
   final Duration _draftTtl;
-  final AndroidHostManager hostManager;
+  final AndroidHostManagerPort hostManager;
   final _entries = <String, _AndroidEntry>{};
   final _drafts = <String, _AndroidDraft>{};
   final _savingDrafts = <String>{};
   final _runs = <String, _AndroidRun>{};
   final _activity = <RunSummary>[];
   final _events = StreamController<RunEvent>.broadcast(sync: true);
+  final _changes = StreamController<void>.broadcast(sync: true);
+  late final StreamSubscription<AndroidHostStatusChange>
+  _hostStatusSubscription;
+  final _remoteConnections = <String, _AndroidRemoteConnection>{};
+  final _remoteConnectionsByHost =
+      <String, Map<String, _AndroidRemoteConnection>>{};
+  final _remoteCapabilities = <String, _AndroidRemoteCapability>{};
   final _notices = <String>[];
   UserPreferences _preferences = const UserPreferences();
   int _serial = 0;
@@ -75,12 +101,17 @@ final class AndroidRuntimePort
     WidgetsBinding.instance.removeObserver(this);
     _clearDrafts();
     await _mutationTail;
+    for (final run in _runs.values) {
+      await run.remoteNotifications?.cancel();
+    }
     for (final entry in _entries.values) {
       await entry.session?.close();
     }
+    await _hostStatusSubscription.cancel();
     await hostManager.dispose();
     await _store.flush();
     await _events.close();
+    await _changes.close();
   }
 
   @override
@@ -110,6 +141,9 @@ final class AndroidRuntimePort
 
   @override
   List<String> get startupNotices => List.unmodifiable(_notices);
+
+  @override
+  Stream<void> get changes => _changes.stream;
 
   @override
   List<ConnectionAdapter> get connectionAdapters => const [
@@ -190,14 +224,21 @@ final class AndroidRuntimePort
   }
 
   @override
-  Future<List<Connection>> listConnections() async => [
-    for (final entry in _entries.values) entry.toConnection(),
-  ];
+  Future<List<Connection>> listConnections() async {
+    final remoteByHost = await Future.wait(
+      hostManager.hosts.map(_loadRemoteConnections),
+    );
+    return [
+      for (final entry in _entries.values) entry.toConnection(),
+      for (final hostConnections in remoteByHost)
+        for (final remote in hostConnections) remote.connection,
+    ];
+  }
 
   @override
   Future<List<Capability>> searchCapabilities(SearchQuery query) async {
     final text = query.text.trim().toLowerCase();
-    return [
+    final results = <Capability>[
       for (final entry in _entries.values)
         if (entry.status == ConnectionStatus.ready)
           for (final capability in entry.capabilities)
@@ -208,7 +249,150 @@ final class AndroidRuntimePort
                     capability.id.name.toLowerCase().contains(text)))
               capability,
     ];
+    final remoteByHost = await Future.wait(
+      hostManager.hosts
+          .where((host) => hostManager.isConnected(host.hostId))
+          .map((host) => _searchRemoteCapabilities(host, query)),
+    );
+    for (final capabilities in remoteByHost) {
+      results.addAll(capabilities);
+    }
+    return results;
   }
+
+  Future<List<_AndroidRemoteConnection>> _loadRemoteConnections(
+    AndroidPairedHost host,
+  ) async {
+    final cache = _remoteConnectionsByHost[host.hostId];
+    if (!hostManager.isConnected(host.hostId)) {
+      if (cache == null) return const [];
+      final diagnostic = _hostStatusDiagnostic(
+        hostManager.statusFor(host.hostId),
+      );
+      for (final item in cache.values) {
+        item.setAvailability(ConnectionStatus.unavailable, diagnostic);
+      }
+      return cache.values.toList(growable: false);
+    }
+    try {
+      final response = await hostManager.call(
+        host.hostId,
+        'connection.list',
+        const {},
+      );
+      final rawConnections = response['connections'];
+      if (rawConnections is! List) {
+        throw const FormatException('Host connection list is invalid');
+      }
+      final next = <String, _AndroidRemoteConnection>{};
+      for (final raw in rawConnections) {
+        final remote = Connection.fromJson(raw);
+        final mapped = _AndroidRemoteConnection(
+          hostId: host.hostId,
+          remoteId: remote.id.value,
+          connection: _mapRemoteConnection(host, remote),
+        );
+        next[remote.id.value] = mapped;
+        _remoteConnections[mapped.connection.id.value] = mapped;
+      }
+      if (cache != null) {
+        for (final previous in cache.values) {
+          if (!next.containsKey(previous.remoteId)) {
+            _remoteConnections.remove(previous.connection.id.value);
+            _remoteCapabilities.removeWhere(
+              (_, capability) =>
+                  capability.hostId == host.hostId &&
+                  capability.remoteId.connection.value == previous.remoteId,
+            );
+          }
+        }
+      }
+      _remoteConnectionsByHost[host.hostId] = next;
+      return next.values.toList(growable: false);
+    } on Object {
+      if (cache == null) return const [];
+      final diagnostic = _hostStatusDiagnostic(
+        hostManager.statusFor(host.hostId),
+      );
+      for (final item in cache.values) {
+        item.setAvailability(ConnectionStatus.unavailable, diagnostic);
+      }
+      return cache.values.toList(growable: false);
+    }
+  }
+
+  Connection _mapRemoteConnection(AndroidPairedHost host, Connection remote) =>
+      Connection(
+        id: ConnectionId(_remoteConnectionKey(host.hostId, remote.id.value)),
+        kind: remote.kind,
+        label: remote.label,
+        location: remote.location,
+        executionTarget: ExecutionTarget.host(host.hostId),
+        status: remote.status,
+        protocolVersion: remote.protocolVersion,
+        diagnostic: remote.diagnostic,
+      );
+
+  String _remoteConnectionKey(String hostId, String connectionId) =>
+      'remote:$hostId:$connectionId';
+
+  Future<List<Capability>> _searchRemoteCapabilities(
+    AndroidPairedHost host,
+    SearchQuery query,
+  ) async {
+    await _loadRemoteConnections(host);
+    try {
+      final response = await hostManager.call(
+        host.hostId,
+        'capability.search',
+        {'query': query.text},
+      );
+      final rawCapabilities = response['capabilities'];
+      if (rawCapabilities is! List) {
+        throw const FormatException('Host capability list is invalid');
+      }
+      final result = <Capability>[];
+      for (final raw in rawCapabilities) {
+        final remote = Capability.fromJson(raw);
+        if (query.kind != null && remote.id.kind != query.kind) continue;
+        final connection =
+            _remoteConnectionsByHost[host.hostId]?[remote.id.connection.value];
+        if (connection == null) continue;
+        final visible = Capability(
+          id: CapabilityId(
+            connection.connection.id,
+            remote.id.kind,
+            remote.id.name,
+          ),
+          title: remote.title,
+          description: remote.description,
+          permission: remote.permission,
+          inputSchema: remote.inputSchema,
+          presentation: remote.presentation,
+        );
+        _remoteCapabilities[visible.id.key] = _AndroidRemoteCapability(
+          hostId: host.hostId,
+          remoteId: remote.id,
+          capability: visible,
+        );
+        result.add(visible);
+      }
+      return result;
+    } on Object {
+      return const [];
+    }
+  }
+
+  String _hostStatusDiagnostic(AndroidHostStatus status) => switch (status) {
+    AndroidHostStatus.offline => 'Mac Host 离线，请检查网络并重新连接。',
+    AndroidHostStatus.connecting => '正在连接 Mac Host。',
+    AndroidHostStatus.online => 'Mac Host 在线。',
+    AndroidHostStatus.authenticationInvalid => 'Mac Host 认证失效，请重新连接或配对。',
+    AndroidHostStatus.versionIncompatible => 'Mac Host 协议版本不兼容，请升级两端应用。',
+    AndroidHostStatus.permissionDenied => 'Mac Host 拒绝了此设备的访问权限。',
+    AndroidHostStatus.timedOut => 'Mac Host 请求超时，请检查网络与服务状态。',
+    AndroidHostStatus.outcomeUnknown => '远端执行结果未知，请先在 Mac 上确认执行状态。',
+  };
 
   @override
   Future<List<RunSummary>> listRecentRuns() async =>
@@ -225,6 +409,21 @@ final class AndroidRuntimePort
 
   @override
   Future<void> removeConnection(ConnectionId id) async {
+    final remote = _remoteConnections[id.value];
+    if (remote != null) {
+      await hostManager.call(remote.hostId, 'connection.remove', {
+        'operationId': _newHostOperationId(),
+        'connectionId': remote.remoteId,
+      }, sideEffect: true);
+      _remoteConnections.remove(id.value);
+      _remoteConnectionsByHost[remote.hostId]?.remove(remote.remoteId);
+      _remoteCapabilities.removeWhere(
+        (_, capability) =>
+            capability.hostId == remote.hostId &&
+            capability.remoteId.connection.value == remote.remoteId,
+      );
+      return;
+    }
     await _mutate(() async {
       final entry = _entries[id.value];
       if (entry == null) return;
@@ -247,6 +446,15 @@ final class AndroidRuntimePort
 
   @override
   Future<void> moveConnection(ConnectionId id, int offset) async {
+    final remote = _remoteConnections[id.value];
+    if (remote != null) {
+      await hostManager.call(remote.hostId, 'connection.move', {
+        'operationId': _newHostOperationId(),
+        'connectionId': remote.remoteId,
+        'offset': offset.clamp(-1, 1),
+      }, sideEffect: true);
+      return;
+    }
     await _mutate(() async {
       final entries = _entries.values.toList();
       final from = entries.indexWhere((entry) => entry.id == id.value);
@@ -266,6 +474,21 @@ final class AndroidRuntimePort
 
   @override
   Future<Connection> refreshConnection(ConnectionId id) async {
+    final remote = _remoteConnections[id.value];
+    if (remote != null) {
+      final host = hostManager.hosts
+          .where((item) => item.hostId == remote.hostId)
+          .firstOrNull;
+      if (host == null) throw ArgumentError('Mac Host 不存在');
+      final response = await hostManager.call(
+        remote.hostId,
+        'connection.refresh',
+        {'operationId': _newHostOperationId(), 'connectionId': remote.remoteId},
+      );
+      final decoded = Connection.fromJson(response);
+      remote.setConnection(_mapRemoteConnection(host, decoded));
+      return remote.connection;
+    }
     final entry = _entries[id.value];
     if (entry == null) throw ArgumentError('连接不存在');
     await _refresh(entry);
@@ -549,6 +772,15 @@ final class AndroidRuntimePort
     JsonMap arguments, {
     bool permissionGranted = false,
   }) async {
+    final remote = _remoteCapabilities[id.key];
+    if (remote != null) {
+      return _startRemoteInvocation(
+        id,
+        remote,
+        arguments,
+        permissionGranted: permissionGranted,
+      );
+    }
     final entry = _entries[id.connection.value];
     if (entry?.session == null) throw StateError('连接不可用，请先刷新');
     final matches = entry!.capabilities.where((item) => item.id.key == id.key);
@@ -595,6 +827,229 @@ final class AndroidRuntimePort
     unawaited(_call(run, entry.session!, arguments));
     return RunHandle(run.id);
   }
+
+  Future<RunHandle> _startRemoteInvocation(
+    CapabilityId id,
+    _AndroidRemoteCapability remote,
+    JsonMap arguments, {
+    required bool permissionGranted,
+  }) async {
+    final run = _AndroidRun(RunId(_newId('run')), id);
+    _runs[run.id.value] = run;
+    _emit(run, RunState.created);
+    _emit(run, RunState.validating);
+    if (remote.capability.permission != PermissionLevel.read &&
+        !permissionGranted) {
+      _emit(
+        run,
+        RunState.failed,
+        failure: const RuntimeFailure(
+          RuntimeErrorCode.permissionDenied,
+          '需要确认此功能的执行权限',
+          phase: 'permission',
+        ),
+      );
+      return RunHandle(run.id);
+    }
+    try {
+      final schema = remote.capability.inputSchema;
+      if (schema.isNotEmpty) {
+        compileJsonSchemaValidator(
+          mcp.JsonSchema.fromJson(Map<String, dynamic>.from(schema)),
+        )(arguments);
+      }
+    } catch (_) {
+      _emit(
+        run,
+        RunState.failed,
+        failure: const RuntimeFailure(
+          RuntimeErrorCode.invalidArguments,
+          '参数不符合工具要求，请检查字段与类型',
+          phase: 'validation',
+        ),
+      );
+      return RunHandle(run.id);
+    }
+    _emit(run, RunState.running);
+    unawaited(_invokeRemote(run, remote, arguments));
+    return RunHandle(run.id);
+  }
+
+  Future<void> _invokeRemote(
+    _AndroidRun run,
+    _AndroidRemoteCapability remote,
+    JsonMap arguments,
+  ) async {
+    if (!hostManager.isConnected(remote.hostId)) {
+      _emit(
+        run,
+        RunState.failed,
+        failure: RuntimeFailure(
+          RuntimeErrorCode.connectionFailed,
+          _hostStatusDiagnostic(hostManager.statusFor(remote.hostId)),
+          phase: 'remote',
+        ),
+      );
+      return;
+    }
+    run.remoteHostId = remote.hostId;
+    try {
+      final response = await hostManager.call(remote.hostId, 'run.invoke', {
+        'operationId': _newHostOperationId(),
+        'capability': remote.remoteId.toJson(),
+        'permissionLevel': remote.capability.permission.name,
+        'arguments': arguments,
+      }, sideEffect: true);
+      final rawRun = response['run'];
+      if (rawRun is! Map) {
+        _emit(
+          run,
+          RunState.outcomeUnknown,
+          failure: const RuntimeFailure(
+            RuntimeErrorCode.outcomeUnknown,
+            'Mac Host 未返回运行编号，执行结果未知；请先在 Mac 上确认状态。',
+            phase: 'invoke',
+          ),
+        );
+        return;
+      }
+      final remoteRun = RunHandle.fromJson(rawRun);
+      run.remoteHostId = remote.hostId;
+      run.remoteRunId = remoteRun.id.value;
+      run.remoteNotifications = hostManager
+          .watchNotifications(remote.hostId)
+          .listen(
+            (notification) => _acceptRemoteNotification(run, notification),
+            onError: (Object error) =>
+                _failRemoteRun(run, error, afterDispatch: true),
+            onDone: () {
+              if (!run.terminal) {
+                _failRemoteRun(
+                  run,
+                  const AndroidHostPairingException(
+                    AndroidHostPairingFailure.transportClosed,
+                  ),
+                  afterDispatch: true,
+                );
+              }
+            },
+          );
+      final subscription = await hostManager.call(
+        remote.hostId,
+        'run.subscribe',
+        {'runId': remoteRun.id.value},
+      );
+      final subscriptionId = subscription['subscriptionId'];
+      if (subscriptionId is! String || subscriptionId.isEmpty) {
+        throw const FormatException('Mac Host run subscription is invalid');
+      }
+      if (run.remoteSubscriptionId != null &&
+          run.remoteSubscriptionId != subscriptionId) {
+        throw const FormatException('Mac Host run subscription did not match');
+      }
+      run.remoteSubscriptionId = subscriptionId;
+      if (run.terminal) await run.remoteNotifications?.cancel();
+    } on Object catch (error) {
+      _failRemoteRun(run, error, afterDispatch: run.remoteHostId != null);
+    }
+  }
+
+  void _acceptRemoteNotification(
+    _AndroidRun run,
+    Map<String, Object?> notification,
+  ) {
+    if (run.terminal ||
+        notification['method'] != 'run.event' ||
+        notification['params'] is! Map) {
+      return;
+    }
+    try {
+      final params = jsonObject(notification['params'], 'notification.params');
+      final event = RunEvent.fromJson(params['event']);
+      final notificationSequence = params['sequence'];
+      if (event.runId.value != run.remoteRunId ||
+          notificationSequence != event.sequence) {
+        return;
+      }
+      final subscriptionId = params['subscriptionId'];
+      if (subscriptionId is! String || subscriptionId.isEmpty) return;
+      if (run.remoteSubscriptionId != null &&
+          run.remoteSubscriptionId != subscriptionId) {
+        return;
+      }
+      run.remoteSubscriptionId ??= subscriptionId;
+      if (event.sequence <= (run.remoteSequence ?? -1)) return;
+      run.remoteSequence = event.sequence;
+      if (event.state == RunState.created ||
+          event.state == RunState.validating) {
+        return;
+      }
+      _emit(
+        run,
+        event.state,
+        blocks: event.blocks,
+        failure: event.failure,
+        occurredAt: event.occurredAt,
+      );
+      if (run.terminal) unawaited(run.remoteNotifications?.cancel());
+    } on Object {
+      // Ignore malformed notifications; the authenticated RPC remains open.
+    }
+  }
+
+  void _failRemoteRun(
+    _AndroidRun run,
+    Object error, {
+    required bool afterDispatch,
+  }) {
+    if (run.terminal) return;
+    final status = hostManager.statusFor(run.remoteHostId ?? '');
+    final permissionDenied =
+        status == AndroidHostStatus.permissionDenied ||
+        error is AndroidHostRpcException && error.code == -32002;
+    final unknown =
+        afterDispatch &&
+        (run.remoteRunId != null ||
+            status == AndroidHostStatus.outcomeUnknown ||
+            error is AndroidHostPairingException &&
+                error.failure == AndroidHostPairingFailure.requestTimedOut ||
+            error is AndroidHostRpcException && error.code == -32004 ||
+            error is AndroidHostRpcException && error.code == -32603 ||
+            error is AndroidHostPairingException &&
+                error.failure == AndroidHostPairingFailure.transportClosed);
+    if (unknown) {
+      _emit(
+        run,
+        RunState.outcomeUnknown,
+        failure: const RuntimeFailure(
+          RuntimeErrorCode.outcomeUnknown,
+          'Mac Host 连接中断，执行结果未知；请先在 Mac 上确认状态。',
+          phase: 'remote',
+        ),
+      );
+    } else {
+      _emit(
+        run,
+        RunState.failed,
+        failure: RuntimeFailure(
+          permissionDenied
+              ? RuntimeErrorCode.permissionDenied
+              : error is AndroidHostPairingException &&
+                    error.failure == AndroidHostPairingFailure.requestTimedOut
+              ? RuntimeErrorCode.timedOut
+              : RuntimeErrorCode.connectionFailed,
+          permissionDenied
+              ? 'Mac Host 拒绝了此设备的访问权限。'
+              : _hostStatusDiagnostic(status),
+          phase: 'remote',
+        ),
+      );
+    }
+    unawaited(run.remoteNotifications?.cancel());
+  }
+
+  String _newHostOperationId() =>
+      'android-op-${DateTime.now().toUtc().millisecondsSinceEpoch}-${++_serial}';
 
   Future<void> _call(
     _AndroidRun run,
@@ -656,6 +1111,7 @@ final class AndroidRuntimePort
     RunState state, {
     List<ResultBlock> blocks = const [],
     RuntimeFailure? failure,
+    DateTime? occurredAt,
   }) {
     if (run.terminal) return;
     run.state = state;
@@ -663,7 +1119,7 @@ final class AndroidRuntimePort
       runId: run.id,
       sequence: run.history.length,
       state: state,
-      occurredAt: DateTime.now().toUtc(),
+      occurredAt: occurredAt ?? DateTime.now().toUtc(),
       blocks: blocks,
       failure: failure,
     );
@@ -712,6 +1168,41 @@ final class AndroidRuntimePort
   Future<void> cancel(RunId id) async {
     final run = _runs[id.value];
     if (run == null || run.terminal) return;
+    if (run.remoteHostId case final hostId?) {
+      try {
+        final remoteRunId = run.remoteRunId;
+        if (remoteRunId == null) {
+          _emit(
+            run,
+            RunState.outcomeUnknown,
+            failure: const RuntimeFailure(
+              RuntimeErrorCode.outcomeUnknown,
+              'Mac Host 尚未确认运行编号，执行结果未知。',
+              phase: 'cancel',
+            ),
+          );
+          return;
+        }
+        await hostManager.call(hostId, 'run.cancel', {
+          'operationId': _newHostOperationId(),
+          'runId': remoteRunId,
+        }, sideEffect: true);
+        _emit(
+          run,
+          RunState.outcomeUnknown,
+          failure: const RuntimeFailure(
+            RuntimeErrorCode.outcomeUnknown,
+            '已向 Mac Host 请求停止；远端最终状态仍需确认。',
+            phase: 'cancel',
+          ),
+        );
+      } on Object catch (error) {
+        _failRemoteRun(run, error, afterDispatch: true);
+      } finally {
+        await run.remoteNotifications?.cancel();
+      }
+      return;
+    }
     _emit(
       run,
       RunState.outcomeUnknown,
@@ -732,6 +1223,16 @@ final class AndroidRuntimePort
 
   @override
   Future<List<ResultBlock>> readResource(ResourceRef ref) async {
+    final remote = _remoteCapabilities[ref.capability.key];
+    if (remote != null) {
+      final response = await hostManager.call(remote.hostId, 'resource.read', {
+        'ref': ResourceRef(
+          remote.remoteId,
+          Uri.parse(remote.remoteId.name),
+        ).toJson(),
+      });
+      return _resultBlocks(response['blocks']);
+    }
     final entry = _entries[ref.capability.connection.value];
     if (entry?.session == null ||
         !entry!.capabilities.any(
@@ -750,6 +1251,14 @@ final class AndroidRuntimePort
 
   @override
   Future<List<ResultBlock>> getPrompt(PromptRef ref, JsonMap arguments) async {
+    final remote = _remoteCapabilities[ref.capability.key];
+    if (remote != null) {
+      final response = await hostManager.call(remote.hostId, 'prompt.get', {
+        'ref': PromptRef(remote.remoteId).toJson(),
+        'arguments': arguments,
+      });
+      return _resultBlocks(response['blocks']);
+    }
     final entry = _entries[ref.capability.connection.value];
     if (entry?.session == null ||
         !entry!.capabilities.any(
@@ -764,6 +1273,13 @@ final class AndroidRuntimePort
     } catch (cause) {
       throw StateError(_safeFailure(cause));
     }
+  }
+
+  List<ResultBlock> _resultBlocks(Object? raw) {
+    if (raw is! List) {
+      throw const FormatException('Host result blocks are invalid');
+    }
+    return raw.map(ResultBlock.fromJson).toList(growable: false);
   }
 
   @override
@@ -835,6 +1351,11 @@ final class _AndroidRun {
   final CapabilityId capability;
   final List<RunEvent> history = [];
   RunState state = RunState.created;
+  String? remoteHostId;
+  String? remoteRunId;
+  String? remoteSubscriptionId;
+  int? remoteSequence;
+  StreamSubscription<Map<String, Object?>>? remoteNotifications;
   bool get terminal => {
     RunState.succeeded,
     RunState.failed,
@@ -842,4 +1363,43 @@ final class _AndroidRun {
     RunState.timedOut,
     RunState.outcomeUnknown,
   }.contains(state);
+}
+
+final class _AndroidRemoteConnection {
+  _AndroidRemoteConnection({
+    required this.hostId,
+    required this.remoteId,
+    required this.connection,
+  });
+
+  final String hostId;
+  final String remoteId;
+  Connection connection;
+
+  void setConnection(Connection value) => connection = value;
+
+  void setAvailability(ConnectionStatus status, String diagnostic) {
+    connection = Connection(
+      id: connection.id,
+      kind: connection.kind,
+      label: connection.label,
+      location: connection.location,
+      executionTarget: connection.executionTarget,
+      status: status,
+      protocolVersion: connection.protocolVersion,
+      diagnostic: diagnostic,
+    );
+  }
+}
+
+final class _AndroidRemoteCapability {
+  const _AndroidRemoteCapability({
+    required this.hostId,
+    required this.remoteId,
+    required this.capability,
+  });
+
+  final String hostId;
+  final CapabilityId remoteId;
+  final Capability capability;
 }

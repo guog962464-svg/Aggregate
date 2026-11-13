@@ -4,6 +4,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('Host CLI connection does not expose local action editor', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = _HostConnectionRuntime();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ConnectionsPage(runtime: runtime, onOpen: (_) {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('编辑动作'), findsNothing);
+    await tester.tap(find.text('删除连接'));
+    await tester.pumpAndSettle();
+    expect(find.text('此连接将从配对的 Mac Host 删除。'), findsOneWidget);
+    await tester.tap(find.text('删除').last);
+    await tester.pumpAndSettle();
+    expect(runtime.removed?.value, 'host-cli');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('connection action editor adds and saves an action', (
     tester,
   ) async {
@@ -39,6 +66,38 @@ void main() {
     expect(runtime.saved?['actions'], hasLength(2));
     expect(tester.takeException(), isNull);
   });
+}
+
+final class _HostConnectionRuntime implements RuntimePort {
+  ConnectionId? removed;
+
+  @override
+  bool get isPreview => false;
+
+  @override
+  RuntimeFeatures get features => RuntimeFeatures.httpOnly;
+
+  @override
+  Future<List<Connection>> listConnections() async => [
+    Connection(
+      id: ConnectionId('host-cli'),
+      kind: ConnectionKind.cli,
+      label: 'Host CLI',
+      location: 'Host managed executable',
+      executionTarget: ExecutionTarget.host('mac-host'),
+    ),
+  ];
+
+  @override
+  Future<List<Capability>> searchCapabilities(SearchQuery query) async => [];
+
+  @override
+  Future<void> removeConnection(ConnectionId id) async {
+    removed = id;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _ActionRuntime implements RuntimePort {

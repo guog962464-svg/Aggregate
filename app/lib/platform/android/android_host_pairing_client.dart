@@ -780,6 +780,9 @@ final class AndroidHostAuthenticatedSession {
   final DateTime Function() _now;
   final Duration _rpcTimeout;
   final Map<String, Completer<Map<String, Object?>>> _pending = {};
+  final _notifications = StreamController<Map<String, Object?>>.broadcast(
+    sync: true,
+  );
   late final Future<void> _reader;
   var _closed = false;
   var _nextRequest = 0;
@@ -787,6 +790,8 @@ final class AndroidHostAuthenticatedSession {
   Future<void>? _closeFuture;
 
   bool get isOpen => !_closed;
+
+  Stream<Map<String, Object?>> get notifications => _notifications.stream;
 
   Future<Map<String, Object?>> call(
     String method,
@@ -848,6 +853,8 @@ final class AndroidHostAuthenticatedSession {
       throw const AndroidHostPairingException(
         AndroidHostPairingFailure.requestTimedOut,
       );
+    } on AndroidHostRpcException {
+      rethrow;
     } on AndroidHostPairingException {
       rethrow;
     } on Object {
@@ -866,6 +873,16 @@ final class AndroidHostAuthenticatedSession {
         if (frame is! String) continue;
         final response = _decodeResponse(frame);
         final requestId = response['id'];
+        if (requestId == null && !response.containsKey('id')) {
+          final method = response['method'];
+          final params = response['params'];
+          if (method is String &&
+              params is Map &&
+              params.keys.every((key) => key is String)) {
+            _notifications.add(Map.unmodifiable(response));
+          }
+          continue;
+        }
         if (requestId is! String) continue;
         final pending = _pending.remove(requestId);
         if (pending == null || pending.isCompleted) continue;
@@ -903,6 +920,7 @@ final class AndroidHostAuthenticatedSession {
         }
       }
       _pending.clear();
+      await _notifications.close();
       try {
         await _closeSocket();
       } on Object {

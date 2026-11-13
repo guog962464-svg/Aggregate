@@ -79,6 +79,14 @@ void main() {
     expect(connection.containsKey('diagnostic'), isFalse);
   });
 
+  test('connection list hides connections without read permission', () async {
+    authorization.allowConnectionRead = false;
+    final response = await call('connection.list', const {});
+    final connections =
+        (response['result']! as Map<String, Object?>)['connections']! as List;
+    expect(connections, isEmpty);
+  });
+
   test(
     'capability results use opaque IDs and redact sensitive locations',
     () async {
@@ -388,6 +396,8 @@ String _frame(
 });
 
 final class _Authorization implements HostRpcAuthorizationPort {
+  bool allowConnectionRead = true;
+
   @override
   Future<bool> isAuthorized({
     required String deviceId,
@@ -398,6 +408,7 @@ final class _Authorization implements HostRpcAuthorizationPort {
     if (method == 'runtime.connection.invoke') {
       return params['permissionLevel'] == 'read';
     }
+    if (method == 'runtime.connection.read') return allowConnectionRead;
     return true;
   }
 }

@@ -5,9 +5,36 @@ import 'android_host_discovery.dart';
 import 'android_host_pairing_client.dart';
 import 'android_runtime_store.dart';
 
+enum AndroidHostStatus {
+  offline,
+  connecting,
+  online,
+  authenticationInvalid,
+  versionIncompatible,
+  permissionDenied,
+  timedOut,
+  outcomeUnknown,
+}
+
+final class AndroidHostStatusChange {
+  const AndroidHostStatusChange(this.hostId, this.status);
+
+  final String hostId;
+  final AndroidHostStatus status;
+}
+
 abstract interface class AndroidHostManagerPort {
   List<AndroidPairedHost> get hosts;
   bool isConnected(String hostId);
+  AndroidHostStatus statusFor(String hostId);
+  Stream<AndroidHostStatusChange> get statusChanges;
+  Future<Map<String, Object?>> call(
+    String hostId,
+    String method,
+    Map<String, Object?> params, {
+    bool sideEffect = false,
+  });
+  Stream<Map<String, Object?>> watchNotifications(String hostId);
 
   Future<AndroidHostPairingReceipt> requestPairing({
     required AndroidHostInvitation invitation,
@@ -22,6 +49,7 @@ abstract interface class AndroidHostManagerPort {
   Future<AndroidPairedHost> connect(String hostId);
   Future<void> disconnect(String hostId);
   Future<void> remove(String hostId);
+  Future<void> dispose();
 }
 
 final class AndroidPairedHost {
@@ -157,6 +185,12 @@ final class AndroidHostManager implements AndroidHostManagerPort {
   final DateTime Function() now;
   final Map<String, AndroidPairedHost> _hosts = {};
   final Map<String, AndroidHostAuthenticatedSession> _sessions = {};
+  final Map<String, StreamSubscription<Map<String, Object?>>> _sessionWatches =
+      {};
+  final Map<String, AndroidHostStatus> _statuses = {};
+  final _statusChanges = StreamController<AndroidHostStatusChange>.broadcast(
+    sync: true,
+  );
   final List<String> notices = [];
   Future<void> _tail = Future<void>.value();
 
@@ -183,6 +217,18 @@ final class AndroidHostManager implements AndroidHostManagerPort {
 
   @override
   bool isConnected(String hostId) => _sessions[hostId]?.isOpen ?? false;
+
+  @override
+  AndroidHostStatus statusFor(String hostId) {
+    final status = _statuses[hostId] ?? AndroidHostStatus.offline;
+    if (status == AndroidHostStatus.online && !isConnected(hostId)) {
+      return AndroidHostStatus.offline;
+    }
+    return status;
+  }
+
+  @override
+  Stream<AndroidHostStatusChange> get statusChanges => _statusChanges.stream;
 
   Future<void> load() async {
     try {
@@ -234,20 +280,26 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     required String displayName,
   }) async {
     _validateDisplayName(displayName);
-    final session = await pairingClient.authenticate(
-      AndroidHostTarget.fromInvitation(invitation),
-    );
-    final previous = _hosts[invitation.hostId];
-    final host = AndroidPairedHost(
-      hostId: invitation.hostId,
-      displayName: displayName.trim(),
-      certificateSha256: invitation.certificateSha256,
-      endpoints: invitation.endpoints,
-      pairedAt: previous?.pairedAt ?? now().toUtc(),
-      lastConnectedAt: now().toUtc(),
-    );
-    await _installSession(host, session);
-    return host;
+    _setStatus(invitation.hostId, AndroidHostStatus.connecting);
+    try {
+      final session = await pairingClient.authenticate(
+        AndroidHostTarget.fromInvitation(invitation),
+      );
+      final previous = _hosts[invitation.hostId];
+      final host = AndroidPairedHost(
+        hostId: invitation.hostId,
+        displayName: displayName.trim(),
+        certificateSha256: invitation.certificateSha256,
+        endpoints: invitation.endpoints,
+        pairedAt: previous?.pairedAt ?? now().toUtc(),
+        lastConnectedAt: now().toUtc(),
+      );
+      await _installSession(host, session);
+      return host;
+    } on Object catch (error) {
+      _setStatus(invitation.hostId, _statusForFailure(error));
+      rethrow;
+    }
   }
 
   @override
@@ -258,21 +310,27 @@ final class AndroidHostManager implements AndroidHostManagerPort {
         AndroidHostPairingFailure.invalidInvitation,
       );
     }
-    final discoveredEndpoints = await discovery.discover(hostId);
-    final target = AndroidHostTarget(
-      hostId: host.hostId,
-      certificateSha256: host.certificateSha256,
-      endpoints: discoveredEndpoints.isEmpty
-          ? host.endpoints
-          : discoveredEndpoints,
-    );
-    final session = await pairingClient.authenticate(target);
-    final connected = host.withConnection(
-      endpoints: target.endpoints,
-      lastConnectedAt: now().toUtc(),
-    );
-    await _installSession(connected, session);
-    return connected;
+    _setStatus(hostId, AndroidHostStatus.connecting);
+    try {
+      final discoveredEndpoints = await discovery.discover(hostId);
+      final target = AndroidHostTarget(
+        hostId: host.hostId,
+        certificateSha256: host.certificateSha256,
+        endpoints: discoveredEndpoints.isEmpty
+            ? host.endpoints
+            : discoveredEndpoints,
+      );
+      final session = await pairingClient.authenticate(target);
+      final connected = host.withConnection(
+        endpoints: target.endpoints,
+        lastConnectedAt: now().toUtc(),
+      );
+      await _installSession(connected, session);
+      return connected;
+    } on Object catch (error) {
+      _setStatus(hostId, _statusForFailure(error));
+      rethrow;
+    }
   }
 
   Future<void> _installSession(
@@ -301,14 +359,127 @@ final class AndroidHostManager implements AndroidHostManagerPort {
       );
     }
     final previousSession = _sessions[host.hostId];
+    await _sessionWatches.remove(host.hostId)?.cancel();
     _sessions[host.hostId] = session;
+    _setStatus(host.hostId, AndroidHostStatus.online);
+    _sessionWatches[host.hostId] = session.notifications.listen(
+      (_) {},
+      onDone: () {
+        if (identical(_sessions[host.hostId], session)) {
+          _setStatus(host.hostId, AndroidHostStatus.offline);
+        }
+      },
+    );
     await previousSession?.close();
   });
 
   @override
+  Future<Map<String, Object?>> call(
+    String hostId,
+    String method,
+    Map<String, Object?> params, {
+    bool sideEffect = false,
+  }) async {
+    final session = _sessions[hostId];
+    if (session == null || !session.isOpen) {
+      _setStatus(hostId, AndroidHostStatus.offline);
+      throw const AndroidHostPairingException(
+        AndroidHostPairingFailure.transportClosed,
+      );
+    }
+    try {
+      final result = await session.call(method, params);
+      _markRpcSuccess(hostId);
+      return result;
+    } on AndroidHostRpcException catch (error) {
+      final status = sideEffect && {-32004, -32603}.contains(error.code)
+          ? AndroidHostStatus.outcomeUnknown
+          : _statusForRpc(error.code);
+      _setStatus(hostId, status);
+      rethrow;
+    } on AndroidHostPairingException catch (error) {
+      final status = error.failure == AndroidHostPairingFailure.requestTimedOut
+          ? sideEffect
+                ? AndroidHostStatus.outcomeUnknown
+                : AndroidHostStatus.timedOut
+          : _statusForFailure(error);
+      _setStatus(hostId, status);
+      rethrow;
+    }
+  }
+
+  @override
+  Stream<Map<String, Object?>> watchNotifications(String hostId) {
+    final session = _sessions[hostId];
+    if (session == null || !session.isOpen) {
+      return Stream.error(
+        const AndroidHostPairingException(
+          AndroidHostPairingFailure.transportClosed,
+        ),
+      );
+    }
+    return session.notifications;
+  }
+
+  void _setStatus(String hostId, AndroidHostStatus status) {
+    if (_statuses[hostId] == status) return;
+    _statuses[hostId] = status;
+    if (!_statusChanges.isClosed) {
+      _statusChanges.add(AndroidHostStatusChange(hostId, status));
+    }
+  }
+
+  void _markRpcSuccess(String hostId) {
+    if ({
+      AndroidHostStatus.authenticationInvalid,
+      AndroidHostStatus.versionIncompatible,
+      AndroidHostStatus.permissionDenied,
+      AndroidHostStatus.outcomeUnknown,
+    }.contains(_statuses[hostId])) {
+      return;
+    }
+    _setStatus(hostId, AndroidHostStatus.online);
+  }
+
+  AndroidHostStatus _statusForFailure(Object error) {
+    if (error is AndroidHostPairingException) {
+      return switch (error.failure) {
+        AndroidHostPairingFailure.protocolMismatch =>
+          AndroidHostStatus.versionIncompatible,
+        AndroidHostPairingFailure.requestTimedOut => AndroidHostStatus.timedOut,
+        AndroidHostPairingFailure.transportClosed ||
+        AndroidHostPairingFailure.hostUnavailable => AndroidHostStatus.offline,
+        AndroidHostPairingFailure.invalidDeviceIdentity ||
+        AndroidHostPairingFailure.tlsPinMismatch ||
+        AndroidHostPairingFailure.invitationExpired ||
+        AndroidHostPairingFailure.approvalRequired ||
+        AndroidHostPairingFailure.pairingRejected ||
+        AndroidHostPairingFailure.alreadyPaired =>
+          AndroidHostStatus.authenticationInvalid,
+        _ => AndroidHostStatus.offline,
+      };
+    }
+    return AndroidHostStatus.offline;
+  }
+
+  AndroidHostStatus _statusForRpc(int? code) => switch (code) {
+    -32001 || -32601 => AndroidHostStatus.versionIncompatible,
+    -32002 => AndroidHostStatus.permissionDenied,
+    -32004 => AndroidHostStatus.outcomeUnknown,
+    -32013 ||
+    -32010 ||
+    -32011 ||
+    -32012 ||
+    -32015 => AndroidHostStatus.authenticationInvalid,
+    _ => AndroidHostStatus.offline,
+  };
+
+  @override
   Future<void> disconnect(String hostId) async {
+    await _sessionWatches.remove(hostId)?.cancel();
     final session = _sessions.remove(hostId);
     await session?.close();
+    _setStatus(hostId, AndroidHostStatus.offline);
   }
 
   @override
@@ -323,8 +494,10 @@ final class AndroidHostManager implements AndroidHostManagerPort {
         AndroidHostPairingFailure.storageFailure,
       );
     }
+    await _sessionWatches.remove(hostId)?.cancel();
     final session = _sessions.remove(hostId);
     await session?.close();
+    _setStatus(hostId, AndroidHostStatus.offline);
   });
 
   Future<void> _persist() async {
@@ -340,11 +513,15 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     }
   }
 
+  @override
   Future<void> dispose() async {
     await _tail;
+    await Future.wait(_sessionWatches.values.map((watch) => watch.cancel()));
+    _sessionWatches.clear();
     final sessions = _sessions.values.toList();
     _sessions.clear();
     await Future.wait(sessions.map((session) => session.close()));
+    await _statusChanges.close();
     await _store.flush();
   }
 

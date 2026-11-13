@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,9 +32,19 @@ class _AndroidHostSettingsPanelState extends State<AndroidHostSettingsPanel> {
   AndroidHostPairingReceipt? _receipt;
   String? _error;
   var _busy = false;
+  StreamSubscription<AndroidHostStatusChange>? _statusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _statusSubscription = widget.hostManager.statusChanges.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
+    _statusSubscription?.cancel();
     _payloadController.dispose();
     _nameController.dispose();
     super.dispose();
@@ -317,19 +329,20 @@ class _AndroidHostSettingsPanelState extends State<AndroidHostSettingsPanel> {
           Text('配对完成后会显示在这里。', style: theme.textTheme.bodyMedium)
         else
           ...hosts.map((host) {
-            final connected = widget.hostManager.isConnected(host.hostId);
+            final status = widget.hostManager.statusFor(host.hostId);
+            final connected =
+                status == AndroidHostStatus.online ||
+                widget.hostManager.isConnected(host.hostId);
             return Card(
               child: ListTile(
                 leading: Icon(
-                  connected
+                  status == AndroidHostStatus.online
                       ? Icons.desktop_mac
                       : Icons.desktop_windows_outlined,
                 ),
                 title: Text(host.displayName),
                 subtitle: Text(
-                  connected
-                      ? '已连接 · ${host.endpoints.length} 个局域网地址'
-                      : '未连接 · ${host.endpoints.length} 个局域网地址',
+                  '${_hostStatusLabel(status)} · ${host.endpoints.length} 个局域网地址',
                 ),
                 trailing: PopupMenuButton<String>(
                   tooltip: 'Host 操作',
@@ -361,6 +374,17 @@ class _AndroidHostSettingsPanelState extends State<AndroidHostSettingsPanel> {
       ],
     );
   }
+
+  String _hostStatusLabel(AndroidHostStatus status) => switch (status) {
+    AndroidHostStatus.offline => '离线',
+    AndroidHostStatus.connecting => '连接中',
+    AndroidHostStatus.online => '在线',
+    AndroidHostStatus.authenticationInvalid => '认证失效',
+    AndroidHostStatus.versionIncompatible => '版本不兼容',
+    AndroidHostStatus.permissionDenied => '权限拒绝',
+    AndroidHostStatus.timedOut => '请求超时',
+    AndroidHostStatus.outcomeUnknown => '执行结果未知',
+  };
 
   String _formatTime(DateTime value) {
     final local = value.toLocal();

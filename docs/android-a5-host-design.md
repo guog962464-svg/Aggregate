@@ -143,7 +143,15 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 副作用通过现有文件 operation ledger 去重；同进程重试可返回缓存结果，进程内最多缓存 4096 个完成结果。终端/登录句柄按认证会话缓存，重连后重复请求只返回账本状态，不泄漏旧会话句柄。Host 重启后不会重放已开始操作；重启前已完成但客户端未收到回复的操作，其返回值没有持久化，账本只能报告状态；恢复 UI 尚未实现。
 - `flutter test --no-pub test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_rpc_protocol_test.dart test/host_wss_transport_test.dart test/mac_runtime_test.dart` 共 51 项通过，`flutter analyze --no-pub` 无问题；Mac 新设备授权选择器另有 widget 测试。测试证明 dispatcher 单元行为和界面授权映射，不等同 Android 客户端通过 production WSS 完成这些 RPC。
 - manifest.get 只接受已登记 CLI 连接，发放 10 分钟、按 deviceId/connectionId 绑定的 opaque executableRef；manifest.save 要求目标连接获批 externalWrite，解析 opaque 引用后只在 Mac 上恢复真实可执行文件路径，不能由 Android 指定路径。Host 返回的 manifest action 参数会脱敏。文件引用与分块内容传输尚无协议实现。
-- 后续边界：`manifest.readContent` / `manifest.exportContent` 尚无 runtime handler；manifest 附件的 Host opaque handle / 有界内容传输尚未实现。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；保存动作清单需连接管理和该连接的 externalWrite；内容传输仍关闭，既有设备没有原位修改权限的 UI。A6 仍需实现 Android RemoteRuntime 与 UI 路由，再对普通 CLI、stdio/HTTP MCP、网易云登录与终端做跨端验收。直接 LAN/Bonjour 和 Release 权限仍属于未验证项。
+- 后续边界：`manifest.readContent` / `manifest.exportContent` 尚无 runtime handler；manifest 附件的 Host opaque handle / 有界内容传输尚未实现。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；保存动作清单需连接管理和该连接的 externalWrite；内容传输仍关闭，既有设备没有原位修改权限的 UI。A6.1 已把 Android 认证 RPC、连接/能力路由与运行事件映射接入 Android Runtime，并加入分级配对状态；自动化只验证客户端适配和 Host dispatcher，本地生产 WSS 的 Android 跨端验收仍待完成。活动历史恢复、向导路由、账号、终端和普通 CLI/stdio/HTTP MCP/网易云的端到端验收仍属于 A6 后续工作。直接 LAN/Bonjour 和 Release 权限也未验证。
+
+## A6.1 Android RemoteRuntime 客户端进度（2026-11-13）
+
+- `AndroidHostAuthenticatedSession` 现把签名 WSS 会话中的 JSON-RPC notification 转成 broadcast stream；Android Host manager 暴露认证 RPC、运行状态变化和在线通知流。
+- `AndroidRuntimePort` 合并本机 HTTP MCP 与配对 Host 的连接目录。远端连接 ID 以 Host ID 和 Mac connection ID 构成，`executionTarget` 指明 Host；能力查询保留 Host 签发的 capability opaque ID 映射，远端运行事件重映射到本机 `RunId` / `RunEvent`。调用 timeout、认证断开及 Host 的 `outcomeUnknown` 不会被当作失败后自动重试。
+- 配对面板区分离线、连接中、在线、认证失效、版本不兼容、权限拒绝、超时与执行结果未知。Runtime 状态变化触发 Flutter shell 重载连接和能力目录。
+- `HostRuntimeRpcDispatcher.connection.list` 现在逐连接检查 read grant；未授权连接不会将名称和类型暴露给设备。
+- 自动化覆盖 authenticated session notification、Android Host connection/capability/invoke/event 路由、运行历史及 status mapping、配对面板状态显示和逐连接 read 过滤。Android→Mac production WSS 的真实 RPC 尚未验收；Host LAN/Bonjour、活动恢复、账号、终端、连接向导与 manifest 内容传输也未包含在 A6.1。
 
 ## A5.4 配对实现进度（2026-11-13）
 

@@ -41,6 +41,12 @@ abstract interface class RuntimePort {
   Future<void> closeTerminal(TerminalSession session);
 }
 
+/// Optional signal for shells that need to reload catalogs after an external
+/// runtime changes, such as a paired remote host connecting or disconnecting.
+abstract interface class RuntimeChangeSource {
+  Stream<void> get changes;
+}
+
 abstract interface class McpClientPort<Session> {
   Future<Session> connect(Connection connection);
   Future<List<Capability>> listTools(Session session);

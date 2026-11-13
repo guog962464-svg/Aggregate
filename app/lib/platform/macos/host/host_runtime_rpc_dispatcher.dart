@@ -140,10 +140,15 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
     switch (request.method) {
       case 'connection.list':
         final connections = await runtime.listConnections();
+        final visible = <Connection>[];
+        for (final connection in connections) {
+          if (await _canReadConnection(deviceId, connection.id.value)) {
+            visible.add(connection);
+          }
+        }
         return {
           'connections': [
-            for (final connection in connections)
-              _safeConnectionJson(connection),
+            for (final connection in visible) _safeConnectionJson(connection),
           ],
         };
       case 'connection.refresh':

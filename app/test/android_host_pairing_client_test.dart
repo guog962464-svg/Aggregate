@@ -112,11 +112,23 @@ void main() {
       );
       expect(session.isOpen, isTrue);
       expect(connector.sockets.last.methods, contains('host.hello'));
+      final notifications = <Map<String, Object?>>[];
+      final notificationSubscription = session.notifications.listen(
+        notifications.add,
+      );
+      connector.sockets.last.emit({
+        'jsonrpc': '2.0',
+        'method': 'run.event',
+        'params': {'subscriptionId': 'sub-test'},
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(notifications.single['method'], 'run.event');
       final status = await session.call('host.status', const {});
       expect(status['phase'], 'running');
       expect(connector.sockets.last.methods, contains('host.status'));
 
       await session.close();
+      await notificationSubscription.cancel();
       expect(session.isOpen, isFalse);
       expect(connector.sockets.last.isClosed, isTrue);
     },
@@ -147,6 +159,9 @@ void main() {
       );
       expect(host.hostId, _hostId);
       expect(manager.isConnected(_hostId), isTrue);
+      expect(manager.statusFor(_hostId), AndroidHostStatus.online);
+      await manager.disconnect(_hostId);
+      expect(manager.statusFor(_hostId), AndroidHostStatus.offline);
       await manager.dispose();
 
       final restored = AndroidHostManager(AndroidRuntimeStore(directory));
@@ -154,9 +169,71 @@ void main() {
       expect(restored.hosts, hasLength(1));
       expect(restored.hosts.single.displayName, '家庭 Mac');
       expect(restored.isConnected(_hostId), isFalse);
+      expect(restored.statusFor(_hostId), AndroidHostStatus.offline);
       await restored.remove(_hostId);
       expect(restored.hosts, isEmpty);
       await restored.dispose();
+    },
+  );
+
+  test(
+    'classifies Host access, protocol and uncertain operation failures',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-host-status-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final connector = _FakeConnector();
+      final manager = AndroidHostManager(
+        AndroidRuntimeStore(directory),
+        pairingClient: AndroidHostPairingClient(
+          identity: _FakeIdentity(),
+          connector: connector,
+          now: () => _now,
+          rpcTimeout: const Duration(milliseconds: 50),
+        ),
+        now: () => _now,
+      );
+      await manager.load();
+      await manager.completePairing(
+        invitation: _invitation(),
+        displayName: '测试手机',
+      );
+      final socket = connector.sockets.single;
+      for (final (code, status) in [
+        (-32001, AndroidHostStatus.versionIncompatible),
+        (-32002, AndroidHostStatus.permissionDenied),
+        (-32013, AndroidHostStatus.authenticationInvalid),
+        (-32004, AndroidHostStatus.outcomeUnknown),
+      ]) {
+        socket.rpcErrorCodes['host.status'] = code;
+        await expectLater(
+          manager.call(_hostId, 'host.status', const {}),
+          throwsA(isA<AndroidHostRpcException>()),
+        );
+        expect(manager.statusFor(_hostId), status);
+      }
+
+      socket.rpcErrorCodes['host.status'] = -32603;
+      await expectLater(
+        manager.call(_hostId, 'host.status', const {}, sideEffect: true),
+        throwsA(isA<AndroidHostRpcException>()),
+      );
+      expect(manager.statusFor(_hostId), AndroidHostStatus.outcomeUnknown);
+
+      socket.rpcErrorCodes.clear();
+      socket.noReplyMethods.add('host.status');
+      await expectLater(
+        manager.call(_hostId, 'host.status', const {}),
+        throwsA(isA<AndroidHostPairingException>()),
+      );
+      expect(manager.statusFor(_hostId), AndroidHostStatus.timedOut);
+      await expectLater(
+        manager.call(_hostId, 'host.status', const {}, sideEffect: true),
+        throwsA(isA<AndroidHostPairingException>()),
+      );
+      expect(manager.statusFor(_hostId), AndroidHostStatus.outcomeUnknown);
+      await manager.dispose();
     },
   );
 }
@@ -198,6 +275,8 @@ final class _FakeConnector implements AndroidHostSocketConnector {
 final class _FakeSocket implements AndroidHostSocket {
   final _controller = StreamController<Object?>();
   final methods = <String>[];
+  final rpcErrorCodes = <String, int>{};
+  final noReplyMethods = <String>{};
   String? _deviceId;
   var isClosed = false;
 
@@ -249,6 +328,12 @@ final class _FakeSocket implements AndroidHostSocket {
         jsonDecode(envelope['payload']! as String) as Map<String, Object?>;
     final method = payload['method']! as String;
     methods.add(method);
+    if (noReplyMethods.contains(method)) return;
+    final errorCode = rpcErrorCodes[method];
+    if (errorCode != null) {
+      _respondError(payload['id']! as String, errorCode);
+      return;
+    }
     final result = switch (method) {
       'host.hello' => {
         'protocolVersion': hostProtocolVersion,
@@ -269,6 +354,24 @@ final class _FakeSocket implements AndroidHostSocket {
         );
       }
     });
+  }
+
+  void _respondError(String id, int code) {
+    scheduleMicrotask(() {
+      if (!_controller.isClosed) {
+        _controller.add(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'id': id,
+            'error': {'code': code, 'message': 'failure'},
+          }),
+        );
+      }
+    });
+  }
+
+  void emit(Map<String, Object?> notification) {
+    if (!_controller.isClosed) _controller.add(jsonEncode(notification));
   }
 
   String _token(int byte) =>

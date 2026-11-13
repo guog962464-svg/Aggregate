@@ -54,6 +54,7 @@ class AppShellState extends State<AppShell> {
   bool homesLoading = true;
   Object? homesError;
   int homesGeneration = 0;
+  StreamSubscription<void>? runtimeChanges;
   final workspaceKey = GlobalKey<WorkspacePageState>();
   final connectionsKey = GlobalKey<ConnectionsPageState>();
   final activityKey = GlobalKey<ActivityPageState>();
@@ -62,6 +63,22 @@ class AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     reloadConnectionHomes(selectInitial: true);
+    final runtime = widget.runtime;
+    if (runtime is RuntimeChangeSource) {
+      runtimeChanges = (runtime as RuntimeChangeSource).changes.listen((_) {
+        if (!mounted) return;
+        reloadConnectionHomes();
+        connectionsKey.currentState?.reload();
+        workspaceKey.currentState?.reloadCatalog();
+        activityKey.currentState?.reload();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    runtimeChanges?.cancel();
+    super.dispose();
   }
 
   @override

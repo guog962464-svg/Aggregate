@@ -115,7 +115,11 @@ class ConnectionsPageState extends State<ConnectionsPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('删除 ${connection.label}？'),
-        content: const Text('此连接的配置将从本机移除。'),
+        content: Text(
+          connection.executionTarget.kind == ExecutionTargetKind.host
+              ? '此连接将从配对的 Mac Host 删除。'
+              : '此连接的配置将从本机移除。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -362,7 +366,9 @@ class ConnectionsPageState extends State<ConnectionsPage> {
                   onPressed: canMoveDown ? () => move(connection, 1) : null,
                   icon: const Icon(Icons.arrow_downward, size: 18),
                 ),
-                if (connection.kind == ConnectionKind.cli)
+                if (connection.kind == ConnectionKind.cli &&
+                    connection.executionTarget.kind ==
+                        ExecutionTargetKind.device)
                   OutlinedButton.icon(
                     onPressed: () => editActions(connection),
                     icon: const Icon(Icons.edit_outlined, size: 18),

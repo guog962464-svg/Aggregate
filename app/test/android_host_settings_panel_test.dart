@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:aggregate/platform/android/android_host_manager.dart';
@@ -28,6 +29,7 @@ void main() {
     tester,
   ) async {
     final manager = _FakeHostManager();
+    addTearDown(manager.dispose);
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -58,19 +60,52 @@ void main() {
     expect(find.text('Mac Host 已配对并连接'), findsOneWidget);
     expect(find.text('家庭 Mac'), findsOneWidget);
     expect(manager.isConnected(_hostId), isTrue);
+    manager.statusOverride = AndroidHostStatus.permissionDenied;
+    manager.statusChangesController.add(
+      AndroidHostStatusChange(_hostId, AndroidHostStatus.permissionDenied),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('权限拒绝 · 1 个局域网地址'), findsOneWidget);
   });
 }
 
 final class _FakeHostManager implements AndroidHostManagerPort {
   final _hosts = <AndroidPairedHost>[];
   final _connected = <String>{};
+  final _statusChanges = StreamController<AndroidHostStatusChange>.broadcast();
   String? requestedDisplayName;
+  AndroidHostStatus? statusOverride;
+
+  StreamController<AndroidHostStatusChange> get statusChangesController =>
+      _statusChanges;
 
   @override
   List<AndroidPairedHost> get hosts => List.unmodifiable(_hosts);
 
   @override
   bool isConnected(String hostId) => _connected.contains(hostId);
+
+  @override
+  AndroidHostStatus statusFor(String hostId) =>
+      statusOverride ??
+      (_connected.contains(hostId)
+          ? AndroidHostStatus.online
+          : AndroidHostStatus.offline);
+
+  @override
+  Stream<AndroidHostStatusChange> get statusChanges => _statusChanges.stream;
+
+  @override
+  Future<Map<String, Object?>> call(
+    String hostId,
+    String method,
+    Map<String, Object?> params, {
+    bool sideEffect = false,
+  }) async => throw UnimplementedError();
+
+  @override
+  Stream<Map<String, Object?>> watchNotifications(String hostId) =>
+      const Stream.empty();
 
   @override
   Future<AndroidHostPairingReceipt> requestPairing({
@@ -115,4 +150,7 @@ final class _FakeHostManager implements AndroidHostManagerPort {
     _hosts.removeWhere((host) => host.hostId == hostId);
     _connected.remove(hostId);
   }
+
+  @override
+  Future<void> dispose() => _statusChanges.close();
 }
