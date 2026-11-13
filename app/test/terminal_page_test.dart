@@ -44,6 +44,33 @@ void main() {
     expect(runtime.closeCalls, 1);
   });
 
+  testWidgets(
+    'terminal identifies Host permission and hides secret arguments',
+    (tester) async {
+      _usePhoneSize(tester);
+      final runtime = _TerminalRuntime();
+      const command = CliCommand(ConnectionId('test'), [
+        '--token',
+        'very-secret-token',
+        '--verbose',
+      ]);
+      await _showTerminal(
+        tester,
+        runtime,
+        command: command,
+        executionTarget: '配对 Mac',
+        permission: PermissionLevel.externalWrite,
+      );
+
+      expect(find.text('执行端：配对 Mac · 权限：外部写入'), findsOneWidget);
+      expect(find.textContaining('••••••'), findsOneWidget);
+      expect(find.textContaining('very-secret-token'), findsNothing);
+      expect(runtime.openedCommand?.arguments, command.arguments);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
+
   testWidgets('paste sends bounded clipboard text and copy uses selection', (
     tester,
   ) async {
@@ -169,6 +196,9 @@ Future<void> _showTerminal(
   _TerminalRuntime runtime, {
   bool dark = false,
   double textScale = 1,
+  CliCommand? command,
+  String executionTarget = '此设备',
+  PermissionLevel permission = PermissionLevel.localControl,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -184,8 +214,10 @@ Future<void> _showTerminal(
             ),
       home: TerminalPage(
         runtime: runtime,
-        command: const CliCommand(ConnectionId('test'), ['--help']),
+        command: command ?? const CliCommand(ConnectionId('test'), ['--help']),
         source: '配对 Mac',
+        executionTarget: executionTarget,
+        permission: permission,
       ),
     ),
   );
@@ -211,6 +243,7 @@ final class _TerminalRuntime implements RuntimePort {
   final StreamController<String> output = StreamController<String>();
   final List<String> writes = [];
   final List<(int, int)> resizes = [];
+  CliCommand? openedCommand;
   int interruptCalls = 0;
   int closeCalls = 0;
   bool failWrites = false;
@@ -221,8 +254,10 @@ final class _TerminalRuntime implements RuntimePort {
   }
 
   @override
-  Future<TerminalSession> openTerminal(CliCommand command) async =>
-      const TerminalSession('test-session');
+  Future<TerminalSession> openTerminal(CliCommand command) async {
+    openedCommand = command;
+    return const TerminalSession('test-session');
+  }
 
   @override
   Stream<String> watchTerminal(TerminalSession session) => output.stream;

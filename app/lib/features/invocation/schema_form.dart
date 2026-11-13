@@ -15,6 +15,7 @@ class SchemaFormState extends State<SchemaForm> {
   final controllers = <String, TextEditingController>{};
   final booleans = <String, bool>{};
   final selections = <String, String>{};
+  final expandedJsonFields = <String>{};
   final summaryFocus = FocusNode();
   bool showSummary = false;
 
@@ -71,6 +72,23 @@ class SchemaFormState extends State<SchemaForm> {
       };
     }
     return values;
+  }
+
+  void _formatJson(String name) {
+    final controller = controllers[name];
+    if (controller == null) return;
+    try {
+      final decoded = jsonDecode(controller.text);
+      final formatted = const JsonEncoder.withIndent('  ').convert(decoded);
+      controller.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+      setState(() {});
+    } on FormatException {
+      // The field validator provides the inline error for malformed JSON.
+      formKey.currentState?.validate();
+    }
   }
 
   @override
@@ -151,11 +169,32 @@ class SchemaFormState extends State<SchemaForm> {
                       : spec['enum'] is List
                       ? '可选：${(spec['enum'] as List).join('、')}'
                       : null,
+                  suffixIcon: type == 'array' || type == 'object'
+                      ? IconButton(
+                          tooltip: '格式化 ${spec['title'] ?? entry.key}',
+                          onPressed: () => _formatJson(entry.key),
+                          icon: const Icon(Icons.data_object),
+                        )
+                      : null,
                 ),
-                maxLines: type == 'array' || type == 'object' ? 4 : 1,
+                minLines: type == 'array' || type == 'object' ? 4 : 1,
+                maxLines: type == 'array' || type == 'object'
+                    ? (expandedJsonFields.contains(entry.key) ? 14 : 6)
+                    : 1,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
+                textAlignVertical: type == 'array' || type == 'object'
+                    ? TextAlignVertical.top
+                    : null,
+                style: type == 'array' || type == 'object'
+                    ? const TextStyle(fontFamily: 'monospace')
+                    : null,
                 keyboardType: type == 'integer' || type == 'number'
                     ? TextInputType.number
+                    : type == 'array' || type == 'object'
+                    ? TextInputType.multiline
+                    : null,
+                textInputAction: type == 'array' || type == 'object'
+                    ? TextInputAction.newline
                     : null,
                 validator: (raw) {
                   final text = raw?.trim() ?? '';
@@ -190,6 +229,30 @@ class SchemaFormState extends State<SchemaForm> {
               );
             },
           ),
+          if (entry.value is Map &&
+              ((entry.value as Map)['type'] == 'array' ||
+                  (entry.value as Map)['type'] == 'object'))
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() {
+                  if (!expandedJsonFields.add(entry.key)) {
+                    expandedJsonFields.remove(entry.key);
+                  }
+                }),
+                icon: Icon(
+                  expandedJsonFields.contains(entry.key)
+                      ? Icons.unfold_less
+                      : Icons.unfold_more,
+                  size: 18,
+                ),
+                label: Text(
+                  expandedJsonFields.contains(entry.key)
+                      ? '收起 JSON 编辑器'
+                      : '展开 JSON 编辑器',
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
         ],
       ],

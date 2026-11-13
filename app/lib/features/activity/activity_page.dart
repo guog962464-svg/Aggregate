@@ -18,6 +18,7 @@ class ActivityPageState extends State<ActivityPage> {
   late Future<List<RunSummary>> pending;
   RunSummary? selected;
   RunState? stateFilter;
+  final Set<String> cancellingRunIds = {};
 
   @override
   void initState() {
@@ -42,6 +43,38 @@ class ActivityPageState extends State<ActivityPage> {
     }
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('此功能当前不可用。请在连接页刷新来源。')));
+  }
+
+  bool _canCancel(RunState state) => switch (state) {
+    RunState.created ||
+    RunState.validating ||
+    RunState.awaitingPermission ||
+    RunState.running => true,
+    RunState.succeeded ||
+    RunState.failed ||
+    RunState.cancelled ||
+    RunState.timedOut ||
+    RunState.outcomeUnknown => false,
+  };
+
+  Future<void> _cancel(RunSummary run) async {
+    final runId = run.id.value;
+    if (cancellingRunIds.contains(runId)) return;
+    setState(() => cancellingRunIds.add(runId));
+    try {
+      await widget.runtime.cancel(run.id);
+      if (!mounted) return;
+      reload();
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('已请求取消；请刷新确认最终状态。')));
+    } catch (cause) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('取消请求失败：$cause')));
+      }
+    } finally {
+      if (mounted) setState(() => cancellingRunIds.remove(runId));
+    }
   }
 
   String _capabilityName(RunSummary run) =>
@@ -87,6 +120,8 @@ class ActivityPageState extends State<ActivityPage> {
           _filter('失败', RunState.failed),
           _filter('取消', RunState.cancelled),
           _filter('超时', RunState.timedOut),
+          _filter('运行中', RunState.running),
+          _filter('结果待确认', RunState.outcomeUnknown),
         ],
       ),
       const SizedBox(height: 20),
@@ -196,8 +231,23 @@ class ActivityPageState extends State<ActivityPage> {
             OutlinedButton.icon(
               onPressed: () => reopen(run),
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('重新打开功能'),
+              label: Text(
+                _canCancel(run.latest.state) ||
+                        run.latest.state == RunState.outcomeUnknown
+                    ? '查看运行'
+                    : '重新打开功能',
+              ),
             ),
+            if (_canCancel(run.latest.state))
+              OutlinedButton.icon(
+                onPressed: cancellingRunIds.contains(run.id.value)
+                    ? null
+                    : () => _cancel(run),
+                icon: const Icon(Icons.stop_circle_outlined, size: 18),
+                label: Text(
+                  cancellingRunIds.contains(run.id.value) ? '取消中…' : '取消运行',
+                ),
+              ),
             TextButton.icon(
               onPressed: () async {
                 await Clipboard.setData(

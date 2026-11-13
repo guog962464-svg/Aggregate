@@ -14,11 +14,17 @@ class TerminalPage extends StatefulWidget {
     required this.runtime,
     required this.command,
     required this.source,
+    this.executionTarget = '此设备',
+    this.permission = PermissionLevel.localControl,
   });
 
   final RuntimePort runtime;
   final CliCommand command;
   final String source;
+  final String executionTarget;
+  final PermissionLevel permission;
+
+  String get _displayCommand => _redactCommandArguments(command.arguments);
 
   @override
   State<TerminalPage> createState() => _TerminalPageState();
@@ -277,11 +283,25 @@ class _TerminalPageState extends State<TerminalPage> {
                   const Icon(Icons.terminal, size: 18),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      '${widget.source}  ${widget.command.arguments.join(' ')}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontFamily: 'monospace'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.source}  ${widget._displayCommand}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontFamily: 'monospace'),
+                        ),
+                        const SizedBox(height: 2),
+                        Semantics(
+                          label:
+                              '执行端：${widget.executionTarget}；权限：${_permissionLabel(widget.permission)}',
+                          child: Text(
+                            '执行端：${widget.executionTarget} · 权限：${_permissionLabel(widget.permission)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -395,4 +415,39 @@ class _TerminalPageState extends State<TerminalPage> {
         onPressed: _connected ? () => _sendKey(key) : null,
         icon: Text(label),
       );
+}
+
+String _permissionLabel(PermissionLevel permission) => switch (permission) {
+  PermissionLevel.read => '只读',
+  PermissionLevel.localControl => '运行端控制',
+  PermissionLevel.externalWrite => '外部写入',
+  PermissionLevel.unknown => '权限待确认',
+};
+
+String _redactCommandArguments(List<String> arguments) {
+  final result = <String>[];
+  var hideNext = false;
+  for (final argument in arguments) {
+    if (hideNext) {
+      result.add('••••••');
+      hideNext = false;
+      continue;
+    }
+    final equals = argument.indexOf('=');
+    final flag = equals < 0 ? argument : argument.substring(0, equals);
+    if (RegExp(
+      r'(password|passwd|secret|token|api.?key|authorization|credential)',
+      caseSensitive: false,
+    ).hasMatch(flag)) {
+      if (equals >= 0) {
+        result.add('${argument.substring(0, equals + 1)}••••••');
+      } else {
+        result.add(argument);
+        hideNext = true;
+      }
+    } else {
+      result.add(argument);
+    }
+  }
+  return result.join(' ');
 }
