@@ -13,7 +13,7 @@ void main() {
   testWidgets('account panel confirms logout and switches through QR login', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(800, 600);
+    tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -22,12 +22,28 @@ void main() {
     final session = MusicSession(runtime);
     addTearDown(session.dispose);
     addTearDown(runtime.delegate.dispose);
-    final connection = (await runtime.listConnections()).single;
+    final localConnection = (await runtime.listConnections()).single;
+    final connection = Connection(
+      id: localConnection.id,
+      kind: localConnection.kind,
+      label: localConnection.label,
+      location: 'Mac 本机 CLI',
+      executionTarget: ExecutionTarget.host('paired-mac'),
+      status: localConnection.status,
+      protocolVersion: localConnection.protocolVersion,
+      diagnostic: localConnection.diagnostic,
+    );
     final capabilities = await runtime.searchCapabilities(
       const SearchQuery(''),
     );
     await tester.pumpWidget(
       MaterialApp(
+        theme: ThemeData.dark(useMaterial3: true),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(1.8)),
+          child: child!,
+        ),
         home: Scaffold(
           body: MusicPlayerPage(
             connection: connection,
@@ -39,6 +55,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('音乐播放器 · 声音由配对 Mac 输出'), findsOneWidget);
     expect(find.byKey(const Key('music-account')), findsOneWidget);
     expect(find.bySemanticsLabel('管理网易云音乐账号，原账号'), findsOneWidget);
     session.authorizeSearch();
@@ -46,15 +64,22 @@ void main() {
     session.prepareTrack('旧账号歌曲', '歌手');
     session.playing = false;
     await tester.enterText(find.byKey(const Key('music-search')), '旧搜索');
-    await tester.tap(find.byTooltip('搜索歌曲'));
+    final searchButton = find.byTooltip('搜索歌曲');
+    await tester.ensureVisible(searchButton);
+    await tester.tap(searchButton);
     await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
     expect(find.text('歌曲 · 2 首'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('music-account')));
+    final accountButton = find.byKey(const Key('music-account'));
+    await tester.ensureVisible(accountButton);
+    await tester.tap(accountButton);
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
     expect(find.text('已登录 · 原账号'), findsOneWidget);
     await tester.tap(find.text('退出登录'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
     expect(find.text('退出登录？'), findsOneWidget);
     await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
@@ -74,14 +99,24 @@ void main() {
 
     await tester.tap(find.text('扫码登录'));
     await tester.pump();
+    expect(tester.takeException(), isNull);
     expect(runtime.loginCalls, 1);
     expect(find.text('取消扫码'), findsOneWidget);
     expect(find.text('正在生成二维码…'), findsOneWidget);
     runtime.emitLoginOutput('或点击链接打开: https://163cn.tv/fakeLogin\r\n');
     await tester.pump();
     expect(find.byKey(const Key('music-login-qr')), findsOneWidget);
+    expect(find.textContaining('当前手机无法扫描自己的屏幕'), findsOneWidget);
     expect(find.byType(QrImageView), findsOneWidget);
     expect(find.text('等待手机确认…'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    tester.view.physicalSize = const Size(844, 390);
+    await tester.pumpAndSettle();
+    expect(find.text('取消扫码'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    tester.view.physicalSize = const Size(375, 812);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('取消扫码'));
     await tester.tap(
       find.ancestor(of: find.text('取消扫码'), matching: find.byType(TextButton)),
     );

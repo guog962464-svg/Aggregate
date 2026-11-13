@@ -424,7 +424,12 @@ class _AccountDialogState extends State<_AccountDialog> {
                   }),
                 ],
                 if (scanning) ...[
-                  const Text('使用网易云音乐 App 扫描二维码，在手机上确认登录。'),
+                  Text(
+                    widget.connection.executionTarget.kind ==
+                            ExecutionTargetKind.host
+                        ? '二维码由配对 Mac 生成。当前手机无法扫描自己的屏幕，请用另一台设备上的网易云音乐 App 扫码确认。'
+                        : '使用网易云音乐 App 扫描二维码，在手机上确认登录。',
+                  ),
                   const SizedBox(height: 12),
                   Center(
                     child: ClipRRect(
@@ -456,8 +461,10 @@ class _AccountDialogState extends State<_AccountDialog> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     if (scanning)
                       TextButton(

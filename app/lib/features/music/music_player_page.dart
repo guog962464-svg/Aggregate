@@ -301,7 +301,9 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   @override
   Widget build(BuildContext context) => PageFrame(
     title: widget.connection.label,
-    subtitle: '音乐播放器',
+    subtitle: widget.connection.executionTarget.kind == ExecutionTargetKind.host
+        ? '音乐播放器 · 声音由配对 Mac 输出'
+        : '音乐播放器',
     trailing: widget.runtime is ConnectionAccountPort
         ? MusicAccountControl(
             connection: widget.connection,

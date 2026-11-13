@@ -9,11 +9,13 @@ final class _SetupFixture
     this.withField = false,
     this.autoDetect = false,
     this.httpOnly = false,
+    this.actionRequired = false,
     this.executionTarget = ExecutionTarget.device,
   });
   final bool withField;
   final bool autoDetect;
   final bool httpOnly;
+  final bool actionRequired;
   final ExecutionTarget executionTarget;
   int tests = 0;
   final discarded = <String>[];
@@ -93,7 +95,15 @@ final class _SetupFixture
     latest = draft;
     return ConnectionSetupReport(
       draftId: 'draft-$tests',
-      checks: const [SetupCheck('连通性', SetupCheckStatus.passed, '程序可启动。')],
+      checks: [
+        const SetupCheck('连通性', SetupCheckStatus.passed, '程序可启动。'),
+        if (actionRequired)
+          const SetupCheck(
+            '账号登录',
+            SetupCheckStatus.actionRequired,
+            '保存后在播放器内扫码登录。',
+          ),
+      ],
       canSave: true,
     );
   }
@@ -115,6 +125,46 @@ final class _SetupFixture
 }
 
 void main() {
+  testWidgets('actionRequired account check stays visible and incomplete', (
+    tester,
+  ) async {
+    final setup = _SetupFixture(actionRequired: true);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<Connection>(
+                context: context,
+                builder: (_) => ConnectionSetupDialog(setup: setup),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '名称'), '网易云音乐');
+    await tester.enterText(
+      find.widgetWithText(TextField, '程序绝对路径'),
+      '/usr/bin/ncm-cli',
+    );
+    await tester.tap(find.text('测试连接'));
+    await tester.pumpAndSettle();
+    expect(find.text('账号登录：保存后在播放器内扫码登录。'), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '保存连接'))
+          .onPressed,
+      isNotNull,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('save requires a fresh successful connection test', (
     tester,
   ) async {

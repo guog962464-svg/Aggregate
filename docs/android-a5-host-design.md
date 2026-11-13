@@ -171,6 +171,15 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 验收：Flutter 全量 159 项通过，`flutter analyze --no-pub` 无问题，Android arm64 Debug APK 与 macOS Debug app 构建通过；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机安装并启动，MainActivity 为 resumed，最近 250 条 logcat 未见崩溃。没有 16 KB 实体设备，也未在本轮通过 production WSS 真正调用 Mac CLI、账号登录或传输远程 PTY 输出；该本地验收不等同这些跨设备场景验收。
 - A6.4 接续网易云 Host 登录、搜索权限与执行位置；A6.5 接续手机终端交互体验。
 
+## A6.4 Android 网易云 Host 账号进度（2026-11-14）
+
+- Host 网易云连接仍由 Mac `MacRuntime` 使用连接自己的独立 `profileId` 执行配置检查、登录状态读取、扫码登录、退出和音乐 CLI 动作；Android 只使用远端 connection ID 与音乐歌曲 ID/关键词，不取得 Mac profile、密钥或文件路径。
+- 手机播放器副标题明确标注“声音由配对 Mac 输出”。账号登录通过 Host PTY 传回二维码链接并等待 Mac 端登录进程结束后重新读取账号状态。由于二维码显示在同一部手机上，当前说明要求用另一台设备上的网易云 App 扫码；单机扫码/应用跳转仍留给 A7 手机流程重新设计。
+- 创建连接时 Host `actionRequired` 检查按信息项显示，账号未登录或搜索权限未确认不会伪装成通过。搜索先由 Android 取得本次 App 会话确认，Mac Host 对每次动作仍按当前能力声明的精确权限重新授权。账号读取、登录、等待与退出要求账号 grant；开始登录还要求终端 grant；读取及退出同时要求目标连接 read 权限。登出目标连接权限拒绝有 dispatcher 回归测试。
+- 网易云手机流程只传递文本关键词、歌曲加密 ID 与原始 ID，不传本地音频路径或 `file://` URI；Android 文件预览/定位仍明确不支持，Host 文件内容传输尚未开放，因此不把 Mac 路径交给手机解释。
+- 自动化覆盖 Android `actionRequired` 检查呈现、Host 播放位置标签、二维码同机扫描限制文案、音乐控制确认及 Host 账号退出逐连接授权。账号页面组件在 375×812、深色主题、1.8 倍文字缩放与 844×390 横屏下回归，发现并修复账号弹窗按钮横向溢出；手机宽度的共享 Flutter 页面标题区会将尾部操作放到标题下方。验收：Flutter 全量 161 项通过、`flutter analyze --no-pub` 无问题，Android arm64 与 macOS Debug 构建成功；LGE AN10 / Android 15 / API 35 / 4 KB 真机已安装并启动，MainActivity resumed，最近 300 条 logcat 无应用崩溃。
+- 验收边界：本轮没有用用户真实账号完成 production WSS 登录/搜索/扬声器听音闭环，也没有 16 KB 实体设备；双设备二维码登录、Host 网络/WSS 实时体验和实际音频验收仍待后续。网易云扫码登录遵循 [`@music163/ncm-cli` 官方 README](https://www.npmjs.com/package/%40music163/ncm-cli) 的终端扫码流程，移动端不能把当前屏幕上的二维码当成同机可扫描入口。
+
 ## A5.4 配对实现进度（2026-11-13）
 
 - `app/android/app/src/main/kotlin/io/github/guog962464/aggregate/HostDeviceKeyStoreChannel.kt` 使用 Android Keystore 生成 P-256 `PURPOSE_SIGN` 私钥，SHA-256/ECDSA 签名只经 MethodChannel 返回；Dart 侧只接触 X.509 SPKI 公钥、按公钥摘要派生的 device ID 和 DER 签名。应用层从不读取私钥字节。密钥删除后再创建会产生新的 device ID。

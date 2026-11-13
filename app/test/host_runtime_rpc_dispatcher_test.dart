@@ -100,6 +100,20 @@ void main() {
   );
 
   test(
+    'account logout requires read access to the target connection',
+    () async {
+      authorization.allowConnectionRead = false;
+      final response = await call('account.logout', {
+        'operationId': 'account-logout-denied',
+        'connectionId': 'connection-1',
+        'confirmed': true,
+      });
+      expect(response['error'], isNotNull);
+      expect(runtime.accountLogoutCalls, 0);
+    },
+  );
+
+  test(
     'capability results use opaque IDs and redact sensitive locations',
     () async {
       final capability = await exposedCapability('Remote file');
@@ -471,6 +485,7 @@ final class _Runtime implements RuntimePort, ConnectionAccountPort {
   int terminalCloseCalls = 0;
   int accountLoginCalls = 0;
   int accountWaitCalls = 0;
+  int accountLogoutCalls = 0;
   final readCapability = const Capability(
     id: CapabilityId(
       ConnectionId('connection-1'),
@@ -635,5 +650,8 @@ final class _Runtime implements RuntimePort, ConnectionAccountPort {
   Future<AccountSnapshot> logoutAccount(
     ConnectionId connection, {
     required bool confirmed,
-  }) async => const AccountSnapshot(AccountState.signedOut);
+  }) async {
+    accountLogoutCalls++;
+    return const AccountSnapshot(AccountState.signedOut);
+  }
 }
