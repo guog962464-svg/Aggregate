@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../platform/macos/host/host_control_port.dart';
 import '../../platform/macos/host/host_pairing_authority.dart';
@@ -13,10 +14,12 @@ class MacHostSettingsPanel extends StatefulWidget {
     super.key,
     required this.hostControl,
     required this.pairingControl,
+    required this.loadConnections,
   });
 
   final HostControlPort hostControl;
   final HostPairingControlPort pairingControl;
+  final Future<List<Connection>> Function() loadConnections;
 
   @override
   State<MacHostSettingsPanel> createState() => _MacHostSettingsPanelState();
@@ -138,7 +141,8 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
 
   Future<void> _approve(
     HostPendingPairing request, {
-    required bool setup,
+    required Set<HostGrantScope> scopes,
+    Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) async {
     if (_busy) return;
     setState(() {
@@ -148,10 +152,8 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     try {
       await widget.pairingControl.approvePending(
         request.deviceId,
-        scopes: {
-          HostGrantScope.readConnections,
-          if (setup) HostGrantScope.connectionSetup,
-        },
+        scopes: scopes,
+        connectionPermissions: connectionPermissions,
       );
       await _refreshPairings(force: true);
     } catch (_) {
@@ -159,6 +161,34 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _configureApproval(HostPendingPairing request) async {
+    if (_busy) return;
+    List<Connection> connections;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      connections = await widget.loadConnections();
+    } catch (_) {
+      if (mounted) setState(() => _error = '无法读取 Mac 连接，暂时不能配置权限。');
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    final selection = await showDialog<_HostGrantSelection>(
+      context: context,
+      builder: (context) => _HostGrantDialog(connections: connections),
+    );
+    if (selection == null || !mounted) return;
+    await _approve(
+      request,
+      scopes: selection.scopes,
+      connectionPermissions: selection.connectionPermissions,
+    );
   }
 
   Future<void> _reject(HostPendingPairing request) async {
@@ -460,12 +490,29 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                 child: const Text('拒绝'),
               ),
               OutlinedButton(
-                onPressed: _busy ? null : () => _approve(request, setup: false),
+                onPressed: _busy
+                    ? null
+                    : () => _approve(
+                        request,
+                        scopes: const {HostGrantScope.readConnections},
+                      ),
                 child: const Text('批准只读'),
               ),
               FilledButton(
-                onPressed: _busy ? null : () => _approve(request, setup: true),
+                onPressed: _busy
+                    ? null
+                    : () => _approve(
+                        request,
+                        scopes: const {
+                          HostGrantScope.readConnections,
+                          HostGrantScope.connectionSetup,
+                        },
+                      ),
                 child: const Text('允许连接向导'),
+              ),
+              OutlinedButton(
+                onPressed: _busy ? null : () => _configureApproval(request),
+                child: const Text('自定义权限'),
               ),
             ],
           ),
@@ -488,4 +535,206 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
       child: const Text('撤销'),
     ),
   );
+}
+
+final class _HostGrantSelection {
+  const _HostGrantSelection({
+    required this.scopes,
+    required this.connectionPermissions,
+  });
+
+  final Set<HostGrantScope> scopes;
+  final Map<String, Set<PermissionLevel>> connectionPermissions;
+}
+
+class _HostGrantDialog extends StatefulWidget {
+  const _HostGrantDialog({required this.connections});
+
+  final List<Connection> connections;
+
+  @override
+  State<_HostGrantDialog> createState() => _HostGrantDialogState();
+}
+
+class _HostGrantDialogState extends State<_HostGrantDialog> {
+  final Set<HostGrantScope> _scopes = {HostGrantScope.readConnections};
+  final Map<String, Set<PermissionLevel>> _connectionPermissions = {};
+
+  bool get _needsConnectionSelection =>
+      _scopes.contains(HostGrantScope.connectionManagement) ||
+      _scopes.contains(HostGrantScope.account) ||
+      _scopes.contains(HostGrantScope.terminal);
+
+  void _togglePermission(Connection connection, PermissionLevel permission) {
+    setState(() {
+      final levels = _connectionPermissions.putIfAbsent(
+        connection.id.value,
+        () => <PermissionLevel>{},
+      );
+      if (levels.contains(permission)) {
+        if (permission == PermissionLevel.read &&
+            (levels.contains(PermissionLevel.localControl) ||
+                levels.contains(PermissionLevel.externalWrite))) {
+          return;
+        }
+        levels.remove(permission);
+        if (levels.isEmpty) _connectionPermissions.remove(connection.id.value);
+      } else {
+        levels.add(permission);
+        if (permission != PermissionLevel.read) {
+          levels.add(PermissionLevel.read);
+        }
+      }
+    });
+  }
+
+  void _finish() {
+    final scopes = Set<HostGrantScope>.unmodifiable(_scopes);
+    final permissions = Map<String, Set<PermissionLevel>>.unmodifiable({
+      for (final entry in _connectionPermissions.entries)
+        entry.key: Set<PermissionLevel>.unmodifiable(entry.value),
+    });
+    Navigator.of(context).pop(
+      _HostGrantSelection(scopes: scopes, connectionPermissions: permissions),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final canApprove =
+        !_needsConnectionSelection || _connectionPermissions.isNotEmpty;
+    return AlertDialog(
+      title: const Text('配置设备权限'),
+      content: SizedBox(
+        width: 520,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.65,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.visibility_outlined),
+                  title: Text('读取连接'),
+                  subtitle: Text('必需权限；未设置单连接规则时可读取所有连接。'),
+                ),
+                for (final scope in const [
+                  HostGrantScope.connectionSetup,
+                  HostGrantScope.connectionManagement,
+                  HostGrantScope.account,
+                  HostGrantScope.terminal,
+                  HostGrantScope.activityClear,
+                ])
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _scopes.contains(scope),
+                    title: Text(_scopeLabel(scope)),
+                    onChanged: (selected) => setState(() {
+                      if (selected == true) {
+                        _scopes.add(scope);
+                      } else {
+                        _scopes.remove(scope);
+                      }
+                    }),
+                  ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: false,
+                  leading: const Icon(Icons.lock_outline),
+                  title: const Text('内容传输'),
+                  subtitle: Text('尚未开放', style: theme.textTheme.bodySmall),
+                ),
+                const Divider(),
+                Text('逐连接权限', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(
+                  '设置任一连接后，仅列出的连接可读取。控制或外部写入会同时包含读取权限。',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                if (widget.connections.isEmpty)
+                  Text('Mac 尚无已登记连接。', style: theme.textTheme.bodySmall)
+                else
+                  for (final connection in widget.connections)
+                    ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: Text(connection.label),
+                      subtitle: Text(connection.kind.name),
+                      childrenPadding: const EdgeInsets.only(bottom: 8),
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            _permissionChip(
+                              connection,
+                              PermissionLevel.read,
+                              '读取',
+                            ),
+                            _permissionChip(
+                              connection,
+                              PermissionLevel.localControl,
+                              '本机控制',
+                            ),
+                            _permissionChip(
+                              connection,
+                              PermissionLevel.externalWrite,
+                              '外部写入',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                if (_needsConnectionSelection && _connectionPermissions.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '所选权限需要至少一个逐连接授权。',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: canApprove ? _finish : null,
+          child: const Text('批准所选权限'),
+        ),
+      ],
+    );
+  }
+
+  Widget _permissionChip(
+    Connection connection,
+    PermissionLevel permission,
+    String label,
+  ) => FilterChip(
+    label: Text(label),
+    selected:
+        _connectionPermissions[connection.id.value]?.contains(permission) ??
+        false,
+    onSelected: (_) => _togglePermission(connection, permission),
+  );
+
+  String _scopeLabel(HostGrantScope scope) => switch (scope) {
+    HostGrantScope.readConnections => '读取连接',
+    HostGrantScope.connectionSetup => '连接向导',
+    HostGrantScope.connectionManagement => '连接管理',
+    HostGrantScope.account => '账号',
+    HostGrantScope.terminal => '终端',
+    HostGrantScope.activityClear => '清理活动',
+    HostGrantScope.contentTransfer => '内容传输',
+  };
 }

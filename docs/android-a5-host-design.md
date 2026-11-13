@@ -133,7 +133,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `app/lib/platform/macos/host/host_operation_ledger.dart` 以 `(deviceId, operationId)` 隔离记录开始/完成/结果未知状态，不持久化请求参数、结果或秘密。启动时把遗留 `started` 记录改为 `outcomeUnknown`，绝不自动重放。账本上限为 10,000 条或 4 MiB，达到上限后拒绝新操作。
 - `app/lib/platform/macos/host/host_setup_coordinator.dart` 是 A5.3 进行中的 Host 向导核心：只公开固定 adapter allowlist；仅返回绑定设备和 adapter 的随机 `executableRef`，不返回 Mac 路径；适配器字段决定公开值和秘密值的分离，secret map 单值不超过 32 KiB；`draftHandle` 绑定设备并在 10 分钟后失效。结果检查文本和保存连接摘要脱敏。Host stop 与设备撤销清理可安全丢弃的草稿；保存异常按结果未知处理，不重试也不删除可能已被连接引用的 profile。
 - `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read` 与 setup RPC 分发（当前协议目录共 37 项）和 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
-- A5.2/A5.3 的早期验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为。当前 production factory 已把配对 authority、签名验证、文件账本、setup dispatcher 与 `HostRuntimeRpcDispatcher` 接入 WSS。runtime dispatcher 覆盖连接目录、能力搜索/调用/结果订阅/取消、活动清理、MCP 资源/提示、账号和终端；调用权限会由 Mac 按能力实际声明等级再次检查。仍缺少四个 manifest RPC handler 和文件内容传输；Mac 配对 UI 也尚未提供账号、终端、连接管理、活动清理、内容传输及逐连接调用权限的授权控件。生产 Bonjour/LAN、Release 权限和 Android RemoteRuntime 客户端端到端仍未验收，因此这不是 Host 全功能可用的结论。
+- A5.2/A5.3 的早期验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为。当前 production factory 已把配对 authority、签名验证、文件账本、setup dispatcher 与 `HostRuntimeRpcDispatcher` 接入 WSS。runtime dispatcher 覆盖连接目录、能力搜索/调用/结果订阅/取消、活动清理、MCP 资源/提示、账号和终端；调用权限会由 Mac 按能力实际声明等级再次检查。仍缺少四个 manifest RPC handler 和文件内容传输。Mac 新设备审批 UI 已支持连接向导、连接管理、账号、终端、活动清理，以及按连接配置 read/localControl/externalWrite；内容传输尚未开放，既有设备权限暂需撤销后重新配对调整。生产 Bonjour/LAN、Release 权限和 Android RemoteRuntime 客户端端到端仍未验收，因此这不是 Host 全功能可用的结论。
 
 ## A5.5 Host runtime RPC 实现进度（2026-11-13）
 
@@ -141,8 +141,8 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 已实现 `connection.list/refresh/remove/move`、`capability.search`、`run.invoke/subscribe/cancel/listRecent`、`activity.clear`、`resource.read`、`prompt.get`、`account.read/beginLogin/waitLogin/logout` 和 `terminal.open/subscribe/write/resize/interrupt/close`。setup/operation 方法仍由 `HostSetupRpcDispatcher` 处理。
 - `run.invoke` 要求客户端提交 `permissionLevel`，Host 重新查找当前能力并核对精确等级，再次调用 Host grant authorizer 后才将 `permissionGranted: true` 传给 Mac runtime。返回能力使用设备范围 opaque ID；MCP resource URI、Mac 路径、连接诊断、URL 路径/query 和常见 token 字段在 Host 输出侧脱敏。账号登录和终端使用 Host 侧 PTY；opaque terminal handle 绑定设备与会话，断连或撤销会关闭 PTY，设备撤销也会取消归属运行。
 - 副作用通过现有文件 operation ledger 去重；同进程重试可返回缓存结果，进程内最多缓存 4096 个完成结果。终端/登录句柄按认证会话缓存，重连后重复请求只返回账本状态，不泄漏旧会话句柄。Host 重启后不会重放已开始操作；重启前已完成但客户端未收到回复的操作，其返回值没有持久化，账本只能报告状态；恢复 UI 尚未实现。
-- `flutter test --no-pub test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_rpc_protocol_test.dart test/host_wss_transport_test.dart test/mac_runtime_test.dart` 共 51 项通过，`flutter analyze --no-pub` 无问题。测试证明 dispatcher 单元行为和既有 WSS 流程，不等同 Android 客户端通过 production WSS 完成这些 RPC。
-- 后续边界：`manifest.get/save/readContent/exportContent` 尚无 runtime handler；manifest 与文件内容的 Host opaque handle / 有界内容传输尚未实现。Mac 配对审批目前只能授予只读或连接向导，其他 scope 和逐连接 `localControl` / `externalWrite` 尚不能经正常 UI 发放。A6 仍需实现 Android RemoteRuntime 与 UI 路由，再对普通 CLI、stdio/HTTP MCP、网易云登录与终端做跨端验收。直接 LAN/Bonjour 和 Release 权限仍属于未验证项。
+- `flutter test --no-pub test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_rpc_protocol_test.dart test/host_wss_transport_test.dart test/mac_runtime_test.dart` 共 51 项通过，`flutter analyze --no-pub` 无问题；Mac 新设备授权选择器另有 widget 测试。测试证明 dispatcher 单元行为和界面授权映射，不等同 Android 客户端通过 production WSS 完成这些 RPC。
+- 后续边界：`manifest.get/save/readContent/exportContent` 尚无 runtime handler；manifest 与文件内容的 Host opaque handle / 有界内容传输尚未实现。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；内容传输仍关闭，既有设备没有原位修改权限的 UI。A6 仍需实现 Android RemoteRuntime 与 UI 路由，再对普通 CLI、stdio/HTTP MCP、网易云登录与终端做跨端验收。直接 LAN/Bonjour 和 Release 权限仍属于未验证项。
 
 ## A5.4 配对实现进度（2026-11-13）
 

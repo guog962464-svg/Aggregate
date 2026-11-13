@@ -28,6 +28,7 @@ void main() {
             child: MacHostSettingsPanel(
               hostControl: host,
               pairingControl: pairing,
+              loadConnections: () async => const [],
             ),
           ),
         ),
@@ -60,6 +61,64 @@ void main() {
     await tester.tap(find.text('撤销设备'));
     await tester.pumpAndSettle();
     expect(pairing.revokedDeviceIds, [pairing.deviceId]);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await host.close();
+  });
+
+  testWidgets('approves selected scopes and per-connection permissions', (
+    tester,
+  ) async {
+    final host = _FakeHostControl();
+    final pairing = _FakePairingControl();
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: MacHostSettingsPanel(
+              hostControl: host,
+              pairingControl: pairing,
+              loadConnections: () async => const [
+                Connection(
+                  id: ConnectionId('host-connection-1'),
+                  kind: ConnectionKind.cli,
+                  label: 'Mac CLI',
+                  location: '/Applications/tool',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('启动 Host'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('自定义权限'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('连接管理'));
+    await tester.tap(find.text('终端'));
+    await tester.tap(find.text('Mac CLI'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('本机控制'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('批准所选权限'));
+    await tester.pumpAndSettle();
+
+    expect(pairing.approvedScopes, {
+      HostGrantScope.readConnections,
+      HostGrantScope.connectionManagement,
+      HostGrantScope.terminal,
+    });
+    expect(pairing.approvedConnectionPermissions, {
+      'host-connection-1': {PermissionLevel.read, PermissionLevel.localControl},
+    });
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -120,6 +179,7 @@ final class _FakePairingControl implements HostPairingControlPort {
   final List<HostDeviceGrant> _grants = [];
   var invitationCalls = 0;
   Set<HostGrantScope> approvedScopes = const {};
+  Map<String, Set<PermissionLevel>> approvedConnectionPermissions = const {};
   final List<String> revokedDeviceIds = [];
 
   @override
@@ -160,6 +220,7 @@ final class _FakePairingControl implements HostPairingControlPort {
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) async {
     approvedScopes = Set.unmodifiable(scopes);
+    approvedConnectionPermissions = connectionPermissions;
     _pending.removeWhere((request) => request.deviceId == requestedDeviceId);
     final grant = HostDeviceGrant(
       deviceId: deviceId,

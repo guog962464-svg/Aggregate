@@ -15,6 +15,7 @@ Future<void> main() async {
       MacHostSettingsPanel(
         hostControl: hostControl,
         pairingControl: hostControl,
+        loadConnections: runtime.listConnections,
       ),
     ],
     AndroidRuntimePort(:final hostManager) => [
