@@ -1,6 +1,6 @@
 # A5.4 Android 配对客户端与真机验收
 
-记录日期：2026-11-13。此记录描述 Android Host 配对客户端的实现和当前验证边界，不表示 Android 与 Mac 的真实网络配对已经通过。
+记录日期：2026-11-13。已通过 USB ADB 反向转发在 Android 真机与 Mac Host 间完成配对、批准、认证和重连；这不等同于直接 LAN/Bonjour 验收。
 
 ## 实现
 
@@ -20,14 +20,15 @@
 | Debug 构建 | `flutter build apk --debug --no-pub --target-platform android-arm64` 与 `flutter build macos --debug --no-pub`：通过。 |
 | APK 原生库 | Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。包内 7 个 `.so` 均属于 `arm64-v8a`，逐个 `PT_LOAD p_align` 最小值不低于 `0x4000`。这是 Debug APK 静态检查，不是 16 KB 内核运行结果。 |
 | Android 真机 | LGE AN10、Android 15/API 35、arm64、4 KB 页：安装更新后的 APK 并启动 `MainActivity` 成功；先前相机扫描 UI 打开验收已通过。本轮结束后已撤销 CAMERA 运行权限，恢复为未授权状态。未使用模拟器。 |
-| macOS Host | Keychain/TLS pin loopback 和 CryptoKit fixture 仍是此前本机集成范围；本轮没有重置/轮换 Host 身份，也没有运行会改写身份的 Android Keystore identity 集成测试。 |
+| Android ↔ Mac Host 真机配对 | 通过 USB ADB 反向转发完成。为适配手机与 Mac 的 LAN/VPN 隔离，测试邀请只把端点改为 `wss://127.0.0.1:47321/host`；Host ID、证书 SHA-256 pin、nonce 和有效期保持原值。Mac Host 收到 Android Keystore 签名请求，验证码与两端一致；Mac UI 以“批准只读”授权后，Android 完成 challenge 认证和 `host.hello`，保存 Host 并显示已连接。断开后通过保存记录重连成功。此路径真实使用 Android Keystore 与 Mac CryptoKit，但经 USB 隧道，不覆盖直接 LAN 或 DNS-SD。 |
+| 配对清理 | 从 Mac 撤销只读授权、从 Android 移除本机记录；确认待批准/已配对列表清空。停止本轮启动的 Mac Host，删除 ADB reverse 和临时 TCP 代理；CAMERA 权限恢复为 denied。 |
 
 ## 尚未关闭的验收
 
-- 本轮 Mac 与 Android 处于不同 LAN 子网，手机同时启用 VPN，设备之间没有可用路由。未修改网络/VPN 设置，因此无法声称真实 DNS-SD 发现、手机到 Mac 的 WSS TLS pin、Android Keystore 到 CryptoKit 的签名闭环或 Mac 人工批准流程已通过。代码级 fake transport/测试不能替代这组双设备验收。
+- 本轮 Mac 与 Android 处于不同 LAN 子网，手机同时启用 VPN，设备之间没有可用路由。USB 隧道已验证 Android Keystore 签名、Mac CryptoKit 验签、证书 pin、Mac 人工批准、challenge/`host.hello`、断开/重连和撤销；直接 LAN WSS、真实 Bonjour/NSD 地址发现与网络切换仍未验收。后续需要同一可互通 LAN 上使用未改写的原始邀请验证完整发现路径。
 - 没有可用的 16 KB 页实体设备。当前 APK native library 的 ELF 和 ZIP 对齐均通过静态检查，但 16 KB 设备的安装、加载、运行以及 JNI/相机/NSD smoke 仍是外部验收门槛。
-- 尚未验证 Release/signed App 的 macOS 本地网络权限及 Android Release 包；Host 完整 RPC handler、设备密钥轮换 UX、A5.5 普通 CLI/TUI/MCP/网易云流程仍未完成。
+- 尚未验证 Release/signed App 的 macOS 本地网络权限及 Android Release 包；设备密钥轮换 UX、Host 完整 RPC handler、A5.5 普通 CLI/TUI/MCP/网易云流程仍未完成。
 
 ## 复验
 
-在 Mac Host 正常运行且手机与 Mac 位于可互通的同一局域网时，从 Mac 设置生成新邀请，在 Android 设置扫码或粘贴；确认 Host ID 与 pin 后提交配对，在 Mac 设置显式批准，再让 Android 使用一次性确认码完成 challenge 认证。成功后检查 Host 列表、断连后 Bonjour 地址刷新和重连；从 Mac 撤销后确认 Android session 断开且后续请求拒绝。另在 16 KB 实体设备独立安装并采集 page-size、启动、native load 和 scanner/NSD 日志。
+后续 LAN 复验时使用 Mac 设置生成的原始邀请，不改写端点；在同一可互通 LAN 扫码或粘贴，检查 NSD 地址、TLS pin、Mac 批准、challenge 认证和 `host.hello`，再测断连/重连、撤销及撤销后请求拒绝。另在 16 KB 实体设备独立安装并采集 page-size、启动、native load 和 scanner/NSD 日志。
