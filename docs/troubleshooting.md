@@ -19,4 +19,17 @@
 | 同名 `ncm-cli` 未显示网易云动作 | Aggregate 只对本机 npm 包元数据与 `@music163/ncm-cli` 的 `bin` 入口匹配的程序自动启用专用动作；检查安装路径，必要时按官方说明重新安装。其他同名程序仍可作为普通 CLI 使用。 |
 | 网易云搜索正常但播放不稳定 | 先运行 `ncm-cli state --output json` 与 `ncm-cli play --help`，确认当前队列和命令格式；检查本机 `mpv` 音频输出。结果待确认时不要连续点击播放，App 不会自动重发未知结果。`playing` 且队列为空、或状态响应缺失队列字段时，App 都不会宣称播放成功。早先在本机 `ncm-cli 0.1.7` 的 Node 20/24 自动探针中复现过命令与空队列不一致；用户随后已通过 Aggregate App 人工验收稳定播放、播控和实际出声。若再次复现，应保留当次命令与状态的时间顺序，用于定位自动探针和实际操作的条件差异。 |
 
+## Android 内部测试
+
+Android 仍是实验版本，当前没有 Release APK/AAB，也没有发布签名。安装、能力范围和证据见 [Android 内部测试指南](android-user-guide.md) 与 [A8 验收记录](android-a8-acceptance.md)。
+
+| 提示或现象 | 处理步骤 |
+| --- | --- |
+| Android 包无法作为正式版安装或升级 | 当前只有内部 Debug APK，签名为 Android Debug；没有正式 Release 包。不要把 Debug 包上传 Play 或作为发行版本。 |
+| 手机上没有 CLI/npm/stdio MCP | 这些能力不在 Android 主 App 中。将 CLI、TUI、stdio MCP 配置在 Mac Host，并选择 Mac 执行目标。Node/npm 固定样本只属于独立 Debug 探针。 |
+| 手机无法连接 Mac Host | 确认 Mac Host 正在运行、配对未过期、两台设备网络可达，并检查 Host 上设备授权及目标连接权限。USB ADB reverse 仅供开发测试。 |
+| Android 远程 HTTP MCP 的 HTTPS/Token 错误 | 远程端点使用 HTTPS，Token 填在独立凭证字段；不要将秘密放在 URL 中。回环 HTTP 仅用于手机本机服务。 |
+| Android 上网易云连接成功但听不到声音 | CLI、账号和音频输出由配对 Mac 执行。检查 Mac 的 mpv、队列和音频设备；当前声音不会输出到手机扬声器。 |
+| Android 运行显示“结果待确认” | 打开活动页查询目标状态；确认没有执行副作用后再重试，不要直接重复发送。 |
+
 开发环境可在仓库根目录运行 `sh tool/check.sh`。真实网易云检查使用 `dart run app/bin/netease_smoke.dart --check-only`；去掉参数会真实播放并在结束时停止。不要将 Token、私钥、完整请求头或个人歌曲记录贴进公开日志。

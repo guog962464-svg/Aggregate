@@ -1,6 +1,6 @@
 # Aggregate macOS 使用手册
 
-本版只在 macOS 上运行。工作台汇总连接提供的功能；连接页管理 CLI 与 MCP；活动页查看运行状态；设置页管理外观和本机记录。
+本版只在 macOS 上运行。Android 仍是实验目标，没有可供分发的 Release 包；仅开发和验收人员可参考[Android 内部测试指南](android-user-guide.md)，不要将 Debug APK 当作正式产品发布。工作台汇总连接提供的功能；连接页管理 CLI 与 MCP；活动页查看运行状态；设置页管理外观和本机记录。
 
 ## 安装预览包
 

@@ -10,4 +10,4 @@ The current release targets macOS only. Keep shared Flutter/Dart contracts and w
 
 ## Commit and push workflow
 
-After each completed and verified project task, create a local Git commit and push it to the current branch's configured upstream without asking for a file-list review. Commit only task-related source, tests, documentation, and required test baselines; exclude generated artifacts and secrets. Use a concise Chinese commit message. Push normally without force; if the branch has no upstream or the push is rejected, keep the local commit and report the blocker.
+After each completed and verified project task, create a local Git commit and push it to the current branch's configured upstream and the configured Gitee remote (`origin`) without asking for a file-list review. Verify both remote branch refs match the local commit. Commit only task-related source, tests, documentation, and required test baselines; exclude generated artifacts and secrets. Use a concise Chinese commit message. Push normally without force; if either remote is unavailable or rejects the push, keep the local commit and report the blocker.
