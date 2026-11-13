@@ -9,6 +9,10 @@ abstract interface class HostTlsIdentityProvider {
   Future<HostTlsIdentityMaterial> rotate();
 }
 
+abstract interface class HostTlsIdentityRotationPort {
+  Future<HostTlsIdentity> rotate();
+}
+
 /// Retrieves the Mac TLS identity from the native Keychain-backed provider.
 /// The private key is exported only into the running process for dart:io TLS.
 final class MacKeychainHostTlsIdentityProvider
@@ -41,7 +45,7 @@ final class MacKeychainHostTlsIdentityProvider
 }
 
 /// Validates native identity material before the Host can create a listener.
-final class HostTlsIdentityStore {
+final class HostTlsIdentityStore implements HostTlsIdentityRotationPort {
   HostTlsIdentityStore({HostTlsIdentityProvider? provider})
     : _provider = provider ?? const MacKeychainHostTlsIdentityProvider();
 
@@ -52,6 +56,7 @@ final class HostTlsIdentityStore {
 
   /// Rotates the certificate pin. Callers must first require explicit local
   /// confirmation and revoke all existing pairings.
+  @override
   Future<HostTlsIdentity> rotate() async => _validate(await _provider.rotate());
 
   HostTlsIdentity _validate(HostTlsIdentityMaterial material) {

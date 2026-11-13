@@ -7,6 +7,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import 'host/host_control_port.dart';
 import 'host/host_pairing_authority.dart';
+import 'host/host_tls_identity.dart';
 import 'host/host_wss_transport.dart';
 
 class MacHostSettingsPanel extends StatefulWidget {
@@ -15,17 +16,21 @@ class MacHostSettingsPanel extends StatefulWidget {
     required this.hostControl,
     required this.pairingControl,
     required this.loadConnections,
+    this.identityRotation,
   });
 
   final HostControlPort hostControl;
   final HostPairingControlPort pairingControl;
   final Future<List<Connection>> Function() loadConnections;
+  final HostTlsIdentityRotationPort? identityRotation;
 
   @override
   State<MacHostSettingsPanel> createState() => _MacHostSettingsPanelState();
 }
 
 class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
+  late final HostTlsIdentityRotationPort _identityRotation =
+      widget.identityRotation ?? HostTlsIdentityStore();
   late HostStatus _status = widget.hostControl.status;
   StreamSubscription<HostStatus>? _statusSubscription;
   Timer? _refreshTimer;
@@ -284,6 +289,100 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     }
   }
 
+  Future<void> _rotateHostIdentity() async {
+    if (_busy || widget.hostControl.status.phase != HostPhase.running) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('轮换 Mac Host 身份？'),
+        content: const Text(
+          '此操作会撤销所有已配对设备的授权并断开会话，然后更换 Host ID 和 TLS 证书。Host 会保持停止；请在重新启动后删除手机里保存的旧 Host 并重新配对、审批。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('撤销授权并轮换'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    var revokedCount = 0;
+    var grantCount = 0;
+    var grantsLoaded = false;
+    try {
+      final grants = await widget.pairingControl.pairedDevices();
+      grantsLoaded = true;
+      grantCount = grants.length;
+      for (final grant in grants) {
+        await widget.pairingControl.revokeDevice(grant.deviceId);
+        revokedCount++;
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = grantsLoaded
+              ? '撤销授权中断，已撤销 $revokedCount/$grantCount 台设备；Host 身份未轮换。请核对设备列表后重试。'
+              : '无法读取当前配对授权；Host 身份未轮换，请刷新后重试。';
+        });
+      }
+      await _refreshPairings(force: true);
+      _finishIdentityRotation();
+      return;
+    }
+
+    try {
+      await widget.hostControl.stop();
+      if (mounted) {
+        setState(() {
+          _status = widget.hostControl.status;
+          _pending = const [];
+          _paired = const [];
+          _invitation = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error =
+              '已撤销 $revokedCount 台设备授权，但 Host 未能确认关闭；身份未轮换。请检查 Host 状态后重试。';
+        });
+      }
+      _finishIdentityRotation();
+      return;
+    }
+
+    try {
+      await _identityRotation.rotate();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mac Host 身份已轮换。请启动 Host，并让手机重新配对。')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = '设备授权已撤销，Host 保持停止，但身份轮换未返回有效结果。请重试轮换后再恢复服务。';
+        });
+      }
+    } finally {
+      _finishIdentityRotation();
+    }
+  }
+
+  void _finishIdentityRotation() {
+    if (mounted) setState(() => _busy = false);
+  }
+
   Future<void> _copyInvitation() async {
     final invitation = _invitation;
     if (invitation == null) return;
@@ -388,6 +487,24 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                 padding: EdgeInsets.only(top: 8),
                 child: Text('配对认证组件尚未就绪，Host 未开放网络监听。'),
               ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: _busy || !running ? null : _rotateHostIdentity,
+                icon: const Icon(Icons.vpn_key_outlined),
+                label: const Text('轮换 Mac Host 身份'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                running
+                    ? '轮换会撤销全部配对授权并停止 Host，所有手机都需要重新配对。'
+                    : '请先启动 Host，才能读取并撤销当前设备授权。',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Semantics(

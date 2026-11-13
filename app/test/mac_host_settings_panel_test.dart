@@ -5,6 +5,7 @@ import 'package:aggregate/platform/macos/mac_host_settings_panel.dart';
 import 'package:aggregate/platform/host/host_pairing_protocol.dart';
 import 'package:aggregate/platform/macos/host/host_control_port.dart';
 import 'package:aggregate/platform/macos/host/host_pairing_authority.dart';
+import 'package:aggregate/platform/macos/host/host_tls_identity.dart';
 import 'package:aggregate/platform/macos/host/host_wss_transport.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,111 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 void main() {
+  testWidgets('rotates Mac Host identity after revoking grants and stopping', (
+    tester,
+  ) async {
+    final events = <String>[];
+    final host = _FakeHostControl(events: events);
+    final pairing = _FakePairingControl(events: events);
+    final identity = _FakeIdentityRotation(events);
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: MacHostSettingsPanel(
+              hostControl: host,
+              pairingControl: pairing,
+              identityRotation: identity,
+              loadConnections: () async => const [],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('启动 Host'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('允许连接向导'));
+    await tester.pumpAndSettle();
+    expect(pairing._grants, hasLength(1));
+
+    await tester.tap(find.text('轮换 Mac Host 身份'));
+    await tester.pumpAndSettle();
+    expect(identity.calls, 0);
+    expect(find.text('撤销授权并轮换'), findsOneWidget);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(pairing.revokedDeviceIds, isEmpty);
+    expect(host.stopCalls, 0);
+    expect(identity.calls, 0);
+
+    await tester.tap(find.text('轮换 Mac Host 身份'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('撤销授权并轮换'));
+    await tester.pumpAndSettle();
+
+    expect(pairing.revokedDeviceIds, [pairing.deviceId]);
+    expect(pairing._grants, isEmpty);
+    expect(host.stopCalls, 1);
+    expect(identity.calls, 1);
+    expect(events, ['revoke', 'stop', 'rotate']);
+    expect(host.status.phase, HostPhase.stopped);
+    expect(find.text('状态：已关闭'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await host.close();
+  });
+
+  testWidgets('does not stop Host or rotate identity when revocation fails', (
+    tester,
+  ) async {
+    final host = _FakeHostControl();
+    final pairing = _FakePairingControl()..failRevocation = true;
+    final identity = _FakeIdentityRotation([]);
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: MacHostSettingsPanel(
+              hostControl: host,
+              pairingControl: pairing,
+              identityRotation: identity,
+              loadConnections: () async => const [],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('启动 Host'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('允许连接向导'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('轮换 Mac Host 身份'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('撤销授权并轮换'));
+    await tester.pumpAndSettle();
+
+    expect(host.stopCalls, 0);
+    expect(identity.calls, 0);
+    expect(pairing.revokedDeviceIds, isEmpty);
+    expect(find.textContaining('Host 身份未轮换'), findsOneWidget);
+    expect(host.status.phase, HostPhase.running);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await host.close();
+  });
+
   testWidgets('starts Host, presents invitation, approves and revokes device', (
     tester,
   ) async {
@@ -138,10 +244,14 @@ void main() {
 }
 
 final class _FakeHostControl implements HostControlPort {
+  _FakeHostControl({this._events});
+
   final StreamController<HostStatus> _changes =
       StreamController<HostStatus>.broadcast(sync: true);
+  final List<String>? _events;
   HostStatus _status = const HostStatus(HostPhase.stopped);
   var startCalls = 0;
+  var stopCalls = 0;
 
   @override
   HostStatus get status => _status;
@@ -162,6 +272,8 @@ final class _FakeHostControl implements HostControlPort {
 
   @override
   Future<void> stop() async {
+    stopCalls++;
+    _events?.add('stop');
     _status = const HostStatus(HostPhase.stopped);
     _changes.add(_status);
   }
@@ -172,7 +284,7 @@ final class _FakeHostControl implements HostControlPort {
 final class _FakePairingControl implements HostPairingControlPort {
   static const _publicKey = [1, 2, 3, 4, 5, 6];
 
-  _FakePairingControl()
+  _FakePairingControl({this._events})
     : deviceId = HostPairingProtocol.deviceIdForPublicKey(_publicKey),
       _pending = [
         HostPendingPairing(
@@ -186,9 +298,11 @@ final class _FakePairingControl implements HostPairingControlPort {
       ];
 
   final String deviceId;
+  final List<String>? _events;
   final List<HostPendingPairing> _pending;
   final List<HostDeviceGrant> _grants = [];
   var invitationCalls = 0;
+  var failRevocation = false;
   Set<HostGrantScope> approvedScopes = const {};
   Map<String, Set<PermissionLevel>> approvedConnectionPermissions = const {};
   final List<String> updatedDeviceIds = [];
@@ -280,7 +394,28 @@ final class _FakePairingControl implements HostPairingControlPort {
 
   @override
   Future<void> revokeDevice(String requestedDeviceId) async {
+    if (failRevocation) throw StateError('simulated revoke failure');
+    _events?.add('revoke');
     revokedDeviceIds.add(requestedDeviceId);
     _grants.removeWhere((grant) => grant.deviceId == requestedDeviceId);
+  }
+}
+
+final class _FakeIdentityRotation implements HostTlsIdentityRotationPort {
+  _FakeIdentityRotation(this.events);
+
+  final List<String> events;
+  var calls = 0;
+
+  @override
+  Future<HostTlsIdentity> rotate() async {
+    calls++;
+    events.add('rotate');
+    return const HostTlsIdentity(
+      hostId: 'host-0123456789abcdef0123456789abcdef',
+      certificatePem: 'certificate',
+      privateKeyPem: 'private-key',
+      certificateSha256: 'certificate-sha256',
+    );
   }
 }

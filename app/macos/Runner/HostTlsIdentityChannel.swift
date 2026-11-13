@@ -45,13 +45,36 @@ final class HostTlsIdentityChannel {
 private final class MacHostTlsIdentity {
   private let service = "io.github.guog962464.aggregate.host.tls.v1"
   private let privateKeyTag = Data("io.github.guog962464.aggregate.host.tls.p256.v1".utf8)
+  private let activeIdentityAccount = "active-identity"
 
   func loadOrCreate() throws -> [String: String] {
+    if let activeData = try readSecret(account: activeIdentityAccount) {
+      let record: StoredIdentity
+      do {
+        record = try JSONDecoder().decode(StoredIdentity.self, from: activeData)
+      } catch {
+        throw HostIdentityFailure.invalidStoredIdentity
+      }
+      guard record.hostId.range(of: #"^host-[a-f0-9]{32}$"#, options: .regularExpression) != nil,
+            let tag = String(data: record.privateKeyTag, encoding: .utf8),
+            tag.hasPrefix("io.github.guog962464.aggregate.host.tls.p256."),
+            let privateKey = try loadPrivateKey(tag: record.privateKeyTag)
+      else {
+        throw HostIdentityFailure.invalidStoredIdentity
+      }
+      try validateCertificate(record.certificateDER, privateKey: privateKey)
+      return try material(
+        hostId: record.hostId,
+        certificateDER: record.certificateDER,
+        privateKey: privateKey
+      )
+    }
+
     let privateKey = try loadPrivateKey()
     let hostIdData = try readSecret(account: "host-id")
     let certificateData = try readSecret(account: "certificate-der")
     if privateKey == nil && hostIdData == nil && certificateData == nil {
-      return try createIdentity()
+      return try createAndActivateIdentity()
     }
     guard let privateKey,
           let hostIdData,
@@ -66,22 +89,50 @@ private final class MacHostTlsIdentity {
   }
 
   func rotate() throws -> [String: String] {
-    try deletePrivateKey()
-    try deleteSecret(account: "host-id")
-    try deleteSecret(account: "certificate-der")
-    return try createIdentity()
+    var previousKeyTag: Data?
+    if let activeData = try readSecret(account: activeIdentityAccount),
+       let record = try? JSONDecoder().decode(StoredIdentity.self, from: activeData) {
+      previousKeyTag = record.privateKeyTag
+    } else if try loadPrivateKey() != nil {
+      previousKeyTag = privateKeyTag
+    }
+    return try activateNewIdentity(removing: previousKeyTag)
   }
 
-  private func createIdentity() throws -> [String: String] {
-    let privateKey = try generatePrivateKey()
-    var stored = false
-    defer {
-      if !stored {
-        try? deleteSecret(account: "host-id")
-        try? deleteSecret(account: "certificate-der")
-        try? deletePrivateKey()
+  private func createAndActivateIdentity() throws -> [String: String] {
+    try activateNewIdentity(removing: nil)
+  }
+
+  /// Creates and validates a replacement before switching the single active
+  /// Keychain record. A failure before that update leaves the old identity
+  /// usable; cleanup after the switch is best-effort.
+  private func activateNewIdentity(removing previousKeyTag: Data?) throws -> [String: String] {
+    let candidateKeyTag = Data(
+      "io.github.guog962464.aggregate.host.tls.p256.candidate.\(UUID().uuidString.lowercased())".utf8
+    )
+    var activated = false
+    do {
+      let (record, result) = try createIdentity(privateKeyTag: candidateKeyTag)
+      let encodedRecord = try JSONEncoder().encode(record)
+      try writeSecret(account: activeIdentityAccount, value: encodedRecord)
+      activated = true
+
+      if let previousKeyTag, previousKeyTag != candidateKeyTag {
+        try? deletePrivateKey(tag: previousKeyTag)
       }
+      try? deleteSecret(account: "host-id")
+      try? deleteSecret(account: "certificate-der")
+      return result
+    } catch {
+      if !activated {
+        try? deletePrivateKey(tag: candidateKeyTag)
+      }
+      throw error
     }
+  }
+
+  private func createIdentity(privateKeyTag: Data) throws -> (StoredIdentity, [String: String]) {
+    let privateKey = try generatePrivateKey(tag: privateKeyTag)
     guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
       throw HostIdentityFailure.keyGenerationFailed
     }
@@ -100,20 +151,21 @@ private final class MacHostTlsIdentity {
       privateKey: privateKey,
       publicKeyBytes: Array(publicBytes)
     )
-    try writeSecret(account: "host-id", value: Data(hostId.utf8))
-    try writeSecret(account: "certificate-der", value: certificateDER)
+    try validateCertificate(certificateDER, privateKey: privateKey)
     let result = try material(hostId: hostId, certificateDER: certificateDER, privateKey: privateKey)
-    stored = true
-    return result
+    return (
+      StoredIdentity(hostId: hostId, certificateDER: certificateDER, privateKeyTag: privateKeyTag),
+      result
+    )
   }
 
-  private func generatePrivateKey() throws -> SecKey {
+  private func generatePrivateKey(tag: Data) throws -> SecKey {
     let attributes: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrKeySizeInBits as String: 256,
       kSecPrivateKeyAttrs as String: [
         kSecAttrIsPermanent as String: true,
-        kSecAttrApplicationTag as String: privateKeyTag,
+        kSecAttrApplicationTag as String: tag,
       ],
     ]
     var error: Unmanaged<CFError>?
@@ -124,11 +176,15 @@ private final class MacHostTlsIdentity {
   }
 
   private func loadPrivateKey() throws -> SecKey? {
+    try loadPrivateKey(tag: privateKeyTag)
+  }
+
+  private func loadPrivateKey(tag: Data) throws -> SecKey? {
     let query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
-      kSecAttrApplicationTag as String: privateKeyTag,
+      kSecAttrApplicationTag as String: tag,
       kSecReturnRef as String: true,
       kSecMatchLimit as String: kSecMatchLimitOne,
     ]
@@ -144,12 +200,12 @@ private final class MacHostTlsIdentity {
     return Optional.some(key)
   }
 
-  private func deletePrivateKey() throws {
+  private func deletePrivateKey(tag: Data) throws {
     let query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
-      kSecAttrApplicationTag as String: privateKeyTag,
+      kSecAttrApplicationTag as String: tag,
     ]
     let status = SecItemDelete(query as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
@@ -383,4 +439,10 @@ private enum HostIdentityFailure: Error {
   case invalidKeyEncoding
   case invalidStoredIdentity
   case keychainFailure
+}
+
+private struct StoredIdentity: Codable {
+  let hostId: String
+  let certificateDER: Data
+  let privateKeyTag: Data
 }
