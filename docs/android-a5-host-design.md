@@ -1,6 +1,6 @@
 # A5：macOS Host 模块与配对协议设计
 
-> 设计基线 v0.1，2026-11-13。A5 尚未实现；本文确定后续实现所遵循的接口、协议和安全要求。仍以 [Android 适配计划](android-adaptation-plan.md) 的阶段门槛为准。
+> 设计基线 v0.1，2026-11-13。本文记录 A5 的接口、协议和安全要求及后续实现进度；其中尚未实现的部分仍以 [Android 适配计划](android-adaptation-plan.md) 的阶段门槛为准。
 
 ## 目标与当前代码事实
 
@@ -134,3 +134,10 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `app/lib/platform/macos/host/host_setup_coordinator.dart` 是 A5.3 进行中的 Host 向导核心：只公开固定 adapter allowlist；仅返回绑定设备和 adapter 的随机 `executableRef`，不返回 Mac 路径；适配器字段决定公开值和秘密值的分离，secret map 单值不超过 32 KiB；`draftHandle` 绑定设备并在 10 分钟后失效。结果检查文本和保存连接摘要脱敏。Host stop 与设备撤销清理可安全丢弃的草稿；保存异常按结果未知处理，不重试也不删除可能已被连接引用的 profile。
 - `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read`（协议目录现在为 34 个方法）和 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
 - 验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为；dispatcher 尚未接入 transport 的已认证会话、真实 grant store 或生产存储目录权限，生产 transport 仍拒绝启动。通用 CLI 的 Host 程序登记、manifest/content transfer 和真正的配对加密传输仍待实现与验收。不能据此宣称手机已能连接或 Host 端副作用已获得生产级授权。
+
+## A5.4 配对实现进度（2026-11-13）
+
+- `app/android/app/src/main/kotlin/io/github/guog962464/aggregate/HostDeviceKeyStoreChannel.kt` 使用 Android Keystore 生成 P-256 `PURPOSE_SIGN` 私钥，SHA-256/ECDSA 签名只经 MethodChannel 返回；Dart 侧只接触 X.509 SPKI 公钥、按公钥摘要派生的 device ID 和 DER 签名。应用层从不读取私钥字节。密钥删除后再创建会产生新的 device ID。
+- `app/lib/platform/android/android_host_device_identity.dart` 暴露最小身份 API 并限制消息/响应大小；`app/integration_test/android_host_identity_test.dart` 覆盖身份稳定读取、签名输出、密钥删除和身份轮换。
+- 验收：Flutter 3.47.8 / Dart 3.13.7；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真实 USB 设备上，`flutter test --no-pub integration_test/android_host_identity_test.dart -d AEMN022427001360` 通过。未使用模拟器。该集成测试确认 Keystore 操作可用和签名格式大小，不单独证明 Host 端验证结果、硬件安全级别、配对审批、授权策略或传输安全。
+- 后续仍需实现并验收 Mac Host 稳定身份/TLS pin、一次性邀请和用户批准、持久 grant、随机 challenge 与逐请求签名验证、时间窗/nonce 重放保护、撤销断开及 WSS listener。完成上述链路前生产 transport 保持 fail-closed。
