@@ -1,17 +1,32 @@
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
+import 'host/host_control_port.dart';
+import 'host/host_transport_port.dart';
+import 'host/mac_host_module.dart';
 import 'mac_runtime.dart';
 import 'keychain_credential_store.dart';
 
 final class LocalRuntimePort
     implements RuntimePort, ConnectionAccountPort, ConnectionSetupPort {
-  LocalRuntimePort.live(MacRuntime runtime) : _delegate = runtime;
+  LocalRuntimePort.live(
+    MacRuntime runtime, {
+    HostTransportPort hostTransport = const PairingRequiredHostTransport(),
+  }) : _delegate = runtime,
+       hostControl = MacHostModule(
+         runtimeBindings: MacHostRuntimeBindings(
+           runtime: runtime,
+           connectionSetup: runtime,
+           accounts: runtime,
+         ),
+         hostTransport: hostTransport,
+       );
 
   static Future<LocalRuntimePort> createLive() async => LocalRuntimePort.live(
     await MacRuntime.open(credentialStore: const KeychainCredentialStore()),
   );
 
   final RuntimePort _delegate;
+  final HostControlPort hostControl;
 
   ConnectionSetupPort get _setup => _delegate as ConnectionSetupPort;
 

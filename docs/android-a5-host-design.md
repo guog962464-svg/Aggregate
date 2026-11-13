@@ -30,14 +30,14 @@ flowchart LR
 
 ```dart
 abstract interface class HostControlPort {
+  HostStatus get status;
   Stream<HostStatus> watchStatus();
   Future<void> start();
-  Future<HostInvitation> createInvitation();
   Future<void> stop();
-  Future<void> approveDevice(String requestId, Set<HostGrant> grants);
-  Future<void> revokeDevice(String deviceId);
 }
 ```
+
+A5.1 先落地状态查询与 `start()` / `stop()`；邀请、设备批准和撤销操作会在 A5.4 配对身份模型确定后加入此接口。
 
 实现使用两个接缝：
 
@@ -99,7 +99,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 ## 生命周期、网络权限与资源限制
 
-- `HostControlPort.start()` 先装载密钥/授权、绑定 TLS listener、注册 Bonjour，全部成功后状态才变为 `running`；`createInvitation()` 才生成 QR，避免单纯开启 Host 即发放配对凭据。部分启动失败需回滚 socket 和服务发现。`stop()` 先拒绝新请求，关闭 listener 和所有远程订阅，再清理 Host 自有草稿、PTY 和运行；停止与本机 UI 的 LocalRuntime 分离，不能调用全局 `MacRuntime.dispose()`。
+- 只有 A5.4 的配对/认证入口完成后，生产传输才允许绑定 TLS listener。A5.1 的 `PairingRequiredHostTransport` 固定拒绝启动，不含 socket 或 Bonjour 操作；不能以测试 transport 的启动成功代表 Host 已可联网。后续生产 `start()` 先装载密钥/授权、绑定 TLS listener、注册 Bonjour，全部成功后状态才变为 `running`；邀请生成另由 A5.4 控制，不能因单纯开启 Host 就发放配对凭据。部分启动失败需回滚 socket 和服务发现。`stop()` 先拒绝新请求，关闭 listener 和所有远程订阅，再清理 Host 自有草稿、PTY 和运行；停止与本机 UI 的 LocalRuntime 分离，不能调用全局 `MacRuntime.dispose()`。
 - 由于 MacRuntime 是 App 内进程对象，App 退出后 Host 离线。远程运行在网络断开后只可继续等待/查询；App 退出后的外部结果标为未知，不自动重放。
 - Bonjour 服务类型固定为 `_aggregate-host._tcp`。Mac app 的 `Info.plist` 需提供 `NSLocalNetworkUsageDescription` 和 `NSBonjourServices`； macOS 15 首次本地网络访问会触发系统授权。应使用正式签名的 App 进程发起网络操作，Host 未运行时不触发本地网络访问。
 - WSS 使用随机端口；只绑定当前可路由的局域网接口，不能绑定公网接口或打开端口转发。发现/配对不发送凭证。Server 必须检查 TLS 版本、Host 证书 pin、请求签名和时间窗；明文 WS 一律拒绝。
@@ -110,7 +110,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 | 子阶段 | 交付 | 关闭条件 |
 | --- | --- | --- |
-| A5.1 | `HostControlPort`、复用 MacRuntime 的 `MacHostModule`、显式 start/stop 生命周期；默认关闭。 | 不能创建第二个 MacRuntime；服务停止不破坏本机连接。 |
+| A5.1 | `HostControlPort`、复用 MacRuntime 的 `MacHostModule`、显式 start/stop 生命周期；默认关闭。生产 listener 在 A5.4 配对认证完成前保持禁用。 | 不能创建第二个 MacRuntime；服务停止不破坏本机连接；启动/停止序列化，启动失败会回滚。 |
 | A5.2 | JSON-RPC v1 的 DTO/方法目录、错误、事件游标、operationId 和协议兼容规则。 | 协议测试覆盖拒绝未知方法/版本、无效 schema、重复写操作、断线结果未知。 |
 | A5.3 | Host adapter allowlist、executableRef、设备绑定 draftHandle、凭证传输与 Mac 端授权。 | 不接受任意路径/命令；秘密不落日志、Activity 或持久草稿。 |
 | A5.4 | Keychain/Android Keystore 设备身份、一次性配对、最小 grant、撤销/重连/轮换。 | 未批准设备无法执行；撤销立即断开并清理关联资源。 |
