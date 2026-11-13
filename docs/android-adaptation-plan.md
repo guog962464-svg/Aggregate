@@ -1,6 +1,6 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-13。状态：A0–A2 已完成；A3 进行中；A4 Debug 兼容性实验进行中（A4.1–A4.5 固定样本已完成；A4.6 的固定包/CLI 动作已在单台 4 KB 真机部分验收，业务链路因 Android 平台依赖、非 TTY 配置和缺少 mpv 未通过；A4.7 的本地/Host/不支持决策已记录，但 A4 不构成产品发布资格）；A5–A8 待实施。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；受限纯 JS/npm 样本仅通过部分门槛，设备端 npm 稳定性/产品资格、通用 CLI 和 Host 尚未验证。
+> 修订日期：2026-11-13。状态：A0–A2 已完成；A3 进行中；A4 Debug 兼容性实验进行中（A4.1–A4.5 固定样本已完成；A4.6 的固定包/CLI 动作已在单台 4 KB 真机部分验收，业务链路因 Android 平台依赖、非 TTY 配置和缺少 mpv 未通过；A4.7 的本地/Host/不支持决策已记录，但 A4 不构成产品发布资格）；A5–A8 待实施，A5 Host/配对协议设计基线 v0.1 已写，尚无 Host listener 或配对实现。Android HTTP MCP 的本机回环及外部 HTTPS 闭环已在真机通过；受限纯 JS/npm 样本仅通过部分门槛，设备端 npm 稳定性/产品资格、通用 CLI 和 Host 尚未验证。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
 **统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
@@ -157,6 +157,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 ### A5：macOS Host 服务、配对与连接向导协议
 
 **依赖：**A1 的执行目标契约，可与 A3/A4 并行。
+
+**状态：**尚未实现。2026-11-13 补充了 [A5 Host 模块与配对协议设计基线 v0.1](android-a5-host-design.md)，确定了复用现有 `MacRuntime`、WSS/JSON-RPC v2、设备签名认证、最小 grant、opaque Host 路径引用和未知结果规则；A5.1–A5.5 的代码、配对、授权及真机验证仍全部待办。
 
 - [ ] A5.1 在现有 `MacRuntime` 外增加 Host 服务入口；沿用进程、PTY、MCP 和权限实现，只允许已登记连接与适配器操作，不接收任意 shell 字符串。Mac 继续拥有 CLI 程序、工作目录、独立 profile 和密钥配置。
 - [ ] A5.2 定义协议版本与对象：适配器目录、程序检测、草稿测试/保存/丢弃、连接目录、能力、调用参数、`RunId`/事件、取消、终端、账号、文件传输、错误码和执行位置；处理重复请求与外部写入后结果未知。
