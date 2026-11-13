@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:aggregate_connectors/aggregate_connectors.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import 'host_operation_ledger.dart';
@@ -14,14 +15,20 @@ const _maxOwnedRunsPerDevice = 256;
 const _maxTerminalHistoryEvents = 256;
 const _maxRememberedSessions = 4096;
 const _maxCapabilityReferencesPerDevice = 20000;
+const _maxExecutableReferencesPerDevice = 4096;
 const _maxCompletedOperationResults = 4096;
+const _executableReferenceLifetime = Duration(minutes: 10);
 final _hostPathPattern = RegExp(r'(?<![A-Za-z0-9])/(?:[^/\s]+/)+[^\s,;"<>]*');
 final _urlPattern = RegExp(
   r'(?:https?://|file://)[^\s"<>]+',
   caseSensitive: false,
 );
 final _secretAssignmentPattern = RegExp(
-  r'\b(bearer\s+|(?:access[_-]?token|refresh[_-]?token|api[_-]?key|authorization|password|private[_-]?key)\s*[:=]\s*)[^\s,;]+',
+  r'\b(bearer\s+|(?:access[_-]?token|refresh[_-]?token|token|api[_-]?key|authorization|password|private[_-]?key|secret|credential|auth)\s*[:=]\s*)[^\s,;]+',
+  caseSensitive: false,
+);
+final _secretArgumentFlagPattern = RegExp(
+  r'^--?(?:access[-_]?token|refresh[-_]?token|token|api[-_]?key|authorization|password|private[-_]?key|secret|credential|auth)$',
   caseSensitive: false,
 );
 
@@ -52,6 +59,7 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
   final Map<String, Object?> _completedResults = {};
   final Map<String, String> _completedResultSessions = {};
   final Map<String, _DeviceCapabilityReferences> _capabilityReferences = {};
+  final Map<String, _DeviceExecutableReferences> _executableReferences = {};
 
   @override
   Future<String?> dispatch(
@@ -318,6 +326,50 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
         return {
           'blocks': [for (final block in blocks) block.toJson()],
         };
+      case 'manifest.get':
+        final id = ConnectionId(params['connectionId']! as String);
+        await _authorizeConnectionRead(deviceId, id.value);
+        final connection = await _cliConnection(id);
+        final executableRef = _publicExecutableRef(
+          deviceId,
+          id,
+          connection.location,
+        );
+        final raw = await runtime.loadActionManifest(id);
+        if (raw == null) {
+          return {'executableRef': executableRef, 'manifest': null};
+        }
+        final manifest = ConnectorManifest.fromJson(raw);
+        if (!manifest.supports('macos') ||
+            manifest.executable != connection.location) {
+          throw const HostRpcProtocolException(HostRpcErrorCode.invalidParams);
+        }
+        final payload = HostConnectorManifestPayload(
+          executableRef: executableRef,
+          manifest: manifest,
+        );
+        return {
+          'executableRef': executableRef,
+          'manifest': _safeManifestPayload(payload),
+        };
+      case 'manifest.save':
+        final id = ConnectionId(params['connectionId']! as String);
+        await _authorizeConnectionRead(deviceId, id.value);
+        final connection = await _cliConnection(id);
+        final payload = HostConnectorManifestPayload.fromJson(
+          params['manifest'],
+        );
+        final executable = _resolveExecutableRef(
+          deviceId,
+          id,
+          payload.executableRef,
+          connection.location,
+        );
+        final manifest = payload.manifest.toJson()..['executable'] = executable;
+        return _executeOperation(request, deviceId, () async {
+          await runtime.saveActionManifest(id, manifest);
+          return {'saved': true};
+        });
       case 'account.read':
         final id = ConnectionId(params['connectionId']! as String);
         await _authorizeConnectionRead(deviceId, id.value);
@@ -850,6 +902,79 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
     return actual;
   }
 
+  Future<Connection> _cliConnection(ConnectionId id) async {
+    final matches = (await runtime.listConnections()).where(
+      (item) => item.id.value == id.value,
+    );
+    if (matches.length != 1 || matches.single.kind != ConnectionKind.cli) {
+      throw const HostRpcProtocolException(HostRpcErrorCode.invalidParams);
+    }
+    return matches.single;
+  }
+
+  String _publicExecutableRef(
+    String deviceId,
+    ConnectionId connectionId,
+    String executable,
+  ) {
+    final references = _executableReferences.putIfAbsent(
+      deviceId,
+      _DeviceExecutableReferences.new,
+    );
+    final key = '${connectionId.value}\u0000$executable';
+    final known = references.publicByHostKey[key];
+    if (known != null) {
+      final previous = references.hostByPublicRef[known];
+      if (previous != null && !_executableReferenceExpired(previous)) {
+        return known;
+      }
+      references.publicByHostKey.remove(key);
+      references.hostByPublicRef.remove(known);
+    }
+    for (final entry in references.hostByPublicRef.entries.toList()) {
+      if (!_executableReferenceExpired(entry.value)) continue;
+      references.hostByPublicRef.remove(entry.key);
+      references.publicByHostKey.remove(
+        '${entry.value.connectionId}\u0000${entry.value.executable}',
+      );
+    }
+    if (references.hostByPublicRef.length >=
+        _maxExecutableReferencesPerDevice) {
+      throw const HostRpcProtocolException(
+        HostRpcErrorCode.resourceLimitExceeded,
+      );
+    }
+    final reference = _newToken('exec-');
+    references.publicByHostKey[key] = reference;
+    references.hostByPublicRef[reference] = _HostExecutableReference(
+      connectionId: connectionId.value,
+      executable: executable,
+      issuedAt: DateTime.now().toUtc(),
+    );
+    return reference;
+  }
+
+  String _resolveExecutableRef(
+    String deviceId,
+    ConnectionId connectionId,
+    String reference,
+    String registeredExecutable,
+  ) {
+    final resolved =
+        _executableReferences[deviceId]?.hostByPublicRef[reference];
+    if (resolved == null ||
+        resolved.connectionId != connectionId.value ||
+        resolved.executable != registeredExecutable ||
+        _executableReferenceExpired(resolved)) {
+      throw const HostRpcProtocolException(HostRpcErrorCode.invalidParams);
+    }
+    return resolved.executable;
+  }
+
+  bool _executableReferenceExpired(_HostExecutableReference reference) =>
+      DateTime.now().toUtc().difference(reference.issuedAt) >
+      _executableReferenceLifetime;
+
   JsonMap _safeCapabilityJson(String deviceId, Capability capability) {
     final publicId = _publicCapabilityId(deviceId, capability.id);
     final safe = Capability(
@@ -865,6 +990,45 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
           : _safeText(capability.presentation!),
     );
     return safe.toJson();
+  }
+
+  JsonMap _safeManifestPayload(HostConnectorManifestPayload payload) {
+    final result = payload.toJson();
+    result['displayName'] = _safeText(result['displayName']! as String);
+    final actions = result['actions']! as List;
+    result['actions'] = [
+      for (final rawAction in actions)
+        if (rawAction is Map)
+          _safeManifestAction(rawAction.cast<String, Object?>()),
+    ];
+    return result;
+  }
+
+  JsonMap _safeManifestAction(JsonMap action) {
+    final safe = Map<String, Object?>.of(action)
+      ..['title'] = _safeText(action['title']! as String)
+      ..['argv'] = _safeManifestArgv((action['argv']! as List).cast<String>())
+      ..['inputSchema'] = _safeSchema(
+        (action['inputSchema']! as Map).cast<String, Object?>(),
+      );
+    final presentation = safe['presentation'];
+    if (presentation is String) safe['presentation'] = _safeText(presentation);
+    return safe;
+  }
+
+  List<String> _safeManifestArgv(List<String> argv) {
+    final safe = <String>[];
+    var redactNext = false;
+    for (final argument in argv) {
+      if (redactNext) {
+        safe.add('[已隐藏]');
+        redactNext = false;
+        continue;
+      }
+      safe.add(_safeText(argument));
+      redactNext = _secretArgumentFlagPattern.hasMatch(argument);
+    }
+    return safe;
   }
 
   JsonMap _safeRunSummaryJson(String deviceId, RunSummary summary) => {
@@ -1035,6 +1199,7 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
   @override
   Future<void> revokeDevice(String deviceId) async {
     _capabilityReferences.remove(deviceId);
+    _executableReferences.remove(deviceId);
     final sessionIds = [
       for (final entry in _sessions.entries)
         if (entry.value.deviceId == deviceId) entry.key,
@@ -1123,6 +1288,8 @@ const _runtimeMethods = {
   'activity.clear',
   'resource.read',
   'prompt.get',
+  'manifest.get',
+  'manifest.save',
   'account.read',
   'account.beginLogin',
   'account.waitLogin',
@@ -1150,6 +1317,23 @@ final class _OwnedRun {
 final class _DeviceCapabilityReferences {
   final Map<String, CapabilityId> publicByActualKey = {};
   final Map<String, CapabilityId> actualByPublicKey = {};
+}
+
+final class _DeviceExecutableReferences {
+  final Map<String, String> publicByHostKey = {};
+  final Map<String, _HostExecutableReference> hostByPublicRef = {};
+}
+
+final class _HostExecutableReference {
+  const _HostExecutableReference({
+    required this.connectionId,
+    required this.executable,
+    required this.issuedAt,
+  });
+
+  final String connectionId;
+  final String executable;
+  final DateTime issuedAt;
 }
 
 final class _SessionResources {

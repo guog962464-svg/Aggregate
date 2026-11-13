@@ -106,7 +106,10 @@ void main() {
     await tester.tap(find.text('终端'));
     await tester.tap(find.text('Mac CLI'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('本机控制'));
+    final localControl = find.text('本机控制');
+    await tester.ensureVisible(localControl);
+    await tester.pumpAndSettle();
+    await tester.tap(localControl);
     await tester.pumpAndSettle();
     await tester.tap(find.text('批准所选权限'));
     await tester.pumpAndSettle();

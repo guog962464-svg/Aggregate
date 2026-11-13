@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:aggregate_connectors/aggregate_connectors.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate/platform/macos/host/host_operation_ledger.dart';
 import 'package:aggregate/platform/macos/host/host_rpc_protocol.dart';
@@ -89,6 +90,69 @@ void main() {
       expect(response.toString(), isNot(contains('resource?token=')));
     },
   );
+
+  test('manifest editing uses an opaque executable reference', () async {
+    final sourceManifest = ConnectorManifest.neteaseCli(
+      '/Users/host/private/bin/cli',
+    ).toJson();
+    ((sourceManifest['actions']! as List).first as Map)['argv'] = [
+      'search',
+      '--api-key',
+      'private-secret',
+      '--output',
+      '/Users/host/private/result.json',
+    ];
+    runtime.actionManifest = sourceManifest;
+
+    final loaded = await call('manifest.get', {'connectionId': 'connection-1'});
+    final loadResult = loaded['result']! as Map<String, Object?>;
+    final executableRef = loadResult['executableRef']! as String;
+    expect(executableRef, startsWith('exec-'));
+    final manifest = loadResult['manifest']! as Map<String, Object?>;
+    expect(manifest['executableRef'], executableRef);
+    expect(loaded.toString(), isNot(contains('/Users/host/private')));
+    expect(loaded.toString(), isNot(contains('private-secret')));
+    final safeActions = manifest['actions']! as List;
+    expect((safeActions.first as Map<String, Object?>)['argv'], [
+      'search',
+      '--api-key',
+      '[已隐藏]',
+      '--output',
+      '[Mac 路径]',
+    ]);
+
+    final saved = await call('manifest.save', {
+      'operationId': 'manifest-save-1',
+      'connectionId': 'connection-1',
+      'manifest': {...manifest, 'displayName': 'Edited connector'},
+    });
+    expect((saved['result']! as Map<String, Object?>)['saved'], isTrue);
+    expect(runtime.savedActionManifest?['displayName'], 'Edited connector');
+    expect(
+      runtime.savedActionManifest?['executable'],
+      '/Users/host/private/bin/cli',
+    );
+  });
+
+  test('rejects a manifest reference issued for another connection', () async {
+    final loaded = await call('manifest.get', {'connectionId': 'connection-1'});
+    final result = loaded['result']! as Map<String, Object?>;
+    final executableRef = result['executableRef']! as String;
+    final payload =
+        ConnectorManifest.neteaseCli('/Users/host/private/bin/cli').toJson()
+          ..remove('executable')
+          ..['executableRef'] = executableRef;
+    final response = await call('manifest.save', {
+      'operationId': 'manifest-save-cross-connection',
+      'connectionId': 'connection-2',
+      'manifest': payload,
+    });
+    expect(
+      (response['error']! as Map<String, Object?>)['code'],
+      HostRpcErrorCode.invalidParams.value,
+    );
+    expect(runtime.savedActionManifest, isNull);
+  });
 
   test('runs an authorized capability once and streams later events', () async {
     final capability = await exposedCapability('Search');
@@ -402,6 +466,8 @@ final class _Runtime implements RuntimePort, ConnectionAccountPort {
   );
   int invokeCalls = 0;
   bool? lastPermissionGranted;
+  JsonMap? actionManifest;
+  JsonMap? savedActionManifest;
 
   @override
   bool get isPreview => false;
@@ -436,11 +502,14 @@ final class _Runtime implements RuntimePort, ConnectionAccountPort {
   Future<Connection> refreshConnection(ConnectionId id) async =>
       (await listConnections()).single;
   @override
-  Future<JsonMap?> loadActionManifest(ConnectionId id) async => null;
+  Future<JsonMap?> loadActionManifest(ConnectionId id) async => actionManifest;
   @override
   Future<JsonMap> readActionManifestFile(String path) async => const {};
   @override
-  Future<void> saveActionManifest(ConnectionId id, JsonMap manifest) async {}
+  Future<void> saveActionManifest(ConnectionId id, JsonMap manifest) async {
+    savedActionManifest = Map.of(manifest);
+  }
+
   @override
   Future<void> exportActionManifest(
     ConnectionId id,

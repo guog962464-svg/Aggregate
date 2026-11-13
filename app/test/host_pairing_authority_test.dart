@@ -209,6 +209,59 @@ void main() {
     },
   );
 
+  test('saving a manifest requires per-connection external write', () async {
+    var invitation = await authority.createInvitation();
+    await authority.submitPairingRequest(pairingRequest(invitation));
+    await authority.approvePending(
+      deviceId,
+      scopes: const {
+        HostGrantScope.readConnections,
+        HostGrantScope.connectionManagement,
+      },
+      connectionPermissions: const {
+        'connection-a': {PermissionLevel.read},
+      },
+    );
+    expect(
+      await authority.isAuthorized(
+        deviceId: deviceId,
+        method: 'manifest.get',
+        params: const {'connectionId': 'connection-a'},
+      ),
+      isTrue,
+    );
+    expect(
+      await authority.isAuthorized(
+        deviceId: deviceId,
+        method: 'manifest.save',
+        params: const {'connectionId': 'connection-a'},
+      ),
+      isFalse,
+    );
+
+    await authority.revokeDevice(deviceId);
+    invitation = await authority.createInvitation();
+    await authority.submitPairingRequest(pairingRequest(invitation));
+    await authority.approvePending(
+      deviceId,
+      scopes: const {
+        HostGrantScope.readConnections,
+        HostGrantScope.connectionManagement,
+      },
+      connectionPermissions: const {
+        'connection-a': {PermissionLevel.read, PermissionLevel.externalWrite},
+      },
+    );
+    expect(
+      await authority.isAuthorized(
+        deviceId: deviceId,
+        method: 'manifest.save',
+        params: const {'connectionId': 'connection-a'},
+      ),
+      isTrue,
+    );
+  });
+
   test('challenge binds a session and rejects a replayed signed RPC', () async {
     await approve();
     final challenge = await authority.issueChallenge(deviceId);

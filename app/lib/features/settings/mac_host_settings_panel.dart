@@ -633,6 +633,7 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
                     contentPadding: EdgeInsets.zero,
                     value: _scopes.contains(scope),
                     title: Text(_scopeLabel(scope)),
+                    subtitle: Text(_scopeDescription(scope)),
                     onChanged: (selected) => setState(() {
                       if (selected == true) {
                         _scopes.add(scope);
@@ -736,5 +737,15 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
     HostGrantScope.terminal => '终端',
     HostGrantScope.activityClear => '清理活动',
     HostGrantScope.contentTransfer => '内容传输',
+  };
+
+  String _scopeDescription(HostGrantScope scope) => switch (scope) {
+    HostGrantScope.readConnections => '读取连接',
+    HostGrantScope.connectionSetup => '检测、测试和保存 Mac 连接',
+    HostGrantScope.connectionManagement => '删除或排序连接；保存动作清单还需该连接的外部写入权限',
+    HostGrantScope.account => '查看账号状态、登录或退出',
+    HostGrantScope.terminal => '打开并交互操作 Mac CLI 终端',
+    HostGrantScope.activityClear => '清除 Mac 上的运行活动记录',
+    HostGrantScope.contentTransfer => '传输文件内容',
   };
 }

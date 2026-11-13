@@ -883,7 +883,10 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
       return grant.scopes.contains(HostGrantScope.readConnections);
     }
     if (method == 'manifest.save') {
-      return grant.scopes.contains(HostGrantScope.connectionManagement);
+      final connectionId = params['connectionId'];
+      return grant.scopes.contains(HostGrantScope.connectionManagement) &&
+          connectionId is String &&
+          grant.permitsInvocation(connectionId, PermissionLevel.externalWrite);
     }
     if (method == 'manifest.readContent' ||
         method == 'manifest.exportContent') {
