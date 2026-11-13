@@ -227,3 +227,10 @@ flowchart LR
 - 真机：LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页，安装新 APK 后启动；依次打开执行设备选择、HTTP MCP 配置页，在名称字段输入长英文连接名并拉起系统 IME，底部测试/保存按钮仍高于键盘。之后丢弃未保存草稿。临时把系统字体从 100% 调到 150%，页面可读且无裁切；已恢复 100%。临时切换浅色/深色模式截图后恢复深色。未启用模拟器。
 - 全量 Flutter 测试 189 项、`flutter analyze --no-pub`、格式和 diff 检查通过；Android arm64 Debug APK、macOS Debug app 构建与 Build Tools 36.0.0 `zipalign -c -P 16 4` 检查通过。真实设备未配置 production WSS Host，故错误 Token/Host 离线/Node 缺失由测试桩与 HTTP/Host 运行时集成测试覆盖，未在真机连接真实服务；没有实际进入 Android 多窗口，分屏布局以 900dp 双栏窗口和其余窗口约束进行 Widget 测试。
 - 真机截图： [功能页深色](screenshots/android-a7.6/01-functions-dark.png)、[执行设备选择深色](screenshots/android-a7.6/02-target-selection-dark.png)、[连接配置深色](screenshots/android-a7.6/03-connection-form-dark.png)、[长名称与 IME 深色](screenshots/android-a7.6/04-long-name-ime-dark.png)、[连接页浅色](screenshots/android-a7.6/05-connections-light.png)、[150% 字体深色](screenshots/android-a7.6/06-large-font-dark.png)、[150% 字体浅色](screenshots/android-a7.6/07-large-font-light.png)。
+
+### A8.1 稳定性与迁移验收（2026-11-14）
+
+- 运行公共契约/领域/连接器/Runtime 测试 15 项、Flutter Widget 测试 189 项；`flutter analyze --no-pub` 与共享层边界检查通过。Dart tracked-source 格式检查通过。`tool/check.sh` 的合并格式命令还会扫描当前工作树里未提交的 `glass_theme_switch.dart`、`theme_switch_simulation.dart`，它们有 formatter 差异；因此其余门禁独立执行，未格式化或纳入本次提交的主题工作文件。
+- `flutter build apk --debug --target-platform android-arm64 --no-pub --build-number=9` 产出 arm64 APK（versionCode 9、versionName 0.3.7）；`zipalign -c -P 16 4` 通过。macOS Debug app 构建成功。Build Tools 36.0.0。16 KB 静态对齐只覆盖 APK 内 `.so` 的 ZIP 布局检查，不作为 16 KB 系统运行证明。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB：已安装 versionCode 8 后用 versionCode 9 覆盖安装，Android Package Manager `Success`，`MainActivity` 冷启动成功；应用配置文件哈希在升级前后相同。随后对连接配置缺少 `executionTarget` 的旧格式 `mcpHttp` 样本冷启动应用，连接页显示该记录且没有 AndroidRuntime 崩溃；契约单测确认旧记录目标默认为此设备。样本使用本机拒绝连接端口，不含 token/密钥，验收后再次 `pm clear` 并冷启动，确认样本被清除、主 Activity resumed。设备原有 Host 列表为 0，因此未迁移真实配对或用户连接；重启验证针对应用进程，未重启整台手机。
+- 不使用模拟器。无 16 KB 页真机；未验证 production WSS、真实 Host 撤销、真实 NCM 账号或应用升级后的凭证恢复。测试样本已清除，Android 应用处于空配置首次启动状态。

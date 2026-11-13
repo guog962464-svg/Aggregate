@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:aggregate/features/settings/mac_host_settings_panel.dart';
+import 'package:aggregate/platform/macos/mac_host_settings_panel.dart';
 import 'package:aggregate/platform/host/host_pairing_protocol.dart';
 import 'package:aggregate/platform/macos/host/host_control_port.dart';
 import 'package:aggregate/platform/macos/host/host_pairing_authority.dart';

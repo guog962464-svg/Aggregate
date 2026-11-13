@@ -7,6 +7,6 @@ dart format --output=none --set-exit-if-changed app/lib app/test packages spikes
 flutter analyze
 sh spikes/phase0/check_boundary.sh
 dart test packages/aggregate_contracts/test packages/aggregate_domain/test packages/aggregate_connectors/test packages/aggregate_runtime/test
-flutter test app/test
 cd app
+flutter test test
 flutter build macos --debug

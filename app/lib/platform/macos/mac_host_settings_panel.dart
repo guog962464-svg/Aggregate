@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
-import '../../platform/macos/host/host_control_port.dart';
-import '../../platform/macos/host/host_pairing_authority.dart';
-import '../../platform/macos/host/host_wss_transport.dart';
+import 'host/host_control_port.dart';
+import 'host/host_pairing_authority.dart';
+import 'host/host_wss_transport.dart';
 
 class MacHostSettingsPanel extends StatefulWidget {
   const MacHostSettingsPanel({

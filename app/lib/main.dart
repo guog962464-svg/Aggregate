@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'app/aggregate_app.dart';
 import 'features/settings/android_host_settings_panel.dart';
-import 'features/settings/mac_host_settings_panel.dart';
 import 'platform/android/android_runtime_port.dart';
+import 'platform/macos/mac_host_settings_panel.dart';
 import 'platform/macos/local_runtime_port.dart';
 import 'platform/runtime_factory.dart';
 

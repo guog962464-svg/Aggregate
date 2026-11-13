@@ -14,7 +14,8 @@ abstract interface class HostDeviceSignatureVerifier {
 final class MacHostDeviceSignatureVerifier
     implements HostDeviceSignatureVerifier {
   const MacHostDeviceSignatureVerifier({MethodChannel? channel})
-    : _channel = channel ?? const MethodChannel('aggregate/host_authentication');
+    : _channel =
+          channel ?? const MethodChannel('aggregate/host_authentication');
 
   final MethodChannel _channel;
 
