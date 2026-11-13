@@ -8,45 +8,48 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('A2 Android runtime advertises only HTTP MCP', () async {
-    final directory = await Directory.systemTemp.createTemp(
-      'aggregate-android-test-',
-    );
-    addTearDown(() => directory.delete(recursive: true));
-    final runtime = await AndroidRuntimePort.open(dataDirectory: directory);
-    addTearDown(runtime.dispose);
-    expect(runtime.isPreview, isFalse);
-    expect(runtime.features.connectionKinds, {ConnectionKind.mcpHttp});
-    expect(runtime.connectionAdapters.map((item) => item.id), ['mcp-http']);
-    expect(runtime.features.terminal, isFalse);
-    expect(runtime.features.localFilePreview, isFalse);
-    expect(runtime.features.localFileReveal, isFalse);
-    expect(await runtime.listConnections(), isEmpty);
-    expect(await runtime.searchCapabilities(const SearchQuery('')), isEmpty);
-    expect(await runtime.listRecentRuns(), isEmpty);
-    await expectLater(
-      runtime.addConnection(
-        const ConnectionSpec(
-          kind: ConnectionKind.cli,
-          label: 'Unavailable',
-          executable: '/bin/sh',
+  test(
+    'Android runtime keeps local HTTP MCP and Host terminal separate',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-test-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final runtime = await AndroidRuntimePort.open(dataDirectory: directory);
+      addTearDown(runtime.dispose);
+      expect(runtime.isPreview, isFalse);
+      expect(runtime.features.connectionKinds, {ConnectionKind.mcpHttp});
+      expect(runtime.connectionAdapters.map((item) => item.id), ['mcp-http']);
+      expect(runtime.features.terminal, isTrue);
+      expect(runtime.features.localFilePreview, isFalse);
+      expect(runtime.features.localFileReveal, isFalse);
+      expect(await runtime.listConnections(), isEmpty);
+      expect(await runtime.searchCapabilities(const SearchQuery('')), isEmpty);
+      expect(await runtime.listRecentRuns(), isEmpty);
+      await expectLater(
+        runtime.addConnection(
+          const ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Unavailable',
+            executable: '/bin/sh',
+          ),
         ),
-      ),
-      throwsStateError,
-    );
-    await expectLater(
-      runtime.readActionManifestFile('/Users/guo/Desktop/actions.json'),
-      throwsUnsupportedError,
-    );
-    await expectLater(
-      runtime.previewLocalFile('/Users/guo/Desktop/output.txt'),
-      throwsUnsupportedError,
-    );
-    await expectLater(
-      runtime.revealLocalFile('/Users/guo/Desktop/output.txt'),
-      throwsUnsupportedError,
-    );
-  });
+        throwsStateError,
+      );
+      await expectLater(
+        runtime.readActionManifestFile('/Users/guo/Desktop/actions.json'),
+        throwsUnsupportedError,
+      );
+      await expectLater(
+        runtime.previewLocalFile('/Users/guo/Desktop/output.txt'),
+        throwsUnsupportedError,
+      );
+      await expectLater(
+        runtime.revealLocalFile('/Users/guo/Desktop/output.txt'),
+        throwsUnsupportedError,
+      );
+    },
+  );
 
   test(
     'routes paired Host capabilities and streams remote run events',
@@ -115,6 +118,132 @@ void main() {
         manager.methods.where((method) => method == 'run.invoke'),
         hasLength(1),
       );
+    },
+  );
+
+  test(
+    'routes Host activity, account, and terminal APIs by source ID',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-android-host-target-runtime-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final manager = _FakeRemoteHostManager();
+      final remoteRunId = const RunId('mac-history-1');
+      final occurredAt = DateTime.utc(2026, 11, 14, 1, 2, 3);
+      manager.recentRuns = [
+        RunSummary(
+          remoteRunId,
+          manager.hostCapability.id,
+          RunEvent(
+            runId: remoteRunId,
+            sequence: 4,
+            state: RunState.succeeded,
+            occurredAt: occurredAt,
+          ),
+        ),
+      ];
+      final runtime = await AndroidRuntimePort.open(
+        dataDirectory: directory,
+        hostManager: manager,
+      );
+      addTearDown(runtime.dispose);
+
+      final connection = (await runtime.listConnections()).single;
+      final activity = await runtime.listRecentRuns();
+      expect(activity, hasLength(1));
+      expect(activity.single.id.value, 'remote-run:$_hostId:mac-history-1');
+      expect(activity.single.capability.connection.value, connection.id.value);
+      expect(activity.single.latest.occurredAt, occurredAt);
+      expect(
+        runtime.capabilityDisplayName(activity.single.capability),
+        'search',
+      );
+      expect(runtime.connectionDisplayName(connection.id), 'Music CLI');
+      expect(manager.methods, contains('run.listRecent'));
+
+      final account = await runtime.readAccount(connection.id);
+      expect(account?.state, AccountState.signedIn);
+      expect(account?.nickname, 'listener');
+      await expectLater(
+        runtime.logoutAccount(connection.id, confirmed: false),
+        throwsStateError,
+      );
+      expect(manager.methods, isNot(contains('account.logout')));
+      expect(
+        (await runtime.logoutAccount(connection.id, confirmed: true)).state,
+        AccountState.signedOut,
+      );
+      final login = await runtime.beginAccountLogin(connection.id);
+      expect(await runtime.waitAccountLogin(login), 0);
+      expect(manager.lastAccountConnectionId, 'mac-cli');
+      expect(manager.lastAccountSessionId, 'terminal-account-1');
+
+      final loginOutput = await runtime.watchTerminal(login).first;
+      expect(loginOutput, 'ready:terminal-account-1');
+      await runtime.closeTerminal(login);
+
+      final terminal = await runtime.openTerminal(
+        CliCommand(connection.id, const ['search', '--format', 'json']),
+      );
+      final terminalOutput = await runtime.watchTerminal(terminal).first;
+      expect(terminalOutput, 'ready:terminal-cli-1');
+      expect(manager.lastTerminalOpen?['connectionId'], 'mac-cli');
+      expect(manager.lastTerminalOpen?['arguments'], [
+        'search',
+        '--format',
+        'json',
+      ]);
+      await runtime.writeTerminal(terminal, 'query');
+      await runtime.resizeTerminal(terminal, 101, 37);
+      await runtime.interruptTerminal(terminal);
+      await runtime.closeTerminal(terminal);
+      expect(
+        manager.methods,
+        containsAll([
+          'terminal.open',
+          'terminal.subscribe',
+          'terminal.write',
+          'terminal.resize',
+          'terminal.interrupt',
+          'terminal.close',
+        ]),
+      );
+      expect(
+        manager.sideEffectCalls,
+        containsAll([
+          'account.beginLogin',
+          'account.logout',
+          'terminal.open',
+          'terminal.write',
+          'terminal.resize',
+          'terminal.interrupt',
+          'terminal.close',
+        ]),
+      );
+      expect(manager.sideEffectCalls, isNot(contains('terminal.subscribe')));
+      await runtime.clearActivity();
+      expect(manager.methods, isNot(contains('activity.clear')));
+      expect(await runtime.listRecentRuns(), hasLength(1));
+
+      final interrupted = await runtime.openTerminal(
+        CliCommand(connection.id, const []),
+      );
+      final interruptedOutput = <String>[];
+      final terminalSubscription = runtime
+          .watchTerminal(interrupted)
+          .listen(interruptedOutput.add);
+      await Future<void>.delayed(Duration.zero);
+      final changed = runtime.changes.first;
+      await manager.disconnect(_hostId);
+      await changed;
+      await Future<void>.delayed(Duration.zero);
+      expect(interruptedOutput.join(), contains('Mac Host 连接已断开'));
+      await expectLater(
+        runtime.writeTerminal(interrupted, 'must not route'),
+        throwsStateError,
+      );
+      await terminalSubscription.cancel();
     },
   );
 
@@ -269,12 +398,17 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
     permission: PermissionLevel.read,
   );
   final methods = <String>[];
+  final sideEffectCalls = <String>[];
   var connected = true;
   var failSetupSave = false;
   var invalidAdapterOptionalField = false;
   AndroidHostStatus status = AndroidHostStatus.online;
   Map<String, Object?>? lastInvocationCapability;
   Map<String, Object?>? lastSetupTestDraft;
+  Map<String, Object?>? lastTerminalOpen;
+  String? lastAccountConnectionId;
+  String? lastAccountSessionId;
+  List<RunSummary> recentRuns = const [];
 
   @override
   List<AndroidPairedHost> get hosts => [
@@ -309,6 +443,7 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
   }) async {
     expect(hostId, _hostId);
     methods.add(method);
+    if (sideEffect) sideEffectCalls.add(method);
     switch (method) {
       case 'connection.list':
         return {
@@ -349,6 +484,49 @@ final class _FakeRemoteHostManager implements AndroidHostManagerPort {
           'subscriptionId': 'sub-opaque',
           'runId': {'value': 'mac-run-1'},
         };
+      case 'run.listRecent':
+        return {
+          'runs': [for (final run in recentRuns) run.toJson()],
+        };
+      case 'account.read':
+        lastAccountConnectionId = params['connectionId']! as String;
+        return {
+          'snapshot': {'state': 'signedIn', 'nickname': 'listener'},
+        };
+      case 'account.beginLogin':
+        lastAccountConnectionId = params['connectionId']! as String;
+        return {
+          'terminalId': 'terminal-account-1',
+          'sessionId': 'terminal-account-1',
+        };
+      case 'account.waitLogin':
+        lastAccountSessionId = params['sessionId']! as String;
+        return {'exitCode': 0};
+      case 'account.logout':
+        return {
+          'snapshot': {'state': 'signedOut'},
+        };
+      case 'terminal.open':
+        lastTerminalOpen = Map.unmodifiable(params);
+        return {'terminalId': 'terminal-cli-1', 'sessionId': 'terminal-cli-1'};
+      case 'terminal.subscribe':
+        final terminalId = params['terminalId']! as String;
+        final subscriptionId = 'sub-$terminalId';
+        _notifications.add({
+          'jsonrpc': '2.0',
+          'method': 'terminal.event',
+          'params': {
+            'subscriptionId': subscriptionId,
+            'sequence': 0,
+            'event': {
+              'terminalId': terminalId,
+              'sequence': 0,
+              'kind': 'output',
+              'text': 'ready:$terminalId',
+            },
+          },
+        });
+        return {'subscriptionId': subscriptionId, 'terminalId': terminalId};
       case 'setup.adapters':
         return {
           'adapters': [

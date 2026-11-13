@@ -76,8 +76,8 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 | 向导 | `setup.adapters`、`setup.detectExecutable`、`setup.resolveExecutable`、`setup.test`、`setup.save`、`setup.discard` | 返回 Host 适配器目录；草稿句柄由 Host 签发并绑定设备身份。CLI 自动检测或按 basename 查找都只返回短期 opaque `executableRef` 和可展示位置，不向 Android 返回 Mac 路径。适配器必须在 Host 白名单内。 |
 | 能力与结果 | `capability.search`、`run.invoke`、`run.subscribe`、`run.cancel`、`run.listRecent`、`activity.clear`、`resource.read`、`prompt.get` | 能力/运行必须属于已授权连接；`permissionGranted` 仅在 Host 自身权限策略允许后传给 `RuntimePort`。 |
 | 动作清单 | `manifest.get`、`manifest.save`、`manifest.readContent`、`manifest.exportContent` | 连接必须是已授权 CLI；文件内容经显式内容传输或一次性 Host 文件句柄，绝不把 Mac 路径当 Android 本地路径。 |
-| 账号 | `account.read`、`account.beginLogin`、`account.waitLogin`、`account.logout` | 仅暴露 Mac 已实现并验证的账号适配器；登录的 PTY/配置/profile 留在 Mac。登出需要对应设备授权和用户确认。 |
-| 终端 | `terminal.open`、`terminal.subscribe`、`terminal.write`、`terminal.resize`、`terminal.interrupt`、`terminal.close` | 只对登记 CLI 连接开放；单独 `terminal` grant；宿主执行程序仍由连接决定。限制参数、帧、并发和输出缓存。 |
+| 账号 | `account.read`、`account.beginLogin`、`account.waitLogin`、`account.logout` | `account.read` 以 `{snapshot: ...}` 表达受支持状态或 `null`；仅暴露 Mac 已实现并验证的账号适配器；登录的 PTY/配置/profile 留在 Mac。登出需要对应设备授权和用户确认。 |
+| 终端 | `terminal.open`、`terminal.subscribe`、`terminal.write`、`terminal.resize`、`terminal.interrupt`、`terminal.close` | 只对登记 CLI 连接开放；`terminal.open.arguments` 是最多 256 项、单项最多 4096 字符的参数向量，不接受 shell 字符串；单独 `terminal` grant；宿主执行程序仍由连接决定。限制帧、并发和输出缓存。 |
 
 不远程暴露 Mac 全局 UI 偏好、任意 `previewLocalFile(path)`、`revealLocalFile(path)`、本机原始文件路径操作、未经批准的程序路径、任意环境变量、任意 shell 字符串或动态代码加载。若未来要增加方法，先新增版本化 DTO、授权规则、输出上限和恢复语义，再纳入允许列表。
 
@@ -143,7 +143,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 副作用通过现有文件 operation ledger 去重；同进程重试可返回缓存结果，进程内最多缓存 4096 个完成结果。终端/登录句柄按认证会话缓存，重连后重复请求只返回账本状态，不泄漏旧会话句柄。Host 重启后不会重放已开始操作；重启前已完成但客户端未收到回复的操作，其返回值没有持久化，账本只能报告状态；恢复 UI 尚未实现。
 - `flutter test --no-pub test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_rpc_protocol_test.dart test/host_wss_transport_test.dart test/mac_runtime_test.dart` 共 51 项通过，`flutter analyze --no-pub` 无问题；Mac 新设备授权选择器另有 widget 测试。测试证明 dispatcher 单元行为和界面授权映射，不等同 Android 客户端通过 production WSS 完成这些 RPC。
 - manifest.get 只接受已登记 CLI 连接，发放 10 分钟、按 deviceId/connectionId 绑定的 opaque executableRef；manifest.save 要求目标连接获批 externalWrite，解析 opaque 引用后只在 Mac 上恢复真实可执行文件路径，不能由 Android 指定路径。Host 返回的 manifest action 参数会脱敏。文件引用与分块内容传输尚无协议实现。
-- 后续边界：`manifest.readContent` / `manifest.exportContent` 尚无 runtime handler；manifest 附件的 Host opaque handle / 有界内容传输尚未实现。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；保存动作清单需连接管理和该连接的 externalWrite；内容传输仍关闭，既有设备没有原位修改权限的 UI。A6.1 已把 Android 认证 RPC、连接/能力路由与运行事件映射接入 Android Runtime，并加入分级配对状态；自动化只验证客户端适配和 Host dispatcher，本地生产 WSS 的 Android 跨端验收仍待完成。活动历史恢复、向导路由、账号、终端和普通 CLI/stdio/HTTP MCP/网易云的端到端验收仍属于 A6 后续工作。直接 LAN/Bonjour 和 Release 权限也未验证。
+- 后续边界：`manifest.readContent` / `manifest.exportContent` 尚无 runtime handler；manifest 附件的 Host opaque handle / 有界内容传输尚未实现。Mac 新配对审批 UI 可发放连接向导、连接管理、账号、终端、活动清理及逐连接 `read` / `localControl` / `externalWrite`；保存动作清单需连接管理和该连接的 externalWrite；内容传输仍关闭，既有设备没有原位修改权限的 UI。A6.1 已把 Android 认证 RPC、连接/能力路由与运行事件映射接入 Android Runtime，并加入分级配对状态；A6.2 完成 Host 向导路由；A6.3 已完成 Host 活动读取、账号 API、带参数的终端 API 及本地来源/会话映射。A6 自动化和 4 KB 真机启动通过，但本轮未通过 production WSS 的 Android→Mac 活动、账号、CLI 和 PTY 数据闭环；网易云账号/搜索和手机终端交互体验仍分别待 A6.4/A6.5。直接 LAN/Bonjour 和 Release 权限也未验证。
 
 ## A6.1 Android RemoteRuntime 客户端进度（2026-11-13）
 
@@ -161,6 +161,15 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - 保存异常或 RPC 结果未知时，Android 不自动重试 `setup.save`，提示用户先检查 Mac Host；新适配器的公开/秘密字段仍按字段元数据拆分。
 - 新增 target-first 小屏连接流程测试、横屏 1.35 字体缩放布局测试、Host 命令名解析/opaque 引用路由测试、保存结果未知禁止重试测试、权限隔离回归测试及 Host RPC schema 测试。验收：Flutter 全套 156 项通过，`flutter analyze --no-pub` 无问题；Android arm64 Debug APK 和 macOS Debug app 构建成功；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB USB 真机安装并启动，MainActivity 为 resumed，最近 250 条 logcat 未发现 FATAL/崩溃；设备上实际打开 target picker 并确认全屏手机布局及本机 HTTP MCP 目标；发现并修复连接表单首个“适配器”浮动标签顶部裁切，重建后复查标签完整、底部按钮可见。未配对 Host，因此未验收本轮 Android 到生产 WSS 的 Host 向导端到端；没有 16 KB 实体设备。
 - 本地 JS 适配器仍未加入 Android 产品目录。A4.3 的 `json5.bin` 仅是固定 Debug 实验入口，只有 A3.6 的稳定维护来源、许可/发行审查及 16 KB 真机门槛通过后，才另行开放。
+
+## A6.3 Android Host 活动、账号与终端路由进度（2026-11-14）
+
+- `AndroidRuntimePort` 现将 Host 最近运行记录与手机本地活动合并，并为远端运行 ID 加入 Host 来源。Host 下发的 opaque capability ID 只有在当前设备缓存映射中可解析时才用于界面；离线或映射丢失时使用安全的通用展示名，避免把内部 opaque ID 当用户文案。
+- Host 账号读取、登录开始/等待与退出均按原始 Mac connection ID 路由。可空账号快照采用显式 `{snapshot: null}` envelope，保持 RPC 响应仍为 map，并允许“不支持/未登录”成为有效状态。
+- Host PTY 终端的 open、subscribe、write、resize、interrupt、close 固定使用建立会话时的 Host 与远端 terminal ID。open 转发有界 argv；终端通知在 subscribe 响应前先监听并作有界暂存，避免 PTY 回放早于 RPC 响应而丢失。断线会关闭本地流，会话不会被悄悄改路到另一 Host，带副作用的请求不自动重试。
+- Android 清空活动只清理手机本地记录，不调用作用范围是 Mac 全局历史的 Host `activity.clear`。新增来源映射、账号快照/句柄、argv schema、终端事件回放及断线拒写回归测试。
+- 验收：Flutter 全量 159 项通过，`flutter analyze --no-pub` 无问题，Android arm64 Debug APK 与 macOS Debug app 构建通过；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机安装并启动，MainActivity 为 resumed，最近 250 条 logcat 未见崩溃。没有 16 KB 实体设备，也未在本轮通过 production WSS 真正调用 Mac CLI、账号登录或传输远程 PTY 输出；该本地验收不等同这些跨设备场景验收。
+- A6.4 接续网易云 Host 登录、搜索权限与执行位置；A6.5 接续手机终端交互体验。
 
 ## A5.4 配对实现进度（2026-11-13）
 

@@ -47,6 +47,12 @@ abstract interface class RuntimeChangeSource {
   Stream<void> get changes;
 }
 
+/// Optional labels for opaque or source-qualified IDs shown in activity views.
+abstract interface class RuntimePresentationPort {
+  String? capabilityDisplayName(CapabilityId capability);
+  String? connectionDisplayName(ConnectionId connection);
+}
+
 abstract interface class McpClientPort<Session> {
   Future<Session> connect(Connection connection);
   Future<List<Capability>> listTools(Session session);

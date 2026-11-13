@@ -44,12 +44,28 @@ class ActivityPageState extends State<ActivityPage> {
         .showSnackBar(const SnackBar(content: Text('此功能当前不可用。请在连接页刷新来源。')));
   }
 
+  String _capabilityName(RunSummary run) =>
+      (widget.runtime is RuntimePresentationPort
+          ? (widget.runtime as RuntimePresentationPort).capabilityDisplayName(
+              run.capability,
+            )
+          : null) ??
+      run.capability.name;
+
+  String _connectionName(RunSummary run) =>
+      (widget.runtime is RuntimePresentationPort
+          ? (widget.runtime as RuntimePresentationPort).connectionDisplayName(
+              run.capability.connection,
+            )
+          : null) ??
+      run.capability.connection.value;
+
   @override
   Widget build(BuildContext context) => PageFrame(
     title: '活动',
     subtitle: widget.runtime.isPreview
         ? '本次启动中的预览调用记录。'
-        : '最近 100 条运行状态。本机记录不包含参数和结果正文。',
+        : '最近 100 条运行状态。记录只保留状态和时间，不包含参数和结果正文。',
     children: [
       Row(
         children: [
@@ -106,7 +122,7 @@ class ActivityPageState extends State<ActivityPage> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                       selected: current?.id.value == run.id.value,
                       title: Text(
-                        run.capability.name,
+                        _capabilityName(run),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -166,8 +182,8 @@ class ActivityPageState extends State<ActivityPage> {
           ),
         Text('运行详情', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 18),
-        _line('功能', run.capability.name),
-        _line('来源', run.capability.connection.value),
+        _line('功能', _capabilityName(run)),
+        _line('来源', _connectionName(run)),
         _line('状态', _state(run.latest.state)),
         _line('时间', _time(run.latest.occurredAt)),
         _line('运行 ID', run.id.value),

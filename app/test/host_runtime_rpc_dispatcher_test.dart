@@ -88,6 +88,18 @@ void main() {
   });
 
   test(
+    'account reads preserve unsupported as a typed nullable snapshot',
+    () async {
+      final response = await call('account.read', {
+        'connectionId': 'connection-1',
+      });
+      final result = response['result']! as Map<String, Object?>;
+      expect(result.containsKey('snapshot'), isTrue);
+      expect(result['snapshot'], isNull);
+    },
+  );
+
+  test(
     'capability results use opaque IDs and redact sensitive locations',
     () async {
       final capability = await exposedCapability('Remote file');
@@ -280,7 +292,11 @@ void main() {
       final notifications = <JsonMap>[];
       final opened = await call(
         'terminal.open',
-        {'operationId': 'terminal-open-1', 'connectionId': 'connection-1'},
+        {
+          'operationId': 'terminal-open-1',
+          'connectionId': 'connection-1',
+          'arguments': ['login', '--output', 'human'],
+        },
         id: 'request-terminal-open',
         sessionId: 'session-terminal-1',
         notify: notifications.add,
@@ -290,10 +306,15 @@ void main() {
       expect(terminalId, startsWith('terminal-'));
       expect(terminalId, isNot('host-terminal'));
       expect(runtime.terminalOpenCalls, 1);
+      expect(runtime.terminalOpenArguments, ['login', '--output', 'human']);
 
       final repeatedSameSession = await call(
         'terminal.open',
-        {'operationId': 'terminal-open-1', 'connectionId': 'connection-1'},
+        {
+          'operationId': 'terminal-open-1',
+          'connectionId': 'connection-1',
+          'arguments': ['login', '--output', 'human'],
+        },
         id: 'request-terminal-open-retry',
         sessionId: 'session-terminal-1',
         notify: notifications.add,
@@ -306,7 +327,11 @@ void main() {
 
       final repeatedAfterReconnect = await call(
         'terminal.open',
-        {'operationId': 'terminal-open-1', 'connectionId': 'connection-1'},
+        {
+          'operationId': 'terminal-open-1',
+          'connectionId': 'connection-1',
+          'arguments': ['login', '--output', 'human'],
+        },
         id: 'request-terminal-open-reconnect',
         sessionId: 'session-terminal-2',
         notify: (_) {},
@@ -441,6 +466,7 @@ final class _Runtime implements RuntimePort, ConnectionAccountPort {
   final List<String> cancelledRuns = [];
   final Map<String, StreamController<String>> terminalOutputs = {};
   int terminalOpenCalls = 0;
+  List<String> terminalOpenArguments = const [];
   int terminalWriteCalls = 0;
   int terminalCloseCalls = 0;
   int accountLoginCalls = 0;
@@ -562,6 +588,7 @@ final class _Runtime implements RuntimePort, ConnectionAccountPort {
   @override
   Future<TerminalSession> openTerminal(CliCommand command) async {
     terminalOpenCalls++;
+    terminalOpenArguments = List.unmodifiable(command.arguments);
     return const TerminalSession('host-terminal');
   }
 

@@ -51,6 +51,7 @@ enum HostRpcValueKind {
   integer,
   boolean,
   object,
+  stringList,
   stringMap,
   secretStringMap,
   capabilityId,
@@ -69,6 +70,7 @@ final class HostRpcParameter {
     this.minValue = 0,
     this.maxValue,
     this.allowEmpty = false,
+    this.maxItems = 256,
   });
 
   final String name;
@@ -78,6 +80,7 @@ final class HostRpcParameter {
   final int? minValue;
   final int? maxValue;
   final bool allowEmpty;
+  final int maxItems;
 }
 
 final class HostRpcMethodDefinition {
@@ -98,6 +101,7 @@ const _identifier = HostRpcValueKind.identifier;
 const _int = HostRpcValueKind.integer;
 const _bool = HostRpcValueKind.boolean;
 const _obj = HostRpcValueKind.object;
+const _strings = HostRpcValueKind.stringList;
 const _secretStrings = HostRpcValueKind.secretStringMap;
 const _capabilityId = HostRpcValueKind.capabilityId;
 const _resourceRef = HostRpcValueKind.resourceRef;
@@ -224,7 +228,17 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
       _connectionId,
       HostRpcParameter('confirmed', _bool),
     ]),
-    const HostRpcMethodDefinition('terminal.open', [_op, _connectionId]),
+    const HostRpcMethodDefinition('terminal.open', [
+      _op,
+      _connectionId,
+      HostRpcParameter(
+        'arguments',
+        _strings,
+        required: false,
+        maxLength: 4096,
+        maxItems: _maxSetupArguments,
+      ),
+    ]),
     const HostRpcMethodDefinition('terminal.subscribe', [
       _terminalId,
       HostRpcParameter('afterSequence', _int, required: false),
@@ -762,6 +776,11 @@ abstract final class HostRpcCodec {
               (field.maxValue == null || value <= field.maxValue!),
         HostRpcValueKind.boolean => value is bool,
         HostRpcValueKind.object => value is Map,
+        HostRpcValueKind.stringList => _isBoundedStringList(
+          value,
+          maxItems: field.maxItems,
+          maxLength: field.maxLength,
+        ),
         HostRpcValueKind.stringMap => _isStringMap(value),
         HostRpcValueKind.secretStringMap => _isSecretStringMap(value),
         HostRpcValueKind.capabilityId => _isCapabilityId(value),
@@ -831,6 +850,20 @@ bool _isStringMap(Object? value) =>
           (entry.key as String).length <= 128 &&
           entry.value is String &&
           (entry.value as String).length <= 4096,
+    );
+
+bool _isBoundedStringList(
+  Object? value, {
+  required int maxItems,
+  required int maxLength,
+}) =>
+    value is List &&
+    value.length <= maxItems &&
+    value.every(
+      (item) =>
+          item is String &&
+          item.length <= maxLength &&
+          !item.contains('\u0000'),
     );
 
 bool _isSecretStringMap(Object? value) =>

@@ -26,7 +26,11 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('清空活动记录？'),
-        content: const Text('本机保存的活动记录将被删除。此操作无法撤销。'),
+        content: Text(
+          defaultTargetPlatform == TargetPlatform.android
+              ? '只删除 Android 本机保存的活动记录；Mac Host 上的记录不会删除。此操作无法撤销。'
+              : '本机保存的活动记录将被删除。此操作无法撤销。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -44,7 +48,7 @@ class SettingsPage extends StatelessWidget {
       await onClearActivity();
       if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('活动记录已清空')));
+            .showSnackBar(const SnackBar(content: Text('本机活动记录已清空')));
       }
     } catch (cause) {
       if (context.mounted) {
@@ -110,7 +114,7 @@ class SettingsPage extends StatelessWidget {
       const SizedBox(height: 24),
       Text('数据与隐私', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
-      const Text('连接配置和最近 100 条活动由当前运行端保存。活动记录不保存参数或结果内容。'),
+      const Text('连接配置和最近 100 条活动分别保存在本机或执行目标上。活动记录只保留状态和时间，不保存参数或结果内容。'),
       const SizedBox(height: 8),
       const Text('HTTP MCP 的 Bearer Token 保存在当前运行端的安全存储中，删除连接时同步删除。'),
       const SizedBox(height: 16),

@@ -378,7 +378,9 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
       case 'account.read':
         final id = ConnectionId(params['connectionId']! as String);
         await _authorizeConnectionRead(deviceId, id.value);
-        return _accountSnapshotJson(await accounts.readAccount(id));
+        return {
+          'snapshot': _accountSnapshotJson(await accounts.readAccount(id)),
+        };
       case 'account.beginLogin':
         final id = ConnectionId(params['connectionId']! as String);
         await _authorizeConnectionRead(deviceId, id.value);
@@ -411,17 +413,21 @@ final class HostRuntimeRpcDispatcher implements HostRpcDispatcherPort {
           throw const HostRpcProtocolException(HostRpcErrorCode.unauthorized);
         }
         return _executeOperation(request, deviceId, () async {
-          return _accountSnapshotJson(
-            await accounts.logoutAccount(id, confirmed: true),
-          );
+          return {
+            'snapshot': _accountSnapshotJson(
+              await accounts.logoutAccount(id, confirmed: true),
+            ),
+          };
         });
       case 'terminal.open':
         final id = ConnectionId(params['connectionId']! as String);
         await _authorizeConnectionRead(deviceId, id.value);
+        final arguments = (params['arguments'] as List? ?? const [])
+            .cast<String>();
         final ownerSessionId = _requireSessionId(sessionId);
         final ownerNotify = _requireNotifier(notify);
         return _executeOperation(request, deviceId, () async {
-          final actual = await runtime.openTerminal(CliCommand(id, const []));
+          final actual = await runtime.openTerminal(CliCommand(id, arguments));
           return _registerTerminal(
             actual,
             deviceId: deviceId,

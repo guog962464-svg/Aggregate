@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
@@ -20,9 +21,11 @@ final class AndroidRuntimePort
     with WidgetsBindingObserver
     implements
         RuntimePort,
+        ConnectionAccountPort,
         ConnectionSetupPort,
         ConnectionSetupTargetPort,
-        RuntimeChangeSource {
+        RuntimeChangeSource,
+        RuntimePresentationPort {
   AndroidRuntimePort._(
     AndroidRuntimeStore store,
     this._credentials,
@@ -36,11 +39,14 @@ final class AndroidRuntimePort
 
   void _onHostStatusChange(AndroidHostStatusChange change) {
     if (!hostManager.hosts.any((host) => host.hostId == change.hostId)) {
+      _closeRemoteTerminalsForHost(change.hostId, 'Mac Host 配对已移除，终端会话已结束。');
       _remoteConnectionsByHost.remove(change.hostId);
       _remoteConnections.removeWhere((_, item) => item.hostId == change.hostId);
       _remoteCapabilities.removeWhere(
         (_, capability) => capability.hostId == change.hostId,
       );
+    } else if (!hostManager.isConnected(change.hostId)) {
+      _closeRemoteTerminalsForHost(change.hostId, 'Mac Host 连接已断开，终端会话已结束。');
     }
     if (!_changes.isClosed) _changes.add(null);
   }
@@ -84,6 +90,7 @@ final class AndroidRuntimePort
   final _remoteConnectionsByHost =
       <String, Map<String, _AndroidRemoteConnection>>{};
   final _remoteCapabilities = <String, _AndroidRemoteCapability>{};
+  final _remoteTerminals = <String, _AndroidRemoteTerminal>{};
   final _notices = <String>[];
   UserPreferences _preferences = const UserPreferences();
   int _serial = 0;
@@ -108,6 +115,10 @@ final class AndroidRuntimePort
     for (final run in _runs.values) {
       await run.remoteNotifications?.cancel();
     }
+    for (final terminal in _remoteTerminals.values.toList()) {
+      await _closeRemoteTerminal(terminal);
+    }
+    _remoteTerminals.clear();
     for (final entry in _entries.values) {
       await entry.session?.close();
     }
@@ -141,7 +152,12 @@ final class AndroidRuntimePort
   bool get isPreview => false;
 
   @override
-  RuntimeFeatures get features => RuntimeFeatures.httpOnly;
+  RuntimeFeatures get features => const RuntimeFeatures(
+    connectionKinds: {ConnectionKind.mcpHttp},
+    terminal: true,
+    localFilePreview: false,
+    localFileReveal: false,
+  );
 
   @override
   List<String> get startupNotices => List.unmodifiable(_notices);
@@ -452,6 +468,25 @@ final class AndroidRuntimePort
   String _remoteConnectionKey(String hostId, String connectionId) =>
       'remote:$hostId:$connectionId';
 
+  @override
+  String? connectionDisplayName(ConnectionId connection) =>
+      _remoteConnections[connection.value]?.connection.label ??
+      _entries[connection.value]?.spec.label ??
+      (connection.value.startsWith('remote:') ? 'Mac Host' : null);
+
+  @override
+  String? capabilityDisplayName(CapabilityId capability) {
+    final remote = _remoteCapabilities[capability.key];
+    if (remote != null) return remote.capability.title;
+    if (capability.connection.value.startsWith('remote:')) return 'Mac 功能';
+    for (final entry in _entries.values) {
+      for (final item in entry.capabilities) {
+        if (item.id.key == capability.key) return item.title;
+      }
+    }
+    return null;
+  }
+
   Future<List<Capability>> _searchRemoteCapabilities(
     AndroidPairedHost host,
     SearchQuery query,
@@ -511,8 +546,85 @@ final class AndroidRuntimePort
   };
 
   @override
-  Future<List<RunSummary>> listRecentRuns() async =>
-      List.unmodifiable(_activity);
+  Future<List<RunSummary>> listRecentRuns() async {
+    final summaries = [..._activity];
+    final hosts = hostManager.hosts
+        .where((host) => hostManager.isConnected(host.hostId))
+        .toList(growable: false);
+    await Future.wait(
+      hosts.map((host) async {
+        try {
+          await _loadRemoteConnections(host);
+          // Host activity contains only opaque capability references. Search
+          // first so every displayed item can be mapped back to a visible,
+          // source-qualified Android capability ID.
+          await _searchRemoteCapabilities(host, const SearchQuery(''));
+          final response = await hostManager.call(
+            host.hostId,
+            'run.listRecent',
+            const {'limit': 100},
+          );
+          final rawRuns = response['runs'];
+          if (rawRuns is! List) {
+            throw const FormatException('Mac Host activity list is invalid');
+          }
+          for (final raw in rawRuns) {
+            final summary = RunSummary.fromJson(raw);
+            final capability = _remoteCapabilities.values
+                .where(
+                  (item) =>
+                      item.hostId == host.hostId &&
+                      item.remoteId.key == summary.capability.key,
+                )
+                .firstOrNull
+                ?.capability;
+            if (capability == null) continue;
+            final runId = RunId(_remoteRunKey(host.hostId, summary.id.value));
+            if (summaries.any((item) => item.id.value == runId.value) ||
+                _matchesCachedRemoteActivity(summaries, capability, summary)) {
+              continue;
+            }
+            summaries.add(
+              RunSummary(
+                runId,
+                capability.id,
+                RunEvent(
+                  runId: runId,
+                  sequence: summary.latest.sequence,
+                  state: summary.latest.state,
+                  occurredAt: summary.latest.occurredAt,
+                  failure: summary.latest.failure,
+                ),
+              ),
+            );
+          }
+        } on Object {
+          // A Host may deny activity access or disconnect while another
+          // source remains usable. Keep its local cache and other Hosts.
+        }
+      }),
+    );
+    summaries.sort(
+      (a, b) => b.latest.occurredAt.compareTo(a.latest.occurredAt),
+    );
+    return List.unmodifiable(summaries.take(100));
+  }
+
+  String _remoteRunKey(String hostId, String remoteRunId) =>
+      'remote-run:$hostId:$remoteRunId';
+
+  bool _matchesCachedRemoteActivity(
+    List<RunSummary> cached,
+    Capability capability,
+    RunSummary remote,
+  ) => cached.any(
+    (item) =>
+        item.capability.connection.value == capability.id.connection.value &&
+        item.capability.kind == capability.id.kind &&
+        item.latest.sequence == remote.latest.sequence &&
+        item.latest.state == remote.latest.state &&
+        item.latest.occurredAt.isAtSameMomentAs(remote.latest.occurredAt),
+  );
 
   @override
   Future<Connection> addConnection(ConnectionSpec spec) async {
@@ -1245,10 +1357,10 @@ final class AndroidRuntimePort
       _activity.insert(
         0,
         RunSummary(
-          run.id,
+          _activityRunId(run),
           run.capability,
           RunEvent(
-            runId: run.id,
+            runId: _activityRunId(run),
             sequence: event.sequence,
             state: state,
             occurredAt: event.occurredAt,
@@ -1337,6 +1449,13 @@ final class AndroidRuntimePort
     }
   }
 
+  RunId _activityRunId(_AndroidRun run) {
+    final hostId = run.remoteHostId;
+    final remoteRunId = run.remoteRunId;
+    if (hostId == null || remoteRunId == null) return run.id;
+    return RunId(_remoteRunKey(hostId, remoteRunId));
+  }
+
   @override
   Future<List<ResultBlock>> readResource(ResourceRef ref) async {
     final remote = _remoteCapabilities[ref.capability.key];
@@ -1406,30 +1525,358 @@ final class AndroidRuntimePort
   Future<void> revealLocalFile(String path) async => _unavailable();
 
   @override
-  Future<TerminalSession> openTerminal(CliCommand command) async =>
-      _unavailable();
+  Future<AccountSnapshot?> readAccount(ConnectionId connection) async {
+    final remote = _remoteConnectionFor(connection);
+    if (remote == null) return null;
+    return _decodeAccountSnapshot(
+      await hostManager.call(remote.hostId, 'account.read', {
+        'connectionId': remote.remoteId,
+      }),
+    );
+  }
 
   @override
-  Stream<String> watchTerminal(TerminalSession session) =>
-      Stream.error(UnsupportedError('此功能尚未在 Android 上开放'));
+  Future<TerminalSession> beginAccountLogin(ConnectionId connection) async {
+    final remote = _remoteConnectionFor(connection);
+    if (remote == null) {
+      throw UnsupportedError('账号登录仅支持配对 Mac Host 上的连接');
+    }
+    final response = await hostManager.call(
+      remote.hostId,
+      'account.beginLogin',
+      {'operationId': _newHostOperationId(), 'connectionId': remote.remoteId},
+      sideEffect: true,
+    );
+    return _registerRemoteTerminal(remote, response, accountLogin: true);
+  }
 
   @override
-  Future<void> writeTerminal(TerminalSession session, String text) async =>
-      _unavailable();
+  Future<int> waitAccountLogin(TerminalSession session) async {
+    final remote = _remoteTerminal(session);
+    final sessionId = remote.accountSessionId;
+    if (!remote.accountLogin || sessionId == null) {
+      throw ArgumentError('终端会话不是账号登录会话');
+    }
+    final response = await hostManager.call(
+      remote.hostId,
+      'account.waitLogin',
+      {'sessionId': sessionId},
+    );
+    final exitCode = response['exitCode'];
+    if (exitCode is! int) {
+      throw const FormatException('Mac Host account login result is invalid');
+    }
+    return exitCode;
+  }
+
+  @override
+  Future<AccountSnapshot> logoutAccount(
+    ConnectionId connection, {
+    required bool confirmed,
+  }) async {
+    if (!confirmed) throw StateError('退出账号需要明确确认');
+    final remote = _remoteConnectionFor(connection);
+    if (remote == null) {
+      throw UnsupportedError('账号管理仅支持配对 Mac Host 上的连接');
+    }
+    final response = await hostManager.call(remote.hostId, 'account.logout', {
+      'operationId': _newHostOperationId(),
+      'connectionId': remote.remoteId,
+      'confirmed': true,
+    }, sideEffect: true);
+    final snapshot = _decodeAccountSnapshot(response);
+    if (snapshot == null) {
+      throw const FormatException('Mac Host account logout result is invalid');
+    }
+    return snapshot;
+  }
+
+  AccountSnapshot? _decodeAccountSnapshot(Map<String, Object?> response) {
+    final raw = response['snapshot'];
+    if (raw == null) return null;
+    final json = jsonObject(raw, 'accountSnapshot');
+    if (json.keys.toSet().difference(const {
+      'state',
+      'nickname',
+      'message',
+    }).isNotEmpty) {
+      throw const FormatException('Mac Host account snapshot is invalid');
+    }
+    final state = AccountState.values
+        .where((item) => item.name == json['state'])
+        .firstOrNull;
+    final nickname = json['nickname'];
+    final message = json['message'];
+    if (state == null ||
+        nickname != null && (nickname is! String || nickname.length > 256) ||
+        message != null && (message is! String || message.length > 512)) {
+      throw const FormatException('Mac Host account snapshot is invalid');
+    }
+    return AccountSnapshot(
+      state,
+      nickname: nickname as String?,
+      message: message as String?,
+    );
+  }
+
+  _AndroidRemoteConnection? _remoteConnectionFor(ConnectionId id) {
+    final remote = _remoteConnections[id.value];
+    if (remote == null) return null;
+    if (!hostManager.isConnected(remote.hostId)) {
+      throw StateError(
+        _hostStatusDiagnostic(hostManager.statusFor(remote.hostId)),
+      );
+    }
+    return remote;
+  }
+
+  @override
+  Future<TerminalSession> openTerminal(CliCommand command) async {
+    final remote = _remoteConnectionFor(command.connection);
+    if (remote == null) {
+      throw UnsupportedError('终端仅支持配对 Mac Host 上的 CLI 连接');
+    }
+    if (remote.connection.kind != ConnectionKind.cli) {
+      throw ArgumentError('只有 CLI 连接可以打开终端');
+    }
+    if (command.arguments.length > 256 ||
+        command.arguments.any(
+          (argument) => argument.length > 4096 || argument.contains('\u0000'),
+        )) {
+      throw const FormatException('终端参数无效');
+    }
+    final response = await hostManager.call(remote.hostId, 'terminal.open', {
+      'operationId': _newHostOperationId(),
+      'connectionId': remote.remoteId,
+      'arguments': command.arguments,
+    }, sideEffect: true);
+    return _registerRemoteTerminal(remote, response, accountLogin: false);
+  }
+
+  @override
+  Stream<String> watchTerminal(TerminalSession session) {
+    final remote = _remoteTerminals[session.id];
+    if (remote == null) return Stream.error(ArgumentError('终端会话不存在'));
+    if (!remote.closed) {
+      remote.subscriptionFuture ??= _subscribeRemoteTerminal(remote);
+    }
+    return remote.output.stream;
+  }
+
+  @override
+  Future<void> writeTerminal(TerminalSession session, String text) async {
+    final remote = _activeRemoteTerminal(session);
+    if (text.length > 1024 * 1024 || text.contains('\u0000')) {
+      throw const FormatException('终端输入无效');
+    }
+    await hostManager.call(remote.hostId, 'terminal.write', {
+      'operationId': _newHostOperationId(),
+      'terminalId': remote.terminalId,
+      'text': text,
+    }, sideEffect: true);
+  }
 
   @override
   Future<void> resizeTerminal(
     TerminalSession session,
     int columns,
     int rows,
-  ) async => _unavailable();
+  ) async {
+    final remote = _activeRemoteTerminal(session);
+    if (columns < 1 || columns > 400 || rows < 1 || rows > 200) {
+      throw const FormatException('终端尺寸无效');
+    }
+    await hostManager.call(remote.hostId, 'terminal.resize', {
+      'operationId': _newHostOperationId(),
+      'terminalId': remote.terminalId,
+      'columns': columns,
+      'rows': rows,
+    }, sideEffect: true);
+  }
 
   @override
-  Future<void> interruptTerminal(TerminalSession session) async =>
-      _unavailable();
+  Future<void> interruptTerminal(TerminalSession session) async {
+    final remote = _activeRemoteTerminal(session);
+    await hostManager.call(remote.hostId, 'terminal.interrupt', {
+      'operationId': _newHostOperationId(),
+      'terminalId': remote.terminalId,
+    }, sideEffect: true);
+  }
 
   @override
-  Future<void> closeTerminal(TerminalSession session) async => _unavailable();
+  Future<void> closeTerminal(TerminalSession session) async {
+    final remote = _remoteTerminals[session.id];
+    if (remote == null || remote.closeRequested) return;
+    remote.closeRequested = true;
+    try {
+      if (hostManager.isConnected(remote.hostId)) {
+        await hostManager.call(remote.hostId, 'terminal.close', {
+          'operationId': _newHostOperationId(),
+          'terminalId': remote.terminalId,
+        }, sideEffect: true);
+      }
+    } finally {
+      _remoteTerminals.remove(session.id);
+      await _closeRemoteTerminal(remote);
+    }
+  }
+
+  _AndroidRemoteTerminal _remoteTerminal(TerminalSession session) =>
+      _remoteTerminals[session.id] ?? (throw ArgumentError('终端会话不存在'));
+
+  _AndroidRemoteTerminal _activeRemoteTerminal(TerminalSession session) {
+    final remote = _remoteTerminal(session);
+    if (remote.closed || !hostManager.isConnected(remote.hostId)) {
+      throw StateError('Mac Host 终端会话已结束，请重新打开。');
+    }
+    return remote;
+  }
+
+  TerminalSession _registerRemoteTerminal(
+    _AndroidRemoteConnection connection,
+    Map<String, Object?> response, {
+    required bool accountLogin,
+  }) {
+    final terminalId = response['terminalId'];
+    final sessionId = response['sessionId'];
+    if (terminalId is! String ||
+        sessionId is! String ||
+        !_validHostOpaqueId(terminalId) ||
+        !_validHostOpaqueId(sessionId)) {
+      throw const FormatException('Mac Host terminal session is invalid');
+    }
+    final localId = _newId('remote-terminal');
+    _remoteTerminals[localId] = _AndroidRemoteTerminal(
+      hostId: connection.hostId,
+      terminalId: terminalId,
+      accountSessionId: accountLogin ? sessionId : null,
+      accountLogin: accountLogin,
+    );
+    return TerminalSession(localId);
+  }
+
+  bool _validHostOpaqueId(String value) =>
+      value.length <= 128 &&
+      RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$').hasMatch(value);
+
+  Future<void> _subscribeRemoteTerminal(_AndroidRemoteTerminal remote) async {
+    try {
+      // Listen before subscribe: the Host can replay buffered output before
+      // the RPC response containing its subscription ID arrives.
+      remote.notifications = hostManager
+          .watchNotifications(remote.hostId)
+          .listen(
+            (notification) =>
+                _receiveRemoteTerminalNotification(remote, notification),
+            onError: (_) => _closeRemoteTerminal(remote, 'Mac Host 终端连接已中断。'),
+            onDone: () => _closeRemoteTerminal(remote, 'Mac Host 终端连接已关闭。'),
+          );
+      final response = await hostManager.call(
+        remote.hostId,
+        'terminal.subscribe',
+        {'terminalId': remote.terminalId},
+      );
+      final subscriptionId = response['subscriptionId'];
+      if (subscriptionId is! String ||
+          !_validHostOpaqueId(subscriptionId) ||
+          response['terminalId'] != remote.terminalId) {
+        throw const FormatException(
+          'Mac Host terminal subscription is invalid',
+        );
+      }
+      remote.subscriptionId = subscriptionId;
+      final pending = List<Map<String, Object?>>.of(
+        remote.pendingNotifications,
+      );
+      remote.pendingNotifications.clear();
+      for (final notification in pending) {
+        _receiveRemoteTerminalNotification(remote, notification);
+      }
+    } on Object {
+      _closeRemoteTerminal(remote, 'Mac Host 终端订阅失败，请检查权限和连接状态。');
+    }
+  }
+
+  void _receiveRemoteTerminalNotification(
+    _AndroidRemoteTerminal remote,
+    Map<String, Object?> notification,
+  ) {
+    if (remote.closed || notification['method'] != 'terminal.event') return;
+    try {
+      final params = jsonObject(notification['params'], 'terminal.params');
+      final event = jsonObject(params['event'], 'terminal.event');
+      if (event['terminalId'] != remote.terminalId) return;
+      final subscriptionId = params['subscriptionId'];
+      if (subscriptionId is! String || !_validHostOpaqueId(subscriptionId)) {
+        throw const FormatException(
+          'Mac Host terminal notification is invalid',
+        );
+      }
+      final sequence = event['sequence'];
+      final kind = event['kind'];
+      final text = event['text'];
+      if (sequence is! int ||
+          sequence < 0 ||
+          sequence > 9007199254740991 ||
+          params['sequence'] != sequence ||
+          kind is! String ||
+          !const {'output', 'closed', 'failed'}.contains(kind) ||
+          (kind == 'output') != (text is String) ||
+          text != null && text is! String ||
+          text is String &&
+              (utf8.encode(text).length > 1024 * 1024 ||
+                  text.contains('\u0000'))) {
+        throw const FormatException(
+          'Mac Host terminal notification is invalid',
+        );
+      }
+      if (remote.subscriptionId == null) {
+        final pendingBytes = utf8.encode(text as String? ?? '').length;
+        if (remote.pendingNotifications.length >= 256 ||
+            remote.pendingNotificationBytes + pendingBytes > 1024 * 1024) {
+          throw const FormatException('Mac Host sent too many terminal events');
+        }
+        remote.pendingNotifications.add(Map.unmodifiable(notification));
+        remote.pendingNotificationBytes += pendingBytes;
+        return;
+      }
+      if (subscriptionId != remote.subscriptionId) return;
+      if (sequence <= remote.sequence) return;
+      remote.sequence = sequence;
+      if (kind == 'output') {
+        if (!remote.output.isClosed) remote.output.add(text! as String);
+      } else if (kind == 'failed') {
+        _closeRemoteTerminal(remote, 'Mac Host 终端进程异常结束。');
+      } else {
+        _closeRemoteTerminal(remote);
+      }
+    } on Object catch (error) {
+      if (error is FormatException) {
+        _closeRemoteTerminal(remote, 'Mac Host 终端数据无效，会话已结束。');
+      }
+      // Other authenticated Host notifications are unrelated to this stream.
+    }
+  }
+
+  void _closeRemoteTerminalsForHost(String hostId, String message) {
+    for (final terminal in _remoteTerminals.values.toList()) {
+      if (terminal.hostId == hostId) {
+        unawaited(_closeRemoteTerminal(terminal, message));
+      }
+    }
+  }
+
+  Future<void> _closeRemoteTerminal(
+    _AndroidRemoteTerminal remote, [
+    String? message,
+  ]) async {
+    if (remote.closed) return;
+    remote.closed = true;
+    await remote.notifications?.cancel();
+    if (remote.output.isClosed) return;
+    if (message != null) remote.output.add('\r\n[$message]\r\n');
+    await remote.output.close();
+  }
 }
 
 final class _AndroidEntry {
@@ -1479,6 +1926,31 @@ final class _AndroidRun {
     RunState.timedOut,
     RunState.outcomeUnknown,
   }.contains(state);
+}
+
+final class _AndroidRemoteTerminal {
+  _AndroidRemoteTerminal({
+    required this.hostId,
+    required this.terminalId,
+    required this.accountSessionId,
+    required this.accountLogin,
+  });
+
+  final String hostId;
+  final String terminalId;
+  final String? accountSessionId;
+  final bool accountLogin;
+  final StreamController<String> output = StreamController<String>.broadcast(
+    sync: true,
+  );
+  final List<Map<String, Object?>> pendingNotifications = [];
+  int pendingNotificationBytes = 0;
+  StreamSubscription<Map<String, Object?>>? notifications;
+  Future<void>? subscriptionFuture;
+  String? subscriptionId;
+  int sequence = -1;
+  bool closed = false;
+  bool closeRequested = false;
 }
 
 final class _AndroidRemoteConnection {

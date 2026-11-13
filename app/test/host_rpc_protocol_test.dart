@@ -273,6 +273,46 @@ void main() {
       );
     });
 
+    test(
+      'bounds terminal arguments and accepts omitted arguments for v1 peers',
+      () {
+        String openTerminal({List<Object?>? arguments}) => jsonEncode({
+          'jsonrpc': '2.0',
+          'id': 'terminal-open',
+          'method': 'terminal.open',
+          'params': {
+            'operationId': 'op-terminal',
+            'connectionId': 'connection-1',
+            ...?(arguments == null ? null : {'arguments': arguments}),
+          },
+        });
+
+        expect(
+          HostRpcCodec.decodeRequest(
+            openTerminal(arguments: const ['search', '--format', 'json']),
+          ).params['arguments'],
+          ['search', '--format', 'json'],
+        );
+        expect(
+          HostRpcCodec.decodeRequest(openTerminal()).params
+              .containsKey('arguments'),
+          isFalse,
+        );
+        expect(
+          () => HostRpcCodec.decodeRequest(
+            openTerminal(arguments: const ['invalid\u0000argument']),
+          ),
+          throwsA(isA<HostRpcProtocolException>()),
+        );
+        expect(
+          () => HostRpcCodec.decodeRequest(
+            openTerminal(arguments: List<Object?>.filled(257, 'arg')),
+          ),
+          throwsA(isA<HostRpcProtocolException>()),
+        );
+      },
+    );
+
     test('setup drafts accept opaque references and reject host paths', () {
       final encoded = jsonEncode({
         'jsonrpc': '2.0',
