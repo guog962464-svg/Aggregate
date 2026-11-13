@@ -189,6 +189,31 @@ class AppShellState extends State<AppShell> {
     );
   }
 
+  void openMusicPlayer() {
+    final connectionId = widget.musicSession.connection?.value;
+    if (connectionId == null) {
+      select(Section.connections);
+      return;
+    }
+    Connection? connection;
+    for (final item in connectionHomes) {
+      if (item.id.value == connectionId) {
+        connection = item;
+        break;
+      }
+    }
+    if (connection == null ||
+        experienceFor(connection, catalog) != ConnectionExperience.music) {
+      select(Section.connections);
+      return;
+    }
+    if (_mobilePlatform) {
+      unawaited(openConnectionWorkspace(connection));
+    } else {
+      selectConnection(connection);
+    }
+  }
+
   void connectionAdded(Connection connection) {
     setState(() {
       selectedConnectionId = connection.id.value;
@@ -232,7 +257,10 @@ class AppShellState extends State<AppShell> {
           appBar: AppBar(title: Text(connection.label)),
           bottomNavigationBar: experience == ConnectionExperience.music
               ? null
-              : MusicMiniPlayer(session: widget.musicSession),
+              : MusicMiniPlayer(
+                  session: widget.musicSession,
+                  onOpen: openMusicPlayer,
+                ),
           body: ConnectionHomePage(
             key: ValueKey('mobile-connection-${connection.id.value}'),
             connection: connection,
@@ -450,6 +478,7 @@ class AppShellState extends State<AppShell> {
                         MusicMiniPlayer(
                           session: widget.musicSession,
                           includeBottomSafeArea: false,
+                          onOpen: openMusicPlayer,
                         ),
                       NavigationBar(
                         selectedIndex: _mobileSelectedIndex,
@@ -486,11 +515,17 @@ class AppShellState extends State<AppShell> {
                 ? const SizedBox.shrink()
                 : onMusicHome
                 ? null
-                : MusicMiniPlayer(session: widget.musicSession);
+                : MusicMiniPlayer(
+                    session: widget.musicSession,
+                    onOpen: openMusicPlayer,
+                  );
           } else {
             bottomNavigationBar = onMusicHome
                 ? null
-                : MusicMiniPlayer(session: widget.musicSession);
+                : MusicMiniPlayer(
+                    session: widget.musicSession,
+                    onOpen: openMusicPlayer,
+                  );
           }
           return Scaffold(
             bottomNavigationBar: bottomNavigationBar,

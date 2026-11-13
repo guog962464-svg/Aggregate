@@ -13,6 +13,7 @@ final class MusicSession extends ChangeNotifier {
   final actions = <String, Capability>{};
   ConnectionId? connection;
   String source = '音乐';
+  String outputLocation = '输出位置待确认';
   String title = '播放状态待读取';
   String? artist;
   String detail = '';
@@ -51,6 +52,8 @@ final class MusicSession extends ChangeNotifier {
     final attachment = ++_attachment;
     if (connection?.value != capability.id.connection.value) {
       _verification++;
+      source = capability.id.connection.value;
+      outputLocation = '输出位置待确认';
       title = '播放状态待读取';
       artist = null;
       detail = '';
@@ -64,25 +67,43 @@ final class MusicSession extends ChangeNotifier {
       accountState = null;
     }
     connection = target;
-    final catalog = await runtime.searchCapabilities(const SearchQuery(''));
-    if (_disposed || attachment != _attachment) return;
-    actions
-      ..clear()
-      ..addEntries(
-        catalog
-            .where(
-              (item) =>
-                  item.id.connection.value == target.value &&
-                  item.presentation?.startsWith('music.') == true,
-            )
-            .map((item) => MapEntry(item.presentation!, item)),
-      );
-    final connections = await runtime.listConnections();
-    if (_disposed || attachment != _attachment) return;
-    for (final item in connections) {
-      if (item.id.value == target.value) source = item.label;
+    scheduleMicrotask(_notify);
+    try {
+      final catalog = await runtime.searchCapabilities(const SearchQuery(''));
+      if (_disposed || attachment != _attachment) return;
+      actions
+        ..clear()
+        ..addEntries(
+          catalog
+              .where(
+                (item) =>
+                    item.id.connection.value == target.value &&
+                    item.presentation?.startsWith('music.') == true,
+              )
+              .map((item) => MapEntry(item.presentation!, item)),
+        );
+      final connections = await runtime.listConnections();
+      if (_disposed || attachment != _attachment) return;
+      var foundConnection = false;
+      for (final item in connections) {
+        if (item.id.value == target.value) {
+          source = item.label;
+          outputLocation = item.executionTarget.kind == ExecutionTargetKind.host
+              ? '声音由配对 Mac 输出'
+              : '声音由此设备输出';
+          foundConnection = true;
+          break;
+        }
+      }
+      if (!foundConnection) outputLocation = '执行端未知';
+      _notify();
+    } catch (_) {
+      if (!_disposed && attachment == _attachment) {
+        outputLocation = '执行端未知';
+        _notify();
+      }
+      rethrow;
     }
-    _notify();
   }
 
   void observe(Capability capability, RunEvent event) {

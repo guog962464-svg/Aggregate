@@ -212,3 +212,10 @@ flowchart LR
 - 未知结果不自动重跑，提供检查活动和手动确认重试的副作用提示。错误按错误码解释下一步恢复方式。离开运行页后，活动页可筛选运行中/结果待确认任务；可以重新打开并订阅运行、请求取消，不会重放调用。终端显示来源、执行端及权限，保留 Ctrl/Esc/Tab/方向键等手机控制键。
 - 本轮四个 A7.4 Widget 测试文件通过：调用页、表单 JSON、活动恢复/取消和终端脱敏；完整 Flutter 测试集 181 项通过，`flutter analyze --no-pub` 与四个公共包的 15 项测试通过。覆盖异步执行端信息的未确认与 Host 结果状态。旧桌面主题测试原先按隐藏的“深色”文本定位控件，已改为按当前“深色主题”无障碍语义定位。Android arm64 Debug APK、macOS Debug app 构建和 Build Tools 36.0.0 `zipalign -c -P 16 4` 检查通过。
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机安装启动成功；真机检查了手机活动页以及“运行中/结果待确认”筛选入口，未见 Flutter/Android 崩溃。设备没有连接 production WSS Host，因此本轮没有在真机实际执行远端调用、终端命令，也未手工验收实体 IME 和 TalkBack；没有 16 KB 实体设备，APK 静态对齐不代表 16 KB 系统运行通过。以上缺项转入 A7.6/A8 的最终验收记录。
+
+### A7.5 手机播放器与迷你播放器验收（2026-11-14）
+
+- 手机宽度 `<600 dp` 的迷你播放器改为两行：第一行曲名、执行端输出位置、打开完整播放器、更多操作和收起；第二行提供上一首/播放/下一首。停止播放与刷新状态收进更多菜单，减少控制按钮挤压曲目文本。完整播放器入口按当前音乐连接路由；桌面宽度继续保留一行直接控制布局。
+- Host 音乐连接打开播放器时显示“声音由配对 Mac 输出”；`MusicSession` 按已解析的 `ExecutionTarget` 更新输出位置，连接确认期间读屏不会误报本机。手机迷你栏显示短标签“Mac 输出”，对应无障碍语义保留完整输出说明。Android 输入法打开时迷你栏收起；完整音乐页依靠可滚动视口将搜索框移到键盘可见区，一级导航与 IME 不叠放。没有新增手机本地音频或后台播放能力。
+- `music_mini_player_test.dart` 覆盖 320 dp 长曲名/多控制、主控与更多菜单、Host 输出语义、IME 隐藏、完整播放器路由及桌面直控；Android 导航测试覆盖音乐搜索框在 IME 下可滚动可见；Host 账号场景测试检查 `MusicSession` 输出目标标记。完整 Flutter 测试 185 项通过，`flutter analyze --no-pub` 无问题；Android arm64 Debug APK、macOS Debug app 与 Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机重新安装并启动，`MainActivity` resumed，最近 500 条 AndroidRuntime/Flutter 崩溃过滤日志为空。设备没有 Host/真实网易云账号，未在实体设备打开远端播放器或实际播放；这些 Widget/fake runtime 结果不算真实账号或 Mac 音频闭环。没有 16 KB 实体设备；静态对齐不等同于 16 KB 系统运行验收。

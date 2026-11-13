@@ -57,6 +57,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('音乐播放器 · 声音由配对 Mac 输出'), findsOneWidget);
+    expect(session.outputLocation, '声音由配对 Mac 输出');
     expect(find.byKey(const Key('music-account')), findsOneWidget);
     expect(find.bySemanticsLabel('管理网易云音乐账号，原账号'), findsOneWidget);
     session.authorizeSearch();
@@ -178,7 +179,17 @@ final class _AccountPreviewRuntime
   @override
   Future<List<Connection>> listConnections() async => [
     for (final connection in await delegate.listConnections())
-      if (connection.id.value == 'example-music') connection,
+      if (connection.id.value == 'example-music')
+        Connection(
+          id: connection.id,
+          kind: connection.kind,
+          label: connection.label,
+          location: 'Mac Host',
+          executionTarget: ExecutionTarget.host('paired-mac'),
+          status: connection.status,
+          protocolVersion: connection.protocolVersion,
+          diagnostic: connection.diagnostic,
+        ),
   ];
 
   @override

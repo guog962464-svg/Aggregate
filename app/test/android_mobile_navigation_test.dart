@@ -55,6 +55,16 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(MusicPlayerPage), findsOneWidget);
         expect(find.text('音乐播放器'), findsOneWidget);
+
+        final musicSearch = find.byKey(const Key('music-search'));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pump();
+        await tester.ensureVisible(musicSearch);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(musicSearch).bottom, lessThanOrEqualTo(512));
+        expect(tester.takeException(), isNull);
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
 
         await tester.pageBack();

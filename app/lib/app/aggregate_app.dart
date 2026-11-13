@@ -130,6 +130,7 @@ class _AggregateAppState extends State<AggregateApp> {
             capability: settings.arguments! as Capability,
             musicSession: musicSession,
             onSearchAll: searchAll,
+            onOpenMusic: shellKey.currentState?.openMusicPlayer,
           ),
         );
       }

@@ -21,11 +21,13 @@ class CapabilityRunPage extends StatefulWidget {
     required this.capability,
     this.musicSession,
     this.onSearchAll,
+    this.onOpenMusic,
   });
   final RuntimePort runtime;
   final Capability capability;
   final MusicSession? musicSession;
   final VoidCallback? onSearchAll;
+  final VoidCallback? onOpenMusic;
   @override
   State<CapabilityRunPage> createState() => _CapabilityRunPageState();
 }
@@ -642,14 +644,20 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                       ),
                     ),
                     if (widget.musicSession != null)
-                      MusicMiniPlayer(session: widget.musicSession!),
+                      MusicMiniPlayer(
+                        session: widget.musicSession!,
+                        onOpen: widget.onOpenMusic,
+                      ),
                   ],
                 ),
               ),
             )
           : widget.musicSession == null
           ? null
-          : MusicMiniPlayer(session: widget.musicSession!),
+          : MusicMiniPlayer(
+              session: widget.musicSession!,
+              onOpen: widget.onOpenMusic,
+            ),
       body: CallbackShortcuts(
         bindings: {
           ShortcutScheme(defaultTargetPlatform).run: run,
