@@ -11,6 +11,7 @@ class ConnectionSetupDialog extends StatefulWidget {
     super.key,
     required this.setup,
     this.initialKind = ConnectionKind.cli,
+    this.selectedTargetLabel,
     this.allowedKinds = const {
       ConnectionKind.cli,
       ConnectionKind.mcpStdio,
@@ -20,6 +21,7 @@ class ConnectionSetupDialog extends StatefulWidget {
 
   final ConnectionSetupPort setup;
   final ConnectionKind initialKind;
+  final String? selectedTargetLabel;
   final Set<ConnectionKind> allowedKinds;
 
   @override
@@ -27,6 +29,7 @@ class ConnectionSetupDialog extends StatefulWidget {
 }
 
 class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
+  final formKey = GlobalKey<FormState>();
   final label = TextEditingController();
   final executable = TextEditingController();
   final arguments = TextEditingController(text: '[]');
@@ -39,6 +42,8 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
   ConnectionSetupReport? report;
   String? error;
   bool busy = false;
+  bool saving = false;
+  bool validationAttempted = false;
   int generation = 0;
   int detectionRequest = 0;
   bool detectingExecutable = false;
@@ -89,6 +94,49 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
       unawaited(widget.setup.discardConnectionSetup(old!.draftId));
     }
     if (mounted) setState(() {});
+  }
+
+  String? _validateLabel(String? value) =>
+      value?.trim().isNotEmpty == true ? null : '请输入连接名称';
+
+  String? _validateExecutable(String? value) {
+    if (adapter.kind == ConnectionKind.mcpHttp) return null;
+    if (adapter.executionTarget.kind == ExecutionTargetKind.host) {
+      return detectedExecutable?.reference?.isNotEmpty == true
+          ? null
+          : '请先在 Mac Host 查找并确认程序';
+    }
+    final path = value?.trim() ?? '';
+    if (path.isEmpty) return '请选择程序绝对路径';
+    if (!path.startsWith('/')) return '请输入程序绝对路径';
+    return null;
+  }
+
+  String? _validateArguments(String? value) {
+    if (adapter.kind == ConnectionKind.mcpHttp ||
+        !adapter.showGenericCliFields) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(value ?? '');
+      if (decoded is List && decoded.every((item) => item is String)) {
+        return null;
+      }
+    } on FormatException {
+      // Keep malformed JSON as a field-level error.
+    }
+    return '启动参数必须是 JSON 字符串数组';
+  }
+
+  String? _validateUrl(String? value) {
+    if (adapter.kind != ConnectionKind.mcpHttp) return null;
+    final endpoint = Uri.tryParse(value?.trim() ?? '');
+    if (endpoint == null ||
+        !endpoint.hasAuthority ||
+        !{'http', 'https'}.contains(endpoint.scheme)) {
+      return '请输入有效的 HTTP MCP 地址';
+    }
+    return null;
   }
 
   void _executableChanged() {
@@ -275,6 +323,8 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
 
   Future<void> _test() async {
     if (busy) return;
+    setState(() => validationAttempted = true);
+    if (formKey.currentState?.validate() != true) return;
     final current = ++generation;
     setState(() {
       busy = true;
@@ -317,6 +367,7 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     if (busy || current?.canSave != true) return;
     setState(() {
       busy = true;
+      saving = true;
       error = null;
     });
     try {
@@ -324,7 +375,12 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
         current!.draftId,
       );
       report = null;
-      if (mounted) Navigator.pop(context, connection);
+      if (mounted) {
+        setState(() => saving = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.pop(context, connection);
+        });
+      }
     } on ConnectionSetupOutcomeUnknown {
       if (mounted) {
         setState(() {
@@ -341,7 +397,12 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
         });
       }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() {
+          busy = false;
+          saving = false;
+        });
+      }
     }
   }
 
@@ -352,17 +413,24 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
     bool secret = false,
     int lines = 1,
     String? hint,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
     String? detectTooltip,
     bool readOnly = false,
     VoidCallback? choose,
     VoidCallback? detect,
   }) => Padding(
     padding: const EdgeInsets.only(top: 16),
-    child: TextField(
+    child: TextFormField(
       controller: controller,
       maxLines: lines,
       readOnly: readOnly,
+      keyboardType:
+          keyboardType ?? (secret ? TextInputType.visiblePassword : null),
+      validator: validator,
       obscureText: secret && lines == 1,
+      autocorrect: !secret,
+      enableSuggestions: !secret,
       decoration: InputDecoration(
         labelText: title,
         helperText: hint,
@@ -410,203 +478,313 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
       width: compact ? double.infinity : 520,
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(top: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DropdownButtonFormField<String>(
-              initialValue: adapter.id,
-              decoration: const InputDecoration(labelText: '适配器'),
-              items: [
-                for (final item in choices)
-                  DropdownMenuItem(value: item.id, child: Text(item.label)),
-              ],
-              onChanged: busy
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-                      detectionRequest++;
-                      detectingExecutable = false;
-                      executableHint = null;
-                      if (detectedExecutable != null &&
-                          executable.text == detectedExecutableInput) {
-                        executable.clear();
-                      }
-                      detectedExecutable = null;
-                      detectedExecutableInput = null;
-                      final previousDefault = adapter.defaultLabel;
-                      if (previousDefault != null &&
-                          label.text == previousDefault) {
-                        label.clear();
-                      }
-                      _changed();
-                      setState(
-                        () => adapter = choices.firstWhere(
-                          (item) => item.id == value,
-                        ),
-                      );
-                      if (adapter.defaultLabel case final value?) {
-                        if (label.text.isEmpty) label.text = value;
-                      }
-                      unawaited(_detectExecutable());
-                    },
-            ),
-            _field(label, '名称'),
-            if (adapter.kind == ConnectionKind.mcpHttp) ...[
-              _field(url, 'HTTP URL'),
-              _field(
-                token,
-                'Bearer Token（可选）',
-                secret: true,
-                hint: hostTarget
-                    ? '经配对通道发送；保存后由 Mac Host 管理凭证。'
-                    : '测试时使用，保存后写入当前设备的安全存储。',
-              ),
-            ] else ...[
-              _field(
-                executable,
-                hostTarget
-                    ? adapter.autoDetectExecutable
-                          ? 'Host 上的程序'
-                          : 'Host 程序名称'
-                    : '程序绝对路径',
-                file: canChooseRuntimePath,
-                readOnly: hostTarget && adapter.autoDetectExecutable,
-                hint: canDetectExecutable
-                    ? executableHint ??
-                          (hostCommandLookup
-                              ? '输入 Mac Host PATH 中的命令名；不会读取手机文件路径。'
-                              : null)
-                    : null,
-                detectTooltip: hostTarget ? '在 Mac Host 查找程序' : null,
-                detect: canDetectExecutable && !detectingExecutable
-                    ? () => unawaited(_detectExecutable())
-                    : null,
-              ),
-              if (adapter.showGenericCliFields) ...[
-                _field(arguments, '启动参数 JSON 数组'),
-                if (!hostTarget) _field(directory, '工作目录（可选）'),
-                if (adapter.kind == ConnectionKind.cli && !hostTarget)
-                  _field(manifest, '动作清单 JSON（可选）', file: canChooseRuntimePath),
-              ],
-            ],
-            for (final field in adapter.fields)
-              _field(
-                extra[field.key]!,
-                field.label,
-                file: field.kind == SetupFieldKind.file && canChooseRuntimePath,
-                secret: field.kind == SetupFieldKind.secret,
-                choose: field.readFileContent
-                    ? () => _chooseFieldContent(extra[field.key]!)
-                    : null,
-                hint: field.hint,
-              ),
-            if (adapter.description case final description?)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(description),
-              ),
-            if (busy)
-              const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: LinearProgressIndicator(),
-              ),
-            if (report case final result?) ...[
-              const SizedBox(height: 20),
-              for (final check in result.checks)
+        child: Form(
+          key: formKey,
+          autovalidateMode: validationAttempted
+              ? AutovalidateMode.onUserInteraction
+              : AutovalidateMode.disabled,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.selectedTargetLabel case final targetLabel?)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        switch (check.status) {
-                          SetupCheckStatus.passed => Icons.check_circle_outline,
-                          SetupCheckStatus.actionRequired => Icons.info_outline,
-                          SetupCheckStatus.failed => Icons.error_outline,
-                        },
-                        size: 20,
-                        color: switch (check.status) {
-                          SetupCheckStatus.passed => Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          SetupCheckStatus.actionRequired => Theme.of(
-                            context,
-                          ).colorScheme.secondary,
-                          SetupCheckStatus.failed => Theme.of(
-                            context,
-                          ).colorScheme.error,
-                        },
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            adapter.executionTarget.kind ==
+                                    ExecutionTargetKind.host
+                                ? Icons.desktop_mac_outlined
+                                : Icons.phone_android_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '执行设备',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium,
+                                ),
+                                Text(
+                                  targetLabel,
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('${check.label}：${check.detail}')),
-                    ],
+                    ),
+                  ),
+                ),
+              DropdownButtonFormField<String>(
+                initialValue: adapter.id,
+                decoration: const InputDecoration(labelText: '适配器'),
+                items: [
+                  for (final item in choices)
+                    DropdownMenuItem(value: item.id, child: Text(item.label)),
+                ],
+                onChanged: busy
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        detectionRequest++;
+                        detectingExecutable = false;
+                        executableHint = null;
+                        if (detectedExecutable != null &&
+                            executable.text == detectedExecutableInput) {
+                          executable.clear();
+                        }
+                        detectedExecutable = null;
+                        detectedExecutableInput = null;
+                        final previousDefault = adapter.defaultLabel;
+                        if (previousDefault != null &&
+                            label.text == previousDefault) {
+                          label.clear();
+                        }
+                        validationAttempted = false;
+                        _changed();
+                        setState(
+                          () => adapter = choices.firstWhere(
+                            (item) => item.id == value,
+                          ),
+                        );
+                        if (adapter.defaultLabel case final value?) {
+                          if (label.text.isEmpty) label.text = value;
+                        }
+                        unawaited(_detectExecutable());
+                      },
+              ),
+              _field(label, '名称', validator: _validateLabel),
+              if (adapter.kind == ConnectionKind.mcpHttp) ...[
+                _field(
+                  url,
+                  'HTTP URL',
+                  keyboardType: TextInputType.url,
+                  validator: _validateUrl,
+                ),
+                _field(
+                  token,
+                  'Bearer Token（可选）',
+                  secret: true,
+                  hint: hostTarget
+                      ? '经配对通道发送；保存后由 Mac Host 管理凭证。'
+                      : '测试时使用，保存后写入当前设备的安全存储。',
+                ),
+              ] else ...[
+                _field(
+                  executable,
+                  hostTarget
+                      ? adapter.autoDetectExecutable
+                            ? 'Host 上的程序'
+                            : 'Host 程序名称'
+                      : '程序绝对路径',
+                  file: canChooseRuntimePath,
+                  readOnly: hostTarget && adapter.autoDetectExecutable,
+                  hint: canDetectExecutable
+                      ? executableHint ??
+                            (hostCommandLookup
+                                ? '输入 Mac Host PATH 中的命令名；不会读取手机文件路径。'
+                                : null)
+                      : null,
+                  detectTooltip: hostTarget ? '在 Mac Host 查找程序' : null,
+                  validator: _validateExecutable,
+                  detect: canDetectExecutable && !detectingExecutable
+                      ? () => unawaited(_detectExecutable())
+                      : null,
+                ),
+                if (adapter.showGenericCliFields) ...[
+                  _field(
+                    arguments,
+                    '启动参数 JSON 数组',
+                    lines: 3,
+                    keyboardType: TextInputType.multiline,
+                    validator: _validateArguments,
+                  ),
+                  if (!hostTarget) _field(directory, '工作目录（可选）'),
+                  if (adapter.kind == ConnectionKind.cli && !hostTarget)
+                    _field(
+                      manifest,
+                      '动作清单 JSON（可选）',
+                      file: canChooseRuntimePath,
+                    ),
+                ],
+              ],
+              for (final field in adapter.fields)
+                _field(
+                  extra[field.key]!,
+                  field.label,
+                  file:
+                      field.kind == SetupFieldKind.file && canChooseRuntimePath,
+                  secret: field.kind == SetupFieldKind.secret,
+                  choose: field.readFileContent
+                      ? () => _chooseFieldContent(extra[field.key]!)
+                      : null,
+                  hint: field.hint,
+                  validator: field.required
+                      ? (value) => value?.trim().isNotEmpty == true
+                            ? null
+                            : '请输入${field.label}'
+                      : null,
+                ),
+              if (adapter.description case final description?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(description),
+                ),
+              if (busy)
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: LinearProgressIndicator(),
+                ),
+              if (report case final result?) ...[
+                const SizedBox(height: 20),
+                for (final check in result.checks)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Semantics(
+                      container: true,
+                      liveRegion: true,
+                      label:
+                          '${_checkStatusLabel(check.status)}：${check.label}。${check.detail}',
+                      child: ExcludeSemantics(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              switch (check.status) {
+                                SetupCheckStatus.passed =>
+                                  Icons.check_circle_outline,
+                                SetupCheckStatus.actionRequired =>
+                                  Icons.info_outline,
+                                SetupCheckStatus.failed => Icons.error_outline,
+                              },
+                              size: 20,
+                              color: switch (check.status) {
+                                SetupCheckStatus.passed => Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                                SetupCheckStatus.actionRequired => Theme.of(
+                                  context,
+                                ).colorScheme.secondary,
+                                SetupCheckStatus.failed => Theme.of(
+                                  context,
+                                ).colorScheme.error,
+                              },
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${_checkStatusLabel(check.status)} · ${check.label}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall,
+                                  ),
+                                  Text(check.detail),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+              if (error case final message?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
             ],
-            if (error case final message?)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  message,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
     final testButton = OutlinedButton(
       onPressed: busy || detectingExecutable ? null : _test,
-      child: const Text('测试连接'),
+      child: Text(busy && !saving ? '正在测试…' : '测试连接'),
     );
     final saveButton = FilledButton(
       onPressed: busy || report?.canSave != true ? null : _save,
-      child: const Text('保存连接'),
+      child: Text(saving ? '正在保存…' : '保存连接'),
     );
-    if (compact) {
-      return Dialog.fullscreen(
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('添加连接'),
-            leading: IconButton(
-              tooltip: '关闭添加连接',
-              onPressed: busy ? null : () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
-            ),
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: form,
-            ),
-          ),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Row(
-                children: [
-                  Expanded(child: testButton),
-                  const SizedBox(width: 12),
-                  Expanded(child: saveButton),
-                ],
+    return PopScope(
+      canPop: !saving,
+      child: compact
+          ? Dialog.fullscreen(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(
+                    widget.selectedTargetLabel == null
+                        ? '添加连接'
+                        : '第 2 步 · 配置连接',
+                  ),
+                  leading: IconButton(
+                    tooltip: '关闭添加连接',
+                    onPressed: saving ? null : () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+                body: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: form,
+                  ),
+                ),
+                bottomNavigationBar: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    child: Row(
+                      children: [
+                        Expanded(child: testButton),
+                        const SizedBox(width: 12),
+                        Expanded(child: saveButton),
+                      ],
+                    ),
+                  ),
+                ),
               ),
+            )
+          : AlertDialog(
+              title: Text(
+                widget.selectedTargetLabel == null ? '添加连接' : '第 2 步 · 配置连接',
+              ),
+              content: form,
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.pop(context),
+                  child: const Text('取消'),
+                ),
+                testButton,
+                saveButton,
+              ],
             ),
-          ),
-        ),
-      );
-    }
-    return AlertDialog(
-      title: const Text('添加连接'),
-      content: form,
-      actions: [
-        TextButton(
-          onPressed: busy ? null : () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        testButton,
-        saveButton,
-      ],
     );
   }
 }
+
+String _checkStatusLabel(SetupCheckStatus status) => switch (status) {
+  SetupCheckStatus.passed => '已通过',
+  SetupCheckStatus.actionRequired => '待完成',
+  SetupCheckStatus.failed => '未通过',
+};

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aggregate/features/connections/connection_setup_dialog.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
@@ -11,12 +13,14 @@ final class _SetupFixture
     this.httpOnly = false,
     this.actionRequired = false,
     this.executionTarget = ExecutionTarget.device,
+    this.saveCompleter,
   });
   final bool withField;
   final bool autoDetect;
   final bool httpOnly;
   final bool actionRequired;
   final ExecutionTarget executionTarget;
+  final Completer<Connection>? saveCompleter;
   int tests = 0;
   final discarded = <String>[];
   ConnectionSetupDraft? latest;
@@ -110,13 +114,16 @@ final class _SetupFixture
 
   @override
   Future<Connection> saveConnectionSetup(String draftId) async =>
-      const Connection(
-        id: ConnectionId('saved'),
-        kind: ConnectionKind.cli,
-        label: '测试工具',
-        location: '/usr/bin/printf',
-        status: ConnectionStatus.ready,
-      );
+      await (saveCompleter?.future ??
+          Future.value(
+            const Connection(
+              id: ConnectionId('saved'),
+              kind: ConnectionKind.cli,
+              label: '测试工具',
+              location: '/usr/bin/printf',
+              status: ConnectionStatus.ready,
+            ),
+          ));
 
   @override
   Future<void> discardConnectionSetup(String draftId) async {
@@ -154,14 +161,113 @@ void main() {
     );
     await tester.tap(find.text('测试连接'));
     await tester.pumpAndSettle();
-    expect(find.text('账号登录：保存后在播放器内扫码登录。'), findsOneWidget);
+    expect(find.text('待完成 · 账号登录'), findsOneWidget);
+    expect(find.text('保存后在播放器内扫码登录。'), findsOneWidget);
     expect(find.byIcon(Icons.info_outline), findsOneWidget);
+    expect(find.bySemanticsLabel('待完成：账号登录。保存后在播放器内扫码登录。'), findsOneWidget);
     expect(
       tester
           .widget<FilledButton>(find.widgetWithText(FilledButton, '保存连接'))
           .onPressed,
       isNotNull,
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile form reports invalid fields beside their inputs', (
+    tester,
+  ) async {
+    final setup = _SetupFixture(httpOnly: true);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<Connection>(
+                context: context,
+                builder: (_) => ConnectionSetupDialog(
+                  setup: setup,
+                  initialKind: ConnectionKind.mcpHttp,
+                  allowedKinds: const {ConnectionKind.mcpHttp},
+                ),
+              ),
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('测试连接'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('请输入连接名称'), findsOneWidget);
+    expect(find.text('请输入有效的 HTTP MCP 地址'), findsOneWidget);
+    expect(setup.tests, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('system back cannot dismiss an in-progress save', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final pendingSave = Completer<Connection>();
+    final setup = _SetupFixture(saveCompleter: pendingSave);
+    Connection? saved;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                saved = await showDialog<Connection>(
+                  context: context,
+                  builder: (_) => ConnectionSetupDialog(setup: setup),
+                );
+              },
+              child: const Text('打开'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '名称'), '测试工具');
+    await tester.enterText(
+      find.widgetWithText(TextField, '程序绝对路径'),
+      '/usr/bin/printf',
+    );
+    await tester.tap(find.text('测试连接'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存连接'));
+    await tester.pump();
+    expect(find.text('正在保存…'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(saved, isNull);
+
+    pendingSave.complete(
+      const Connection(
+        id: ConnectionId('saved'),
+        kind: ConnectionKind.cli,
+        label: '测试工具',
+        location: '/usr/bin/printf',
+        status: ConnectionStatus.ready,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+    expect(saved?.id.value, 'saved');
     expect(tester.takeException(), isNull);
   });
 
@@ -396,6 +502,11 @@ void main() {
     await tester.pumpAndSettle();
     final saveButton = find.widgetWithText(FilledButton, '保存连接');
     expect(tester.getRect(saveButton).bottom, lessThanOrEqualTo(544));
+    expect(find.byTooltip('关闭添加连接'), findsOneWidget);
+    expect(
+      tester.getRect(find.byTooltip('关闭添加连接')).bottom,
+      lessThanOrEqualTo(tester.getRect(find.byType(AppBar)).bottom),
+    );
     expect(tester.takeException(), isNull);
   });
 }

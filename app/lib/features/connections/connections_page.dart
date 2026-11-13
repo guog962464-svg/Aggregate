@@ -36,6 +36,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   List<Capability> catalog = [];
   String? selectedId;
   String? error;
+  bool addingConnection = false;
 
   @override
   void initState() {
@@ -56,20 +57,23 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   }
 
   Future<void> add({ConnectionKind initialKind = ConnectionKind.cli}) async {
-    if (widget.runtime.isPreview) {
-      await showDialog<void>(
-        context: context,
-        builder: (_) => const AlertDialog(
-          title: Text('添加连接'),
-          content: Text('预览模式不能添加真实连接。'),
-        ),
-      );
-      return;
-    }
+    if (addingConnection) return;
+    setState(() => addingConnection = true);
     try {
+      if (widget.runtime.isPreview) {
+        await showDialog<void>(
+          context: context,
+          builder: (_) => const AlertDialog(
+            title: Text('添加连接'),
+            content: Text('预览模式不能添加真实连接。'),
+          ),
+        );
+        return;
+      }
       final Connection? connection;
       if (widget.runtime case final ConnectionSetupPort setup) {
         final ConnectionSetupPort selectedSetup;
+        String? selectedTargetLabel;
         if (widget.runtime case final ConnectionSetupTargetPort targetPort) {
           final targets = await targetPort.listSetupTargets();
           if (!mounted) return;
@@ -78,6 +82,10 @@ class ConnectionsPageState extends State<ConnectionsPage> {
             targets,
           );
           if (target == null) return;
+          selectedTargetLabel = targets
+              .where((option) => option.target == target)
+              .firstOrNull
+              ?.label;
           selectedSetup = await targetPort.setupForTarget(target);
           if (!mounted) return;
         } else {
@@ -99,6 +107,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
             setup: selectedSetup,
             initialKind: initialKind,
             allowedKinds: allowedKinds,
+            selectedTargetLabel: selectedTargetLabel,
           ),
         );
       } else {
@@ -127,6 +136,8 @@ class ConnectionsPageState extends State<ConnectionsPage> {
       widget.onAdded?.call(connection);
     } catch (cause) {
       if (mounted) setState(() => error = '$cause');
+    } finally {
+      if (mounted) setState(() => addingConnection = false);
     }
   }
 
@@ -209,9 +220,11 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         Align(
           alignment: Alignment.centerLeft,
           child: FilledButton.icon(
-            onPressed: () => add(),
-            icon: const Icon(Icons.add),
-            label: const Text('添加连接'),
+            onPressed: addingConnection ? null : () => add(),
+            icon: addingConnection
+                ? const Icon(Icons.hourglass_top_outlined)
+                : const Icon(Icons.add),
+            label: Text(addingConnection ? '正在准备连接向导…' : '添加连接'),
           ),
         ),
       if (error != null) ...[

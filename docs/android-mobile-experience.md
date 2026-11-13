@@ -196,3 +196,11 @@ flowchart LR
 - `<600 dp` 使用 Material `NavigationBar`，键盘弹出时隐藏底部导航和迷你播放器；`600–839 dp` 使用带标签的 `NavigationRail`；`≥840 dp` 使用扩展 Rail。连接列表可推入连接专属工作区，网易云连接进入播放器；普通连接工作区保留可见的迷你播放器入口。
 - 全量 Flutter 168 项通过，`flutter analyze --no-pub` 无问题，Android arm64 Debug APK 与 macOS Debug app 构建通过。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机安装并启动，`MainActivity` 位于前台，设备截图确认全局功能页与四项底部导航可见；Build Tools 36.0.0 `zipalign -c -P 16 4` 检查通过。
 - 连接详情导航、Android phone/tablet 断点、IME 隐藏和 macOS 桌面回归由 Widget 测试覆盖；本轮未连接 production WSS Host，也没有 16 KB 实体设备，不能据此认定真实远程 Host 流程或 16 KB 运行验收通过。
+
+### A7.3 手机连接向导验收（2026-11-14）
+
+- 连接向导分成“第 1 步 · 选择执行设备”和“第 2 步 · 配置连接”。目标列表展示设备名称与执行位置；选中后表单再次显示确认过的目标，并在同一页选择适配器、填写字段、预检和保存。无可用目标时显示连接 Host/检查运行端的恢复提示；目标加载期间禁用重复打开。
+- 表单以 `Form` 和 `TextFormField` 做字段级校验：名称、HTTP/HTTPS MCP 地址、绝对程序路径、Host 短期 opaque 引用、JSON 字符串参数及 adapter 必填字段均就近提示；HTTP 地址使用 URL 键盘，密钥字段使用密码键盘且关闭自动建议。Android 不显示设备程序/路径文件选择器；Host 的可执行程序仍由 Host 查找并保留为 opaque 引用。
+- 检查行同时用语义状态文字、图标与 live-region 播报表达“已通过 / 待完成 / 未通过”；`actionRequired` 可以按报告规则继续保存，但不被展示为通过。测试/保存主操作停在手机固定底部区；系统 IME 出现后操作仍在键盘上方，关闭入口保持可见。测试过程中可返回，迟到的可保存草稿会被丢弃；保存进行中阻止系统返回，结果未知时不重试。
+- Flutter 全量 172 项通过，`flutter analyze --no-pub` 无问题，Android arm64 Debug APK 与 macOS Debug app 构建通过。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机实际打开目标页和配置页，提交空表单后确认两个字段错误贴近控件；打开系统键盘后检查/保存操作仍可见；系统返回关闭键盘与向导，最终 MainActivity 回到前台，最近 500 条 Android/Flutter 崩溃日志为空。Build Tools 36.0.0 `zipalign -c -P 16 4` 检查通过。
+- Widget 覆盖目标加载防重复、无目标恢复状态、Host 目标信息与命令引用、actionRequired 语义、字段级校验、测试/保存按钮可达、返回时草稿清理、保存中系统返回保护、窗口方向/大字体以及 macOS 连接回归。未连接 production WSS Host；未做 TalkBack 手工走查，也无 16 KB 实体设备，因此不据此声明 Host 远端连接或 16 KB 运行验收通过。

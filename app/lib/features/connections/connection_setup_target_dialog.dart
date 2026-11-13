@@ -17,37 +17,55 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
-    final list = ListView.separated(
-      shrinkWrap: !compact,
-      itemCount: options.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final option = options[index];
-        final isHost = option.target.kind == ExecutionTargetKind.host;
-        return ListTile(
-          enabled: option.selectable,
-          minVerticalPadding: 12,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-          leading: Icon(
-            isHost ? Icons.desktop_mac_outlined : Icons.phone_android_outlined,
-          ),
-          title: Text(option.label),
-          subtitle: Text(option.detail),
-          trailing: option.selectable
-              ? const Icon(Icons.chevron_right)
-              : const Icon(Icons.lock_outline),
-          onTap: option.selectable
-              ? () => Navigator.pop(context, option.target)
-              : null,
-        );
-      },
-    );
+    final Widget list = options.isEmpty
+        ? const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.devices_outlined, size: 32),
+                  SizedBox(height: 12),
+                  Text('当前没有可用的执行设备。'),
+                  SizedBox(height: 4),
+                  Text('请检查本机运行端或先连接 Mac Host。'),
+                ],
+              ),
+            ),
+          )
+        : ListView.separated(
+            shrinkWrap: !compact,
+            itemCount: options.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final option = options[index];
+              final isHost = option.target.kind == ExecutionTargetKind.host;
+              return ListTile(
+                enabled: option.selectable,
+                minVerticalPadding: 12,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                leading: Icon(
+                  isHost
+                      ? Icons.desktop_mac_outlined
+                      : Icons.phone_android_outlined,
+                ),
+                title: Text(option.label),
+                subtitle: Text(option.detail),
+                trailing: option.selectable
+                    ? const Icon(Icons.chevron_right)
+                    : const Icon(Icons.lock_outline),
+                onTap: option.selectable
+                    ? () => Navigator.pop(context, option.target)
+                    : null,
+              );
+            },
+          );
 
     if (compact) {
       return Dialog.fullscreen(
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('选择执行设备'),
+            title: const Text('第 1 步 · 选择执行设备'),
             leading: IconButton(
               tooltip: '关闭选择执行设备',
               onPressed: () => Navigator.pop(context),
