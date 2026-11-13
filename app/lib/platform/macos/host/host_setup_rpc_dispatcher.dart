@@ -25,9 +25,16 @@ abstract interface class HostRpcAuthorizationPort {
   });
 }
 
+abstract interface class HostRpcDispatcherPort {
+  Future<String?> dispatch(
+    String frame, {
+    required String authenticatedDeviceId,
+  });
+}
+
 /// Dispatches the setup RPC subset. The caller must pass a device ID obtained
 /// from a verified session; this class does not accept or create sockets.
-final class HostSetupRpcDispatcher {
+final class HostSetupRpcDispatcher implements HostRpcDispatcherPort {
   const HostSetupRpcDispatcher({
     required this.setup,
     required this.ledger,
@@ -39,6 +46,7 @@ final class HostSetupRpcDispatcher {
   final HostRpcAuthorizationPort authorization;
 
   /// Returns null for methods owned by another dispatcher in the Host stack.
+  @override
   Future<String?> dispatch(
     String frame, {
     required String authenticatedDeviceId,

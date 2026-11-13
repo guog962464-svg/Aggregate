@@ -77,7 +77,7 @@ void main() {
         },
         'arguments': {'query': 'hello'},
       });
-      expect(hostRpcMethodCatalog.keys, hasLength(34));
+      expect(hostRpcMethodCatalog.keys, hasLength(37));
       expect(
         hostRpcMethodCatalog['operation.read']!.requiresOperationId,
         isFalse,
@@ -91,6 +91,53 @@ void main() {
         () => hostRpcMethodCatalog['arbitrary.shell'] =
             const HostRpcMethodDefinition('arbitrary.shell', []),
         throwsUnsupportedError,
+      );
+    });
+
+    test('declares strict pre-auth pairing and challenge messages', () {
+      final pairing = HostRpcCodec.decodeRequest(
+        jsonEncode({
+          'jsonrpc': '2.0',
+          'id': 'pair-1',
+          'method': 'host.pair.request',
+          'params': {
+            'hostId': 'host-0123456789abcdef0123456789abcdef',
+            'deviceId': 'device-0123456789abcdef0123456789abcdef',
+            'publicKeySpki': base64Encode([1, 2, 3]),
+            'displayName': 'Pixel',
+            'platform': 'android',
+            'invitationNonce': List.filled(43, 'A').join(),
+            'timestampSeconds': 1794550000,
+            'signatureDer': base64Encode(List.filled(70, 1)),
+          },
+        }),
+      );
+      expect(pairing.method, 'host.pair.request');
+      expect(
+        HostRpcCodec.decodeRequest(
+          '{"jsonrpc":"2.0","id":"auth-1","method":"host.auth.begin","params":{"deviceId":"device-0123456789abcdef0123456789abcdef"}}',
+        ).method,
+        'host.auth.begin',
+      );
+      expect(
+        () => HostRpcCodec.decodeStrictObject(
+          '{"hostId":"a","hostId":"b"}',
+          const {'hostId'},
+        ),
+        throwsA(
+          isA<HostRpcProtocolException>().having(
+            (error) => error.code,
+            'code',
+            HostRpcErrorCode.invalidRequest,
+          ),
+        ),
+      );
+      expect(
+        () => HostRpcCodec.decodeStrictObject(
+          '{"hostId":"a","extra":true}',
+          const {'hostId'},
+        ),
+        throwsA(isA<HostRpcProtocolException>()),
       );
     });
 

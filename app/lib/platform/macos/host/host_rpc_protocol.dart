@@ -30,7 +30,13 @@ enum HostRpcErrorCode {
   payloadTooLarge(-32006, 'Payload too large'),
   operationNotFound(-32007, 'Operation not found'),
   operationLedgerFull(-32008, 'Operation ledger is full'),
-  resourceLimitExceeded(-32009, 'Host resource limit exceeded');
+  resourceLimitExceeded(-32009, 'Host resource limit exceeded'),
+  pairingInvitationExpired(-32010, 'Pairing invitation expired'),
+  pairingApprovalRequired(-32011, 'Pairing approval required'),
+  deviceAlreadyPaired(-32012, 'Device is already paired'),
+  expiredSession(-32013, 'Session expired'),
+  replayedRequest(-32014, 'Request replayed'),
+  pairingStorageFailure(-32015, 'Pairing storage failed');
 
   const HostRpcErrorCode(this.value, this.message);
 
@@ -122,6 +128,23 @@ final hostRpcMethodCatalog = Map<String, HostRpcMethodDefinition>.unmodifiable({
       HostRpcParameter('protocolVersion', _int),
     ]),
     const HostRpcMethodDefinition('host.status', []),
+    const HostRpcMethodDefinition('host.pair.request', [
+      HostRpcParameter('hostId', _identifier, maxLength: 64),
+      HostRpcParameter('deviceId', _identifier, maxLength: 64),
+      HostRpcParameter('publicKeySpki', _str, maxLength: 344),
+      HostRpcParameter('displayName', _str, maxLength: 80),
+      HostRpcParameter('platform', _str, maxLength: 16),
+      HostRpcParameter('invitationNonce', _identifier, maxLength: 128),
+      HostRpcParameter('timestampSeconds', _int, maxValue: 9007199254740991),
+      HostRpcParameter('signatureDer', _str, maxLength: 108),
+    ]),
+    const HostRpcMethodDefinition('host.auth.begin', [
+      HostRpcParameter('deviceId', _identifier, maxLength: 64),
+    ]),
+    const HostRpcMethodDefinition('host.auth.prove', [
+      HostRpcParameter('connectionId', _identifier, maxLength: 128),
+      HostRpcParameter('signatureDer', _str, maxLength: 108),
+    ]),
     const HostRpcMethodDefinition('operation.read', [_op]),
     const HostRpcMethodDefinition('connection.list', []),
     const HostRpcMethodDefinition('connection.refresh', [_op, _connectionId]),
@@ -582,6 +605,34 @@ final class HostTerminalEventNotification {
 }
 
 abstract final class HostRpcCodec {
+  /// Decodes a bounded JSON object with exactly the expected keys. Used for
+  /// authenticated transport envelopes that are not RPC requests themselves.
+  static JsonMap decodeStrictObject(String text, Set<String> expectedKeys) {
+    if (utf8.encode(text).length > hostRpcMaxFrameBytes) {
+      throw const HostRpcProtocolException(HostRpcErrorCode.payloadTooLarge);
+    }
+    if (_exceedsJsonDepth(text)) {
+      throw const HostRpcProtocolException(HostRpcErrorCode.invalidRequest);
+    }
+    Object? decoded;
+    try {
+      decoded = jsonDecode(text);
+    } on FormatException {
+      throw const HostRpcProtocolException(HostRpcErrorCode.parseError);
+    }
+    if (_hasDuplicateJsonKeys(text) ||
+        decoded is! Map ||
+        decoded.keys.any((key) => key is! String)) {
+      throw const HostRpcProtocolException(HostRpcErrorCode.invalidRequest);
+    }
+    final json = decoded.cast<String, Object?>();
+    if (json.keys.toSet().difference(expectedKeys).isNotEmpty ||
+        expectedKeys.difference(json.keys.toSet()).isNotEmpty) {
+      throw const HostRpcProtocolException(HostRpcErrorCode.invalidRequest);
+    }
+    return Map.unmodifiable(json);
+  }
+
   static HostRpcRequest decodeRequest(String text) {
     if (utf8.encode(text).length > hostRpcMaxFrameBytes) {
       throw const HostRpcProtocolException(HostRpcErrorCode.payloadTooLarge);

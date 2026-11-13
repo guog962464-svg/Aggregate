@@ -128,12 +128,12 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 
 ## A5.2 实现状态（2026-11-13）
 
-- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 33 个封闭的 v1 方法定义、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
+- `app/lib/platform/macos/host/host_rpc_protocol.dart` 提供 37 个封闭的 v1 方法定义（由初始 33 项增加 operation.read 与配对/认证入口）、请求/事件 DTO 和稳定错误码。解析器拒绝未知字段、重复 JSON key、批量请求、客户端通知、不支持的协议主版本和超过 1 MiB 的请求帧；出站帧也通过同一字节上限检查。JSON 深度限制为 64。向导草稿和连接器清单仅接受 Host 签发的 opaque 引用，不接受 Mac 绝对路径。
 - `app/lib/platform/macos/host/host_jcs.dart` 按 RFC 8785 对 method 与参数（去除 `operationId`）生成 SHA-256 操作哈希；外层设备签名仍按上文对收到的原始 payload 字节计算。
 - `app/lib/platform/macos/host/host_operation_ledger.dart` 以 `(deviceId, operationId)` 隔离记录开始/完成/结果未知状态，不持久化请求参数、结果或秘密。启动时把遗留 `started` 记录改为 `outcomeUnknown`，绝不自动重放。账本上限为 10,000 条或 4 MiB，达到上限后拒绝新操作。
 - `app/lib/platform/macos/host/host_setup_coordinator.dart` 是 A5.3 进行中的 Host 向导核心：只公开固定 adapter allowlist；仅返回绑定设备和 adapter 的随机 `executableRef`，不返回 Mac 路径；适配器字段决定公开值和秘密值的分离，secret map 单值不超过 32 KiB；`draftHandle` 绑定设备并在 10 分钟后失效。结果检查文本和保存连接摘要脱敏。Host stop 与设备撤销清理可安全丢弃的草稿；保存异常按结果未知处理，不重试也不删除可能已被连接引用的 profile。
-- `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read`（协议目录现在为 34 个方法）和 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
-- 验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为；dispatcher 尚未接入 transport 的已认证会话、真实 grant store 或生产存储目录权限，生产 transport 仍拒绝启动。通用 CLI 的 Host 程序登记、manifest/content transfer 和真正的配对加密传输仍待实现与验收。不能据此宣称手机已能连接或 Host 端副作用已获得生产级授权。
+- `app/lib/platform/macos/host/host_setup_rpc_dispatcher.dart` 增加 `operation.read` 与 setup RPC 分发（当前协议目录共 37 项）和 setup RPC 分发。分发器要求调用方传入已认证会话的 deviceId，并注入 `HostRpcAuthorizationPort`；授权只接收脱离 `secretValues` 的参数。副作用前先写 operation ledger；相同 ID 重试返回记录状态，不重复执行；失败时明确写 `outcomeUnknown`，并可由 `operation.read` 查询状态。
+- 此前 A5.2/A5.3 验收只证明协议、账本、向导 coordinator 和 setup dispatcher 的本地单元行为；新增的 WSS loopback 测试将测试配对 authority 与 dispatcher 接在一起，但使用 fake verifier/内存 grant store，尚未接入生产 Host 生命周期、Keychain grant store 或正式存储目录权限；生产 transport 仍拒绝启动。通用 CLI 的 Host 程序登记、manifest/content transfer 和真正的配对加密传输仍待实现与验收。不能据此宣称手机已能连接或 Host 端副作用已获得生产级授权。
 
 ## A5.4 配对实现进度（2026-11-13）
 
@@ -146,5 +146,7 @@ Host 不实现第二套连接、CLI、MCP 或账号运行逻辑。网络层只�
 - `app/lib/platform/host/host_pairing_protocol.dart` 和 `host_pairing_authority.dart` 提供 byte-exact 配对/认证/RPC proof、五分钟单次邀请、签名配对申请、Mac 端显式批准、默认只读 grant、短期 challenge、逐请求 ECDSA 校验、时钟窗口、nonce 重放拦截、会话 idle/absolute TTL、最多 64 个活动会话及撤销时的会话/草稿清理。Host Pairing authority 仍是内存中的运行期状态机；grant 由 `HostPairingStore` 持久化。
 - `MacKeychainHostPairingStore` 将经过 schema/设备 ID/大小校验的 grant registry 存入单个 Keychain generic-password item，原生串行队列保护读改写。macOS 集成用例覆盖保留原有 registry 项、save/load/remove；注册表仅含设备公钥和权限元数据，不存 Android/Host 私钥。历史调试标记已移除。
 - 配对 authority 的 7 项单元用例用确定性 fake verifier 覆盖一次性邀请、未批准拒绝、grant、challenge、篡改、时间窗、重放、会话上限和撤销。它们只证明状态机行为，不证明签名算法；真实 P-256 算法/编码由 CryptoKit/OpenSSL fixture 集成用例单独覆盖。真实 Android Keystore 签名到 Mac authority 的跨端闭环仍待实现。
-- 当前阶段边界：邀请 QR 未接入 Flutter UI；Android 尚无请求/审批 UX；authority 尚未包进 authenticated WSS session transport，dispatcher 也没有把解出的签名 payload 转发到现有 setup RPC；无 LAN listener/Bonjour/代码签名权限验收，故 `PairingRequiredHostTransport` 继续拒绝生产启动。Keychain TLS 私钥为适配 `dart:io SecurityContext` 会在运行时进入进程内存，未验证 Secure Enclave；未用 16 KB 设备或 Release/signed app 测试。
-- 已知验证：`flutter analyze --no-pub`、配对 authority 定向单元用例、macOS Keychain/WSS 集成用例和 LGE AN10 Android identity 真机用例分别通过。A5.4 仍未完成；以上子项不能代表 Android ↔ Mac 配对及 Host RPC 已可用。
+- `app/lib/platform/macos/host/host_wss_transport.dart` 现把 pairing authority、challenge/session 校验、逐帧签名校验与 `HostRpcDispatcherPort` 串成可注入 WSS transport：要求 `aggregate-host.v1`、拒绝 Origin、禁压缩、1 MiB 帧上限、TLS 1.2+、每 IP/设备/Host 并发限制，并在撤销时关闭连接。生产地址 provider 只选物理 `en*` 接口上的 RFC1918 IPv4；测试使用显式 loopback provider。配对邀请 payload 含证书 pin、有效期、服务类型和已绑定端点。
+- WSS 回环单元集成 `host.pair.request`、Mac 端批准、`host.auth.begin/prove`、已签名 `setup.adapters` 分发、未授权 `run.invoke` 拒绝、设备并发上限及撤销断连。该样例使用测试证书、内存 grant store 和确定性 fake signature verifier，只证明传输状态/分发边界，不证明 P-256 密码学或 Android 到 Mac 跨端签名。
+- 当前阶段边界：WSS transport 尚未装入 `MacHostModule`，生产仍由 `PairingRequiredHostTransport` 拒绝启动；Bonjour 仅有注入接缝，尚无生产 publisher、`NSLocalNetworkUsageDescription`/`NSBonjourServices` 配置与代码签名权限验收；邀请 QR 未接入 Flutter UI，Android 尚无请求/审批 UX。完整 RPC 目录仍有方法没有生产 handler，未知或未授权操作 fail-closed。Keychain TLS 私钥为适配 `dart:io SecurityContext` 会在运行时进入 Host 进程内存，未验证 Secure Enclave；未用 16 KB 设备或 Release/signed app 测试。
+- 本轮 `flutter test --no-pub --reporter json` 全套 151 项通过；Android Keystore identity 在 LGE AN10 真机通过。macOS Keychain/WSS loopback 集成此前通过；本轮重跑停在系统 SecurityAgent 的 Keychain 授权窗口并被中止，不计作本轮通过。此前结果只覆盖本机回环与身份 provider，不代表 LAN 发布权限、Android ↔ Mac 配对或 Host RPC 产品功能可用。A5.4 仍未完成。

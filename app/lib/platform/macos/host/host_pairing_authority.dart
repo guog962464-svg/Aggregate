@@ -438,10 +438,13 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
   final Map<String, _ChallengeRecord> _challenges = {};
   final Map<String, _SessionRecord> _sessions = {};
   final Set<String> _revokedDevices = {};
+  final _revocations = StreamController<String>.broadcast(sync: true);
   Future<void>? _loadOperation;
   Future<void> _tail = Future<void>.value();
 
   Future<void> initialize() => _serialize(_ensureLoaded);
+
+  Stream<String> watchRevocations() => _revocations.stream;
 
   Future<List<HostDeviceGrant>> pairedDevices() => _serialize(() async {
     await _ensureLoaded();
@@ -759,6 +762,7 @@ final class HostPairingAuthority implements HostRpcAuthorizationPort {
     _pending.remove(deviceId);
     _challenges.removeWhere((_, challenge) => challenge.deviceId == deviceId);
     _sessions.removeWhere((_, session) => session.session.deviceId == deviceId);
+    _revocations.add(deviceId);
     try {
       await setupCoordinator?.closeDevice(deviceId);
       await onDeviceRevoked?.call(deviceId);
