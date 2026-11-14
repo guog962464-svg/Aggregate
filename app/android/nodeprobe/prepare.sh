@@ -11,6 +11,8 @@ url="https://github.com/fogtape/nodejs-mobile/releases/download/v24.22.1-0/nodej
 license_expected="c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66"
 license_url="https://raw.githubusercontent.com/fogtape/nodejs-mobile/v24.22.1-0/LICENSE"
 llvm_notice_expected="f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1"
+ndk_notice_27d_expected="4d5224d1c0b54ffa88b0dc0088191638fdbb7227835095dfb98f7f66b416a323"
+ndk_notice_28_expected="faf0dc52cf6ce9ab09a04b0c074a378dd2565ee1ed9bc1179d83793bcdba012e"
 
 if [[ -z "$ndk_root" ]]; then
   sdk_root="$(sed -n 's/^sdk.dir=//p' "$probe_root/../local.properties")"
@@ -42,6 +44,16 @@ if [[ "$llvm_notice_actual" != "$llvm_notice_expected" ]]; then
   echo "NDK LLVM NOTICE SHA-256 mismatch: $llvm_notice_actual" >&2
   exit 1
 fi
+ndk_notice_file="$ndk_root/NOTICE"
+if [[ ! -f "$ndk_notice_file" ]]; then
+  echo "NDK root NOTICE not found under $ndk_root" >&2
+  exit 1
+fi
+ndk_notice_actual="$(shasum -a 256 "$ndk_notice_file" | awk '{print $1}')"
+if [[ "$ndk_notice_actual" != "$ndk_notice_27d_expected" && "$ndk_notice_actual" != "$ndk_notice_28_expected" ]]; then
+  echo "NDK root NOTICE SHA-256 mismatch: $ndk_notice_actual" >&2
+  exit 1
+fi
 unzip -tq "$archive" >/dev/null
 mkdir -p "$bridge_root/vendor"
 rm -rf "$bridge_root/vendor/include/node"
@@ -69,6 +81,7 @@ done
 unzip -oq "$archive" 'include/node/*' -d "$bridge_root/vendor"
 cp "$license_file" "$bridge_root/src/main/assets/nodejs-mobile-LICENSE.txt"
 cp "$llvm_notice_file" "$bridge_root/src/main/assets/android-ndk-llvm-NOTICE.txt"
+cp "$ndk_notice_file" "$bridge_root/src/main/assets/android-ndk-NOTICE.txt"
 # AGP may reuse the JNI object after ignored vendor headers change.
 touch "$bridge_root/src/main/cpp/node_probe.cpp"
 echo "Prepared experimental three-ABI Node 24.22.1 prerelease probe and verified Node/NDK license notices."
