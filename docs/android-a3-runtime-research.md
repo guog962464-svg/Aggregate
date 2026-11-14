@@ -157,3 +157,16 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **verified_scope：**Node upstream commit `e63cab040c09d43ceef8cb35508c40044614e906`、fogtape recipe `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`、候选源码树 `5b1a23adddf4b698abcfa45cc8d22de930c01b32` 和单 ABI arm64 `libnode.so` 静态构建证据；不代表 Release 签名、Google Play split 投递、其它 ABI 或法律结论。
 - **supersedes：**只替代本文件此前把“recipe 根 39 项与候选源 45 项差异尚未分类”作为未解析项的表述；候选 LICENSE 与官方 v24.22.3 tag、recipe 独有项和候选主要 Android 依赖现已得到静态分类。完整 SBOM/法律复核、正式产品 Release、16 KB 实机与移动补丁语义审查仍未关闭。
 - **retrieval_feedback：**检索 `Node LICENSE 39 vs 45`、`Node 24.22.3 LICENSE polywasm`、`libnode DT_NEEDED`、`merve simdjson zstd`；采用本文件已有的 Node source hash、NDK 根/LLVM NOTICE 与候选 APK/AAB 摘要。对比官方上游 LICENSE、recipe 根 LICENSE、候选 `tools/license-builder.sh`/依赖源码、Android `config.gypi`、`.a` archive file list、ELF symbols/DT_NEEDED 和已打包 notices；没有调用网络，也没有把 source inventory 等同于最终法律意见。
+
+## 2026-11-14 移动补丁运行时与测试构建语义复核（11/20）
+
+- **审查锚点与范围：**只读审查 recipe commit d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5、Node v24.22.3 上游 commit e63cab040c09d43ceef8cb35508c40044614e906 与物化树 hash 5b1a23adddf4b698abcfa45cc8d22de930c01b32。逐段审阅 11 个 patch：5 个 src、4 个 deps、GYP mobile flavor 和 test harness；检查已物化的 C++/GYP/测试源码。此轮没有改第三方源码、构建或运行 Node 测试。
+- **环境变量克隆行为：**src/node_env_var.cc 的 Clone() 在读取已枚举变量失败时改为继续，代码没有 Android 条件，因此所有平台都改变了行为；fork 新增的 worker-env-clone 测试按 Android 问题动机编写。跳过刚好被删除的变量对 Clone() 是合理恢复策略，但其它平台回归没有在本轮验证，需保留跨平台兼容性门槛。
+- **凭证 API 测试契约：**Android API 21+ 打开 POSIX credentials getters，移除 setter 的 native registration，同时保留 initgroups。fork 测试用无效用户名/组名验证查找错误，并要求 setter 不返回 ERR_UNKNOWN_CREDENTIAL；它没有固定 setter 是否存在或使用哪个稳定错误。源码 JS wrapper 仍可暴露 setter，而 native 方法缺失时的具体异常语义没有被该断言约束。
+- **message 测试过滤：**test/message/testcfg.py 的 IgnoreLine() 无平台条件地丢弃所有 message 用例输出中以 “Warning: disabling flag --expose_wasm” 开头的行。预期动机是移动 WebAssembly flag 警告，但过滤不限定到对应移动用例或系统，可能掩盖其他系统上的同类输出；这是测试可观测性风险，不是运行时缺陷证据。
+- **Apple GYP 交叉编译：**xcode_emulation.py 两处把 CrossCompileRequested() 条件改为 “... or True”，总会注入由 GYP arch 设置生成的 -arch 编译/链接参数。该逻辑主要影响 macOS/iOS GYP，而不是本轮 Linux Android libnode 产物；它绕过了原本由 CC_host/CC_target 等工具链接管架构参数的分支，非 recipe Apple 构建组合未验证，须由维护方明确范围或加条件。
+- **CI 工作流边界：**ci-remove-upstream-only-workflows patch 删除 Node upstream 仓库内的 CodeQL、Scorecard、license-builder、OpenSSL/V8 更新等工作流。recipe 自身保留 verify-patches、build、Android emulator/full-device-suite 与 release-control；这说明有独立移动流水线，但不能据此认定它等价替代了所有上游扫描和依赖更新控制。该差异需纳入维护/发布审查。
+- **结论与限制：**本轮没有从静态源码确认 Android runtime 缺陷；新发现是跨平台行为/错误语义未固定、message 输出过滤范围过宽，以及 Apple 交叉编译保护被绕过。此处 11/20 指本轮逐段复核的 patch 数，不能表述成补丁审计完成。先前 4 KB curated Node 测试、3,790 项 Android parallel/sequential 与 message 4/9 结果仍按各自范围记录；本轮未重跑 Node 测试。A3.6 仍开放，产品 Node/npm/CLI 入口关闭。
+- **verified_scope：**仅限上述 Node/fogtape pinned revisions 的 11 个 patch 文件与物化源码静态检查；不代表余下 9 个 patch 全审、其它 flavor/ABI 构建、桌面兼容回归、发行级安全扫描或 16 KB 真机。
+- **supersedes：**细化本文前文“mobile patches 未完整审阅”的范围：本轮完成 11 个 patch 的语义复核，并新增 Clone() 跨平台影响、message 警告过滤和 Apple GYP 架构参数风险；剩余 patch 与所有产品发布/实机门槛仍有效。
+- **retrieval_feedback：**检索 A3.6 mobile patch audit、node_env_var Clone、credential API、message IgnoreLine、GYP_CROSSCOMPILE 与 Node mobile workflows；采用并复核本 stable-key 日志中 Node 24.22.3、recipe 和物化树 hash，以及当前 Android/LGE AN10 测试边界。对照 patch series、candidate 源码、recipe workflow inventory 和 Aggregate 的 A3.6 研究记录；没有扩大到跨项目或 Web 检索。
