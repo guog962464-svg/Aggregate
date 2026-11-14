@@ -114,3 +114,14 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - Build Tools 36.0.0 `zipalign -c -P 16 4` 检查 Release APK 通过；Bundletool `1.18.3 validate` 成功，`dump config` 报告 `uncompressNativeLibraries.enabled=true`、`alignment=PAGE_ALIGNMENT_16K`。
 - APK 和 AAB 都只包含 `libaggregate_node_probe.so`、`libc++_shared.so`、`libnode.so` 三个 arm64 库。对两种容器内的 ELF 直接检查，全部 `PT_LOAD` 的 `p_align=0x4000` 且 offset/vaddr 余数相同；Release JNI bridge 1,040,104 bytes、SHA-256 `8452785332232c5b2c1695ff34b966f05968f811303a05fc791c2a6ff6705321`；`libc++_shared.so` 1,292,904 bytes，AGP strip 后 `libnode.so` 94,860,408 bytes。Release APK/AAB 的 `libc++_shared.so` 与 `libnode.so` SHA-256 与前述 Debug APK 相同；JNI bridge 因 Release 编译优化而不同。
 - **范围限制：**该结果是单 ABI 的隔离 NodeProbe 未签名 Release 预检查，不是 Aggregate Flutter 产品 Release，也未安装运行这两个未签名包；不代表正式签名、完整多 ABI、商店交付或 16 KB 真机验收。对应的正式产品成品 gate 仍开放。
+
+## 2026-11-14 移动补丁静态补核
+
+- **版本标识漂移：**物化源码的 `src/node_version.h` 报告上游 Node `24.22.3`，而 `src/node_mobile_version.h` 仍把 `NODE_MOBILE_PATCH_VERSION` 固定为 `1`、revision 固定为 `0`。`src/node_metadata.cc` 据此分别设置 `process.versions.node = "24.22.3"` 和 `process.versions.mobile = "24.22.1-0"`。这不改变核心 Node 版本字段，但会让移动构建身份落后于实际基线；发布前应由维护方更新版本元数据、重建并绑定新的源码树 hash 与二进制摘要。本轮候选没有因此重建，既有 3,790 项结果不验证修正后的身份值。
+- **环境变量信任边界：**`NODE_MOBILE` 下的 `SafeGetenv()` 不再用 Android zygote 遗留的 `AT_SECURE` 阻断读取，但 UID/GID 不相等检查仍保留。候选因此会读取 embedder 提供的 `NODE_OPTIONS`、`NODE_PATH`、`NODE_EXTRA_CA_CERTS`、`OPENSSL_CONF` 等值；Aggregate 产品若启用此运行时，必须由受信任代码生成这些环境项，不能把用户输入、远端配置或 npm 包内容直接放入进程环境。
+- **V8 trap handler：**移动补丁把 `V8_TRAP_HANDLER_SUPPORTED` 无条件定义为 `false`，影响 Android、iOS 和 host 构建，而不只 Android。需要维护方确认这一跨平台取舍并量化 WebAssembly 相关性能/内存行为；当前 Android full flavor 测试通过不能替代该专项测量或 iOS 回归。
+- **WebAssembly polyfill 与许可：**Android 运行时在 `globalThis.WebAssembly` 已存在时直接返回，因此候选的 Android full flavor 不加载 polywasm；该 polyfill 为 iOS jitless 运行时的后备实现。polywasm 0.2.0 的 MIT 声明存在于 `deps/polywasm/LICENSE.md`，README 记录 tarball 与源文件摘要，Node 根 `LICENSE` 也列明该组件。该单项有明确来源记录，但不关闭其余依赖/NDK 组件许可闭包。
+- **测试排除规模：**fork 的 Android `parallel.status` 与 `sequential.status` 新增 590 条 `SKIP` 模式规则（这是模式数，不是被跳过的测试总量），涵盖广泛的 child-process、CLI、cluster、debugger、REPL、process 等测试；四个分片命令还显式使用 `--flaky-tests=skip`。因此 3,790 项通过只代表该 fork 配置并可在移动设备运行的子集。除 `parallel` / `sequential` 外的 Node 测试目录、flaky 项和被这些模式排除的行为仍需单独覆盖或保持明确不支持。
+- **其余检查边界：**本轮还检查了 Android 构建目标、JNI/mobile 宏、libuv、V8、OpenSSL/CAres/zlib GYP 变更，以及 test harness 如何将 `--arch android` 映射到 Android status。它们没有替代完整的逐补丁审阅、各 flavor/ABI 构建和实机回归；尤其是可选 ICU lite profile 不是本次 full flavor 候选的验收对象。
+
+**结论：**静态补核发现需先修正/解释的移动版本标识漂移，并保留环境变量来源、全局 trap-handler 取舍、广泛测试排除、许可闭包、未审阅变体和 16 KB 真机作为未关闭项。Node/npm/CLI 产品入口继续关闭；A3.6 不通过本次补核关闭。
