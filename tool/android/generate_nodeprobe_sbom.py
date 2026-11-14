@@ -3,10 +3,11 @@
 
 The archive is the source of truth for packaged native libraries, npm package
 metadata, and embedded license/notice files. Packaged ELF dynamic requirements
-and declared npm dependencies/peer dependencies are recorded. This does not
-verify npm version ranges or infer the full static link graph inside libnode.so
-or the Android Gradle dependency graph; the output marks its composition
-incomplete for those reasons.
+and declared npm dependencies/peer dependencies are recorded. If present, the
+archive's Gradle runtime manifest records resolved Maven source artifacts and
+their dependency edges. This does not infer the full static link graph inside
+libnode.so or platform-provided library versions; the output marks its
+composition incomplete for those reasons.
 """
 
 from __future__ import annotations
@@ -218,6 +219,116 @@ def package_component(
     return component
 
 
+def gradle_component_ref(group: str, name: str, version: str) -> str:
+    namespace = quote(group, safe=".-")
+    artifact = quote(name, safe=".-")
+    artifact_version = quote(version, safe=".+-")
+    return f"pkg:maven/{namespace}/{artifact}@{artifact_version}"
+
+
+def gradle_runtime_components(
+    manifest: dict[str, object], archive_names: list[str], archive: zipfile.ZipFile
+) -> tuple[list[dict[str, object]], dict[str, str]]:
+    if not isinstance(manifest, dict):
+        raise ValueError("NodeProbe Gradle runtime manifest must be a JSON object")
+    if manifest.get("format") != "aggregate-nodeprobe-gradle-runtime-v1":
+        raise ValueError("unsupported NodeProbe Gradle runtime manifest format")
+    configuration = manifest.get("configuration")
+    if not isinstance(configuration, str) or not configuration:
+        raise ValueError("Gradle runtime manifest has no configuration name")
+    raw_components = manifest.get("components")
+    if not isinstance(raw_components, list):
+        raise ValueError("Gradle runtime manifest components must be a list")
+
+    components: list[dict[str, object]] = []
+    refs_by_coordinate: dict[str, str] = {}
+    for raw in raw_components:
+        if not isinstance(raw, dict):
+            raise ValueError("Gradle runtime component must be an object")
+        group = raw.get("group")
+        name = raw.get("name")
+        version = raw.get("version")
+        coordinate = raw.get("coordinate")
+        artifact_sha256 = raw.get("artifact_sha256")
+        license_id = raw.get("license_id")
+        license_asset_path = raw.get("license_asset_path")
+        license_asset_sha256 = raw.get("license_asset_sha256")
+        verified_dex_packages = raw.get("verified_dex_packages")
+        if not all(isinstance(value, str) and value for value in (group, name, version)):
+            raise ValueError("Gradle runtime component is missing Maven coordinates")
+        expected_coordinate = f"{group}:{name}:{version}"
+        if coordinate != expected_coordinate:
+            raise ValueError(f"Gradle runtime coordinate does not match fields: {coordinate}")
+        if coordinate in refs_by_coordinate:
+            raise ValueError(f"duplicate Gradle runtime component: {coordinate}")
+        if (
+            not isinstance(artifact_sha256, str)
+            or len(artifact_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in artifact_sha256.lower())
+        ):
+            raise ValueError(f"invalid source artifact SHA-256 for {coordinate}")
+        if not isinstance(license_id, str) or not license_id:
+            raise ValueError(f"missing license id for {coordinate}")
+        if not isinstance(license_asset_path, str) or not isinstance(license_asset_sha256, str):
+            raise ValueError(f"missing bundled license asset metadata for {coordinate}")
+        license_path = PurePosixPath(license_asset_path.removeprefix("assets/"))
+        if license_path.is_absolute() or ".." in license_path.parts:
+            raise ValueError(f"unsafe license asset path for {coordinate}")
+        if len(license_asset_sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in license_asset_sha256.lower()
+        ):
+            raise ValueError(f"invalid license asset SHA-256 for {coordinate}")
+        if not isinstance(verified_dex_packages, list) or not all(
+            isinstance(package, str) for package in verified_dex_packages
+        ):
+            raise ValueError(f"invalid DEX package evidence for {coordinate}")
+
+        normalized_license_path = license_path.as_posix()
+        matching_paths = [
+            path
+            for path in archive_names
+            if path.endswith("/assets/" + normalized_license_path)
+            or path == "assets/" + normalized_license_path
+        ]
+        if len(matching_paths) != 1:
+            raise ValueError(
+                f"expected one bundled license file for {coordinate}, found {len(matching_paths)}"
+            )
+        packaged_license_path = matching_paths[0]
+        if sha256(archive.read(packaged_license_path)) != license_asset_sha256:
+            raise ValueError(f"bundled license hash does not match manifest for {coordinate}")
+
+        purl = gradle_component_ref(group, name, version)
+        refs_by_coordinate[coordinate] = purl
+        components.append(
+            {
+                "type": "library",
+                "bom-ref": purl,
+                "name": name,
+                "group": group,
+                "version": version,
+                "purl": purl,
+                "hashes": [{"alg": "SHA-256", "content": artifact_sha256}],
+                "licenses": [{"license": {"id": license_id}}],
+                "properties": [
+                    property_item("aggregate:gradle-configuration", configuration),
+                    property_item("aggregate:maven-coordinate", coordinate),
+                    property_item("aggregate:source-artifact-sha256", artifact_sha256),
+                    property_item(
+                        "aggregate:artifact-representation",
+                        "resolved source JAR; runtime classes merged into Android DEX",
+                    ),
+                    property_item(
+                        "aggregate:verified-dex-packages",
+                        json.dumps(sorted(verified_dex_packages)),
+                    ),
+                    property_item("aggregate:license-file-path", packaged_license_path),
+                ],
+            }
+        )
+    return components, refs_by_coordinate
+
+
 def resolve_npm_dependency(
     package_dir: str,
     npm_root: str,
@@ -260,9 +371,26 @@ def main() -> int:
     native_library_refs: dict[str, str] = {}
     native_needed_libraries: dict[str, list[str]] = {}
     npm_root: str | None = None
+    gradle_runtime_manifest: dict[str, object] | None = None
+    gradle_runtime_refs: dict[str, str] = {}
     with zipfile.ZipFile(args.archive) as archive:
         names = archive.namelist()
         lib_prefixes = ("lib/", "base/lib/")
+        gradle_manifest_paths = [
+            path
+            for path in names
+            if PurePosixPath(path).name == "nodejs-mobile-gradle-runtime-manifest.json"
+        ]
+        if len(gradle_manifest_paths) > 1:
+            raise ValueError("archive contains multiple NodeProbe Gradle runtime manifests")
+        if gradle_manifest_paths:
+            gradle_runtime_manifest = json.loads(archive.read(gradle_manifest_paths[0]))
+            if not isinstance(gradle_runtime_manifest, dict):
+                raise ValueError("NodeProbe Gradle runtime manifest must be a JSON object")
+            gradle_components, gradle_runtime_refs = gradle_runtime_components(
+                gradle_runtime_manifest, names, archive
+            )
+            components.extend(gradle_components)
 
         for path in sorted(names):
             if path.endswith("/"):
@@ -409,6 +537,41 @@ def main() -> int:
 
     # The exact archive digest gives every archive-level component a stable anchor.
     artifact_ref = f"urn:aggregate:nodeprobe-{artifact_kind}:{archive_hash}"
+    gradle_dependency_map: dict[str, set[str]] = {
+        ref: set() for ref in gradle_runtime_refs.values()
+    }
+    if gradle_runtime_manifest is not None:
+        raw_dependencies = gradle_runtime_manifest.get("dependencies")
+        if not isinstance(raw_dependencies, list):
+            raise ValueError("Gradle runtime manifest dependencies must be a list")
+        for raw_dependency in raw_dependencies:
+            if not isinstance(raw_dependency, dict):
+                raise ValueError("Gradle runtime dependency must be an object")
+            source = raw_dependency.get("from")
+            target = raw_dependency.get("to")
+            if not isinstance(source, str) or not isinstance(target, str):
+                raise ValueError("Gradle runtime dependency requires from/to coordinates")
+            source_ref = artifact_ref if source == "application" else gradle_runtime_refs.get(source)
+            target_ref = gradle_runtime_refs.get(target)
+            if source_ref is None or target_ref is None:
+                raise ValueError(f"Gradle runtime dependency references an unknown component: {raw_dependency}")
+            gradle_dependency_map.setdefault(source_ref, set()).add(target_ref)
+    gradle_dependencies = [
+        {"ref": ref, "dependsOn": sorted(targets)}
+        for ref, targets in sorted(gradle_dependency_map.items())
+    ]
+
+    gradle_configuration = (
+        gradle_runtime_manifest.get("configuration", "")
+        if gradle_runtime_manifest is not None
+        else ""
+    )
+    gradle_edge_count = sum(len(item["dependsOn"]) for item in gradle_dependencies)
+    scope_limit = (
+        "static libnode link closure is incomplete; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator"
+    )
+    if gradle_runtime_manifest is not None:
+        scope_limit += "; Android Gradle runtime graph is limited to the supplied resolved configuration manifest"
     metadata_properties = [
         property_item("aggregate:artifact-kind", artifact_kind),
         property_item("aggregate:artifact-sha256", archive_hash),
@@ -432,9 +595,22 @@ def main() -> int:
         ),
         property_item(
             "aggregate:scope-limit",
-            "static libnode and Android Gradle dependency graphs are incomplete; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator",
+            scope_limit,
         ),
     ]
+    if gradle_runtime_manifest is None:
+        metadata_properties.append(
+            property_item("aggregate:android-gradle-runtime-graph", "not provided")
+        )
+    else:
+        metadata_properties.extend(
+            [
+                property_item("aggregate:gradle-runtime-configuration", gradle_configuration),
+                property_item("aggregate:gradle-runtime-components", len(gradle_runtime_refs)),
+                property_item("aggregate:gradle-runtime-edges", gradle_edge_count),
+                property_item("aggregate:android-gradle-runtime-graph", "resolved manifest included"),
+            ]
+        )
     bom = {
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
@@ -453,7 +629,7 @@ def main() -> int:
         "components": sorted(components, key=lambda item: (str(item.get("name", "")), str(item.get("bom-ref", "")))),
         "compositions": [{"aggregate": "incomplete"}],
     }
-    dependencies = npm_dependencies + native_dependencies
+    dependencies = npm_dependencies + native_dependencies + gradle_dependencies
     if dependencies:
         bom["dependencies"] = sorted(dependencies, key=lambda item: str(item.get("ref", "")))
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -469,9 +645,14 @@ def main() -> int:
         f"{len(native_unbundled_edges)} Android/platform dynamic requirements are unbundled"
     )
     print(
-        "Composition: incomplete (static libnode and Android Gradle dependency "
-        "graphs are not fully reconstructed)"
+        "Composition: incomplete (static libnode link closure and platform-library "
+        "versions are not fully reconstructed)"
     )
+    if gradle_runtime_manifest is not None:
+        print(
+            f"Recorded {len(gradle_runtime_refs)} Gradle runtime components and "
+            f"{gradle_edge_count} runtime dependency edges for {gradle_configuration}"
+        )
     return 0
 
 
