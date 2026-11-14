@@ -55,10 +55,12 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 
 新增 20 轮原生页面往返（80 次导航）及进程 RSS 时间序列：RSS 从约 176 MiB 增至约 203 MiB，循环结束约 199 MiB；后续 30 秒静置在约 195–208 MiB 间波动，未见单向增长。该证据不等同于对象、纹理或 controller 数量审计。
 
+源码资源所有权审阅确认：`GlassMotionScope` 每个作用域持有一个共享 Ticker，并在 dispose 时取消 viewport/size timers、移除生命周期监听、dispose Ticker 并 detach clients；`GlassActionButton` dispose 自己的 motion/state controllers；`GlassThemeSwitch` dispose Ticker 和 FocusNode；`ThemeSwitchArtwork` dispose shader 及两张 `ui.Image`，更新贴图后在 post-frame dispose 旧图；`GlassScene` dispose 全窗 shader 与 frame notifier。Flutter 的 `FragmentProgram.fromAsset` 由 SDK 进程级缓存，因此按进程生命周期保留。源码没有额外 `AnimationController` 或 `Texture` widget。现有 `glass_motion_test.dart` 覆盖 reduced-motion 注销、离屏滚动/视口注销和生命周期暂停恢复；`glass_theme_switch_test.dart` 覆盖主题开关 reduced-motion snap。此项只完成所有权路径审阅和 Widget 级生命周期回归，仍没有原生运行时 Ticker/controller/图像对象计数。
+
 以下情况使本阶段仍不能结束：
 
 - 800↔1440 logical px 原生连续窗口缩放已完成三轮；工作台、连接、活动、设置四页与连续缩放的联合负载也完成三轮并达到帧时门槛。七个长列表/表单场景各完成三轮原生 Profile 滚动；参数表单原始其中一轮记录到 112.742 ms build 峰值，另五轮不同轮次复测未重现，原因仍未定位，故该场景保留为部分通过。主题开关已完成三轮往返，尚缺精确手势时序、拖动取消和固定动画关键帧对照。
-- 两轮明确的隐藏/恢复采样各出现约 12.9 秒 Flutter.Frame 空档；一次恢复后的 raster 为 102.132 ms，重复轮为 24.851 ms。已做 20 轮页面往返和进程 RSS 时间序列，但没有对象/controller 数量或离屏/reduced-motion 原生覆盖。
+- 两轮明确的隐藏/恢复采样各出现约 12.9 秒 Flutter.Frame 空档；一次恢复后的 raster 为 102.132 ms，重复轮为 24.851 ms。现有 Widget 测试覆盖 TickerMode、应用生命周期、离屏和 reduced motion，但没有原生 reduced-motion 设置覆盖；资源所有权代码审阅已完成，仍没有原生对象/controller/图像数量证据。RSS 及源码审阅不抵消上述运行时证据缺口。
 - 已观察浅深主题与中间拖动态，截图没有导出归档；合成像素对比度、关键相位静态图和用户对材质的最终确认仍未完成。
 - CUA 已通过 AX 状态逐次确认 54 次主题深浅端点拖动并观察过一次中间光效。精确的 450 ms 手势节奏、取消手势和动效关键相位仍未通过。既有 `glass_motion_test.dart` 覆盖拖出取消、路由暂停/恢复、离屏注销与减少动态效果；测试不能代替本机完整拖动验收。
 
@@ -69,8 +71,8 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 - [ ] **UI-6.1** 部分通过：静置、按钮点击、播放、800/1024/1440/1512 固定宽度目录滚动交互、800↔1440 连续缩放、四页联合滚动缩放及 1024 主题往返拖动均有三轮门槛数据；工作台、连接首页、连接管理目录/能力明细、活动、音乐结果及 90 字段表单等七个长列表/表单场景也各有三轮原生 Profile 滚动数据；仍缺精确原生拖动节奏、取消对照与关键相位。
 - [ ] **UI-6.2** 部分通过：固定宽度滚动和三轮连续缩放样本没有 >100 ms Flutter build/raster 帧；长表单原始三轮中有一轮出现 112.742 ms build 峰值，另五轮不同轮次复测均未复现，原因未定位。两轮隐藏恢复样本出现约 12.9 秒 Flutter.Frame 空档，其中一次恢复样本有 102.132 ms raster，重复轮为 24.851 ms。也完成 UI-0 同机方向性基线对照；帧数据仍不等于真实显示器呈现 FPS。
 - [ ] **UI-6.3** 部分通过：已完成 UI-0 同机 Profile 基线与三轮主题往返对照，P95/超预算数据见验收记录；当前拖动与基线端点点击的输入不同。Widget 测试覆盖 450 ms 实时指针过程和取消恢复，原生 CUA 仍无法精确控制手势时长；缺主题动效关键相位和真实呈现帧率对比。
-- [ ] **UI-6.4** 部分验证：两轮隐藏/恢复分别观察到约 12.9 秒帧流空档；仍缺离屏与 reduced-motion 原生验证，且一次恢复帧超 100 ms。
-- [ ] **UI-6.5** 部分通过：完成 20 轮页面往返（80 次导航）和进程 RSS 时间序列；没有 controller、纹理或其他资源对象数量证据。
+- [ ] **UI-6.4** 部分验证：Widget 回归覆盖 `TickerMode`、应用生命周期暂停/恢复、完全离屏注销和 reduced-motion 下保留点击功能；两轮原生隐藏/恢复仍各有约 12.9 秒帧流空档，且一次恢复帧为 102.132 ms。仍缺原生离屏与 reduced-motion 覆盖及长帧原因定位。
+- [ ] **UI-6.5** 部分通过：完成 20 轮页面往返（80 次导航）、进程 RSS 时间序列和源码资源所有权审阅，核对共享 Ticker、各 controller/shader/图像的释放路径及进程级 `FragmentProgram` 缓存；没有原生运行时 controller、图像或其他资源对象数量证据，RSS 不作为对象数替代项。
 
 静置装饰可有意按约 30 Hz 更新；这不等于页面只能响应 30 Hz。原主题的固定模拟步进不因显示器刷新率而修改。帧时门槛与真实显示流畅度需同时检查。
 
