@@ -3,8 +3,11 @@ import 'package:aggregate/features/connections/connection_experience.dart';
 import 'package:aggregate/features/music/music_mini_player.dart';
 import 'package:aggregate/features/music/music_session.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/features/connections/connection_home_page.dart';
+import 'package:aggregate/widgets/capability_row.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:aggregate_runtime/aggregate_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -153,6 +156,102 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
+  testWidgets(
+    'desktop connection directory builds long capability lists lazily',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final runtime = _longConnectionRuntime();
+      final session = MusicSession(runtime);
+      addTearDown(session.dispose);
+      addTearDown(runtime.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ConnectionHomePage(
+              connection: _longConnection,
+              capabilities: _longConnectionCapabilities(),
+              runtime: runtime,
+              musicSession: session,
+              onOpen: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('能力 89'), findsNothing);
+      expect(
+        tester.widgetList<CapabilityRow>(find.byType(CapabilityRow)).length,
+        lessThan(20),
+      );
+      final directoryScrollable = find.descendant(
+        of: find.byType(CustomScrollView),
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('能力 89'),
+        240,
+        scrollable: directoryScrollable,
+      );
+
+      expect(find.text('能力 89'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    variant: _macOS,
+  );
+
+  testWidgets(
+    'compact connection directory builds long capability lists lazily',
+    (tester) async {
+      tester.view.physicalSize = const Size(700, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final runtime = _longConnectionRuntime();
+      final session = MusicSession(runtime);
+      addTearDown(session.dispose);
+      addTearDown(runtime.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ConnectionHomePage(
+              connection: _longConnection,
+              capabilities: _longConnectionCapabilities(),
+              runtime: runtime,
+              musicSession: session,
+              onOpen: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('能力 89'), findsNothing);
+      expect(
+        tester.widgetList<CapabilityRow>(find.byType(CapabilityRow)).length,
+        lessThan(20),
+      );
+      final directoryScrollable = find.descendant(
+        of: find.byType(CustomScrollView),
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('能力 89'),
+        240,
+        scrollable: directoryScrollable,
+      );
+
+      expect(find.text('能力 89'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    variant: _macOS,
+  );
+
   testWidgets('the last selected connection opens after restart', (
     tester,
   ) async {
@@ -217,3 +316,30 @@ void main() {
     expect(find.text('暂停？'), findsNothing);
   }, variant: _macOS);
 }
+
+const _longConnection = Connection(
+  id: ConnectionId('long-cli'),
+  kind: ConnectionKind.cli,
+  label: '长列表 CLI',
+  location: '/preview/long-cli',
+);
+
+List<Capability> _longConnectionCapabilities() => [
+  for (var index = 0; index < 90; index++)
+    Capability(
+      id: CapabilityId(
+        _longConnection.id,
+        CapabilityKind.cliCommand,
+        'capability-$index',
+      ),
+      title: '能力 $index',
+      description: '长列表虚拟化样本 $index',
+      permission: PermissionLevel.read,
+    ),
+];
+
+PreviewRuntime _longConnectionRuntime() => PreviewRuntime(
+  connections: const [_longConnection],
+  capabilities: _longConnectionCapabilities(),
+  latency: Duration.zero,
+);

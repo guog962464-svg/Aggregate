@@ -172,46 +172,43 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
               children: [
                 SizedBox(
                   width: directoryWidth,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: widget.capabilities.isEmpty
-                          ? [
-                              const Padding(
+                  child: CustomScrollView(
+                    slivers: widget.capabilities.isEmpty
+                        ? [
+                            const SliverToBoxAdapter(
+                              child: Padding(
                                 padding: EdgeInsets.only(top: 12),
                                 child: Text('这个连接暂时没有可用功能。请在连接页检查状态。'),
                               ),
-                            ]
-                          : isCli
-                          ? [
-                              _section(
-                                context,
-                                '命令与动作',
-                                widget.capabilities,
-                                embedded: true,
-                              ),
-                            ]
-                          : [
-                              _section(
-                                context,
-                                '工具',
-                                _ofKind(CapabilityKind.mcpTool),
-                                embedded: true,
-                              ),
-                              _section(
-                                context,
-                                '资源',
-                                _ofKind(CapabilityKind.mcpResource),
-                                embedded: true,
-                              ),
-                              _section(
-                                context,
-                                '提示',
-                                _ofKind(CapabilityKind.mcpPrompt),
-                                embedded: true,
-                              ),
-                            ],
-                    ),
+                            ),
+                          ]
+                        : isCli
+                        ? _sectionSlivers(
+                            context,
+                            '命令与动作',
+                            widget.capabilities,
+                            embedded: true,
+                          )
+                        : [
+                            ..._sectionSlivers(
+                              context,
+                              '工具',
+                              _ofKind(CapabilityKind.mcpTool),
+                              embedded: true,
+                            ),
+                            ..._sectionSlivers(
+                              context,
+                              '资源',
+                              _ofKind(CapabilityKind.mcpResource),
+                              embedded: true,
+                            ),
+                            ..._sectionSlivers(
+                              context,
+                              '提示',
+                              _ofKind(CapabilityKind.mcpPrompt),
+                              embedded: true,
+                            ),
+                          ],
                   ),
                 ),
                 const SizedBox(width: 18),
@@ -246,6 +243,7 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
     return PageFrame(
       title: widget.connection.label,
       subtitle: isCli ? '命令与动作' : '工具、资源与提示',
+      lazyChildren: widget.capabilities.length >= 40,
       children: [
         Row(
           children: [
@@ -274,11 +272,15 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
         if (widget.capabilities.isEmpty)
           const Text('这个连接暂时没有可用功能。请在连接页检查状态。')
         else if (isCli)
-          _section(context, '命令与动作', widget.capabilities)
+          ..._sectionChildren(context, '命令与动作', widget.capabilities)
         else ...[
-          _section(context, '工具', _ofKind(CapabilityKind.mcpTool)),
-          _section(context, '资源', _ofKind(CapabilityKind.mcpResource)),
-          _section(context, '提示', _ofKind(CapabilityKind.mcpPrompt)),
+          ..._sectionChildren(context, '工具', _ofKind(CapabilityKind.mcpTool)),
+          ..._sectionChildren(
+            context,
+            '资源',
+            _ofKind(CapabilityKind.mcpResource),
+          ),
+          ..._sectionChildren(context, '提示', _ofKind(CapabilityKind.mcpPrompt)),
         ],
       ],
     );
@@ -287,31 +289,62 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
   List<Capability> _ofKind(CapabilityKind kind) =>
       widget.capabilities.where((item) => item.id.kind == kind).toList();
 
-  Widget _section(
+  List<Widget> _sectionChildren(
+    BuildContext context,
+    String title,
+    List<Capability> items,
+  ) {
+    if (items.isEmpty) return const [];
+    return [
+      Text(title, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 10),
+      for (final capability in items) ...[
+        CapabilityRow(
+          key: ValueKey('connection-capability-${capability.id.key}'),
+          capability: capability,
+          source: widget.connection.label,
+          onOpen: () => _openCapability(capability, embedded: false),
+        ),
+        const Divider(height: 1),
+      ],
+      const SizedBox(height: 22),
+    ];
+  }
+
+  List<Widget> _sectionSlivers(
     BuildContext context,
     String title,
     List<Capability> items, {
-    bool embedded = false,
+    required bool embedded,
   }) {
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 10),
-          for (final capability in items) ...[
-            CapabilityRow(
-              capability: capability,
-              source: widget.connection.label,
-              selected: embedded && selectedCapabilityKey == capability.id.key,
-              onOpen: () => _openCapability(capability, embedded: embedded),
-            ),
-            const Divider(height: 1),
-          ],
-        ],
+    if (items.isEmpty) return const [];
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+        ),
       ),
-    );
+      SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final capability = items[index];
+          return Column(
+            key: ValueKey('connection-capability-${capability.id.key}'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CapabilityRow(
+                capability: capability,
+                source: widget.connection.label,
+                selected:
+                    embedded && selectedCapabilityKey == capability.id.key,
+                onOpen: () => _openCapability(capability, embedded: embedded),
+              ),
+              const Divider(height: 1),
+            ],
+          );
+        }, childCount: items.length),
+      ),
+      const SliverToBoxAdapter(child: SizedBox(height: 22)),
+    ];
   }
 }
