@@ -1,13 +1,13 @@
 # A3.6：Android Node 运行时与 16 KB 页状态
 
-核对日期：2026-11-13。范围是仓库已固定的 fogtape `nodejs-mobile` Node 24.22.1-0 候选、官方 Node/nodejs-mobile 状态，以及 Android 16 KB 静态要求。未启动模拟器；没有可用的 16 KB 实体设备。
+核对日期：2026-11-14。范围包括仓库固定的 fogtape `nodejs-mobile` Node 24.22.1-0 探针、官方 Node/nodejs-mobile 状态，以及基于 Node 24.22.3 的临时 Linux 重建。未启动模拟器；没有可用的 16 KB 实体设备。
 
 ## 结论
 
-- **静态 16 KB 部分通过（当前 arm64 Debug 探针）：**检查 `nodeprobe-debug.apk` 和 AAB 中的 `libaggregate_node_probe.so`、`libc++_shared.so`、`libnode.so`，每个 `PT_LOAD` 的 `p_align` 均为 `0x4000`，且 `p_offset`/`p_vaddr` 对齐余数一致；三个库的 GNU_RELRO 均符合 Android 指南条件。APK 的 `zipalign -c -P 16 4` 检查通过，AAB 由 bundletool 1.18.3 验证且配置为 `PAGE_ALIGNMENT_16K`。普通 Flutter Debug APK 的 zipalign 检查也通过。此结果限于 Debug 产物和 arm64 ABI。
+- **新增 Node 24.22.3 临时构建通过静态检查与 4 KB 真机探针：**从 fogtape 20 个移动补丁重放到官方 Node `v24.22.3` 后的源码树，在 Linux 容器用 NDK r27d 构建出 arm64 `libnode.so`。隔离 Debug APK 仅含 3 个 arm64 `.so`，其 `PT_LOAD` 均为 `0x4000`；`zipalign -c -P 16 4` 与 APK v2 签名检查通过。LGE AN10 4 KB 真机通过 Node 启动、文件/loopback、Service 崩溃恢复、整 App 重启、APK 重装与后台 `am kill` 恢复。源码树 hash 仍与 recipe 预期不符，补丁和许可未完整审查；产物留在 `/tmp`，不属于产品候选。详细摘要见本文末尾。
 - **真机 16 KB 加载仍未知：**Aggregate 当前只有 LGE AN10 4 KB 页设备。静态 ELF/ZIP 检查不能代替 16 KB Android 内核下启动、JNI 加载、内存分配及 Node 行为验收。fogtape 项目的文档声称其发布流程会在 Pixel 9 16 KB 实体设备上执行启动和 N-API addon smoke；这属于其 release CI 的证据主张，不能表述成 Aggregate APK 已经完成 16 KB 实机验证。
-- **当前运行时不可作为发布基线：**官方 `nodejs-mobile` Release 仍停在基于 Node 18.20.4 的版本；Node 18 已 EOL。fogtape 有独立、可重建的 Node 24/26 mobile recipe 和发布自动化，但当前 Node 24 二进制 `v24.22.1-0` 仍标为 prerelease、发布时间为 2026-10-22；Node 官方在 2026-11-11 已发布 24.22.3 安全更新。该 Android 二进制未基于最新 Node 24 安全更新，A3.6 的维护/安全门槛未过。
-- **A3.6 继续保持开放：**arm64 Debug APK/AAB 静态核验通过，但维护版 Android runtime、完整许可清单、与当前安全版本同步、Release APK/AAB 成品检查及 16 KB 实机运行仍需完成。产品端继续不开放 Node/npm/CLI。
+- **运行时仍不可作为发布基线：**官方 `nodejs-mobile` Release 仍停在基于 Node 18.20.4 的版本；Node 18 已 EOL。fogtape 已发布的 Node 24 Android 包 `v24.22.1-0` 仍为 prerelease；本次 `v24.22.3` 是自行重建的实验产物，不是维护方发布或审阅过的 Android binary，也没有验证安全补丁对 mobile fork 的完整适用性。
+- **A3.6 继续保持开放：**新增构建只完成候选技术验证。源码树 hash 不匹配、mobile patches 未完整审阅、第三方许可清单与新构建未绑定、Release APK/AAB 逐 ABI 检查和 16 KB 实体机运行仍未完成。产品端继续不开放 Node/npm/CLI。
 
 ## 官方支持与维护现状
 
@@ -73,4 +73,12 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - 在 `/tmp/aggregate-nodejs-mobile-rebase-24.22.3` 克隆 fogtape `recipe`（HEAD `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`），将上游基线切换为官方 Node `v24.22.3`，解析至提交 `e63cab040c09d43ceef8cb35508c40044614e906`。`scripts/prepare.sh` 成功重放全部 20 个移动补丁，没有内容冲突；源码树校验却得到 `5b1a23adddf4b698abcfa45cc8d22de930c01b32`，与 recipe 中旧基线固定值 `59a1f9b50b39080936dc0e78838b3945da83d8e0` 不同。未更新 expected-tree 或提交这个未经审阅的 recipe。
 - 在生成的 `/tmp/aggregate-nodejs-mobile-out-24.22.3` 上尝试 arm64 Android Release build，使用 Aggregate 的 NDK `28.2.13676358` 与 `-Wl,-z,max-page-size=16384`。macOS 默认 `ar` 不支持 fork Makefile 的 GNU response-file 归档调用；切到 NDK `llvm-ar` 后仍出现宿主工具链接差异。用仅在临时目录的 wrapper 适配宿主链接参数后，构建进一步暴露 macOS host `libuv.a` 缺少 `uv__fs_event`、`uv__kqueue_init` 等符号；没有生成可用 `libnode.so`。
 - 此结果只证明补丁能应用到新 Node 源码，不证明新基线能被完整构建或通过 Node/mobile 测试。fogtape 的发布 workflow 在 Linux runner 上执行 Android 构建；当前 Mac 没有运行中的 Docker daemon，故本次未替换成 Linux 容器构建。[fogtape Android build workflow](https://github.com/fogtape/nodejs-mobile/blob/recipe/.github/workflows/build.yml)、[Node 上游的 Android 支持说明](https://github.com/nodejs/node/blob/v24.22.3/BUILDING.md#android)。
-- 所有源码重放、wrapper 和构建产物均留在 `/tmp`；没有修改 Aggregate 中被忽略的现有 24.22.1 `.so`、头文件、assets，也没有安装或清除主 App 的数据。当前安全补丁 Android runtime 候选仍未验证；需要在 Linux 构建环境生成可校验 artifact，跑 fork 必需 gate、Aggregate arm64 APK/AAB 静态检查和 4 KB 真机探针。16 KB 实体设备仍是单独未完成的验收条件。
+- 当次源码重放、wrapper 和构建产物均留在 `/tmp`；没有修改 Aggregate 中被忽略的现有 24.22.1 `.so`、头文件、assets，也没有安装或清除主 App 的数据。当时 Docker daemon 不可用，所以只记录 Mac host 构建失败；后续 Linux 重建与真机验证见下一节。
+
+## 2026-11-14 Linux 临时重建与 4 KB 真机验证
+
+- **源码与构建：**fogtape `recipe` HEAD `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5` 重放 Node `v24.22.3` 的 20 个移动补丁，基线提交 `e63cab040c09d43ceef8cb35508c40044614e906`。移动源码树 hash 为 `5b1a23adddf4b698abcfa45cc8d22de930c01b32`，与 `expected-tree.txt` 的 `59a1f9b50b39080936dc0e78838b3945da83d8e0` 不同；没有更新基线或宣称补丁复核完成。Ubuntu 24.04 x86_64 Docker、Android NDK r27d `27.3.13750724`、Android API 24、arm64、full flavor；target 链接使用 `-Wl,-z,max-page-size=16384`。host `mksnapshot` 需通过 `LINK.host=/usr/bin/g++` 链接，整次 `make -j4` 成功。
+- **未剥离库：**`libnode.so` 为 AArch64 ELF，117,347,080 bytes，SHA-256 `7a7fafdabfd3236acc9f77033d75faa2deb633cb07c3f9f1eb6644be4212a449`；4 个 `PT_LOAD` 的 `p_align` 均为 `0x4000`，offset 与 virtual address 对齐余数相符。DT_NEEDED 为 `libm.so`、`libdl.so`、`liblog.so`、`libc++_shared.so` 和 `libc.so`。
+- **隔离 APK：**使用临时 `/tmp/aggregate-a3-probe-24.22.3` 工程构建，APK SHA-256 `aa15bc0e215e2a1614f618eb16fe9c64881dbf240539dba2f2b24c71bc0131bd`。AGP 剥离后的 APK 内 `libnode.so` 为 94,860,408 bytes，SHA-256 `9d8addcb602701d2c414339bb9a8c248e4f9445b7e8f72e8ea664aaa351a9d67`。包内只含 `libaggregate_node_probe.so`、`libc++_shared.so`、`libnode.so` 三个 arm64 native libraries；三者所有 `PT_LOAD` 均为 `0x4000`，`zipalign -c -P 16 4` 与 APK v2 签名校验通过。签名为临时 Debug 签名，不代表 Release 签名。
+- **4 KB 实机结果：**LGE AN10、Android 15/API 35、arm64、`getconf PAGE_SIZE=4096`。隔离包验证了 Node 不同 Service generation 启动、文件写入/读取、loopback 网络、Node 进程强杀后的恢复、整 App force-stop 后重启、APK 重装和后台 `am kill` 后重启；主进程在 Node 子进程崩溃时存活。验证器结束时卸载的仅是隔离包 `io.github.guog962464.aggregate.nodeprobe`；主 Aggregate 未覆盖、未清数据。未启动模拟器。
+- **限制：**以上只证明这份临时 arm64 Debug APK 在 4 KB 设备上的行为及 ELF/ZIP 静态性质。没有 16 KB 实体机，不能证明 16 KB 内核加载；没有运行 fogtape 完整测试套件；本次 APK 复用了既有探针 LICENSE/NOTICE assets，没有重新确认它们与重基后的新源码树、r27d `libc++_shared.so` 完全对应。所有构建与 APK 均留在 `/tmp`，没有替换仓库内 Node 24.22.1 资产。

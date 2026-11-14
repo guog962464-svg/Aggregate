@@ -1,6 +1,6 @@
 # Android A3：Node 原生桥探针记录
 
-> 更新于 2026-11-13。A3 进行中；默认 Debug 实验候选是 fogtape Node 24.22.1 预发布。A3.1–A3.5 的固定探针范围已在 4 KB arm64 真机通过，包括运行中的 60 秒后台、后台进程终止后的重启及升级后陈旧探针文件替换。`am kill` 不等同真实低内存终止。A3.6 已复核 arm64 Debug APK/AAB 的 ELF、RELRO 与 ZIP/container 静态对齐；16 KB 真机加载、当前安全版运行时、完整许可和 Release 成品仍未验收。探针与用户可见 CLI 能力保持隔离。详见 [A3.6 运行时研究与静态记录](android-a3-runtime-research.md)。
+> 更新于 2026-11-14。A3 进行中；仓库默认 Debug 实验候选仍是 fogtape Node 24.22.1 预发布。A3.1–A3.5 的固定探针范围已在 4 KB arm64 真机通过。另有基于 Node 24.22.3 的临时 Linux 重建，在隔离探针 APK 中完成 16 KB ELF/ZIP 静态检查及 LGE AN10 4 KB 真机生命周期验证；源码树 hash、patch 审查和许可证仍未闭合。`am kill` 不等同真实低内存终止；16 KB 真机加载、正式运行时、完整许可和 Release 成品仍未验收。探针与用户可见 CLI 能力保持隔离。详见 [A3.6 运行时研究与静态记录](android-a3-runtime-research.md)。
 
 ## 当前基线
 
