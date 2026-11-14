@@ -21,16 +21,16 @@
 | APK 原生库 | Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。包内 7 个 `.so` 均属于 `arm64-v8a`，逐个 `PT_LOAD p_align` 最小值不低于 `0x4000`。这是 Debug APK 静态检查，不是 16 KB 内核运行结果。 |
 | Android 真机 | LGE AN10、Android 15/API 35、arm64、4 KB 页：安装更新后的 APK 并启动 `MainActivity` 成功；先前相机扫描 UI 打开验收已通过。本轮结束后已撤销 CAMERA 运行权限，恢复为未授权状态。未使用模拟器。 |
 | Android ↔ Mac Host 真机配对 | 通过 USB ADB 反向转发完成。为适配手机与 Mac 的 LAN/VPN 隔离，测试邀请只把端点改为 `wss://127.0.0.1:47321/host`；Host ID、证书 SHA-256 pin、nonce 和有效期保持原值。Mac Host 收到 Android Keystore 签名请求，验证码与两端一致；Mac UI 以“批准只读”授权后，Android 完成 challenge 认证和 `host.hello`，保存 Host 并显示已连接。断开后通过保存记录重连成功。此路径真实使用 Android Keystore 与 Mac CryptoKit，但经 USB 隧道，不覆盖直接 LAN 或 DNS-SD。 |
-| Android ↔ Mac Host 直接 LAN / Bonjour NSD（2026-11-14） | 同一可互通局域网，使用 Mac 原样生成的短时邀请，在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页实体机上先后验证已授权手机和隔离的新 Android App 身份。新身份通过独立 `.integration` 包名及 Android Keystore 创建：Android 原生 NSD 发现 1 个与邀请匹配的端点；直连 WSS 提交配对申请，Mac 用户只批准“读取连接”；challenge 认证及 `host.hello` 成功，随后只调用 `connection.list` 并返回 1 项“网易云音乐”。撤销该临时 grant 后再次认证被 Mac 以 unauthorized 拒绝，Android 映射为 `approvalRequired`。另在隔离包验证真实 Android Keystore 别名轮换。没有调用其他 Host RPC；没有改动日常 App 身份。 |
+| Android ↔ Mac Host 直接 LAN / Bonjour NSD（2026-11-14） | 同一可互通局域网，使用 Mac 原样生成的短时邀请，在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页实体机上先后验证已授权手机和隔离的新 Android App 身份。新身份通过独立 `.integration` 包名及 Android Keystore 创建：Android 原生 NSD 发现 1 个与邀请匹配的端点；直连 WSS 提交配对申请，Mac 用户只批准“读取连接”；challenge 认证及 `host.hello` 成功，随后只调用 `connection.list` 并返回 1 项“网易云音乐”。撤销该临时 grant 后再次认证被 Mac 以 unauthorized 拒绝，Android 映射为 `approvalRequired`。另在隔离包验证真实 Android Keystore 别名轮换；随后短暂关闭并恢复 Android Wi-Fi，NSD 重新发现 1 个 Host endpoint，WSS 重新认证和只读 `connection.list` 成功。没有调用其他 Host RPC；没有轮换日常 App 身份。 |
 | 配对清理 | 从 Mac 撤销只读授权、从 Android 移除本机记录；确认待批准/已配对列表清空。停止本轮启动的 Mac Host，删除 ADB reverse 和临时 TCP 代理；CAMERA 权限恢复为 denied。 |
-| 直接 LAN 验收清理 | 测试用 RuntimeStore 位于系统临时目录并在 finally 中删除；Mac Host 已停止，`47321` 不再监听；临时新设备 grant 已撤销，待批准列表为空；隔离 `.integration` 包已卸载，普通 Android Debug APK 仍安装且 CAMERA app-op 为 ignore。验收前已有的“这台手机 · 读取连接”grant 保留；剪贴板已恢复，邀请/临时文件已删除。 |
+| 直接 LAN 验收清理 | 临时新设备 grant 已撤销，待批准列表为空；Mac Host 已停止，`47321` 不再监听；`.integration` 包已卸载，普通 `io.github.guog962464.aggregate` Debug APK 已重建、重装并启动，Wi-Fi 恢复开启，CAMERA app-op 为 ignore。Flutter integration runner 的清理也移除了普通包；重装后 app-private `app_flutter` 中没有 `hosts.json`，无法确认测试前是否有本地记录，Mac 原有“这台手机 · 读取连接”grant 保留但重装后的 App 可能需要重新配对。剪贴板已恢复，邀请/define/临时测试文件已删除。 |
 
 ## 尚未关闭的验收
 
-- 2026-11-14 已在直连 LAN 上通过原始邀请、NSD 地址发现、新设备 Mac 人工只读审批、WSS pin/auth、`host.hello`、只读 `connection.list`、授权撤销及撤销后请求拒绝；拒绝响应的 JSON-RPC request ID 也已修复并有 WSS 回归测试。实际 Android Keystore 别名轮换仅在可卸载的隔离 `.integration` 包验证，未轮换日常 App 身份；当前 Mac Keychain TLS 身份未真实轮换。网络切换后的重连、16 KB 实体设备运行及 Release/signed 权限仍待验收。
+- 2026-11-14 已在直连 LAN 上通过原始邀请、NSD 地址发现、新设备 Mac 人工只读审批、WSS pin/auth、`host.hello`、只读 `connection.list`、授权撤销及撤销后请求拒绝；拒绝响应的 JSON-RPC request ID 也已修复并有 WSS 回归测试。实际 Android Keystore 别名轮换仅在可卸载的隔离 `.integration` 包验证，未轮换日常 App 身份；当前 Mac Keychain TLS 身份未真实轮换。短暂关闭/恢复 Wi-Fi 后的 NSD/WSS 重连已通过隔离包验收。16 KB 实体设备运行及 Release/signed 权限仍待验收；integration runner 移除普通包后已重装，但重装后的本地 Host 列表为空，既有 Mac grant 保留，后续使用可能需要重新配对。
 - 没有可用的 16 KB 页实体设备。当前 APK native library 的 ELF 和 ZIP 对齐均通过静态检查，但 16 KB 设备的安装、加载、运行以及 JNI/相机/NSD smoke 仍是外部验收门槛。
 - Android 全局设备身份轮换确认 UI 和 Keystore 别名切换已实现并由 fake/Widget 测试覆盖；实际 Keystore 别名轮换仅在隔离 `.integration` 包验证，没有触碰日常 App 身份。2026-11-14 已实现 Mac TLS 身份轮换 UX：Mac 用户确认后先撤销全部配对授权、停止 Host，再更换 Host ID/证书；Keychain 通过候选密钥和证书校验后切换活动身份记录。Widget 测试验证取消、授权撤销失败保护与成功时序；未对当前用户 Keychain 执行真实身份切换，以免现有手机 pin 失效。Release/signed App 的 macOS 本地网络权限及 Android Release 包、Host 完整 RPC handler、A5.5 普通 CLI/TUI/MCP/网易云流程仍未完成。
 
 ## 复验
 
-后续如需扩大验收，覆盖网络切换后的 NSD/WSS 重连、Release/signed App 本地网络权限，并在 16 KB 实体设备独立安装及采集 page-size、启动、native load、scanner/NSD 日志。直连 LAN 首次审批、只读调用、撤销和撤销后拒绝已由一次性隔离身份验证；现有手机 grant 与日常 App Keystore 身份未作变更。
+后续扩大验收集中在 Mac Keychain TLS 身份轮换、Release/signed App 本地网络权限与 16 KB 实体设备安装/运行，并采集 page-size、启动、native load、scanner/NSD 日志。direct LAN 首次审批、只读调用、撤销、撤销后拒绝及 Wi-Fi 中断恢复已由隔离身份验证；测试期间普通包被 integration runner 移除后已重装，当前本地 Host 列表为空，原 Mac grant 保留。
