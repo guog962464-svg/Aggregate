@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_motion.dart';
 
+const _lazyResultsThreshold = 40;
+
 final class MusicSearchItem {
   const MusicSearchItem({
     required this.id,
@@ -103,53 +105,68 @@ class MusicSearchResults extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 12),
-      for (final item in items) ...[
-        Row(
-          children: [
-            const Icon(Icons.music_note_outlined, size: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(
-                    item.artist,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+      if (items.length < _lazyResultsThreshold)
+        for (final item in items) ...[
+          _songRow(context, item),
+          const Divider(height: 20),
+        ]
+      else
+        SizedBox(
+          key: const Key('music-search-results-list'),
+          height: 420,
+          child: ListView.separated(
+            primary: false,
+            padding: EdgeInsets.zero,
+            itemCount: items.length,
+            itemBuilder: (context, index) => KeyedSubtree(
+              key: ValueKey('music-search-result-${items[index].id}'),
+              child: _songRow(context, items[index]),
             ),
-            const SizedBox(width: 8),
-            if (item.playable)
-              if (onQueue != null)
-                _resultActionButton(
-                  context,
-                  label: '将 ${item.name} 加入下一首',
-                  icon: Icons.playlist_add,
-                  onPressed: busy ? null : () => onQueue!(item),
-                ),
-            if (item.playable)
-              _resultActionButton(
-                context,
-                label: '播放 ${item.name}',
-                icon: Icons.play_arrow,
-                onPressed: busy ? null : () => onPlay(item),
-              )
-            else
-              Tooltip(
-                message: '当前账号或音源不可播放',
-                child: Text(
-                  '不可播放',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
+            separatorBuilder: (context, index) => const Divider(height: 20),
+          ),
+        ),
+    ],
+  );
+
+  Widget _songRow(BuildContext context, MusicSearchItem item) => Row(
+    children: [
+      const Icon(Icons.music_note_outlined, size: 18),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              item.artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ),
-        const Divider(height: 20),
-      ],
+      ),
+      const SizedBox(width: 8),
+      if (item.playable)
+        if (onQueue != null)
+          _resultActionButton(
+            context,
+            label: '将 ${item.name} 加入下一首',
+            icon: Icons.playlist_add,
+            onPressed: busy ? null : () => onQueue!(item),
+          ),
+      if (item.playable)
+        _resultActionButton(
+          context,
+          label: '播放 ${item.name}',
+          icon: Icons.play_arrow,
+          onPressed: busy ? null : () => onPlay(item),
+        )
+      else
+        Tooltip(
+          message: '当前账号或音源不可播放',
+          child: Text('不可播放', style: Theme.of(context).textTheme.bodySmall),
+        ),
     ],
   );
 
