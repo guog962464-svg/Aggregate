@@ -354,6 +354,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
                             )
                           : null,
                     ),
+                    position: DecorationPosition.foreground,
                     child: SizedBox.fromSize(
                       size: size,
                       child: ThemeSwitchArtwork(

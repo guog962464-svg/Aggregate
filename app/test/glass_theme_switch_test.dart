@@ -132,6 +132,42 @@ void main() {
     },
   );
 
+  testWidgets('keyboard focus ring is painted above the switch artwork', (
+    tester,
+  ) async {
+    final previousStrategy = FocusManager.instance.highlightStrategy;
+    FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() {
+      FocusManager.instance.highlightStrategy = previousStrategy;
+    });
+
+    await tester.pumpWidget(_host(changes: []));
+    final switchFinder = find.byType(GlassThemeSwitch);
+    final detector = tester.widget<FocusableActionDetector>(
+      find.descendant(
+        of: switchFinder,
+        matching: find.byType(FocusableActionDetector),
+      ),
+    );
+    detector.focusNode!.requestFocus();
+    await tester.pump();
+
+    final focusRingFinder = find.descendant(
+      of: switchFinder,
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            widget.child is SizedBox &&
+            widget.decoration is BoxDecoration,
+      ),
+    );
+    final focusRing = tester.widget<DecoratedBox>(focusRingFinder);
+    expect(detector.focusNode!.hasFocus, isTrue);
+    expect((focusRing.decoration as BoxDecoration).border, isNotNull);
+    expect(focusRing.position, DecorationPosition.foreground);
+  });
+
   testWidgets(
     'capturing an overshooting handle does not apply resistance twice',
     (tester) async {
