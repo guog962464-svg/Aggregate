@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../features/invocation/capability_run_page.dart';
 import '../features/music/music_session.dart';
+import '../widgets/glass/glass_scene.dart';
 import 'app_shell.dart';
 import 'shortcut_scheme.dart';
 import 'theme.dart';
@@ -113,10 +114,15 @@ class _AggregateAppState extends State<AggregateApp> {
     themeAnimationCurve: Curves.easeInOutCubic,
     navigatorKey: navigatorKey,
     scaffoldMessengerKey: messengerKey,
-    builder: (context, child) => CallbackShortcuts(
-      bindings: {ShortcutScheme(defaultTargetPlatform).search: searchAll},
-      child: Focus(autofocus: true, child: child ?? const SizedBox.shrink()),
-    ),
+    builder: (context, child) {
+      final content = CallbackShortcuts(
+        bindings: {ShortcutScheme(defaultTargetPlatform).search: searchAll},
+        child: Focus(autofocus: true, child: child ?? const SizedBox.shrink()),
+      );
+      return defaultTargetPlatform == TargetPlatform.macOS
+          ? GlassScene(child: content)
+          : content;
+    },
     onGenerateRoute: (settings) {
       if (settings.name == '/' || settings.name == null) {
         return MaterialPageRoute<void>(

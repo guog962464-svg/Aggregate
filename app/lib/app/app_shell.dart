@@ -571,7 +571,9 @@ class AppShellState extends State<AppShell> {
                   SizedBox(
                     width: 200,
                     child: Material(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: defaultTargetPlatform == TargetPlatform.macOS
+                          ? Colors.transparent
+                          : Theme.of(context).colorScheme.surface,
                       child: navigation(compact: false),
                     ),
                   ),

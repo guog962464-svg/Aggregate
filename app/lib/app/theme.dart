@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/glass/glass_design_tokens.dart';
+
 abstract final class AggregateTheme {
   static final ThemeData light = _build(
     const Color(0xFFF5F7F8),
@@ -21,6 +23,9 @@ abstract final class AggregateTheme {
   );
 
   static ThemeData forPlatform(ThemeData theme, TargetPlatform platform) {
+    if (platform == TargetPlatform.macOS) {
+      return _macOS(theme);
+    }
     if (platform != TargetPlatform.android &&
         platform != TargetPlatform.iOS &&
         platform != TargetPlatform.fuchsia) {
@@ -39,6 +44,58 @@ abstract final class AggregateTheme {
         style: mobileButtonStyle,
       ),
       textButtonTheme: const TextButtonThemeData(style: mobileButtonStyle),
+    );
+  }
+
+  static ThemeData _macOS(ThemeData theme) {
+    final glass = GlassDesignTokens.forBrightness(theme.brightness);
+    final scheme = theme.colorScheme.copyWith(
+      primary: glass.glow,
+      onPrimary: glass.ink,
+      primaryContainer: glass.glow.withValues(alpha: 0.18),
+      onPrimaryContainer: glass.text,
+      surface: glass.surface,
+      onSurface: glass.text,
+      onSurfaceVariant: glass.muted,
+      outline: glass.line.withValues(alpha: 0.72),
+      outlineVariant: glass.line.withValues(alpha: 0.48),
+      error: glass.danger,
+      onError: glass.inset,
+    );
+    return theme.copyWith(
+      colorScheme: scheme,
+      scaffoldBackgroundColor: Colors.transparent,
+      canvasColor: Colors.transparent,
+      dividerColor: glass.line.withValues(alpha: 0.62),
+      appBarTheme: theme.appBarTheme.copyWith(
+        backgroundColor: Colors.transparent,
+        foregroundColor: glass.text,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      textTheme: theme.textTheme.apply(
+        bodyColor: glass.text,
+        displayColor: glass.text,
+      ),
+      iconTheme: IconThemeData(color: glass.muted),
+      inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+        filled: true,
+        fillColor: glass.inset.withValues(alpha: 0.62),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: glass.line.withValues(alpha: 0.72)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: glass.glow, width: 1.5),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: glass.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+      extensions: <ThemeExtension<dynamic>>[glass],
     );
   }
 

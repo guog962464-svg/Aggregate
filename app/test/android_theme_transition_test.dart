@@ -58,7 +58,7 @@ void main() {
     variant: TargetPlatformVariant.only(TargetPlatform.android),
   );
 
-  testWidgets('macOS retains its animated page theme transition', (
+  testWidgets('macOS retains its animated glass theme transition', (
     tester,
   ) async {
     final runtime = createPreviewRuntime();
@@ -86,7 +86,10 @@ void main() {
     expect(_pageTheme(tester).brightness, Brightness.light);
     expect(
       _pageTheme(tester).colorScheme.surface,
-      AggregateTheme.light.colorScheme.surface,
+      AggregateTheme.forPlatform(
+        AggregateTheme.light,
+        TargetPlatform.macOS,
+      ).colorScheme.surface,
     );
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));

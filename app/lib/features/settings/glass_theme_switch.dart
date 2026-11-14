@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/glass/glass_scene.dart';
 import 'theme_switch_calibration.dart';
 import 'theme_switch_simulation.dart';
 
@@ -34,6 +35,9 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   late final Ticker _ticker;
   Duration? _lastTick;
   bool _reduceMotion = false;
+  GlassSceneScope? _sceneScope;
+  bool _sceneLayoutRefreshScheduled = false;
+  Offset _backdropOrigin = Offset.zero;
   bool _focused = false;
   bool _hoveredOnTrack = false;
   int? _pointer;
@@ -62,6 +66,8 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _sceneScope = GlassSceneScope.maybeOf(context);
+    _sceneScope?.frame.publishThemeSwitch(_time, _simulation.snapshot.theme);
     _reduceMotion = MediaQuery.disableAnimationsOf(context);
     if (_reduceMotion) {
       _ticker.stop();
@@ -90,6 +96,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
         _simulation.setLight(widget.light);
       }
     }
+    _sceneScope?.frame.publishThemeSwitch(_time, _simulation.snapshot.theme);
   }
 
   void _tick(Duration elapsed) {
@@ -99,11 +106,26 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     _lastTick = elapsed;
     _time += dt;
     _simulation.advanceRealtime(dt, _time);
+    _sceneScope?.frame.publishThemeSwitch(_time, _simulation.snapshot.theme);
     setState(() {});
+  }
+
+  void _refreshAfterSceneLayout(BuildContext context) {
+    if (_sceneLayoutRefreshScheduled) return;
+    _sceneLayoutRefreshScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _sceneLayoutRefreshScheduled = false;
+      if (!mounted) return;
+      final origin = _sceneScope?.originFor(context);
+      if (origin != null && origin != _backdropOrigin) {
+        setState(() => _backdropOrigin = origin);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _sceneScope?.frame.clearThemeSwitch();
     _ticker.dispose();
     _focus.dispose();
     super.dispose();
@@ -339,6 +361,14 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
                         time: _time,
                         optics: widget.calibration.optics,
                         scene: widget.calibration.scene,
+                        backdropOrigin:
+                            _sceneScope?.originFor(
+                              context,
+                              onLayoutDeferred: () =>
+                                  _refreshAfterSceneLayout(context),
+                            ) ??
+                            _backdropOrigin,
+                        backdropSize: _sceneScope?.size ?? Size.zero,
                       ),
                     ),
                   ),
@@ -408,6 +438,8 @@ class ThemeSwitchArtwork extends StatefulWidget {
     this.center,
     this.optics = const ThemeSwitchOptics(),
     this.scene = const ThemeSwitchScene(),
+    this.backdropOrigin = Offset.zero,
+    this.backdropSize = Size.zero,
   });
 
   final ThemeSwitchSnapshot frame;
@@ -417,6 +449,8 @@ class ThemeSwitchArtwork extends StatefulWidget {
   final Offset? center;
   final ThemeSwitchOptics optics;
   final ThemeSwitchScene scene;
+  final Offset backdropOrigin;
+  final Size backdropSize;
 
   static Future<ui.FragmentProgram>? _program;
   static Future<ui.FragmentProgram> loadProgram() => _program ??=
@@ -552,6 +586,8 @@ class _ThemeSwitchArtworkState extends State<ThemeSwitchArtwork> {
         center: widget.center,
         optics: widget.optics,
         scene: widget.scene,
+        backdropOrigin: widget.backdropOrigin,
+        backdropSize: widget.backdropSize,
       ),
     );
   }
@@ -569,6 +605,8 @@ class _GlassPainter extends CustomPainter {
     required this.center,
     required this.optics,
     required this.scene,
+    required this.backdropOrigin,
+    required this.backdropSize,
   });
 
   final ui.FragmentShader? shader;
@@ -581,6 +619,8 @@ class _GlassPainter extends CustomPainter {
   final Offset? center;
   final ThemeSwitchOptics optics;
   final ThemeSwitchScene scene;
+  final Offset backdropOrigin;
+  final Size backdropSize;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -611,6 +651,10 @@ class _GlassPainter extends CustomPainter {
       optics.frost,
       optics.pixelGlow,
       optics.stripHalfAngle,
+      backdropOrigin.dx,
+      backdropOrigin.dy,
+      backdropSize.width,
+      backdropSize.height,
     ];
     for (var i = 0; i < uniforms.length; i++) {
       effect.setFloat(i, uniforms[i]);

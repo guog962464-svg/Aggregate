@@ -21,6 +21,8 @@ uniform float refraction;
 uniform float frost;
 uniform float pixelGlow;
 uniform float stripHalfAngle;
+uniform vec2 backdropOrigin;
+uniform vec2 backdropSize;
 uniform sampler2D matrixImage;
 uniform sampler2D diffuseImage;
 out vec4 fragColor;
@@ -97,7 +99,13 @@ float grain(vec2 point) {
 void main() {
   vec2 screenPoint = FlutterFragCoord().xy;
   vec2 point = (screenPoint - origin) / zoom;
-  vec2 screenUv = screenPoint / viewport;
+  vec2 backgroundPoint = screenPoint;
+  vec2 backgroundExtent = viewport;
+  if (backdropSize.x > 0.0 && backdropSize.y > 0.0) {
+    backgroundPoint += backdropOrigin;
+    backgroundExtent = backdropSize;
+  }
+  vec2 screenUv = backgroundPoint / backgroundExtent;
   float sky = 1.0 - smoothstep(0.0, 1.5,
       length((screenUv - vec2(0.92, -0.08)) * vec2(1.0, 1.25)));
   vec3 color = mix(vec3(mix(0.040, 0.120, sky)),
@@ -159,7 +167,7 @@ void main() {
       1.0 - smoothstep(-1.4, -0.2, emitterDistance));
   color = mix(color, hotLamp * (0.8 + 0.35 * energy), emitterMask);
   color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * (1.0 - emitterMask));
-  vec2 physicalPixel = vec2(screenPoint.x, viewport.y - screenPoint.y) * displayRatio;
+  vec2 physicalPixel = vec2(backgroundPoint.x, backgroundExtent.y - backgroundPoint.y) * displayRatio;
   color += (grain(physicalPixel + fract(seconds) * 91.7) - 0.5) * 0.022;
   fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }

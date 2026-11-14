@@ -74,6 +74,7 @@ flutter:
   uses-material-design: true
   shaders:
     - shaders/glass_theme_switch.frag
+    - shaders/glass_scene.frag
 
   # To add assets to your application, add an assets section, like this:
   # assets:
