@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
+import 'glass_motion.dart';
 
 enum GlassButtonKind {
   primary,
@@ -32,6 +34,7 @@ class GlassActionButton extends StatefulWidget {
     this.iconOnly = false,
     this.focusNode,
     this.autofocus = false,
+    this.motionPhaseSeed,
   }) : assert(label != null || semanticsLabel != null),
        assert(iconOnly || label != null);
 
@@ -47,6 +50,7 @@ class GlassActionButton extends StatefulWidget {
   final bool iconOnly;
   final FocusNode? focusNode;
   final bool autofocus;
+  final int? motionPhaseSeed;
 
   @override
   State<GlassActionButton> createState() => _GlassActionButtonState();
@@ -54,6 +58,13 @@ class GlassActionButton extends StatefulWidget {
 
 class _GlassActionButtonState extends State<GlassActionButton> {
   late final WidgetStatesController _statesController;
+  late final GlassMotionController _motionController;
+  final GlobalKey _motionBoxKey = GlobalKey();
+  ScrollPosition? _scrollPosition;
+  GlassMotionScopeState? _motionScope;
+  bool _visibilityCheckScheduled = false;
+  bool _visible = true;
+  bool _disableAnimations = false;
 
   bool get _enabled =>
       widget.enabled && !widget.busy && widget.onPressed != null;
@@ -61,14 +72,32 @@ class _GlassActionButtonState extends State<GlassActionButton> {
   @override
   void initState() {
     super.initState();
+    _motionController = GlassMotionController(
+      initialGlyph: widget.glyph,
+      phaseSeed: widget.motionPhaseSeed,
+    );
     _statesController = WidgetStatesController()
       ..update(WidgetState.selected, widget.selected)
       ..update(WidgetState.disabled, !_enabled);
+    _statesController.addListener(_handleVisualStateChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _disableAnimations = MediaQuery.disableAnimationsOf(context);
+    _motionScope = GlassMotionScope.maybeOf(context);
+    _updateScrollPosition();
+    _syncMotion();
+    _scheduleVisibilityCheck();
   }
 
   @override
   void didUpdateWidget(covariant GlassActionButton oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.glyph != widget.glyph) {
+      _motionController.setGlyph(widget.glyph);
+    }
     if (oldWidget.selected != widget.selected) {
       _statesController.update(WidgetState.selected, widget.selected);
     }
@@ -76,11 +105,74 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         (oldWidget.enabled && !oldWidget.busy && oldWidget.onPressed != null)) {
       _statesController.update(WidgetState.disabled, !_enabled);
     }
+    _syncMotion();
+  }
+
+  void _syncMotion() {
+    _motionController.configure(
+      scope: _motionScope,
+      visible: _visible,
+      motionAllowed: _motionScope != null && !_disableAnimations && _enabled,
+    );
+  }
+
+  void _handleVisualStateChanged() {
+    final states = _statesController.value;
+    _motionController.setInteraction(
+      hovered: states.contains(WidgetState.hovered),
+      focused: states.contains(WidgetState.focused),
+    );
+  }
+
+  void _updateScrollPosition() {
+    final position = Scrollable.maybeOf(context)?.position;
+    if (_scrollPosition == position) return;
+    _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+    _scrollPosition = position;
+    _scrollPosition?.addListener(_scheduleVisibilityCheck);
+  }
+
+  void _scheduleVisibilityCheck() {
+    if (_visibilityCheckScheduled || !mounted) return;
+    _visibilityCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibilityCheckScheduled = false;
+      if (!mounted) return;
+      final renderObject = _motionBoxKey.currentContext?.findRenderObject();
+      if (renderObject is! RenderBox ||
+          !renderObject.attached ||
+          !renderObject.hasSize) {
+        return;
+      }
+      final maybeViewport = RenderAbstractViewport.maybeOf(renderObject);
+      final RenderBox? viewportBox = maybeViewport is RenderBox
+          ? maybeViewport as RenderBox
+          : null;
+      var visible = true;
+      if (viewportBox != null && viewportBox.attached && viewportBox.hasSize) {
+        final buttonRect = MatrixUtils.transformRect(
+          renderObject.getTransformTo(viewportBox),
+          renderObject.paintBounds,
+        );
+        visible = buttonRect.overlaps(Offset.zero & viewportBox.size);
+      }
+      if (visible == _visible) return;
+      _visible = visible;
+      _motionController.setVisible(visible);
+    });
+  }
+
+  void _handlePressed() {
+    _motionController.trigger();
+    widget.onPressed?.call();
   }
 
   @override
   void dispose() {
+    _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+    _statesController.removeListener(_handleVisualStateChanged);
     _statesController.dispose();
+    _motionController.dispose();
     super.dispose();
   }
 
@@ -133,6 +225,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         painter: _GlassButtonSurfacePainter(
           tokens: tokens,
           kind: widget.kind,
+          motion: _motionController,
           // WidgetStatesController mutates its set in place, so a painter must
           // keep a snapshot for shouldRepaint to observe state transitions.
           states: Set.unmodifiable(states),
@@ -149,15 +242,38 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       selected: widget.selected,
       value: widget.busy ? '正在处理' : null,
       liveRegion: widget.busy,
-      onTap: _enabled ? widget.onPressed : null,
+      onTap: _enabled ? _handlePressed : null,
       child: ExcludeSemantics(
-        child: TextButton(
-          onPressed: _enabled ? widget.onPressed : null,
-          focusNode: widget.focusNode,
-          autofocus: widget.autofocus,
-          statesController: _statesController,
-          style: style,
-          child: content,
+        child: NotificationListener<ScrollMetricsNotification>(
+          onNotification: (_) {
+            _scheduleVisibilityCheck();
+            return false;
+          },
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (_) {
+              _scheduleVisibilityCheck();
+              return false;
+            },
+            child: NotificationListener<SizeChangedLayoutNotification>(
+              onNotification: (_) {
+                _scheduleVisibilityCheck();
+                return false;
+              },
+              child: SizeChangedLayoutNotifier(
+                child: RepaintBoundary(
+                  key: _motionBoxKey,
+                  child: TextButton(
+                    onPressed: _enabled ? _handlePressed : null,
+                    focusNode: widget.focusNode,
+                    autofocus: widget.autofocus,
+                    statesController: _statesController,
+                    style: style,
+                    child: content,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -176,6 +292,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     final mark = GlassGlyphMark(
       glyph: widget.glyph,
       size: iconSize,
+      motionController: _motionController,
       color: muted
           ? tokens.muted.withValues(alpha: .76)
           : widget.kind == GlassButtonKind.danger
@@ -190,20 +307,22 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       children: [
         mark,
         const SizedBox(width: 8),
-        Text(
-          widget.busy ? '$visibleLabel中' : visibleLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: muted
-                ? tokens.muted
-                : widget.kind == GlassButtonKind.danger
-                ? tokens.danger
-                : tokens.text,
-            fontWeight: widget.kind == GlassButtonKind.primary
-                ? FontWeight.w600
-                : FontWeight.w500,
-            fontSize: 13,
+        RepaintBoundary(
+          child: Text(
+            widget.busy ? '$visibleLabel中' : visibleLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: muted
+                  ? tokens.muted
+                  : widget.kind == GlassButtonKind.danger
+                  ? tokens.danger
+                  : tokens.text,
+              fontWeight: widget.kind == GlassButtonKind.primary
+                  ? FontWeight.w600
+                  : FontWeight.w500,
+              fontSize: 13,
+            ),
           ),
         ),
       ],
@@ -227,15 +346,17 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
 };
 
 class _GlassButtonSurfacePainter extends CustomPainter {
-  const _GlassButtonSurfacePainter({
+  _GlassButtonSurfacePainter({
     required this.tokens,
     required this.kind,
+    required this.motion,
     required this.states,
     required this.radius,
-  });
+  }) : super(repaint: motion);
 
   final GlassDesignTokens tokens;
   final GlassButtonKind kind;
+  final GlassMotionController motion;
   final Set<WidgetState> states;
   final double radius;
 
@@ -252,6 +373,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isReferenceSize = radius >= 22;
     final accent = kind == GlassButtonKind.danger ? tokens.danger : tokens.glow;
     final opacity = isDisabled ? .52 : 1.0;
+    final motionEnergy = motion.energy;
 
     canvas.drawRRect(
       rrect,
@@ -293,17 +415,22 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     }
 
     final topGlow = kind == GlassButtonKind.primary || isSelected;
-    if (topGlow || isHovered || isPressed) {
+    if (topGlow || isHovered || isPressed || motionEnergy > 0) {
       final glowAlpha = isPressed
           ? .18
-          : (isHovered ? .12 : (isReferenceSize ? .20 : .11));
+          : (isHovered
+                ? .12
+                : (isReferenceSize ? .20 : .11) + motionEnergy * .13);
       canvas.save();
       canvas.clipRRect(rrect);
       canvas.drawRect(
         rect,
         Paint()
           ..shader = RadialGradient(
-            center: const Alignment(.82, -.78),
+            center: Alignment(
+              .82 - motionEnergy * .24,
+              -.78 + motionEnergy * .12,
+            ),
             radius: 1.08,
             colors: [
               accent.withValues(alpha: glowAlpha),
@@ -339,9 +466,10 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         ..color = accent.withValues(
           alpha: isDisabled
               ? .01
-              : kind == GlassButtonKind.primary
-              ? (isReferenceSize ? .62 : .46)
-              : .28,
+              : (kind == GlassButtonKind.primary
+                        ? (isReferenceSize ? .62 : .46)
+                        : .28) +
+                    motionEnergy * .12,
         ),
     );
     canvas.drawPath(

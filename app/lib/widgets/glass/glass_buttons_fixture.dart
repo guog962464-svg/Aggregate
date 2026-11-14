@@ -5,7 +5,7 @@ import 'glass_action_button.dart';
 import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
 
-/// Native static-state board for reviewing UI-2 buttons without connecting
+/// Native motion board for reviewing UI-3 buttons without connecting
 /// decorative controls to product actions.
 class GlassButtonsFixturePage extends StatelessWidget {
   const GlassButtonsFixturePage({
@@ -143,7 +143,7 @@ class GlassButtonsFixturePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '12 类静态样本 · 同一圆角点阵工厂 · 无业务回调',
+                            '12 类静置/点击样本 · 同一圆角点阵工厂 · 无业务回调',
                             style: textTheme.bodyMedium?.copyWith(
                               color: tokens.muted,
                             ),
@@ -160,7 +160,7 @@ class GlassButtonsFixturePage extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'UI-2 / FIXTURE',
+                      'UI-3 / FIXTURE',
                       style: textTheme.labelMedium?.copyWith(
                         color: tokens.muted,
                         letterSpacing: 1.1,

@@ -98,6 +98,22 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 | 依赖与用户改动 | 未运行 `pub get`；`pubspec.lock` 仍保留用户原有修改，SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`，未暂存。 |
 | 验证 | `flutter analyze --no-pub`：无问题。`flutter test --no-pub test/glass_action_button_test.dart test/glass_glyph_golden_test.dart test/glass_design_tokens_test.dart test/glass_theme_switch_test.dart test/theme_switch_realtime_test.dart test/theme_switch_optics_test.dart test/theme_switch_calibration_test.dart test/theme_switch_simulation_test.dart test/glass_theme_switch_android_test.dart test/android_theme_transition_test.dart`：47 项通过。覆盖 glyph catalog、1×/2×浅深 golden、名称/键盘/鼠标/忙碌禁用/尺寸语义及主题光学与实时回归。 |
 
+## UI-3：静置、点击与连续操作协调
+
+| 字段 | 记录 |
+| --- | --- |
+| 项目 | UI-3.1～UI-3.8 |
+| 结果 | 通过；UI-4 可开始。新动作时钟、点阵绘制和打断行为已经实现，生产页面的逐页接入留在 UI-4；这阶段的 fixture 点击仍不连接真实业务。 |
+| 运行入口 | `cd app && flutter run -d macos --profile --no-pub -t lib/glass_buttons_fixture_main.dart`。Profile 窗口经 CUA 原生查看，Impeller/Metal；画面为暗色、1120×860 logical px、Retina DPR 2。Flutter CLI 曾报告 `Failed to foreground app; open returned 1`，随后 CUA 成功取得窗口并实际点击刷新按钮。 |
+| 原生观察 | 暗色 idle 样本及刷新点击中样本均可见；点阵在刷新动作中保持分离，按钮外壳光弧与内部字形同帧变化。CUA 截图在任务界面即时查看，但未导出到仓库；UI-6 仍需保存正式页面的深浅原生截图和最终质感对照。 |
+| 共享时钟 | 每个页面/路由一个 `GlassMotionScope` + 单个 monotonic `Stopwatch`/`Ticker`；每个按钮使用唯一稳定 phase seed，不建立独立 ticker。idle 对 painter 的广播合并至约 30 Hz；操作、morph、hover/focus 到显示节奏。`frameTime` 冻结在共享帧边界，使 surface energy 与 glyph sample 读取同一时刻。 |
+| 动作与中断 | 12 个动作族使用 UI-3 表列时长、`sin²(πt)` 脉冲和 smootherstep；字形、颗粒亮度和边缘光弧从同一脉冲采样。连续点击保留首个姿态旅程并叠加能量；播放/暂停 morph 用当前点位/alpha 重配最近邻颗粒，新增/离开颗粒淡入/淡出。hover/focus 320 ms、能量不超过 0.15；按下拖出仍取消业务调用。 |
+| 可见性与减少动态效果 | Flutter `TickerMode`、`AppLifecycleListener`、scroll/metrics/size notifications + viewport 相交检测。路由或窗口暂离时不继续采样；完全离屏按钮从共享 client set 移除；恢复时按单调时钟求当前帧。`MediaQuery.disableAnimations` 会注销装饰时钟，点击/语义仍可用。 |
+| 组件性能 | 每按钮 `RepaintBoundary` 隔离；文字标签另有 repaint boundary。动态 glyph 将同 alpha 档颗粒合并为有限数量的核心与 halo `Path`，没有为每颗粒各自绘制模糊层，也无 shader、image handle 或纹理。实际 Profile frame timing 将在 UI-6 单独采集，当前未据此声称满足帧预算。 |
+| 测试 | `flutter analyze --no-pub`：无问题。定向命令覆盖 `glass_motion_test.dart`、原 UI-2 button/glyph/tokens 测试、主题实时/光学/校准/模拟，以及既有 Android theme tests：57 项全部通过。用例包括 12 动作 0/0.25/0.5/0.75/1、点击前后同时间戳连续、100 ms×10 连点和 10 次真实回调、100/200/350 ms 反向 morph、hover/drag cancel、TickerMode/后台恢复、离屏注销、reduced-motion 开关及 30/60/120 Hz/不规则时钟序列。 |
+| 主题逻辑冻结 | 本阶段没有改 `theme_switch_simulation.dart`、`theme_switch_calibration.dart`、`theme_switch_fitted_calibration.dart`、`appearance_selector.dart` 或太阳/月亮控件。现有主题实时、光学、模拟、Android 主题回归均纳入定向验证。 |
+| 范围与限制 | 点阵按钮生产页面仍未接入；UI-4 开始后对每种真实业务操作逐页替换和验收。本阶段 profile preview 只检视暗色，且没有导出 PNG、物理 DPR 1 或真实 VoiceOver 观察。UI-6 仍需在完整页面、浅深主题及目标机器上采集图像与帧计时。 |
+
 ## 后续阶段
 
-UI-3～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。
+UI-0～UI-3 已分别实施、验收并独立提交推送；UI-4～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。

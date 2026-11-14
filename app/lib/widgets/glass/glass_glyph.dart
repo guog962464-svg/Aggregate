@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'glass_design_tokens.dart';
+import 'glass_motion.dart';
 
 /// The shared, rounded dot-matrix vocabulary used by macOS glass actions.
 ///
@@ -149,11 +150,13 @@ class GlassGlyphMark extends StatelessWidget {
     required this.glyph,
     required this.size,
     this.color,
+    this.motionController,
   });
 
   final GlassGlyph glyph;
   final double size;
   final Color? color;
+  final GlassMotionController? motionController;
 
   @override
   Widget build(BuildContext context) {
@@ -163,17 +166,29 @@ class GlassGlyphMark extends StatelessWidget {
     return ExcludeSemantics(
       child: CustomPaint(
         size: Size.square(size),
-        painter: _GlassGlyphPainter(glyph: glyph, color: color ?? tokens.ink),
+        painter: _GlassGlyphPainter(
+          glyph: glyph,
+          color: color ?? tokens.ink,
+          tokens: tokens,
+          motionController: motionController,
+        ),
       ),
     );
   }
 }
 
 class _GlassGlyphPainter extends CustomPainter {
-  const _GlassGlyphPainter({required this.glyph, required this.color});
+  _GlassGlyphPainter({
+    required this.glyph,
+    required this.color,
+    required this.tokens,
+    required this.motionController,
+  }) : super(repaint: motionController);
 
   final GlassGlyph glyph;
   final Color color;
+  final GlassDesignTokens tokens;
+  final GlassMotionController? motionController;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -186,6 +201,76 @@ class _GlassGlyphPainter extends CustomPainter {
     canvas.save();
     canvas.translate(inset.dx, inset.dy);
     canvas.scale(scale);
+    final motion = motionController;
+    if (motion != null) {
+      final sample = motion.sample;
+      final haloPaths = List<Path>.generate(4, (_) => Path());
+      final corePaths = List<Path>.generate(8, (_) => Path());
+      final haloCounts = List<int>.filled(haloPaths.length, 0);
+      final coreCounts = List<int>.filled(corePaths.length, 0);
+      for (final dot in sample.dots) {
+        if (dot.opacity <= 0) continue;
+        final cellRect = Rect.fromCenter(
+          center: dot.position,
+          width: GlassDesignTokens.glyphCellSize,
+          height: GlassDesignTokens.glyphCellSize,
+        );
+        final core = RRect.fromRectAndRadius(
+          cellRect,
+          const Radius.circular(GlassDesignTokens.glyphCornerRadius),
+        );
+        final haloRect = cellRect.inflate(
+          GlassDesignTokens.glyphFeather + GlassDesignTokens.glyphOuterHalo,
+        );
+        final haloBand = (dot.opacity * (haloPaths.length - 1)).round().clamp(
+          0,
+          haloPaths.length - 1,
+        );
+        haloPaths[haloBand].addRRect(
+          RRect.fromRectAndRadius(
+            haloRect,
+            const Radius.circular(GlassDesignTokens.glyphCornerRadius),
+          ),
+        );
+        haloCounts[haloBand]++;
+        final coreBand = (dot.opacity * (corePaths.length - 1)).round().clamp(
+          0,
+          corePaths.length - 1,
+        );
+        corePaths[coreBand].addRRect(core);
+        coreCounts[coreBand]++;
+      }
+      for (var band = 0; band < haloPaths.length; band++) {
+        if (haloCounts[band] == 0) continue;
+        canvas.drawPath(
+          haloPaths[band],
+          Paint()
+            ..color = color.withValues(
+              alpha:
+                  GlassDesignTokens.glyphHaloAlpha *
+                  ((band + 1) / haloPaths.length) *
+                  (1 + sample.energy * .22),
+            )
+            ..maskFilter = const MaskFilter.blur(
+              BlurStyle.normal,
+              GlassDesignTokens.glyphFeather,
+            ),
+        );
+      }
+      for (var band = 0; band < corePaths.length; band++) {
+        if (coreCounts[band] == 0) continue;
+        canvas.drawPath(
+          corePaths[band],
+          Paint()
+            ..color = color.withValues(
+              alpha: .96 * (band + 1) / corePaths.length,
+            ),
+        );
+      }
+      canvas.restore();
+      return;
+    }
+
     final geometry = _GlyphGeometryCache.get(glyph);
     canvas.drawPath(
       geometry.halo,
@@ -205,7 +290,10 @@ class _GlassGlyphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GlassGlyphPainter oldDelegate) =>
-      glyph != oldDelegate.glyph || color != oldDelegate.color;
+      glyph != oldDelegate.glyph ||
+      color != oldDelegate.color ||
+      tokens != oldDelegate.tokens ||
+      motionController != oldDelegate.motionController;
 }
 
 class _GlyphGeometry {

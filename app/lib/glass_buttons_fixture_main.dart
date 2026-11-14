@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app/theme.dart';
 import 'widgets/glass/glass_buttons_fixture.dart';
+import 'widgets/glass/glass_motion.dart';
 import 'widgets/glass/glass_scene.dart';
 
 void main() => runApp(const GlassButtonsFixtureApp());
@@ -31,9 +32,11 @@ class _GlassButtonsFixtureAppState extends State<GlassButtonsFixtureApp> {
       themeMode: _light ? ThemeMode.light : ThemeMode.dark,
       builder: (context, child) =>
           GlassScene(child: child ?? const SizedBox.shrink()),
-      home: GlassButtonsFixturePage(
-        light: _light,
-        onLightChanged: (value) => setState(() => _light = value),
+      home: GlassMotionScope(
+        child: GlassButtonsFixturePage(
+          light: _light,
+          onLightChanged: (value) => setState(() => _light = value),
+        ),
       ),
     );
   }
