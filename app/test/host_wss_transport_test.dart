@@ -286,6 +286,25 @@ void main() {
         isFalse,
       );
       await reconnectedIterator.cancel();
+
+      final revokedSocket = await connect(invitation.endpoints.single.uri);
+      final revokedIterator = StreamIterator<Object?>(revokedSocket);
+      revokedSocket.add(
+        HostRpcCodec.encodeFrame({
+          'jsonrpc': '2.0',
+          'id': 'auth-begin-revoked',
+          'method': 'host.auth.begin',
+          'params': {'deviceId': deviceId},
+        }),
+      );
+      final revoked = await _readResponse(revokedIterator);
+      expect(revoked['id'], 'auth-begin-revoked');
+      expect(
+        (revoked['error']! as Map<String, Object?>)['code'],
+        HostRpcErrorCode.unauthorized.value,
+      );
+      await revokedSocket.close();
+      await revokedIterator.cancel();
     },
   );
 }

@@ -545,9 +545,11 @@ final class HostWssTransport
 
   Future<void> _serveSocket(_HostWssConnection context) async {
     final iterator = StreamIterator<Object?>(context.socket);
+    String? activeRequestId;
     try {
       if (!await iterator.moveNext().timeout(handshakeTimeout)) return;
       final first = _decodeRpcRequest(iterator.current);
+      activeRequestId = first.id;
       if (first.method == 'host.pair.request') {
         await _pairDevice(context.socket, first);
         return;
@@ -589,6 +591,7 @@ final class HostWssTransport
         return;
       }
       final proof = _decodeRpcRequest(iterator.current);
+      activeRequestId = proof.id;
       if (proof.method != 'host.auth.prove' ||
           proof.params['connectionId'] != challenge.connectionId) {
         _sendError(context.socket, proof.id, HostRpcErrorCode.unauthorized);
@@ -632,7 +635,11 @@ final class HostWssTransport
         );
       } catch (_) {}
     } on HostPairingException catch (error) {
-      _sendError(context.socket, null, _rpcErrorForPairing(error.error));
+      _sendError(
+        context.socket,
+        activeRequestId,
+        _rpcErrorForPairing(error.error),
+      );
       try {
         await context.socket.close(
           WebSocketStatus.policyViolation,
