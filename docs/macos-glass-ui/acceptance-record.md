@@ -78,4 +78,26 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 
 ## 后续阶段
 
-UI-2～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。
+## UI-2：统一按钮与细腻点阵
+
+| 字段 | 记录 |
+| --- | --- |
+| 项目 | UI-2.1～UI-2.6 |
+| 结果 | 通过；UI-3 可开始。UI-2 样本通过不代表产品页面接入、连续动效或最终视觉签收完成。 |
+| 基线 | UI-1 已提交 `40e44f29f1aae0710d09c44f49e44bdcd4b9631b`；UI-2 开始前当前分支 HEAD 为 `3767d44`。本阶段以独立中文提交交付，具体 SHA 可在 Git 历史中定位。 |
+| 设计版本 | revision 5；设计 HTML SHA-256 `3e3b7cae0abb58ed6519c2f687cd619a4e2201c613ee5153bc18ba4be0305fd7`。静态对照来自 `macos-glass-design/refined-cells-dark.png` 与 `refined-cells-light.png`，每个参考按钮为 96 dp。 |
+| 环境 | MacBook Pro，Apple M5 Pro，24 GB；macOS 27.2；Flutter 3.47.8 stable、Dart 3.13.7；Xcode 27.2；Liquid Retina XDR，1512×982 逻辑点、60 Hz、DPR 2。 |
+| 原生运行 | `cd app && flutter run -d macos --profile --no-pub -t lib/glass_buttons_fixture_main.dart`。Profile/Impeller Metal，窗口 1120×860 logical px；浅深主题在同一窗口切换检查。fixture 不注册到产品导航，所有按钮操作均为空回调，顶部主题控件复用原 `GlassThemeSwitch`。 |
+| 样本 | 12 个 96 dp 参考图案、12 类实际按钮/状态（主操作、次级、图标、播控、导航、分段、危险、忙碌、禁用等），以及 57 项完整点阵字典；当前 `app/lib` 中 81 个 `Icons.*` 名称均映射到 `GlassGlyphCatalog`。生产页面替换安排在 UI-4。 |
+| 原生截图 | [96 dp 深色对照](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-reference-buttons-dark-final.png>)、[浅色对照](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-reference-buttons-light-final.png>)；[深色按钮状态](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-actions-dark-full.png>)、[浅色按钮状态](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-actions-light-full.png>)、[浅色完整图案字典](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-glyph-gallery-light-final.png>)、[深色焦点态](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-button-focused-dark-final.png>)、[深色悬停态](</Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage2-button-hover-dark-final.png>)。所有原生 PNG 为 Retina DPR 2。 |
+| 视觉对照 | 同主题、静止相位、96 dp 控件并列检查。网格为 9×9、设计画布32×32、origin4、pitch2.7、core1.9、圆角0.64；小图案核心和间隔清楚。Flutter 样本有渐变玻璃底、内倒角、接触边、共享圆角点阵及状态光弧。相对 revision 5，Flutter 外部环境光晕更克制，且没有背景折射、RGB 色散和设计稿的强外扩暖/蓝辉；这些是逐项记录的跨实现差异，最终质感由 UI-6 结合正式页面复核。 |
+| 1×/2× | `glass_glyph_golden_test.dart` 在 DPR 1 和 DPR 2、浅/深外观下绘制全部 57 个图案并对照逻辑尺寸 golden；4 项通过，基线见 `app/test/goldens/glass_glyph_light.png`、`glass_glyph_dark.png`。真实 macOS Profile 显示器为 DPR 2；未连接原生 DPR 1 显示器，因此没有把 Widget golden 描述为物理 1× 屏验收。 |
+| 语义与行为 | 新按钮基于 Flutter `TextButton`，保持名称、焦点、选中/启用语义和目标尺寸；Enter 与鼠标各触发一次回调，忙碌/禁用不提供 tap action。无障碍树确认焦点状态；原生深色焦点/悬停截图检查专用内外环。 |
+| 缓存与平台 | 点阵几何仅按有限 `GlassGlyph` 枚举惰性缓存为 `Path`，无 shader、纹理或 image handle。组件只依赖 Flutter/Dart；新视觉只在 macOS fixture 预览，生产页面留给 UI-4。原太阳/月亮切换、偏好与系统映射未改。 |
+| 逻辑冻结 | `theme_switch_simulation.dart` SHA-256 `2bfa354d3b5511247d213284e36de18b418a7f332545c57f5d3e2625a8906a03`；`theme_switch_calibration.dart` `c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`；`theme_switch_fitted_calibration.dart` `11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`；`appearance_selector.dart` `83ff338b760c6635eae4ff693acebb92d077baa2f2a939c03fbc4452a5b1ab9f`，均与 UI-0 一致。 |
+| 依赖与用户改动 | 未运行 `pub get`；`pubspec.lock` 仍保留用户原有修改，SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`，未暂存。 |
+| 验证 | `flutter analyze --no-pub`：无问题。`flutter test --no-pub test/glass_action_button_test.dart test/glass_glyph_golden_test.dart test/glass_design_tokens_test.dart test/glass_theme_switch_test.dart test/theme_switch_realtime_test.dart test/theme_switch_optics_test.dart test/theme_switch_calibration_test.dart test/theme_switch_simulation_test.dart test/glass_theme_switch_android_test.dart test/android_theme_transition_test.dart`：47 项通过。覆盖 glyph catalog、1×/2×浅深 golden、名称/键盘/鼠标/忙碌禁用/尺寸语义及主题光学与实时回归。 |
+
+## 后续阶段
+
+UI-3～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。
