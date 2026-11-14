@@ -130,9 +130,10 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **WebAssembly polyfill 与许可：**Android 运行时在 `globalThis.WebAssembly` 已存在时直接返回，因此候选的 Android full flavor 不加载 polywasm；该 polyfill 为 iOS jitless 运行时的后备实现。polywasm 0.2.0 的 MIT 声明存在于 `deps/polywasm/LICENSE.md`，README 记录 tarball 与源文件摘要，Node 根 `LICENSE` 也列明该组件。该单项有明确来源记录，但不关闭其余依赖/NDK 组件许可闭包。
 - **测试排除规模：**fork 的 Android `parallel.status` 与 `sequential.status` 新增 590 条 `SKIP` 模式规则（这是模式数，不是被跳过的测试总量），涵盖广泛的 child-process、CLI、cluster、debugger、REPL、process 等测试；四个分片命令还显式使用 `--flaky-tests=skip`。因此 3,790 项通过只代表该 fork 配置并可在移动设备运行的子集。除 `parallel` / `sequential` 外的 Node 测试目录、flaky 项和被这些模式排除的行为仍需单独覆盖或保持明确不支持。
 - **其余检查边界：**本轮还检查了 Android 构建目标、JNI/mobile 宏、libuv、V8、OpenSSL/CAres/zlib GYP 变更，以及 test harness 如何将 `--arch android` 映射到 Android status。它们没有替代完整的逐补丁审阅、各 flavor/ABI 构建和实机回归；尤其是可选 ICU lite profile 不是本次 full flavor 候选的验收对象。
+- **16 KB ELF 构建复现缺口：**fogtape `docs/BUILDING.md` 指定 NDK r27d，并将 `tools/android_build.sh` 作为标准构建入口；该脚本及 Android `common.gypi` 没有配置 `-Wl,-z,max-page-size=16384` 和 `-Wl,-z,common-page-size=16384`。移动 smoke/addon 构建脚本只显式加了 `max-page-size`。Android 官方指南说明 NDK r27 及更早版本需要这两项链接参数，r28 起才默认 16 KB ELF 对齐（[官方 16 KB 页面指南](https://developer.android.com/guide/practices/page-sizes)）。本地临时候选库和 addon 的 LOAD 段虽通过静态 `p_align=0x4000` 检查，但现有标准 recipe 没有把构建命令和该结果绑定，不能由此证明按文档脚本可复建 16 KB 对齐的 `libnode.so`；必须在维护方 recipe 中固定 NDK r28+，或将两项参数纳入真实的 `libnode.so` 链接配置并重建复核。此项是构建链缺口，不等同于已观测到候选二进制失配。
 - **NDK 组件许可映射：**候选构建树中的 `ndk_cpufeatures` 从 NDK r27d 的 `sources/android/cpufeatures/cpu-features.c` 生成静态对象，并被 V8 `v8_zlib` 依赖；对象和最终 `libnode.so` 都定义 `android_getCpuFeatures`。NDK r27d 根 `NOTICE` 含该源的 BSD 许可文本；`toolchains/llvm/prebuilt/linux-x86_64/NOTICE` 则列明 libc++ 与 libc++abi 许可。原临时 NodeProbe APK/AAB 只带后者，后续重打包已增加根 NOTICE 并通过 APK/AAB 静态检查，详见上一节。
 
-**结论：**静态补核发现需先修正/解释的移动版本标识漂移，并保留环境变量来源、全局 trap-handler 取舍、广泛测试排除、许可闭包、未审阅变体和 16 KB 真机作为未关闭项。Node/npm/CLI 产品入口继续关闭；A3.6 不通过本次补核关闭。
+**结论：**静态补核发现需先修正/解释的移动版本标识漂移，并保留环境变量来源、全局 trap-handler 取舍、广泛测试排除、许可闭包、未审阅变体、可复建 16 KB 链接配置和 16 KB 真机作为未关闭项。Node/npm/CLI 产品入口继续关闭；A3.6 不通过本次补核关闭。
 
 ## 2026-11-14 4 KB N-API addon 与 message 类补验
 
