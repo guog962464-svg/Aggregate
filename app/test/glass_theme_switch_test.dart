@@ -42,6 +42,96 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('450 ms live drag commits only after pointer release', (
+    tester,
+  ) async {
+    final changes = <bool>[];
+    await tester.pumpWidget(_host(changes: changes));
+    final artwork = find.byType(ThemeSwitchArtwork);
+    final size = tester.getSize(artwork);
+    final view = tester.widget<ThemeSwitchArtwork>(artwork);
+    final scale = ThemeSwitchArtwork.sceneScale(size, view.scene);
+    final start =
+        tester.getTopLeft(artwork) +
+        ThemeSwitchArtwork.sceneOrigin(size, view.scene) +
+        Offset(view.frame.knobX * scale, 0);
+    final destination = start.translate(
+      ThemeSwitchCalibration.reference.motion.knobTravel * scale,
+      0,
+    );
+    final pointer = await tester.startGesture(start);
+
+    for (var step = 1; step <= 9; step++) {
+      final elapsed = Duration(milliseconds: step * 50);
+      await pointer.moveTo(
+        Offset.lerp(start, destination, step / 9)!,
+        timeStamp: elapsed,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      if (step == 5) {
+        expect(
+          tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+          closeTo(0.5, 0.1),
+        );
+        expect(changes, isEmpty);
+      }
+    }
+
+    expect(changes, isEmpty);
+    await pointer.up(timeStamp: const Duration(milliseconds: 450));
+    expect(changes, [true]);
+    for (var i = 0; i < 90; i++) {
+      await tester.pump(const Duration(microseconds: 16667));
+    }
+    expect(
+      tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+      closeTo(1, 0.005),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'pointer cancellation during a timed drag restores the endpoint',
+    (tester) async {
+      final changes = <bool>[];
+      await tester.pumpWidget(_host(changes: changes));
+      final artwork = find.byType(ThemeSwitchArtwork);
+      final size = tester.getSize(artwork);
+      final view = tester.widget<ThemeSwitchArtwork>(artwork);
+      final scale = ThemeSwitchArtwork.sceneScale(size, view.scene);
+      final start =
+          tester.getTopLeft(artwork) +
+          ThemeSwitchArtwork.sceneOrigin(size, view.scene) +
+          Offset(view.frame.knobX * scale, 0);
+      final halfway = start.translate(
+        ThemeSwitchCalibration.reference.motion.knobTravel * scale / 2,
+        0,
+      );
+      final pointer = await tester.startGesture(start);
+      await pointer.moveTo(
+        halfway,
+        timeStamp: const Duration(milliseconds: 225),
+      );
+      await tester.pump(const Duration(milliseconds: 225));
+      expect(
+        tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+        closeTo(0.5, 0.1),
+      );
+      expect(changes, isEmpty);
+
+      await pointer.cancel();
+      for (var i = 0; i < 90; i++) {
+        await tester.pump(const Duration(microseconds: 16667));
+      }
+      expect(changes, isEmpty);
+      expect(
+        tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+        closeTo(0, 0.005),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'capturing an overshooting handle does not apply resistance twice',
     (tester) async {
