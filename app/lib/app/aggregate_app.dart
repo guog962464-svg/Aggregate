@@ -81,7 +81,11 @@ class _AggregateAppState extends State<AggregateApp> {
   };
 
   Duration _themeAnimationDuration(BuildContext context) =>
-      MediaQuery.disableAnimationsOf(context)
+      // The switch has its own continuous animation. Interpolating ThemeData
+      // for the whole Android page on each vsync exceeds the high-refresh frame
+      // budget; apply the selected page theme once while the switch keeps moving.
+      MediaQuery.disableAnimationsOf(context) ||
+          defaultTargetPlatform == TargetPlatform.android
       ? Duration.zero
       : const Duration(milliseconds: 560);
 

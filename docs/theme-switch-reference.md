@@ -66,7 +66,35 @@ Android 新增 9 项回归，覆盖滑块/轨道纵滚、横拖反向、多指�
 
 内部真机构建使用 `flutter build apk --debug --target-platform android-arm64 --no-pub --build-number=13`；构建号覆盖只用于本地 Debug APK，以便保留数据升级设备原有 versionCode 12。没有修改发布版本或签名配置，也没有运行可能卸载主包的 integration_test 安装流程。
 
-LGE AN10 / Android 15 API 35 / arm64 / 4 KB 真机已通过 `adb install -r` 从 versionCode 12 升级至 13，firstInstallTime 保持不变。已打开实际设置页并看到玻璃、月亮点阵及蓝色光弧；未用图标 fallback。手机随后处于 Mac Host 邀请内容输入中，触控验收暂停，避免干扰配对操作。当前不宣称已完成本轮手工拖动/滚动或具体 GPU 后端、帧率的真机验收。Android 与 macOS Debug 构建均通过。
+LGE AN10 / Android 15 API 35 / arm64 / 4 KB 真机已通过 `adb install -r` 从 versionCode 12 升级至 13，firstInstallTime 保持不变。已打开实际设置页并看到玻璃、月亮点阵及蓝色光弧。用户随后批准继续操作手机，已完成向右/向左拖动、从滑块区域纵向滚动后再次点击，以及深浅色端点的真机检查；配对输入哈希保持一致，跟随系统设置已恢复。具体 GPU 后端未断言。最初 Debug 包的流畅度随后由下节真机性能回归复核，当前手机使用 versionCode 15 的 Profile 性能构建。
+
+## Android 卡顿定位与性能验收
+
+用户报告明显卡顿后，以 LGE AN10 的 120 Hz 刷新预算（约 8.333 ms）建立真实 `Flutter.Frame` 反馈闭环。每轮 10 s，执行 6 次 450 ms 横拖，每次间隔 650 ms；分开读取 UI build、raster 与流水线 totalSpan，不用 totalSpan 超过单线程预算来判定卡顿。只订阅 SDK 已有 Extension 事件，没有打开额外 profiling flags 或插入产品日志。最初 Debug 复测中高 build 开销反复呈现六个约 560 ms 的簇；raster P95 约 3 ms。
+
+| 构建/变量 | UI build P95 | raster P95 | build 或 raster 超预算 | UI 提交 FPS 估计 |
+| --- | --- | --- | --- | --- |
+| Debug，原 560 ms 全页换肤 | 41.834 ms | 2.991 ms | 18.27% | 70.84 |
+| Debug，仅临时去掉全页插值 | 12.592 ms | 3.142 ms | 12.00% | 91.81 |
+| Profile AOT，保留原全页插值 | 14.835 ms | 2.580 ms | 15.39% | 98.39 |
+| Profile AOT，Android 页面主题一次应用 | 5.307 ms | 2.790 ms | 0.34% | 117.36 |
+| 同配置重复验收 | 5.232 ms | 2.606 ms | 0.34% | 117.04 |
+| 仓库工具复跑 | 4.926 ms | 2.553 ms | 本轮 0% | 117.31 |
+
+最终只调整 `AggregateApp` 的 Android 全页主题应用：提交后直接使用目标 ThemeData，玻璃控件继续自己的连续模拟与光学动画。macOS 的 560 ms 过渡保持原行为。粒子系数、纹理分辨率、光带与弹簧参数保持原实现。构建号 15 的内部 APK 为 Profile AOT，包内存在 `libapp.so`、没有 Debug kernel blob；使用既有 Debug 证书升级安装，未清除数据。Debug 不是流畅度验收基线，详见 [Flutter 构建模式](https://docs.flutter.dev/testing/build-modes)与[真机性能分析](https://docs.flutter.dev/perf/ui-performance)。文档原则与本机 Flutter 3.47.8 源码/实际构建分别核对。
+
+新增真实 App 层语义回归：Android 页面颜色在一次主题提交后到达端点，而滑块位置与光带在 33–100 ms 继续变化；macOS 页面在 100 ms 仍处于颜色过渡、600 ms 到达目标。相关测试共 50 项、静态分析、Android Profile 和 macOS Debug 构建通过。
+
+在 `app/` 上一级执行性能回归（先通过已有开发连接将 VM service URI 私下保存到文件；不要写入仓库或日志），并保持控件完整可见和屏幕方向不变：
+
+```sh
+python3 app/tool/profile_theme_switch.py \
+  --device SERIAL --uri-file /private/path/vm-uri.txt \
+  --output /tmp/theme-switch-frames.json \
+  --budget-ms 8.333333 --seconds 10 --repeats 3
+```
+
+工具使用相邻 Node 24+ sampler，只输出数值帧时和工作负载；UI XML 读入内存后立即删除，结束恢复原始外观偏好。超预算率不高于 5% 返回 0，高于 5% 返回 1，无数据或操作失败返回 2。默认预算 16.667 ms；120 Hz 验收需显式使用 8.333333 ms。数值是 Flutter 提交帧、不是 SurfaceFlinger 实际显示帧率；结果仅覆盖本机/上述工作负载，不能外推其他 GPU、16 KB 系统或无限时运行。仍有少量长帧，未宣称完全零抖动。
 
 ## 独立期望值
 
