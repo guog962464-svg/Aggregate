@@ -2,11 +2,11 @@
 """Generate an explicitly incomplete CycloneDX inventory from a NodeProbe APK/AAB.
 
 The archive is the source of truth for packaged native libraries, npm package
-metadata, and embedded license/notice files. Declared npm dependencies and
-peer dependencies are resolved against the packaged tree. This does not verify
-npm version ranges, and does not infer the full static link graph inside
-libnode.so or the Android Gradle dependency graph; the output marks its
-composition incomplete for those reasons.
+metadata, and embedded license/notice files. Packaged ELF dynamic requirements
+and declared npm dependencies/peer dependencies are recorded. This does not
+verify npm version ranges or infer the full static link graph inside libnode.so
+or the Android Gradle dependency graph; the output marks its composition
+incomplete for those reasons.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import struct
 import uuid
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -32,6 +33,91 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def elf_needed_libraries(data: bytes) -> list[str]:
+    if len(data) < 16 or data[:4] != b"\x7fELF":
+        raise ValueError("packaged shared library is not an ELF file")
+    elf_class = data[4]
+    byte_order = data[5]
+    if byte_order not in (1, 2):
+        raise ValueError(f"unsupported ELF byte order: {byte_order}")
+    endian = "<" if byte_order == 1 else ">"
+    if elf_class == 2:
+        if len(data) < 64:
+            raise ValueError("truncated ELF64 header")
+        phoff = struct.unpack_from(endian + "Q", data, 32)[0]
+        phentsize, phnum = struct.unpack_from(endian + "HH", data, 54)
+        ph_format = endian + "IIQQQQQQ"
+        dynamic_format = endian + "qQ"
+        minimum_phentsize = struct.calcsize(ph_format)
+    elif elf_class == 1:
+        if len(data) < 52:
+            raise ValueError("truncated ELF32 header")
+        phoff = struct.unpack_from(endian + "I", data, 28)[0]
+        phentsize, phnum = struct.unpack_from(endian + "HH", data, 42)
+        ph_format = endian + "IIIIIIII"
+        dynamic_format = endian + "iI"
+        minimum_phentsize = struct.calcsize(ph_format)
+    else:
+        raise ValueError(f"unsupported ELF class: {elf_class}")
+    if phentsize < minimum_phentsize or phoff + phentsize * phnum > len(data):
+        raise ValueError("invalid ELF program header table")
+
+    load_segments: list[tuple[int, int, int]] = []
+    dynamic_segment: tuple[int, int] | None = None
+    for index in range(phnum):
+        entry = struct.unpack_from(ph_format, data, phoff + index * phentsize)
+        if elf_class == 2:
+            segment_type, _, offset, virtual_address, _, file_size, _, _ = entry
+        else:
+            segment_type, offset, virtual_address, _, file_size, _, _, _ = entry
+        if segment_type == 1:
+            load_segments.append((virtual_address, offset, file_size))
+        elif segment_type == 2:
+            dynamic_segment = (offset, file_size)
+    if dynamic_segment is None:
+        return []
+
+    dynamic_offset, dynamic_size = dynamic_segment
+    dynamic_entry_size = struct.calcsize(dynamic_format)
+    if dynamic_offset + dynamic_size > len(data) or dynamic_size % dynamic_entry_size:
+        raise ValueError("invalid ELF dynamic segment")
+    needed_offsets: list[int] = []
+    string_table_address: int | None = None
+    string_table_size: int | None = None
+    for offset in range(dynamic_offset, dynamic_offset + dynamic_size, dynamic_entry_size):
+        tag, value = struct.unpack_from(dynamic_format, data, offset)
+        if tag == 0:
+            break
+        if tag == 1:
+            needed_offsets.append(value)
+        elif tag == 5:
+            string_table_address = value
+        elif tag == 10:
+            string_table_size = value
+    if not needed_offsets:
+        return []
+    if string_table_address is None or string_table_size is None:
+        raise ValueError("ELF DT_NEEDED entries have no complete string table metadata")
+
+    string_table_offset: int | None = None
+    for virtual_address, file_offset, file_size in load_segments:
+        if virtual_address <= string_table_address < virtual_address + file_size:
+            string_table_offset = file_offset + string_table_address - virtual_address
+            break
+    if string_table_offset is None or string_table_offset + string_table_size > len(data):
+        raise ValueError("ELF dynamic string table is outside file-backed PT_LOAD data")
+    string_table = data[string_table_offset : string_table_offset + string_table_size]
+    needed: list[str] = []
+    for name_offset in needed_offsets:
+        if name_offset >= len(string_table):
+            raise ValueError("ELF DT_NEEDED name offset exceeds its string table")
+        terminator = string_table.find(b"\0", name_offset)
+        if terminator < 0:
+            raise ValueError("unterminated ELF DT_NEEDED library name")
+        needed.append(string_table[name_offset:terminator].decode("utf-8"))
+    return needed
 
 
 def ref_for_path(path: str) -> str:
@@ -171,6 +257,8 @@ def main() -> int:
     components: list[dict[str, object]] = []
     package_components: dict[str, dict[str, object]] = {}
     package_metadata: dict[str, dict[str, object]] = {}
+    native_library_refs: dict[str, str] = {}
+    native_needed_libraries: dict[str, list[str]] = {}
     npm_root: str | None = None
     with zipfile.ZipFile(args.archive) as archive:
         names = archive.namelist()
@@ -187,12 +275,22 @@ def main() -> int:
 
             if path.endswith(".so") and path.startswith(lib_prefixes):
                 name = basename
+                needed_libraries = elf_needed_libraries(data)
+                native_ref = ref_for_path(path)
+                native_library_refs[path] = native_ref
+                native_needed_libraries[path] = needed_libraries
                 component: dict[str, object] = {
                     "type": "library",
-                    "bom-ref": ref_for_path(path),
+                    "bom-ref": native_ref,
                     "name": name,
                     "hashes": [{"alg": "SHA-256", "content": sha256(data)}],
-                    "properties": [property_item("aggregate:archive-path", path)],
+                    "properties": [
+                        property_item("aggregate:archive-path", path),
+                        *[
+                            property_item("aggregate:needed-library", needed)
+                            for needed in needed_libraries
+                        ],
+                    ],
                 }
                 if name == "libnode.so":
                     component["name"] = "Node.js mobile runtime"
@@ -288,6 +386,27 @@ def main() -> int:
                 }
             )
 
+    native_dependencies: list[dict[str, object]] = []
+    native_packaged_edges = 0
+    native_unbundled_edges: list[tuple[str, str]] = []
+    for path, needed_libraries in sorted(native_needed_libraries.items()):
+        abi_directory = path.rsplit("/", 1)[0]
+        targets: set[str] = set()
+        for needed in needed_libraries:
+            target_path = f"{abi_directory}/{needed}"
+            target_ref = native_library_refs.get(target_path)
+            if target_ref is None:
+                native_unbundled_edges.append((path, needed))
+                continue
+            targets.add(target_ref)
+            native_packaged_edges += 1
+        native_dependencies.append(
+            {
+                "ref": native_library_refs[path],
+                "dependsOn": sorted(targets),
+            }
+        )
+
     # The exact archive digest gives every archive-level component a stable anchor.
     artifact_ref = f"urn:aggregate:nodeprobe-{artifact_kind}:{archive_hash}"
     metadata_properties = [
@@ -305,9 +424,15 @@ def main() -> int:
             "aggregate:npm-optional-peer-dependencies-not-packaged",
             len(optional_peer_dependencies_not_packaged),
         ),
+        property_item("aggregate:native-packaged-dynamic-edges", native_packaged_edges),
+        property_item("aggregate:native-unbundled-dynamic-edges", len(native_unbundled_edges)),
+        property_item(
+            "aggregate:native-unbundled-needed-libraries",
+            json.dumps(sorted({name for _, name in native_unbundled_edges})),
+        ),
         property_item(
             "aggregate:scope-limit",
-            "static libnode and Android Gradle dependency graphs are incomplete; npm version-range satisfaction is not verified by this generator",
+            "static libnode and Android Gradle dependency graphs are incomplete; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator",
         ),
     ]
     bom = {
@@ -328,8 +453,9 @@ def main() -> int:
         "components": sorted(components, key=lambda item: (str(item.get("name", "")), str(item.get("bom-ref", "")))),
         "compositions": [{"aggregate": "incomplete"}],
     }
-    if npm_dependencies:
-        bom["dependencies"] = npm_dependencies
+    dependencies = npm_dependencies + native_dependencies
+    if dependencies:
+        bom["dependencies"] = sorted(dependencies, key=lambda item: str(item.get("ref", "")))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(bom, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {len(components)} components for {args.archive} ({archive_hash})")
@@ -337,6 +463,10 @@ def main() -> int:
         f"Resolved {resolved_npm_edges} npm dependency edges; "
         f"{len(unresolved_npm_edges)} required declared edges were unresolved; "
         f"{len(optional_peer_dependencies_not_packaged)} optional peer dependencies are not packaged"
+    )
+    print(
+        f"Recorded {native_packaged_edges} packaged native dynamic edges; "
+        f"{len(native_unbundled_edges)} Android/platform dynamic requirements are unbundled"
     )
     print(
         "Composition: incomplete (static libnode and Android Gradle dependency "
