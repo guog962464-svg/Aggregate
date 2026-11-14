@@ -2,7 +2,7 @@
 
 > 日期：2026-11-14 · 设计基线：revision 5
 >
-> 状态：UI-0～UI-4 已完成并分别提交；UI-5 功能与无障碍回归、UI-6 原生性能与最终验收继续按阶段实施、验收、分别提交并推送。
+> 状态：UI-0～UI-4 已完成并分别提交；UI-5 的自动化、两种 DPR 布局矩阵与原生 AX 抽查通过。实际玻璃合成对比度和 VoiceOver 语音走查仍有未验收项，详见记录。UI-6 按阶段继续验收、提交并推送。
 >
 > 平台：只在 macOS 启用新设计；共用 Flutter/Dart 组件保持平台无关。
 
@@ -30,7 +30,7 @@
 | UI-2 | [统一按钮与细腻点阵](stage-2-buttons-and-glyphs.md) | Flutter 公共按钮、点阵工厂、12 类静态样本 | 同风格、清晰柔润、语义和点击范围完整 | 已完成 |
 | UI-3 | [静置与点击协调](stage-3-coordinated-motion.md) | 共享时钟、动作令牌、连续操作与可见性管理 | 无跳变/吞操作，减少动态效果可用 | 已完成 |
 | UI-4 | [页面与位置关系适配](stage-4-page-adaptation.md) | 外壳、MCP/CLI、音乐、管理与设置逐页接入 | 操作归属明确，真实业务路径保持 | 已完成 |
-| UI-5 | [功能与无障碍回归](stage-5-functional-acceptance.md) | 自动化、尺寸/主题矩阵、键盘/VoiceOver 记录 | 功能、语义、焦点与原主题回归通过 | 待执行 |
+| UI-5 | [功能与无障碍回归](stage-5-functional-acceptance.md) | 自动化、尺寸/主题矩阵、键盘/AX 记录 | 功能、语义、焦点与原主题回归通过 | 自动化通过；原生对比度/VoiceOver 待补 |
 | UI-6 | [原生性能与最终验收](stage-6-native-performance-and-delivery.md) | Mac Profile 统计、原生对照图、验收记录 | 性能与视觉达标，证据完整 | 待执行 |
 
 ## 3. 当前资料与可信边界

@@ -4,7 +4,10 @@ import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/features/invocation/capability_run_page.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
   test('mobile themes keep body text at accessible contrast', () {
@@ -115,6 +118,59 @@ void main() {
         reason: 'error recovery must not auto-run',
       );
     },
+  );
+
+  testWidgets(
+    'Command+Enter runs only the current capability after its confirmation',
+    (tester) async {
+      final runtime = _RunRuntime();
+      addTearDown(runtime.dispose);
+      var searchCalls = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CapabilityRunPage(
+            runtime: runtime,
+            capability: _capability,
+            onSearchAll: () => searchCalls++,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Future<void> pressCommandEnter() async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+        await tester.pumpAndSettle();
+      }
+
+      final field = find.byKey(const Key('field-apiToken'));
+      await tester.enterText(field, 'test-token');
+      await pressCommandEnter();
+      expect(find.text('确认执行'), findsOneWidget);
+      expect(runtime.invocations, 0);
+      expect(searchCalls, 0);
+
+      await pressCommandEnter();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(runtime.invocations, 0);
+      expect(searchCalls, 0);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(runtime.invocations, 0);
+      expect(Focus.of(tester.element(field)).hasFocus, isTrue);
+
+      await pressCommandEnter();
+      expect(find.text('确认执行'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, '执行'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(runtime.invocations, 1);
+      expect(searchCalls, 0);
+    },
+    variant: _macOS,
   );
 
   testWidgets('unknown outcome can inspect activity without re-running', (

@@ -131,6 +131,23 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 | 主题逻辑冻结 | 本阶段没有改 `theme_switch_simulation.dart`、`theme_switch_calibration.dart`、`theme_switch_fitted_calibration.dart`、`appearance_selector.dart` 或太阳/月亮控件。现有主题实时、光学、模拟、Android 主题回归均纳入定向验证。 |
 | 范围与限制 | 点阵按钮生产页面仍未接入；UI-4 开始后对每种真实业务操作逐页替换和验收。本阶段 profile preview 只检视暗色，且没有导出 PNG、物理 DPR 1 或真实 VoiceOver 观察。UI-6 仍需在完整页面、浅深主题及目标机器上采集图像与帧计时。 |
 
+## UI-5：功能与无障碍回归
+
+| 字段 | 记录 |
+| --- | --- |
+| 项目 | UI-5.1～UI-5.8 |
+| 结果 | 自动化、键盘、语义、参数保护、reduced motion、放大文字与两种 DPR 的页面布局回归通过。UI-5.5 的实际合成像素采样及 UI-5.7 的系统 VoiceOver 语音走查未完成；不以自动化结果代替这些证据。 |
+| 环境 | MacBook Pro，Apple M5 Pro，24 GB；macOS 27.2；Flutter 3.47.8 stable、Dart 3.13.7；Xcode 27.2；内置 Liquid Retina XDR，逻辑 1512×982 点、60 Hz、DPR 2。App 自动化运行于 Flutter test；原生 AX 树抽查使用 Profile `Aggregate.app`。 |
+| 页面矩阵 | `app/tool/ui_review_test.dart` 固定 `ManualGlassMotionClock`，以 `FakeAccessibilityFeatures(disableAnimations: true)` 固定装饰相位但保留路由动画。800×600、1024×768、1440×900 × 浅/深 × DPR 1/2 × 9 个音乐/连接/设置/目录/运行预览状态；DPR 1 用 `work/ui-review/` 的 54 张金样比对，DPR 2 同样走完整路由和布局错误检查。12 项通过。图像使用测试字体，中文字符可能呈方框，仅用于结构与路由回归；不能作为中文字体验收。原生 Profile 窗口已目视确认中文可读，但 CUA 截图未导出归档。 |
+| 组件覆盖 | `glass_action_button_test.dart` 检查所有点阵在浅/深主题和 DPR 1/2 的绘制、200% 文字操作、Enter 激活、Tab/Shift-Tab 顺序和回调次数。完整 UI-2 glyph golden 仍在原阶段验证；UI-5 的整页面金样没有 DPR 2。`accessibility_test.dart` 以 token 组合覆盖浅深材质端点的文字/图形目标；不含 shader 像素读回。 |
+| 键盘与安全 | `widget_test.dart`、`capability_run_page_test.dart`、`glass_action_button_test.dart` 验证 ⌘K 搜索焦点、⌘↵打开确认但不执行背景任务、显式确认一次、Esc 取消并恢复输入焦点、Enter 激活一次及 Tab 顺序；相关断言通过。 |
+| 原生语义 | Profile 原生 AX 树确认设置主题按钮值、搜索入口、导航项、音乐控制、清空操作和 Mac Host 控件的可读名称/状态。未启用系统 VoiceOver，也未听取或记录 VoiceOver 实际朗读顺序。 |
+| 对比度边界 | 修正深色 muted token 后，`accessibility_test.dart` 的静态色值对比断言通过。没有从 Profile 或 golden 叠层抽取最亮光弧、暗角、主题过渡帧的像素；UI-5.5 仍未通过。 |
+| 测试 | `flutter analyze --no-pub`：无问题；`flutter test --no-pub test`：272 项通过；`flutter test --no-pub tool/ui_review_test.dart`：6 项通过；`dart format --output=none --set-exit-if-changed app/lib app/test packages spikes/phase0/bin`：230 文件无变化；`sh spikes/phase0/check_boundary.sh`：通过；公共包 `dart test ...`：15 项通过；`flutter build macos --debug --no-pub`：成功。 |
+| 完整脚本 | `sh tool/check.sh` 在工作树现有锁文件下退出码 65，因为 `flutter pub get --enforce-lockfile` 会改动 106 个依赖。为不改写该文件，另将已提交的 `HEAD:pubspec.lock` 临时放入验证工作树，原样运行完整脚本：退出码 0，格式、分析、公共边界、15 项公共包测试、272 项 App 测试与 macOS Debug 构建全通过；结束后逐字节恢复原锁文件。当前保留锁文件 SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`，未纳入阶段提交。 |
+| 真实服务 | 未连接真实连接、Host、账号或外部服务；所有状态/错误回归均由 Preview Runtime 或 mock Runtime 覆盖。 |
+| 提交 | `f096076b360f7e59f3484f5503f1ad11e52fc0e3`，`完成 macOS 玻璃 UI 功能验收`。 |
+
 ## 后续阶段
 
-UI-0～UI-4 已分别实施、验收并独立提交推送；UI-5～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。
+UI-0～UI-4 已分别实施、验收并独立提交推送；UI-5 自动化和原生 AX 检查已提交，尚未通过的项目保留为限制，不由 UI-6 性能数据补签。UI-6 按阶段完成 Profile 性能采样、原生视觉与动效复核后单独提交。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。

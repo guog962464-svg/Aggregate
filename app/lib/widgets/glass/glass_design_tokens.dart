@@ -47,7 +47,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     surface: Color(0xFF202126),
     raised: Color(0xFF292B32),
     text: Color(0xFFEFEFF3),
-    muted: Color(0xFFA6A8B3),
+    muted: Color(0xFFB8BAC5),
     line: Color(0xFF35363E),
     inset: Color(0xFF111216),
     glassTop: Color(0xFF41434C),

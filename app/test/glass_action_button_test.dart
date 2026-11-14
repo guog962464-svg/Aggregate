@@ -4,11 +4,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aggregate/widgets/glass/aggregate_buttons.dart';
 import 'package:aggregate/widgets/glass/glass_action_button.dart';
 import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_glyph.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+
+const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
+  testWidgets('glass actions remain operable with 200 percent text', (
+    tester,
+  ) async {
+    final clock = ManualGlassMotionClock();
+    addTearDown(clock.dispose);
+    var activations = 0;
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(2)),
+          child: GlassMotionScope(clock: clock, child: child!),
+        ),
+        home: Scaffold(
+          body: Center(
+            child: AggregateActionButton(
+              label: '运行当前功能',
+              icon: Icons.play_arrow,
+              style: AggregateActionStyle.primary,
+              size: GlassButtonSize.primary,
+              onPressed: () => activations++,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final button = find.bySemanticsLabel('运行当前功能');
+    expect(button, findsOneWidget);
+    expect(tester.getSize(button).height, GlassDesignTokens.primaryHeight);
+    await tester.tap(button);
+    expect(activations, 1);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  }, variant: _macOS);
+
   test('all current Material action glyph names have a shared dot mapping', () {
     const materialNames = [
       'account_circle_outlined',
@@ -188,6 +231,51 @@ void main() {
     await tester.pump();
     expect(calls, 2);
   });
+
+  testWidgets('Tab and Shift+Tab follow the visible glass action order', (
+    tester,
+  ) async {
+    final first = FocusNode();
+    final second = FocusNode();
+    addTearDown(first.dispose);
+    addTearDown(second.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FocusTraversalGroup(
+            child: Column(
+              children: [
+                GlassActionButton(
+                  label: '搜索',
+                  glyph: GlassGlyph.search,
+                  focusNode: first,
+                  onPressed: () {},
+                ),
+                GlassActionButton(
+                  label: '运行',
+                  glyph: GlassGlyph.play,
+                  focusNode: second,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(first.hasFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(second.hasFocus, isTrue);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+    expect(first.hasFocus, isTrue);
+  }, variant: _macOS);
 
   testWidgets('busy and disabled states suppress the operation', (
     tester,
