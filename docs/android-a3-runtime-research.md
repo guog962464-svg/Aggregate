@@ -7,7 +7,7 @@
 - **新增 Node 24.22.3 临时构建通过静态检查与 4 KB 真机探针：**从 fogtape 20 个移动补丁重放到官方 Node `v24.22.3` 后的源码树，在 Linux 容器用 NDK r27d 构建出 arm64 `libnode.so`。隔离 Debug APK 仅含 3 个 arm64 `.so`，其 `PT_LOAD` 均为 `0x4000`；`zipalign -c -P 16 4` 与 APK v2 签名检查通过。LGE AN10 4 KB 真机通过 Node 启动、文件/loopback、Service 崩溃恢复、整 App 重启、APK 重装与后台 `am kill` 恢复。源码树 hash 仍与 recipe 预期不符，补丁和许可未完整审查；产物留在 `/tmp`，不属于产品候选。详细摘要见本文末尾。
 - **真机 16 KB 加载仍未知：**Aggregate 当前只有 LGE AN10 4 KB 页设备。静态 ELF/ZIP 检查不能代替 16 KB Android 内核下启动、JNI 加载、内存分配及 Node 行为验收。fogtape 项目的文档声称其发布流程会在 Pixel 9 16 KB 实体设备上执行启动和 N-API addon smoke；这属于其 release CI 的证据主张，不能表述成 Aggregate APK 已经完成 16 KB 实机验证。
 - **运行时仍不可作为发布基线：**官方 `nodejs-mobile` Release 仍停在基于 Node 18.20.4 的版本；Node 18 已 EOL。fogtape 已发布的 Node 24 Android 包 `v24.22.1-0` 仍为 prerelease；本次 `v24.22.3` 是自行重建的实验产物，不是维护方发布或审阅过的 Android binary，也没有验证安全补丁对 mobile fork 的完整适用性。
-- **A3.6 继续保持开放：**新增构建只完成候选技术验证。源码树 hash 不匹配、mobile patches 未完整审阅、第三方许可清单与新构建未绑定、Release APK/AAB 逐 ABI 检查和 16 KB 实体机运行仍未完成。产品端继续不开放 Node/npm/CLI。
+- **A3.6 继续保持开放：**新增构建只完成候选技术验证。源码树 hash 不匹配、mobile patches 未完整审阅、第三方许可清单未与实际二进制逐项映射；临时 NodeProbe Release APK/AAB 单 arm64 静态打包检查已通过但未签名，Aggregate 产品 Release APK/AAB 的签名/成品检查和 16 KB 实体机运行仍未完成。产品端继续不开放 Node/npm/CLI。
 
 ## 官方支持与维护现状
 
@@ -89,3 +89,10 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - NDK r27d 内 `toolchains/llvm/prebuilt/linux-x86_64/NOTICE` 为 130,424 bytes，SHA-256 `f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1`，与探针资产 `android-ndk-llvm-NOTICE.txt` 完全相同；本次 APK 使用的 notice 与构建所用 NDK 文件一致。
 - **发行许可仍不能判为完整。**当前 fogtape `recipe` HEAD 的根 `LICENSE` SHA-256 为 `66233b87054d6bca9b0c2f23b027bb2caf1ebd961a6f981616d098dade33af34`，清单有 39 项，与 Node 24.22.3 build `LICENSE` 的 45 项清单不一致：recipe 清单另有 `cjs-module-lexer`、`ESLint`、`highlight.js`、`base64` 等项目；build 清单另列 `amaro/swc`、LIEF、simdjson、zstd、polywasm 等。由于 recipe 分支与该重基树的依赖内容、Android 实际编入/随包文件尚未逐项对应，不能以任一文件单独证明第三方许可闭包。NDK r27d 包根目录另有 522,923 bytes 的 `NOTICE`（SHA-256 `4d5224d1c0b54ffa88b0dc0088191638fdbb7227835095dfb98f7f66b416a323`），当前 APK 未包含；它对仅含 `libc++_shared.so` 的运行时包是否必需尚未完成核对。
 - 结论只到**文件级 hash 对照通过、许可清单级差异未解决**。发布前需以最终重建源码、实际链接/打包组件和对应 NDK 版本逐项核实，并把所需 notices 随正式产物提供；本次 Debug APK 不构成法律审查或分发许可结论。
+
+## 2026-11-14 隔离 NodeProbe Release 静态验收
+
+- 在临时工程 `/tmp/aggregate-a3-probe-24.22.3` 构建 `:nodeprobe:assembleRelease` 和 `:nodeprobe:bundleRelease` 均成功。APK `nodeprobe-release-unsigned.apk` SHA-256 `588eca99d7db9f58d8eddeda51d4702bac21b9388ce04fbe1c9760730ca17b28`；AAB `nodeprobe-release.aab` SHA-256 `4764f119a4213c165a278a9a14601b80c3b93d4bae3110955d444ebbf5b4a18c`。APK 与 AAB 均未签名。
+- Build Tools 36.0.0 `zipalign -c -P 16 4` 检查 Release APK 通过；Bundletool `1.18.3 validate` 成功，`dump config` 报告 `uncompressNativeLibraries.enabled=true`、`alignment=PAGE_ALIGNMENT_16K`。
+- APK 和 AAB 都只包含 `libaggregate_node_probe.so`、`libc++_shared.so`、`libnode.so` 三个 arm64 库。对两种容器内的 ELF 直接检查，全部 `PT_LOAD` 的 `p_align=0x4000` 且 offset/vaddr 余数相同；Release JNI bridge 1,040,104 bytes、SHA-256 `8452785332232c5b2c1695ff34b966f05968f811303a05fc791c2a6ff6705321`；`libc++_shared.so` 1,292,904 bytes，AGP strip 后 `libnode.so` 94,860,408 bytes。Release APK/AAB 的 `libc++_shared.so` 与 `libnode.so` SHA-256 与前述 Debug APK 相同；JNI bridge 因 Release 编译优化而不同。
+- **范围限制：**该结果是单 ABI 的隔离 NodeProbe 未签名 Release 预检查，不是 Aggregate Flutter 产品 Release，也未安装运行这两个未签名包；不代表正式签名、完整多 ABI、商店交付或 16 KB 真机验收。对应的正式产品成品 gate 仍开放。
