@@ -2,9 +2,9 @@
 """Generate an explicitly incomplete CycloneDX inventory from a NodeProbe APK/AAB.
 
 The archive is the source of truth for packaged native libraries, npm package
-metadata, and embedded license/notice files. Declared npm dependencies are
-resolved against the packaged tree. This does not verify npm version ranges or
-peer dependencies, and does not infer the full static link graph inside
+metadata, and embedded license/notice files. Declared npm dependencies and
+peer dependencies are resolved against the packaged tree. This does not verify
+npm version ranges, and does not infer the full static link graph inside
 libnode.so or the Android Gradle dependency graph; the output marks its
 composition incomplete for those reasons.
 """
@@ -226,6 +226,7 @@ def main() -> int:
     npm_dependencies: list[dict[str, object]] = []
     resolved_npm_edges = 0
     unresolved_npm_edges: list[tuple[str, str, object]] = []
+    optional_peer_dependencies_not_packaged: list[tuple[str, str, object]] = []
     if npm_root is not None:
         for package_dir in sorted(package_components):
             if package_dir != npm_root and not package_dir.startswith(npm_root + "/node_modules/"):
@@ -236,12 +237,30 @@ def main() -> int:
                 values = manifest.get(field)
                 if isinstance(values, dict):
                     declared.update(values)
+            regular_dependency_names = set(declared)
+            peer_dependencies = manifest.get("peerDependencies")
+            peer_dependency_names = set(peer_dependencies) if isinstance(peer_dependencies, dict) else set()
+            if isinstance(peer_dependencies, dict):
+                declared.update(peer_dependencies)
+            peer_metadata = manifest.get("peerDependenciesMeta")
             targets: set[str] = set()
             for dependency_name, version_range in sorted(declared.items()):
                 target = resolve_npm_dependency(
                     package_dir, npm_root, dependency_name, package_components
                 )
                 if target is None:
+                    peer_details = peer_metadata.get(dependency_name) if isinstance(peer_metadata, dict) else None
+                    is_optional_peer = (
+                        dependency_name in peer_dependency_names
+                        and dependency_name not in regular_dependency_names
+                        and isinstance(peer_details, dict)
+                        and peer_details.get("optional") is True
+                    )
+                    if is_optional_peer:
+                        optional_peer_dependencies_not_packaged.append(
+                            (package_dir, dependency_name, version_range)
+                        )
+                        continue
                     unresolved_npm_edges.append((package_dir, dependency_name, version_range))
                     continue
                 targets.add(str(package_components[target]["bom-ref"]))
@@ -267,8 +286,12 @@ def main() -> int:
         property_item("aggregate:npm-dependency-edges-resolved", resolved_npm_edges),
         property_item("aggregate:npm-dependency-edges-unresolved", len(unresolved_npm_edges)),
         property_item(
+            "aggregate:npm-optional-peer-dependencies-not-packaged",
+            len(optional_peer_dependencies_not_packaged),
+        ),
+        property_item(
             "aggregate:scope-limit",
-            "static libnode and Android Gradle dependency graphs are incomplete; npm peer dependencies and version-range satisfaction are not verified",
+            "static libnode and Android Gradle dependency graphs are incomplete; npm version-range satisfaction is not verified by this generator",
         ),
     ]
     bom = {
@@ -296,7 +319,8 @@ def main() -> int:
     print(f"Wrote {len(components)} components for {args.archive} ({archive_hash})")
     print(
         f"Resolved {resolved_npm_edges} npm dependency edges; "
-        f"{len(unresolved_npm_edges)} declared dependency edges were unresolved"
+        f"{len(unresolved_npm_edges)} required declared edges were unresolved; "
+        f"{len(optional_peer_dependencies_not_packaged)} optional peer dependencies are not packaged"
     )
     print(
         "Composition: incomplete (static libnode and Android Gradle dependency "
