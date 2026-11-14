@@ -191,3 +191,12 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **测试结果重分类：**此前 message 9 项的 4 通过、5 输出不匹配保持不变；本次把其中 3 项归类为测试代理捕获到 Android teardown 诊断导致的输出差异，1 项为未解释的 assert stack 长度差异，1 项为已确认的环境转发缺陷。它仍不是 9/9 Node 成功，也未验证修复后的 Android 测试 transport。
 - **verified_scope：**基于 Node upstream `e63cab040c09d43ceef8cb35508c40044614e906`、recipe `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`、candidate source tree `5b1a23adddf4b698abcfa45cc8d22de930c01b32`、已有 4 KB 测试日志和当前 Android proxy/Java/JNI/test runner 源码阅读；未运行新命令测试或动态复现，未覆盖 16 KB 设备、其他 ABI 或 FORTIFY 根因。
 - **retrieval_feedback：**检索 `test-testpy-env-var-via-comment`、`NODE_SKIP_FLAG_CHECK`、Android node proxy environment forwarding、`FORTIFY destroyed mutex`；采用同文件此前 4 KB message 测试结果和静态审计边界，核对 recipe proxy、`MainActivity`、JNI `native-lib.cpp`、Node test runner 的 env 构造及同一 log SHA。没有把 read-only 静态溯源描述为修复或重新验收。
+
+## 2026-11-14 Node 许可生成器可复现性复核
+
+- **静态发现：**候选 `tools/license-builder.sh` 先从 `LICENSE` 取第一个第三方条目之前的头部，再按脚本清单重写临时 LICENSE，最终 `mv` 覆盖根 `LICENSE`。Node mobile 的 polywasm patch 把 `polywasm` MIT 声明追加在 LICENSE 尾部，但 license-builder 清单没有 polywasm；运行脚本会在重建文件中漏掉这项声明。未运行脚本，因为它会覆盖候选 LICENSE 并通过网络抓取内容；由读到的重建/覆盖逻辑和条目清单即可确认风险。
+- **移动输入不固定：**builder 对 punycode.js 与 ada 的许可分别请求 GitHub `HEAD`，对 sonic-boom 请求 `refs/heads/master`；这些源可能随时间变化。其他若干依赖使用 commit URL，但没有对所有下载内容做内容 hash 校验。故重复运行并不能保证生成同一文件，且它不是绑定到本候选依赖快照的可靠许可证生成证据。
+- **自动检查边界：**Node mobile patch 删除了 upstream `.github/workflows/license-builder.yml`；recipe 有自己的构建与 release-control，但当前静态检查没有证明它等价地检查 polywasm 声明和许可输出可复现性。此项扩大了之前记录的 release SBOM/许可未关闭范围；候选已核对的官方 v24.22.3 `LICENSE` 加 polywasm MIT 文件仍是现有静态证据，但不能据此声称后续生成路径安全。
+- **结论与行动项：**这是发行许可文件生成链的可复现性/条目完整性风险，不是运行时问题。维护方应把 polywasm 加入明确来源和固定摘要的 license inventory，并将所有远端条目固定到不可变版本/摘要；CI 应对重建结果与候选 LICENSE 做差异检查。当前 A3.6 的发行级 SBOM/许可门槛保持开放。
+- **verified_scope：**Node v24.22.3 candidate tree `5b1a23adddf4b698abcfa45cc8d22de930c01b32` 的 `tools/license-builder.sh`、根 LICENSE、recipe `ci-remove-upstream-only-workflows-and-config.patch` 与已记录的官方 tag LICENSE hash；未执行 license builder、未下载 remote license、未生成新的 LICENSE/SBOM。
+- **retrieval_feedback：**检索 `Node license-builder polywasm`、`license builder HEAD master URL`、`nodejs-mobile license-builder workflow`；采用本文件中候选 LICENSE 与 upstream v24.22.3/polywasm 关系，重新对照 builder 的完整 dependency list、远端 URL、最终覆盖操作和移动 CI 删除补丁。未通过运行脚本或下载可变资源来补全证据。
