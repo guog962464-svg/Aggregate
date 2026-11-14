@@ -54,6 +54,20 @@
 
 单位为 0–255 RGB。整体改善较小，不能由局部粒子/闪烁指标推断整体达到 1:1。此前的 5.9181/4.9670 使用了实测 theta 覆写，输入与本表不同，不能直接横向比较。当前图像验证仍固定独立测量的 theme 与合格玻璃几何，用于分离内部粒子与实时光带的误差，并不证明产品自动重现了录屏指针输入。保留的差异还包括媒体缩放、暂停/保持、相邻帧混合、压缩、未恢复粒子对应与输入速度滤波。严格逐帧一致仍未完成。
 
+## Android 触摸与渲染适配
+
+Android 继续从手机底部“设置 → 外观”使用同一个 `AppearanceSelector` 和拟合实时模型。共享控件不导入 Android/macOS API；本次不改变粒子系数、点阵形态或动画物理。
+
+原始 `Listener` 改为保留指针时间/坐标，并由限定命中区域的 Tap、HorizontalDrag recognizer 参与 Flutter 手势仲裁。只有滑块上的横拖获胜后才更新位置；纵向滚动、减少动态效果下的划动、手势取消均不会被误判为切换。第二根手指不能接管已捕获滑块，画布空白不抢页面手势。快速滚动可能在 tap 的 down deadline 前胜出，因此直接处理 `rejectGesture(pointer)`，不依赖可能不触发的 `onTapCancel`；回归同时检查“划动后再次点击”仍可操作。
+
+两处反向 `smoothstep` 改为 `1 - smoothstep(较小边界, 较大边界, x)`，保持预期曲线并消除跨 GPU 的未定义结果。[Khronos 规范](https://registry.khronos.org/SPIR-V/specs/unified1/GLSL.std.450.html) 规定 SmoothStep 的 edge0 >= edge1 结果未定义。独立 WebGL 颜色探针保留原期望值通过。
+
+Android 新增 9 项回归，覆盖滑块/轨道纵滚、横拖反向、多指、减少动态效果、320/393dp 与 844×390 横屏、200% 字号。连同模拟/光学及 Android/macOS 导航设置回归，共 48 项通过。
+
+内部真机构建使用 `flutter build apk --debug --target-platform android-arm64 --no-pub --build-number=13`；构建号覆盖只用于本地 Debug APK，以便保留数据升级设备原有 versionCode 12。没有修改发布版本或签名配置，也没有运行可能卸载主包的 integration_test 安装流程。
+
+LGE AN10 / Android 15 API 35 / arm64 / 4 KB 真机已通过 `adb install -r` 从 versionCode 12 升级至 13，firstInstallTime 保持不变。已打开实际设置页并看到玻璃、月亮点阵及蓝色光弧；未用图标 fallback。手机随后处于 Mac Host 邀请内容输入中，触控验收暂停，避免干扰配对操作。当前不宣称已完成本轮手工拖动/滚动或具体 GPU 后端、帧率的真机验收。Android 与 macOS Debug 构建均通过。
+
 ## 独立期望值
 
 `app/test/fixtures/theme_switch_model.json` 保存原实现的固定输入 oracle，并记录来源 SHA256、LCG 种子和事件顺序。60 Hz、151 个时间步中，比较位置、速度、形变、光弧相位、强度及粒子；观测到的最大浮点差约 `2.7e-13`。

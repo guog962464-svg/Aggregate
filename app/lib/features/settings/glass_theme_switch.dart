@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +38,10 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   bool _hoveredOnTrack = false;
   int? _pointer;
   bool _startedOnHandle = false;
+  bool _dragAccepted = false;
+  bool _tapRejected = false;
+  bool _dragRejected = false;
+  PointerMoveEvent? _pendingMove;
   double _startX = 0;
   double _startPosition = 0;
   double _moved = 0;
@@ -123,18 +128,9 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     const Radius.circular(72),
   ).contains(point);
 
-  void _down(PointerDownEvent event, Size size) {
-    final point = _designPoint(event.localPosition, size);
-    if (!_insideTrack(point) || _pointer != null) return;
-    _focus.requestFocus();
-    _pointer = event.pointer;
-    _startX = point.dx;
-    _startPosition = _simulation.unresistedPosition;
-    _lastPosition = _startPosition;
-    _lastPointerTime = event.timeStamp;
-    _moved = 0;
+  bool _insideHandle(Offset point) {
     final frame = _simulation.snapshot;
-    _startedOnHandle = RRect.fromRectAndRadius(
+    return RRect.fromRectAndRadius(
       Rect.fromCenter(
         center: Offset(frame.knobX, 0),
         width: frame.halfWidth * 2,
@@ -142,12 +138,52 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
       ),
       Radius.circular(frame.radius),
     ).contains(point);
+  }
+
+  bool _allowsPointer(PointerDownEvent event, Size size, {bool drag = false}) {
+    if (event.buttons != kPrimaryButton ||
+        (_pointer != null && _pointer != event.pointer)) {
+      return false;
+    }
+    final point = _designPoint(event.localPosition, size);
+    return _insideTrack(point) &&
+        (!drag || (!_reduceMotion && _insideHandle(point)));
+  }
+
+  void _down(PointerDownEvent event, Size size) {
+    final point = _designPoint(event.localPosition, size);
+    if (!_allowsPointer(event, size) || _pointer != null) return;
+    _focus.requestFocus();
+    _pointer = event.pointer;
+    _startX = point.dx;
+    _startPosition = _simulation.unresistedPosition;
+    _lastPosition = _startPosition;
+    _lastPointerTime = event.timeStamp;
+    _moved = 0;
+    _startedOnHandle = _insideHandle(point);
+    _dragAccepted = false;
+    _tapRejected = false;
+    _dragRejected = !_startedOnHandle || _reduceMotion;
+    _pendingMove = null;
     if (_startedOnHandle && !_reduceMotion) _simulation.beginDrag();
     _simulation.setPressed(true);
+    setState(() {});
   }
 
   void _move(PointerMoveEvent event, Size size) {
     if (_pointer != event.pointer || !_startedOnHandle || _reduceMotion) return;
+    _pendingMove = event;
+    if (!_dragAccepted) return;
+    _applyMove(event, size);
+  }
+
+  void _acceptDrag(Size size) {
+    if (_pointer == null) return;
+    _dragAccepted = true;
+    if (_pendingMove case final event?) _applyMove(event, size);
+  }
+
+  void _applyMove(PointerMoveEvent event, Size size) {
     final point = _designPoint(event.localPosition, size);
     final distance = point.dx - _startX;
     _moved = math.max(
@@ -170,14 +206,29 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     _lastPointerTime = event.timeStamp;
   }
 
-  void _up(PointerEvent event, {bool cancel = false}) {
-    if (_pointer != event.pointer) return;
+  void _cancelRejectedGesture() {
+    if (_tapRejected && _dragRejected) _finish(cancel: true);
+  }
+
+  void _rejectPointer(int pointer, {required bool tap}) {
+    if (_pointer != pointer) return;
+    if (tap) {
+      _tapRejected = true;
+    } else {
+      _dragRejected = true;
+    }
+    _cancelRejectedGesture();
+  }
+
+  void _finish({bool cancel = false, bool tap = false}) {
+    if (_pointer == null) return;
     _pointer = null;
+    _pendingMove = null;
     _simulation.setPressed(false);
     if (cancel) {
       _simulation.releaseDrag(cancel: true);
       _simulation.setLight(widget.light);
-    } else if (_startedOnHandle && _moved >= 4) {
+    } else if (!tap && _startedOnHandle && _moved >= 4) {
       _simulation.releaseDrag();
       widget.onChanged(_simulation.light);
     } else {
@@ -237,28 +288,58 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
               _simulation.setHovered(false);
               setState(() => _hoveredOnTrack = false);
             },
-            child: Listener(
-              onPointerDown: (event) => _down(event, size),
-              onPointerMove: (event) => _move(event, size),
-              onPointerUp: _up,
-              onPointerCancel: (event) => _up(event, cancel: true),
-              child: ExcludeSemantics(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: _focused
-                        ? Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 2,
-                          )
-                        : null,
-                  ),
-                  child: SizedBox.fromSize(
-                    size: size,
-                    child: ThemeSwitchArtwork(
-                      frame: _simulation.snapshot,
-                      time: _time,
-                      optics: widget.calibration.optics,
-                      scene: widget.calibration.scene,
+            child: RawGestureDetector(
+              excludeFromSemantics: true,
+              gestures: {
+                _ThemeTapRecognizer:
+                    GestureRecognizerFactoryWithHandlers<_ThemeTapRecognizer>(
+                      _ThemeTapRecognizer.new,
+                      (recognizer) {
+                        recognizer.allowsPointer = (event) =>
+                            _allowsPointer(event, size);
+                        recognizer.onTapUp = (_) => _finish(tap: true);
+                        recognizer.onRejected = (pointer) =>
+                            _rejectPointer(pointer, tap: true);
+                      },
+                    ),
+                _ThemeDragRecognizer:
+                    GestureRecognizerFactoryWithHandlers<_ThemeDragRecognizer>(
+                      _ThemeDragRecognizer.new,
+                      (recognizer) {
+                        recognizer.allowsPointer = (event) =>
+                            _allowsPointer(event, size, drag: true);
+                        recognizer.dragStartBehavior = DragStartBehavior.down;
+                        recognizer.onStart = (_) => _acceptDrag(size);
+                        recognizer.onEnd = (_) => _finish();
+                        recognizer.onRejected = (pointer) =>
+                            _rejectPointer(pointer, tap: false);
+                      },
+                    ),
+              },
+              child: Listener(
+                onPointerDown: (event) => _down(event, size),
+                onPointerMove: (event) => _move(event, size),
+                onPointerCancel: (event) {
+                  if (_pointer == event.pointer) _finish(cancel: true);
+                },
+                child: ExcludeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: _focused
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            )
+                          : null,
+                    ),
+                    child: SizedBox.fromSize(
+                      size: size,
+                      child: ThemeSwitchArtwork(
+                        frame: _simulation.snapshot,
+                        time: _time,
+                        optics: widget.calibration.optics,
+                        scene: widget.calibration.scene,
+                      ),
                     ),
                   ),
                 ),
@@ -269,6 +350,42 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
       ),
     ),
   );
+}
+
+/// Filter before joining the arena: canvas padding and secondary pointers must
+/// not compete with the page's scrolling or start another thumb drag.
+class _ThemeTapRecognizer extends TapGestureRecognizer {
+  bool Function(PointerDownEvent)? allowsPointer;
+  ValueChanged<int>? onRejected;
+
+  @override
+  bool isPointerAllowed(PointerDownEvent event) =>
+      allowsPointer?.call(event) == true && super.isPointerAllowed(event);
+
+  @override
+  void rejectGesture(int pointer) {
+    super.rejectGesture(pointer);
+    // A fast scroll may reject a tap before its down deadline, in which case
+    // onTapCancel is never called. Always release our captured raw pointer.
+    onRejected?.call(pointer);
+  }
+}
+
+class _ThemeDragRecognizer extends HorizontalDragGestureRecognizer {
+  bool Function(PointerDownEvent)? allowsPointer;
+  ValueChanged<int>? onRejected;
+
+  @override
+  bool isPointerAllowed(PointerEvent event) =>
+      event is PointerDownEvent &&
+      allowsPointer?.call(event) == true &&
+      super.isPointerAllowed(event);
+
+  @override
+  void rejectGesture(int pointer) {
+    super.rejectGesture(pointer);
+    onRejected?.call(pointer);
+  }
 }
 
 class _DarkIntent extends Intent {

@@ -98,7 +98,7 @@ void main() {
   vec2 screenPoint = FlutterFragCoord().xy;
   vec2 point = (screenPoint - origin) / zoom;
   vec2 screenUv = screenPoint / viewport;
-  float sky = smoothstep(1.5, 0.0,
+  float sky = 1.0 - smoothstep(0.0, 1.5,
       length((screenUv - vec2(0.92, -0.08)) * vec2(1.0, 1.25)));
   vec3 color = mix(vec3(mix(0.040, 0.120, sky)),
                    vec3(mix(0.800, 0.925, sky)), daylight);
@@ -156,7 +156,7 @@ void main() {
   float emitterDistance = stripDistance(point);
   float emitterMask = 1.0 - smoothstep(-0.6, 0.6, emitterDistance);
   vec3 hotLamp = mix(lamp * 1.05, mix(lamp, vec3(1.0), 0.65),
-      smoothstep(-0.2, -1.4, emitterDistance));
+      1.0 - smoothstep(-1.4, -0.2, emitterDistance));
   color = mix(color, hotLamp * (0.8 + 0.35 * energy), emitterMask);
   color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * (1.0 - emitterMask));
   vec2 physicalPixel = vec2(screenPoint.x, viewport.y - screenPoint.y) * displayRatio;
