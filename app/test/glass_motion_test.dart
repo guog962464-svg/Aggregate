@@ -309,6 +309,16 @@ void main() {
     );
     await tester.pump();
     expect(scopeKey.currentState!.registeredClientCountForTesting, 0);
+    tester.view.physicalSize = const Size(400, 500);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+    expect(scopeKey.currentState!.registeredClientCountForTesting, 1);
+    tester.view.physicalSize = const Size(400, 300);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+    expect(scopeKey.currentState!.registeredClientCountForTesting, 0);
     await tester.drag(find.byType(Scrollable), const Offset(0, -300));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));

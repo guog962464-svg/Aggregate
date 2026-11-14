@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -66,10 +67,18 @@ class GlassMotionScopeState extends State<GlassMotionScope>
     with SingleTickerProviderStateMixin {
   final Stopwatch _stopwatch = Stopwatch()..start();
   final Set<GlassMotionController> _clients = {};
+  final Set<void Function(Size previous, Size current)>
+  _visibilityViewportListeners = {};
+  final Set<void Function()> _pendingSizeVisibilityChecks = {};
+  Timer? _visibilityViewportTimer;
+  Timer? _sizeVisibilityTimer;
+  final Map<AxisDirection, double> _viewportDimensions = {};
   late final Ticker _ticker;
   AppLifecycleListener? _lifecycleListener;
   Duration _lastDelivery = Duration.zero;
   Duration? _frameTime;
+  Size? _pendingViewportStart;
+  Size? _pendingViewportEnd;
   bool _lastFrameNeededDisplayRate = false;
   bool _routeEnabled = true;
   bool _lifecycleEnabled = true;
@@ -80,6 +89,30 @@ class GlassMotionScopeState extends State<GlassMotionScope>
 
   @visibleForTesting
   int get registeredClientCountForTesting => _clients.length;
+
+  void addVisibilityViewportListener(
+    void Function(Size previous, Size current) listener,
+  ) {
+    _visibilityViewportListeners.add(listener);
+  }
+
+  void removeVisibilityViewportListener(
+    void Function(Size previous, Size current) listener,
+  ) {
+    _visibilityViewportListeners.remove(listener);
+  }
+
+  void scheduleSizeVisibilityCheck(void Function() listener) {
+    _pendingSizeVisibilityChecks.add(listener);
+    _sizeVisibilityTimer ??= Timer(
+      const Duration(milliseconds: 200),
+      _dispatchSizeVisibilityChecks,
+    );
+  }
+
+  void removeSizeVisibilityCheck(void Function() listener) {
+    _pendingSizeVisibilityChecks.remove(listener);
+  }
 
   bool get _canDeliver => _routeEnabled && _lifecycleEnabled;
 
@@ -111,6 +144,59 @@ class GlassMotionScopeState extends State<GlassMotionScope>
     final wasEnabled = _routeEnabled;
     _routeEnabled = TickerMode.valuesOf(context).enabled;
     if (!wasEnabled && _routeEnabled) _deliverCurrentTime();
+  }
+
+  bool _handleScrollMetricsChanged(ScrollMetricsNotification notification) {
+    final direction = notification.metrics.axisDirection;
+    final previous = _viewportDimensions[direction];
+    final current = notification.metrics.viewportDimension;
+    _viewportDimensions[direction] = current;
+    if (previous != null && previous != current) {
+      final vertical =
+          direction == AxisDirection.up || direction == AxisDirection.down;
+      _scheduleVisibilityViewportDispatch(
+        vertical ? Size(0, previous) : Size(previous, 0),
+        vertical ? Size(0, current) : Size(current, 0),
+      );
+    }
+    return false;
+  }
+
+  void _scheduleVisibilityViewportDispatch(Size previous, Size current) {
+    _pendingViewportStart ??= previous;
+    _pendingViewportEnd = current;
+    _visibilityViewportTimer ??= Timer(
+      const Duration(milliseconds: 200),
+      _dispatchVisibilityViewportChange,
+    );
+  }
+
+  void _dispatchVisibilityViewportChange() {
+    _visibilityViewportTimer = null;
+    final previous = _pendingViewportStart;
+    final current = _pendingViewportEnd;
+    _pendingViewportStart = null;
+    _pendingViewportEnd = null;
+    if (!mounted ||
+        previous == null ||
+        current == null ||
+        previous == current) {
+      return;
+    }
+    for (final listener in List<void Function(Size, Size)>.of(
+      _visibilityViewportListeners,
+    )) {
+      listener(previous, current);
+    }
+  }
+
+  void _dispatchSizeVisibilityChecks() {
+    _sizeVisibilityTimer = null;
+    final checks = List<void Function()>.of(_pendingSizeVisibilityChecks);
+    _pendingSizeVisibilityChecks.clear();
+    for (final check in checks) {
+      check();
+    }
   }
 
   void _onLifecycleChanged(AppLifecycleState state) {
@@ -188,11 +274,18 @@ class GlassMotionScopeState extends State<GlassMotionScope>
   }
 
   @override
-  Widget build(BuildContext context) =>
-      _GlassMotionScopeData(scope: this, child: widget.child);
+  Widget build(BuildContext context) => _GlassMotionScopeData(
+    scope: this,
+    child: NotificationListener<ScrollMetricsNotification>(
+      onNotification: _handleScrollMetricsChanged,
+      child: widget.child,
+    ),
+  );
 
   @override
   void dispose() {
+    _visibilityViewportTimer?.cancel();
+    _sizeVisibilityTimer?.cancel();
     widget.clock?.removeListener(_onExternalTick);
     _lifecycleListener?.dispose();
     _ticker.dispose();
@@ -200,6 +293,8 @@ class GlassMotionScopeState extends State<GlassMotionScope>
       client._detachScope(this);
     }
     _clients.clear();
+    _visibilityViewportListeners.clear();
+    _pendingSizeVisibilityChecks.clear();
     super.dispose();
   }
 }

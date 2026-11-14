@@ -531,6 +531,7 @@ class AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final connection = activeConnection;
+    final pageStack = _pageStack(connection);
     final onMusicHome =
         selected == Section.home &&
         connection != null &&
@@ -655,7 +656,7 @@ class AppShellState extends State<AppShell> {
                       child: navigation(compact: false),
                     ),
                   ),
-                Expanded(child: _pageStack(connection)),
+                Expanded(child: pageStack),
               ],
             ),
           );

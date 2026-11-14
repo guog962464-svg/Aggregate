@@ -68,8 +68,11 @@ class _GlassActionButtonState extends State<GlassActionButton> {
   late final WidgetStatesController _statesController;
   late final GlassMotionController _motionController;
   final GlobalKey _motionBoxKey = GlobalKey();
+  late final void Function(Size previous, Size current)
+  _visibilityViewportListener = _handleViewportSizeChanged;
   ScrollPosition? _scrollPosition;
   GlassMotionScopeState? _motionScope;
+  Size? _lastMotionBoxSize;
   bool _visibilityCheckScheduled = false;
   bool _visible = true;
   bool _disableAnimations = false;
@@ -94,10 +97,27 @@ class _GlassActionButtonState extends State<GlassActionButton> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _disableAnimations = MediaQuery.disableAnimationsOf(context);
-    _motionScope = GlassMotionScope.maybeOf(context);
+    final nextMotionScope = GlassMotionScope.maybeOf(context);
+    if (_motionScope != nextMotionScope) {
+      _motionScope?.removeVisibilityViewportListener(
+        _visibilityViewportListener,
+      );
+      _motionScope?.removeSizeVisibilityCheck(_scheduleVisibilityCheck);
+      _motionScope = nextMotionScope;
+      _motionScope?.addVisibilityViewportListener(_visibilityViewportListener);
+    }
     _updateScrollPosition();
     _syncMotion();
     _scheduleVisibilityCheck();
+  }
+
+  void _requestSizeVisibilityCheck() {
+    final scope = _motionScope;
+    if (scope == null) {
+      _scheduleVisibilityCheck();
+    } else {
+      scope.scheduleSizeVisibilityCheck(_scheduleVisibilityCheck);
+    }
   }
 
   @override
@@ -140,6 +160,40 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     _scrollPosition?.addListener(_scheduleVisibilityCheck);
   }
 
+  void _handleMotionBoxSizeChanged() {
+    final renderObject = _motionBoxKey.currentContext?.findRenderObject();
+    if (renderObject is RenderBox &&
+        renderObject.attached &&
+        renderObject.hasSize) {
+      final currentSize = renderObject.size;
+      final previousSize = _lastMotionBoxSize;
+      _lastMotionBoxSize = currentSize;
+      final direction = _scrollPosition?.axisDirection;
+      if (previousSize == null || direction == null) return;
+      final visibilityAxisChanged = switch (direction) {
+        AxisDirection.up ||
+        AxisDirection.down => previousSize.height != currentSize.height,
+        AxisDirection.left ||
+        AxisDirection.right => previousSize.width != currentSize.width,
+      };
+      if (!visibilityAxisChanged) return;
+    } else if (_scrollPosition == null) {
+      return;
+    }
+    _requestSizeVisibilityCheck();
+  }
+
+  void _handleViewportSizeChanged(Size previous, Size current) {
+    final visibilityAxisChanged = switch (_scrollPosition?.axisDirection) {
+      AxisDirection.up ||
+      AxisDirection.down => previous.height != current.height,
+      AxisDirection.left ||
+      AxisDirection.right => previous.width != current.width,
+      null => false,
+    };
+    if (visibilityAxisChanged) _scheduleVisibilityCheck();
+  }
+
   void _scheduleVisibilityCheck() {
     if (_visibilityCheckScheduled || !mounted) return;
     _visibilityCheckScheduled = true;
@@ -152,6 +206,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
           !renderObject.hasSize) {
         return;
       }
+      _lastMotionBoxSize = renderObject.size;
       final maybeViewport = RenderAbstractViewport.maybeOf(renderObject);
       final RenderBox? viewportBox = maybeViewport is RenderBox
           ? maybeViewport as RenderBox
@@ -178,6 +233,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
   @override
   void dispose() {
     _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+    _motionScope?.removeVisibilityViewportListener(_visibilityViewportListener);
+    _motionScope?.removeSizeVisibilityCheck(_scheduleVisibilityCheck);
     _statesController.removeListener(_handleVisualStateChanged);
     _statesController.dispose();
     _motionController.dispose();
@@ -265,7 +322,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
             },
             child: NotificationListener<SizeChangedLayoutNotification>(
               onNotification: (_) {
-                _scheduleVisibilityCheck();
+                _handleMotionBoxSizeChanged();
                 return false;
               },
               child: SizeChangedLayoutNotifier(
