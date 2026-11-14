@@ -4,6 +4,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('activity list builds more rows as the list scrolls', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = _ActivityRuntime()
+      ..runs = [for (var index = 0; index < 60; index++) _activityRun(index)];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Material(
+            child: ActivityPage(runtime: runtime, onOpen: (_) {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('sample-59'), findsNothing);
+    final list = find.byType(ListView);
+    final listScrollable = find.descendant(
+      of: list,
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.text('sample-59'),
+      240,
+      scrollable: listScrollable,
+    );
+
+    expect(find.text('sample-59'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('activity reopens an ongoing run and can request cancellation', (
     tester,
   ) async {
@@ -108,4 +145,23 @@ final class _ActivityRuntime implements RuntimePort {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+RunSummary _activityRun(int index) {
+  final id = RunId('run-${index + 1}');
+  final capability = CapabilityId(
+    ConnectionId('connection-${index + 1}'),
+    CapabilityKind.cliCommand,
+    'sample-$index',
+  );
+  return RunSummary(
+    id,
+    capability,
+    RunEvent(
+      runId: id,
+      sequence: 1,
+      state: RunState.succeeded,
+      occurredAt: DateTime.utc(2026, 11, 14).add(Duration(minutes: index)),
+    ),
+  );
 }

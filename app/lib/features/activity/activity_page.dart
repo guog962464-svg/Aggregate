@@ -159,11 +159,17 @@ class ActivityPageState extends State<ActivityPage> {
               if (!wide && current != null) {
                 return _detail(current, compact: true);
               }
-              final list = Column(
-                children: [
-                  for (final run in runs) ...[
-                    if (_usesGlassButtons(context))
-                      AggregateActionButton(
+              final list = SizedBox(
+                height: _runListViewportHeight(context),
+                child: ListView.builder(
+                  primary: false,
+                  padding: EdgeInsets.zero,
+                  itemCount: runs.length * 2,
+                  itemBuilder: (context, index) {
+                    if (index.isOdd) return const Divider(height: 1);
+                    final run = runs[index ~/ 2];
+                    if (_usesGlassButtons(context)) {
+                      return AggregateActionButton(
                         label: _capabilityName(run),
                         description: _time(run.latest.occurredAt),
                         source: _state(run.latest.state),
@@ -175,25 +181,22 @@ class ActivityPageState extends State<ActivityPage> {
                         onPressed: () => setState(() => selected = run),
                         selected: current?.id.value == run.id.value,
                         expand: true,
-                      )
-                    else
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                        ),
-                        selected: current?.id.value == run.id.value,
-                        title: Text(
-                          _capabilityName(run),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(_time(run.latest.occurredAt)),
-                        trailing: Text(_state(run.latest.state)),
-                        onTap: () => setState(() => selected = run),
+                      );
+                    }
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      selected: current?.id.value == run.id.value,
+                      title: Text(
+                        _capabilityName(run),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    const Divider(height: 1),
-                  ],
-                ],
+                      subtitle: Text(_time(run.latest.occurredAt)),
+                      trailing: Text(_state(run.latest.state)),
+                      onTap: () => setState(() => selected = run),
+                    );
+                  },
+                ),
               );
               if (!wide) return list;
               return Row(
@@ -215,6 +218,9 @@ class ActivityPageState extends State<ActivityPage> {
       ),
     ],
   );
+
+  double _runListViewportHeight(BuildContext context) =>
+      (MediaQuery.sizeOf(context).height - 336).clamp(220.0, 560.0).toDouble();
 
   Widget _filter(String label, RunState? state) {
     final isSelected = stateFilter == state;

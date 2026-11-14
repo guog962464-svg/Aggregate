@@ -141,6 +141,7 @@ class WorkspacePageState extends State<WorkspacePage> {
       subtitle: widget.runtime.isPreview
           ? '搜索所有连接中的功能。当前使用预览数据。'
           : '从一个地方找到并运行 CLI 与 MCP 功能。',
+      lazyChildren: visible.length >= 40,
       children: [
         for (final notice in widget.runtime.startupNotices) ...[
           Card(
