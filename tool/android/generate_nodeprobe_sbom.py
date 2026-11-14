@@ -55,6 +55,27 @@ def file_component(path: str, data: bytes, category: str) -> dict[str, object]:
     }
 
 
+def npm_license_entry(value: object) -> dict[str, object] | None:
+    if isinstance(value, str) and value.strip():
+        text = value.strip()
+        if any(operator in text for operator in (" AND ", " OR ", " WITH ")):
+            return {"expression": text}
+        if all(char.isalnum() or char in ".-+" for char in text):
+            return {"license": {"id": text}}
+        return {"license": {"name": text}}
+    if isinstance(value, dict):
+        license_type = value.get("type")
+        if not isinstance(license_type, str) or not license_type.strip():
+            license_type = value.get("name")
+        if isinstance(license_type, str) and license_type.strip():
+            license_data: dict[str, str] = {"name": license_type.strip()}
+            license_url = value.get("url")
+            if isinstance(license_url, str) and license_url.strip():
+                license_data["url"] = license_url.strip()
+            return {"license": license_data}
+    return None
+
+
 def package_component(
     path: str,
     package: dict[str, object],
@@ -81,32 +102,27 @@ def package_component(
     }
 
     license_value = package.get("license")
-    if isinstance(license_value, str) and license_value.strip():
-        value = license_value.strip()
-        if any(operator in value for operator in (" AND ", " OR ", " WITH ")):
-            component["licenses"] = [{"expression": value}]
-        elif all(char.isalnum() or char in ".-+" for char in value):
-            component["licenses"] = [{"license": {"id": value}}]
-        else:
-            component["licenses"] = [{"license": {"name": value}}]
-    elif isinstance(license_value, dict):
-        license_type = license_value.get("type")
-        license_url = license_value.get("url")
-        if isinstance(license_type, str) and license_type.strip():
-            license_data: dict[str, str] = {"name": license_type.strip()}
-            if isinstance(license_url, str) and license_url.strip():
-                license_data["url"] = license_url.strip()
-            component["licenses"] = [{"license": license_data}]
+    license_source = "license"
+    if license_value is None and "licenses" in package:
+        license_value = package.get("licenses")
+        license_source = "licenses"
+    if license_value is None:
+        component["properties"].append(property_item("aggregate:license-metadata", "missing"))
+    else:
+        values = license_value if isinstance(license_value, list) else [license_value]
+        license_entries = [
+            entry for value in values if (entry := npm_license_entry(value)) is not None
+        ]
+        if license_entries:
+            component["licenses"] = license_entries
+            if license_source == "licenses":
+                component["properties"].append(
+                    property_item("aggregate:license-metadata-source", "licenses")
+                )
         else:
             component["properties"].append(
                 property_item("aggregate:license-metadata", json.dumps(license_value, sort_keys=True))
             )
-    elif license_value is not None:
-        component["properties"].append(
-            property_item("aggregate:license-metadata", json.dumps(license_value, sort_keys=True))
-        )
-    else:
-        component["properties"].append(property_item("aggregate:license-metadata", "missing"))
 
     if license_paths:
         for license_path in sorted(license_paths):
