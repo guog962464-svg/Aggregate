@@ -12,9 +12,18 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('verifies pairing signature format and Mac pinned WSS', (
+  testWidgets('verifies pairing signature, isolated Keychain rotation and WSS', (
     tester,
   ) async {
+    const isolatedKeychain = bool.fromEnvironment(
+      'aggregateMacKeychainIsolated',
+    );
+    expect(
+      isolatedKeychain,
+      isTrue,
+      reason: 'Run only with a temporary isolated macOS Keychain.',
+    );
+
     const verifier = MacHostDeviceSignatureVerifier();
     final publicKey = base64Decode(
       'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFzccygtE2fioNux4FgJ07FEIj5YlwLPF+2Dly7FntiLHhNLSRjORgAXdfE1J21cxZb+Ebce8Ub+e6oG8k5BNXQ==',
@@ -93,6 +102,13 @@ void main() {
       await serverSubscription.cancel();
       await server.close(force: true);
     }
+
+    final rotated = await identities.rotate();
+    expect(rotated.hostId, isNot(first.hostId));
+    expect(rotated.certificateSha256, isNot(first.certificateSha256));
+    final reloadedRotation = await identities.loadOrCreate();
+    expect(reloadedRotation.hostId, rotated.hostId);
+    expect(reloadedRotation.certificateSha256, rotated.certificateSha256);
 
     const devicePublicKey =
         'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFzccygtE2fioNux4FgJ07FEIj5YlwLPF+2Dly7FntiLHhNLSRjORgAXdfE1J21cxZb+Ebce8Ub+e6oG8k5BNXQ==';
