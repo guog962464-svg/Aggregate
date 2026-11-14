@@ -47,7 +47,7 @@
 
 - 依赖定位：Android 下 CLI 输出 `Unsupported platform`；结合 `ffprobe-static@3.1.0` 的平台白名单（不含 Android/arm64）判断，它是当前音频依赖链的确定性兼容阻断。`fluent-ffmpeg` 仍需调用 `child_process.spawn`，而前述 A4.5 已发现 Node Service 不能可靠启动应用私有 Node 子进程；此项是依赖边界证据，不是本轮单独调用 ffmpeg 的结果。TUI 明确因缺少 mpv 退出。由于平台检查、API key 和播放器三项前置条件未满足，本轮不执行实际登录、播放控制、音频请求或出声测试，也不保存任何账号/App 密钥。
 - **阶段结论：A4.6 部分真机验收完成，整体未通过。** 单台 4 KB arm64 真机证明 npm 安装后可以启动并调用此包的版本/帮助入口；当前包无法在 Android 上完成可用的配置、搜索和本地播放链路。真实登录、搜索、播放控制、声音仍未验收；不应把此 npm 包列为 Android 本地能力。A4.7 需依据该边界形成 T1/T2/T3 的本地/Host/不支持决策。A3.6 的稳定维护库与真实 16 KB 设备门槛仍未完成。
-- 复现入口：`app/android/nodeprobe/prepare_a4_ncm.sh`、`app/android/nodeprobe/verify_a4_ncm.py`。从 `app/android/` 运行 `./gradlew :nodeprobe:assembleDebug --offline`，再运行 `nodeprobe/prepare_a4_ncm.sh` 和 `python3 nodeprobe/verify_a4_ncm.py`。验证器只对固定 action 开放运行；成功后卸载独立 Debug 探针。应用不使用或归档用户登录凭证。
+- 复现入口：`app/android/nodeprobe/prepare_a4_ncm.sh`、`app/android/nodeprobe/verify_a4_ncm.py`。从 `app/android/` 运行 `./gradlew :nodeprobe:assembleDebug --offline -Pa3Probe=true`，再运行 `nodeprobe/prepare_a4_ncm.sh` 和 `python3 nodeprobe/verify_a4_ncm.py`。验证器只对固定 action 开放运行；成功后卸载独立 Debug 探针。应用不使用或归档用户登录凭证。
 
 ## A4.4 分发与安全规则（2026-11-12 查阅）
 
@@ -71,10 +71,10 @@
 - 当前 nodejs-mobile API 差异文档仍将 `child_process`/`cluster` 标为不支持，并指出 Android 的 stdin 需要宿主原生管道。与本机样本存在差异，需保留文档声明和当前构建实测，不能推广到其他构建。实测 `process.stdin` 对象存在且 readable，但 350 ms 观察窗口收到 0 字节，桥接没有把 MCP initialize 写入 fd 0；stdin/stdout 均非 TTY，`setRawMode` 不存在，交互式 TUI 条件不满足。`cwd` 为 `/`，`PATH` 仅为系统目录。
 - `ffmpeg`、`ffprobe`、`mpv` 在 `PATH` 及固定系统目录均未找到，因此本轮未启动这些程序。此前静态审查指出 `ncm-cli` 需要 `mpv`，`fluent-ffmpeg` 使用 `child_process.spawn`；A4.6 仍须单独验证 CLI 安装/启动和依赖在哪一步失败，不能用本轮缺少系统二进制代替 CLI 运行结果。
 - 用 NDK r28c、arm64/API 24、Node-API 8 头文件编译的自有最小 `.node` 样本，显式链接 `libnode.so` 后在应用私有目录成功加载，导出函数返回 N-API 10。此前不带 `libnode.so` 动态依赖时加载报 `ERR_DLOPEN_FAILED` / `cannot locate symbol napi_create_function`。这只证明该 ABI/Node 构建/最小 N-API 样本的加载路径成立；不代表第三方扩展、V8/C++ addon 或通用 npm 原生依赖可用。
-- 复现入口：`app/android/nodeprobe/prepare_a4_boundary_addon.sh`、`app/android/nodeprobe/verify_a4_boundary.py`；在 `app/android/` 运行 `./gradlew :nodeprobe:assembleDebug --offline` 后执行 `python3 nodeprobe/verify_a4_boundary.py`。生成的 `.node` 是忽略的临时 APK 资源。
+- 复现入口：`app/android/nodeprobe/prepare_a4_boundary_addon.sh`、`app/android/nodeprobe/verify_a4_boundary.py`；在 `app/android/` 运行 `./gradlew :nodeprobe:assembleDebug --offline -Pa3Probe=true` 后执行 `python3 nodeprobe/verify_a4_boundary.py`。生成的 `.node` 是忽略的临时 APK 资源。
 - 来源：[nodejs-mobile 移动端 API 差异](https://nodejs-mobile.github.io/docs/api/differences/)、[nodejs-mobile FAQ](https://github.com/nodejs-mobile/nodejs-mobile/blob/main/doc_mobile/FAQ.md)、[fogtape Node 24 移动版 README](https://github.com/fogtape/nodejs-mobile/blob/recipe/README.md)、[Android 10 执行权限行为变化](https://developer.android.com/about/versions/10/behavior-changes-10)。
 
-复现：在 `app/android/` 运行 `nodeprobe/prepare.sh`、`nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline` 和 `python3 nodeprobe/verify_a4.py`；两个版本 APK 升级验收可运行 `python3 nodeprobe/verify_a4_upgrade.py`。A4.3 profile 生命周期可运行 `python3 nodeprobe/verify_a4_profiles.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
+复现：在 `app/android/` 运行 `nodeprobe/prepare.sh`、`nodeprobe/prepare_a4.sh [/path/to/json5-2.2.3.tgz]`、`./gradlew :nodeprobe:assembleDebug --offline -Pa3Probe=true` 和 `python3 nodeprobe/verify_a4.py`；两个版本 APK 升级验收可运行 `python3 nodeprobe/verify_a4_upgrade.py`。A4.3 profile 生命周期可运行 `python3 nodeprobe/verify_a4_profiles.py`。脚本使用当前连接真机，不启动模拟器，实验结束卸载独立探针 App。
 
 CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggregate.nodeprobe/.ProbeActivity --es probe a4-json5-cli --es cliArgsJson '["--version"]'`；将 `--version` 换成 `--help` 可选另一个固定样本。
 

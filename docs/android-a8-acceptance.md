@@ -91,3 +91,9 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机：HTTP MCP 集成文件 4 项通过、外部 HTTPS 用例因未设置环境变量跳过。测试后主包被移除，已重装 versionCode 12 Debug APK 并启动。第一次未隔离集成测试删除了旧 versionCode 11 App 数据及旧 Android Keystore 配对身份；隔离后缀也未能保证主包留存。重装后未重新建立 Host 配对；后续未再运行会安装/卸载 App 的真机集成命令。未使用模拟器。
 - HTTP 包装流修正发生在差异扫描快照封存之后；本地测试覆盖了修正，但扫描报告不包含该后续变更。
 - 用户已有 root `pubspec.lock` 镜像 URL 改动保持未暂存；任务只提交 MCP path override 对应 lock hunk。
+
+## 2026-11-14 主 App Release 干净构建补验
+
+在精确提交 `82b49e42144b4c026456b265695da90e5a555349` 的隔离 worktree 中，初次标准 `flutter build apk --release --no-pub` 因根级任务图同时构建独立 NodeProbe/NodeBridge 而要求忽略的 `libnode.so`，在未准备探针时失败。现把这两个实验模块改为只有显式 `a3Probe=true` 才加入 Gradle 项目图，并更新探针重建/升级说明。修正后标准 Flutter Android Debug APK、Release APK 与 Release AAB 命令均成功；默认项目图没有 NodeProbe，显式 `-Pa3Probe=true` 或 `ORG_GRADLE_PROJECT_a3Probe=true` 时仍包括探针模块。
+
+此 HEAD 的主 App Release APK SHA-256 为 `ed8d595e60593e593c1e1f628a638d681bf5fc2a34d80382786927d4fca1db5c`，大小 27,575,804 bytes；AAB SHA-256 为 `b066e65f77c1b217b45d051731c3dc593df8fe68f99423a0ce15d50b838e6765`，大小 25,362,693 bytes。两种包各含 7 个 arm64 native libraries，不含 `libnode.so`、NodeBridge、npm `node_modules` 或 nodejs-mobile 声明。Build Tools 36.0.0 的 APK `zipalign -c -P 16 4`、每个 ELF 的 `PT_LOAD p_align >= 0x4000` 与 offset/virtual-address congruence 检查、Bundletool 1.18.3 AAB `validate` 和 `PAGE_ALIGNMENT_16K` 配置检查均通过。APK 与 AAB 仍未签名；本检查是 Node-free 主 App 的静态构建证据，不是 Node 候选发行 SBOM、正式签名或 16 KB 真机运行验收。完整哈希和范围见 [A3.6 运行时研究](android-a3-runtime-research.md#2026-11-14-aggregate-release-干净构建与原生库复核)。

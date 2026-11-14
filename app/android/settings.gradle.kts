@@ -24,5 +24,10 @@ plugins {
 }
 
 include(":app")
-include(":nodeprobe")
-include(":nodebridge")
+// Keep the experimental Node runtime out of ordinary Flutter aggregate tasks.
+// The separate probe app and its JNI library are included only when explicitly
+// requested by a Node probe build or integration test.
+if (providers.gradleProperty("a3Probe").orNull == "true") {
+    include(":nodeprobe")
+    include(":nodebridge")
+}

@@ -39,6 +39,7 @@ def build(version_code: int, destination: Path) -> None:
         [
             "./gradlew",
             ":nodeprobe:assembleDebug",
+            "-Pa3Probe=true",
             "--offline",
             "--quiet",
             f"-Pa3ProbeVersionCode={version_code}",

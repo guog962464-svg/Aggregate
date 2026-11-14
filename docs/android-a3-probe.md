@@ -53,7 +53,7 @@ fogtape ZIP 为 112,853,733 字节，本地 SHA-256 与 Release API 摘要同为
 - `verify_upgrade.py` 使用 Gradle 属性将独立探针 App 构建成 `versionCode` 1 和 2，真机安装 1、运行 Node，再把入口、结果和事件文件均改成陈旧标记，保留私有数据原位升级至 2 并再次运行。PackageManager 报告 1→2，新 Service 代际成功运行，三份陈旧文件均被替换且无额外探针文件；测试结束卸载实验 App。两包除了版本元数据没有业务代码差异，尚不覆盖脚本格式迁移或真实产品升级。
 - `flutter build apk --debug --no-pub` 通过，Aggregate 普通 APK 不含 Node 探针库。2026-11-13 默认 arm64 探针 Debug APK/AAB 的三个库均通过 NDK r28c `llvm-readelf -lW` 检查：全部 `PT_LOAD` 的 `p_align=0x4000` 且 offset/virtual address 余数相符；GNU_RELRO 结束于所属 writable LOAD 末尾，下一 writable LOAD 位于向上取整的 16 KB 页边界之后。探针 APK 及普通 Flutter Debug APK 均通过 `zipalign -c -P 16 4`；AAB 经 Bundletool 1.18.3 `validate` 成功且配置为 `PAGE_ALIGNMENT_16K`。`prepare.sh` 校验 Node archive、Node LICENSE 和 NDK LLVM NOTICE 的 SHA-256，并把两份 NOTICE/许可文本打入 APK/AAB。另以 `-Pa3ProbeAllAbis=true` 构建三 ABI Debug APK/AAB：九个原生库进入产物，AAB 配置和 universal APK ZIP 对齐通过；arm64/x86_64 全部库及 armeabi-v7a 的 JNI/Node 库 `PT_LOAD` 为 `0x4000`，NDK r28c 提供的 armeabi-v7a `libc++_shared.so` 为 `0x1000`。默认包仍仅 arm64。以上均为 Debug 静态检查，不代表 Release 包或 16 KB 真机加载通过。
 
-复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径] [同标签 LICENSE]`、`./gradlew :nodeprobe:assembleDebug --offline`、`python3 nodeprobe/verify_device.py`。ZIP 和 LICENSE 可省略以下载固定版本；脚本校验 Node archive、同标签 LICENSE 和锁定 NDK LLVM NOTICE 的 SHA-256。脚本使用当前连接的真机；没有启动模拟器。
+复现：在 `app/android` 运行 `nodeprobe/prepare.sh [Android ZIP] [NDK 路径] [同标签 LICENSE]`、`./gradlew :nodeprobe:assembleDebug --offline -Pa3Probe=true`、`python3 nodeprobe/verify_device.py`。ZIP 和 LICENSE 可省略以下载固定版本；脚本校验 Node archive、同标签 LICENSE 和锁定 NDK LLVM NOTICE 的 SHA-256。脚本使用当前连接的真机；没有启动模拟器。独立 `:nodeprobe` 与 `:nodebridge` 模块默认不纳入 Flutter 根级聚合构建，只有显式传入 `-Pa3Probe=true` 才会包含。
 
 ## Flutter Debug 测试通道
 
@@ -79,7 +79,7 @@ fogtape ZIP 为 112,853,733 字节，本地 SHA-256 与 Release API 摘要同为
 
 A3.5 长后台测试另加 `--dart-define=A3_LONG_BACKGROUND_TEST=true`，在 `A3_LONG_BACKGROUND_READY` 后主机发送 HOME，等待 60 秒，再把 Aggregate 带回前台；重复调用测试加 `--dart-define=A3_REPEAT_TEST=true`。在 `app/android/` 运行 `python3 nodeprobe/verify_upgrade.py` 可复现独立 App 的两版本原位升级；脚本只使用当前连接的真机，不启动模拟器。
 
-运行中后台专项测试另加 `--dart-define=A3_ACTIVE_BACKGROUND_TEST=true`，在 `A3_ACTIVE_BACKGROUND_READY` 后发送 HOME，等待 60 秒再回前台。三 ABI 静态验收可在 `app/android/` 运行 `./gradlew :nodeprobe:bundleDebug -Pa3ProbeAllAbis=true`；该开关不改变默认 arm64 包，不代表其他 ABI 已在设备上运行。
+运行中后台专项测试另加 `--dart-define=A3_ACTIVE_BACKGROUND_TEST=true`，在 `A3_ACTIVE_BACKGROUND_READY` 后发送 HOME，等待 60 秒再回前台。三 ABI 静态验收可在 `app/android/` 运行 `./gradlew :nodeprobe:bundleDebug -Pa3Probe=true -Pa3ProbeAllAbis=true`；该开关不改变默认 arm64 包，不代表其他 ABI 已在设备上运行。
 
 ## 后续实验门槛
 

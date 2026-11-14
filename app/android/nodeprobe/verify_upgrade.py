@@ -17,7 +17,14 @@ EXPECTED = {"version": "v24.22.1", "file": "ok", "network": "network-ok"}
 
 def build(version: int, destination: Path) -> None:
     subprocess.run(
-        ["./gradlew", ":nodeprobe:assembleDebug", "--offline", "--quiet", f"-Pa3ProbeVersionCode={version}"],
+        [
+            "./gradlew",
+            ":nodeprobe:assembleDebug",
+            "--offline",
+            "--quiet",
+            "-Pa3Probe=true",
+            f"-Pa3ProbeVersionCode={version}",
+        ],
         cwd=ANDROID,
         check=True,
     )
