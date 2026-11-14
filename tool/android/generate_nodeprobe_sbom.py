@@ -2,9 +2,11 @@
 """Generate an explicitly incomplete CycloneDX inventory from a NodeProbe APK/AAB.
 
 The archive is the source of truth for packaged native libraries, npm package
-metadata, and embedded license/notice files. This does not infer the full static
-link graph inside libnode.so or the Android Gradle dependency graph; the output
-marks its composition incomplete for that reason.
+metadata, and embedded license/notice files. Declared npm dependencies are
+resolved against the packaged tree. This does not verify npm version ranges or
+peer dependencies, and does not infer the full static link graph inside
+libnode.so or the Android Gradle dependency graph; the output marks its
+composition incomplete for those reasons.
 """
 
 from __future__ import annotations
@@ -114,6 +116,24 @@ def package_component(
     return component
 
 
+def resolve_npm_dependency(
+    package_dir: str,
+    npm_root: str,
+    dependency_name: str,
+    package_refs: dict[str, dict[str, object]],
+) -> str | None:
+    current = PurePosixPath(package_dir)
+    root = PurePosixPath(npm_root)
+    while current == root or root in current.parents:
+        candidate = (current / "node_modules" / dependency_name).as_posix()
+        if candidate in package_refs:
+            return candidate
+        if current == root:
+            break
+        current = current.parent
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archive", type=Path, help="NodeProbe APK or AAB to inventory")
@@ -133,6 +153,9 @@ def main() -> int:
         parser.error("archive must be an APK or AAB")
 
     components: list[dict[str, object]] = []
+    package_components: dict[str, dict[str, object]] = {}
+    package_metadata: dict[str, dict[str, object]] = {}
+    npm_root: str | None = None
     with zipfile.ZipFile(args.archive) as archive:
         names = archive.namelist()
         lib_prefixes = ("lib/", "base/lib/")
@@ -192,9 +215,43 @@ def main() -> int:
                 component = package_component(path, package, data, direct_license_paths)
                 if component is not None:
                     components.append(component)
+                    package_components[package_dir] = component
+                    package_metadata[package_dir] = package
+                    if path.endswith("/a4-npm-cli/package.json"):
+                        npm_root = package_dir
 
             if path.endswith(("-manifest.json", "-package-lock.json")) or basename == "a4-ncm-package.json":
                 components.append(file_component(path, data, "packaged-manifest-or-lock"))
+
+    npm_dependencies: list[dict[str, object]] = []
+    resolved_npm_edges = 0
+    unresolved_npm_edges: list[tuple[str, str, object]] = []
+    if npm_root is not None:
+        for package_dir in sorted(package_components):
+            if package_dir != npm_root and not package_dir.startswith(npm_root + "/node_modules/"):
+                continue
+            manifest = package_metadata[package_dir]
+            declared: dict[str, object] = {}
+            for field in ("dependencies", "optionalDependencies"):
+                values = manifest.get(field)
+                if isinstance(values, dict):
+                    declared.update(values)
+            targets: set[str] = set()
+            for dependency_name, version_range in sorted(declared.items()):
+                target = resolve_npm_dependency(
+                    package_dir, npm_root, dependency_name, package_components
+                )
+                if target is None:
+                    unresolved_npm_edges.append((package_dir, dependency_name, version_range))
+                    continue
+                targets.add(str(package_components[target]["bom-ref"]))
+                resolved_npm_edges += 1
+            npm_dependencies.append(
+                {
+                    "ref": package_components[package_dir]["bom-ref"],
+                    "dependsOn": sorted(targets),
+                }
+            )
 
     # The exact archive digest gives every archive-level component a stable anchor.
     artifact_ref = f"urn:aggregate:nodeprobe-{artifact_kind}:{archive_hash}"
@@ -207,7 +264,12 @@ def main() -> int:
         property_item("aggregate:node-source-tree-sha256", args.source_tree_sha256),
         property_item("aggregate:node-upstream-commit", args.upstream_commit),
         property_item("aggregate:mobile-recipe-commit", args.recipe_commit),
-        property_item("aggregate:scope-limit", "static libnode dependency graph and Android Gradle graph are not fully reconstructed"),
+        property_item("aggregate:npm-dependency-edges-resolved", resolved_npm_edges),
+        property_item("aggregate:npm-dependency-edges-unresolved", len(unresolved_npm_edges)),
+        property_item(
+            "aggregate:scope-limit",
+            "static libnode and Android Gradle dependency graphs are incomplete; npm peer dependencies and version-range satisfaction are not verified",
+        ),
     ]
     bom = {
         "bomFormat": "CycloneDX",
@@ -227,10 +289,19 @@ def main() -> int:
         "components": sorted(components, key=lambda item: (str(item.get("name", "")), str(item.get("bom-ref", "")))),
         "compositions": [{"aggregate": "incomplete"}],
     }
+    if npm_dependencies:
+        bom["dependencies"] = npm_dependencies
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(bom, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {len(components)} components for {args.archive} ({archive_hash})")
-    print("Composition: incomplete (static and Android Gradle dependency graphs are not fully reconstructed)")
+    print(
+        f"Resolved {resolved_npm_edges} npm dependency edges; "
+        f"{len(unresolved_npm_edges)} declared dependency edges were unresolved"
+    )
+    print(
+        "Composition: incomplete (static libnode and Android Gradle dependency "
+        "graphs are not fully reconstructed)"
+    )
     return 0
 
 
