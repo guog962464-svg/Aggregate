@@ -1,6 +1,6 @@
 # A3.6：Android Node 运行时与 16 KB 页状态
 
-核对日期：2026-11-14。范围包括仓库固定的 fogtape `nodejs-mobile` Node 24.22.1-0 探针、官方 Node/nodejs-mobile 状态，以及基于 Node 24.22.3 的临时 Linux 重建。未启动模拟器；没有可用的 16 KB 实体设备。
+核对日期：2026-11-15。范围包括仓库固定的 fogtape `nodejs-mobile` Node 24.22.1-0 探针、官方 Node/nodejs-mobile 状态，以及基于 Node 24.22.3 的临时 Linux 重建。未启动模拟器；没有可用的 16 KB 实体设备。
 
 ## 结论
 
@@ -235,3 +235,15 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **结论：**此前 9 项子集的 4 通过/5 失败被完整 message suite 结果补充为 11 项 4 通过/7 失败；新增确认两个 `node_run_*` 用例失败。没有过滤 FORTIFY 或调整预期输出来伪造通过。A3.6 仍开放。
 - **verified_scope：**上述精确候选、arm64、4 KB LGE AN10 和 Node message suite；不表示 16 KB 系统、其他 ABI、其他 Node suite、桌面回归或产品 Release 验收。
 - **retrieval_feedback：**采用 `2026-11-14/aggregate/01a1c4f2-53d2-7c80-889d-ea988fc30461__daily-task.md` 中先前 9 项 message 子集、4/5 结果与代理环境缺口作为复跑基线；直接使用完整 suite 新日志替代“node_run 用例尚未执行”的当前状态。没有改动用户项目 UI/lockfile，也没有通过过滤日志降格失败。
+
+
+## 2026-11-15 NodeProbe libnode 静态链接输入与许可资产补验
+
+- **构建锚点：**临时 Linux 源树提交 `335255ec039036e696209dcaf65d5289db5c7de1` 的 `out/libnode.target.mk` 指向 `$(obj).target/libnode.so`，目标编译器为 NDK r27d arm64 API 24 clang；未剥离 `libnode.so` SHA-256 为 `7a7fafdabfd3236acc9f77033d75faa2deb633cb07c3f9f1eb6644be4212a449`。
+- **静态输入证据：**生成的目标文件列出 37 个直接 `.a` 输入，覆盖 23 个源目录。使用同一 NDK `llvm-nm` 比较各归档已定义符号与未剥离 `libnode.so`，37 个归档各自都有非零数量的、在这些归档间唯一且出现在最终库中的符号。它说明源树/构建图与最终库间存在关联，但不是链接器 map，也不能证明归档内每个目标文件均被抽取；静态组件精确版本与完整链接闭包仍未解析。审计 JSON 暂存于 `/private/tmp/aggregate-nodeprobe-libnode-static-license-audit-24.22.3.json`，SHA-256 `6e4a34582a75db604cc61cbd60b35e8146670ede8bb86ad42855cd3c37774b5f`。
+- **补充许可资产：**将 25 份与该构建树逐文件 SHA-256 对照的 LICENSE/COPYING 文本放入隔离 NodeProbe 的 `assets/nodejs-mobile-static-licenses/deps/`，并加入 `native-licenses-manifest.json`（SHA-256 `4ced16499abdac0beef54e4a19cb76976c0e7ed72d2017357233c0d15df1679f`）。25 份文本覆盖 ada、brotli、c-ares、histogram、ICU lite、inspector protocol、llhttp、merve、nbytes、nghttp2、OpenSSL、simdjson、libuv、uvwasi、V8、Abseil、Highway、simdutf、zlib 和 zstd 等源目录；它们在 APK/AAB 内均与源文件哈希一致。NDK 根 NOTICE 和 Node 顶层 LICENSE 继续作为既有资产。`ncrypto` 没有单独许可文件，`sqlite` 也无独立 LICENSE 文件；SQLite 源码标明版本 3.54.1，官方版权页说明其核心处于公有领域（[SQLite copyright](https://www.sqlite.org/copyright.html)）。该记录仅列出源文件与构建输入证据，不构成法律意见或已获法律批准。
+- **重打包产物：**隔离、unsigned、arm64 NodeProbe APK 大小 101,386,304 bytes，SHA-256 `4815ecfaca2a32dfa0e0c491fbbeccbd937bbfdac3f8fe42bb4e09c8981e85a7`；AAB 大小 76,860,177 bytes，SHA-256 `39764dfaf43144549688bf67af4fed605edc29120dc6f728173abb11c1928764`。两个归档均含上述 25 个许可文本和 manifest。三份打包 `.so` 在 APK/AAB 中的 SHA-256 分别为 `libnode.so` `9d8addcb602701d2c414339bb9a8c248e4f9445b7e8f72e8ea664aaa351a9d67`、`libc++_shared.so` `f4e1e97c1943e60311e47e8b024d78f5b3b7229b3ccc65feb33af83d6025a670`、`libaggregate_node_probe.so` `8452785332232c5b2c1695ff34b966f05968f811303a05fc791c2a6ff6705321`；每个 ELF 的所有 `PT_LOAD` 均为 `p_align=0x4000`。APK `zipalign -c -P 16 4` 及 Bundletool 1.18.3 AAB `validate` 均通过。
+- **清单更新：**以补充包重新生成的 APK/AAB CycloneDX 1.6 清单各有 337 个组件，较此前归档清单增加 26 个文件组件（25 份许可文本与 manifest），仍标记 `compositions.aggregate=incomplete`。APK BOM `/private/tmp/aggregate-nodeprobe-24.22.3-static-license-apk.cdx.json` SHA-256 `f788d1dbe71b3158c79ae721388b472d2e1980a295decc5882f1ffebc695a533`；AAB BOM `/private/tmp/aggregate-nodeprobe-24.22.3-static-license-aab.cdx.json` SHA-256 `f2db90a2ec51b5abc7f46cf0fffc8bcef025ac2993fb4a168fcab08089a09983`。二者都通过本地缓存的官方 CycloneDX 1.6 schema 校验，保持 358 条 npm 边、2 条已打包 ELF 动态边和 11 条未打包平台动态依赖；这仍不是完整二进制 SBOM，未覆盖静态库逐对象提取关系、依赖精确版本和 Gradle 解析后的完整 classpath。
+- **A3.6 状态：**此次补验改善了隔离候选的源归档输入可追溯性和 APK/AAB 许可资产覆盖；不关闭 Node `process.versions.mobile` 元数据漂移、message suite 4/11 通过、未覆盖 Node 测试类别、完整 SBOM/法律审查、签名产品 Release 或 16 KB 真机安装运行门槛。产品 Node/npm/CLI 入口继续关闭。
+- **verified_scope：**仅上述 Node 24.22.3 arm64 临时源树及隔离 NodeProbe Release APK/AAB；37 个直接静态归档输入的构建/符号比对、25 份许可资产归档哈希、两份 CycloneDX schema、APK zip alignment、AAB Bundletool validate、APK/AAB 中 3 个 `.so` 哈希和 ELF `PT_LOAD` 检查通过。没有生成完整 linker map，没有签名、法律批准、产品 Release Node 集成或 16 KB 实机测试。
+- **retrieval_feedback：**承接前文 NodeProbe 311 组件归档清单、`message` suite 与输出通道复验；检查精确 `libnode.target.mk`/Makefile、37 个输入归档、Node 构建库和隔离 APK/AAB。对 SQLite 公有领域表述仅引用其官方版权页；对 `ncrypto`/SQLite 没有单独许可文件的事实保留为待审查点。包内 JSON 清单和构建审计保留在 `/private/tmp`，避免把临时生成产物当作源码或完整 SBOM 提交。
