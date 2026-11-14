@@ -33,6 +33,7 @@
 </div>
 <div id="values" class="values" aria-live="polite"></div>
 <div id="scope"></div>
+<p id="summary"></p>
 <script id="data" type="application/json">__FRAME_DATA__</script>
 <script>
   const data = JSON.parse(document.getElementById('data').textContent);
@@ -50,9 +51,11 @@
     document.getElementById('values').textContent = `RGB MAE ${frame.mae.toFixed(4)} /255 · 控件区域 ${frame.controlMae.toFixed(4)} /255 · 完全相同像素 ${(frame.identicalPixels * 100).toFixed(2)}%`;
     document.getElementById('scope').textContent = data.summary.sourceMode === 'model-input'
       ? '相同状态与种子；未遮罩、未配准、未做颜色校正。'
-      : frame.eligible
+      : frame.openingMedia
+        ? '开头含媒体冻结、缩放与叠层，误差原样保留，仍计入全量及非结尾循环汇总。'
+        : frame.eligible
         ? '未遮罩、未配准、未做颜色校正；录屏指针和压缩误差计入差分。'
-        : '此帧含播放器循环叠化，仍显示差分，未计入实时控件的汇总误差。';
+        : '此帧含播放器循环叠化，仍显示差分，单列为结尾循环段。';
   }
   function stop() { clearTimeout(timer); timer = undefined; play.textContent = '播放对照'; }
   function advance() {
@@ -64,6 +67,8 @@
   range.oninput = () => { stop(); show(Number(range.value)); };
   document.getElementById('previous').onclick = () => { stop(); show(index - 1); };
   document.getElementById('next').onclick = () => { stop(); show(index + 1); };
+  const summary = data.summary;
+  document.getElementById('summary').textContent = `全量 ${summary.frameCount} 帧 MAE ${summary.allFrameMeanMae.toFixed(4)} /255；单列结尾循环后的 ${summary.eligibleFrameCount} 帧 ${summary.meanMae.toFixed(4)} /255。` + (summary.stableView ? ` 稳定视野 1.52–4.25 s，${summary.stableView.frameCount} 帧 ${summary.stableView.meanMae.toFixed(4)} /255。` : '');
   show(0);
 </script>
 </html>

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'theme_switch_calibration.dart';
+
 /// Independent native reconstruction of the geometry and physical behaviour in
 /// https://experiments.thisiswhitespace.com/glass-light-toggle .
 ///
@@ -9,10 +11,42 @@ import 'dart:math' as math;
 /// random seed is unknown, so identical individual particle paths are not
 /// established merely by using the same physical parameters.
 class ThemeSwitchSimulation {
-  ThemeSwitchSimulation({int seed = 0x6d2b79f5}) {
-    _particles = _makeParticles(_UniformRandom(seed));
+  ThemeSwitchSimulation({
+    this.calibration = ThemeSwitchCalibration.reference,
+    int? seed,
+  }) : seed = seed ?? calibration.seed {
+    calibration.validate();
+    if (this.seed < 0 || this.seed > 0xffffffff) {
+      throw ArgumentError.value(
+        this.seed,
+        'seed',
+        'Use an unsigned 32-bit value.',
+      );
+    }
+    _particles = _makeParticles(
+      _UniformRandom(this.seed),
+      calibration.particleParameters,
+    );
+    _particleParameters = List.unmodifiable(
+      _particles.map((particle) => particle.parameters),
+    );
     snapTo(false);
   }
+
+  final ThemeSwitchCalibration calibration;
+  final int seed;
+
+  ThemeSwitchMotion get _motion => calibration.motion;
+
+  /// The resolved 113-entry parameter set, including generated reference data.
+  List<ThemeSwitchParticleParameters> get particleParameters =>
+      _particleParameters;
+
+  /// Live rendering integrates a fixed 60 Hz clock. Hidden gaps beyond this
+  /// limit settle an unheld handle immediately instead of doing unbounded work.
+  static const maximumRealtimeCatchUpSeconds = 2.0;
+  static const realtimeStepSeconds = 1 / 60;
+  static const _maximumInputMagnitude = 1000000.0;
 
   static const trackWidth = 432.0;
   static const trackHeight = 224.0;
@@ -33,13 +67,9 @@ class ThemeSwitchSimulation {
   static const sunLightRgb = 0xffa82e;
 
   static const _centerCell = 8.0;
-  static const _knobStiffness = 129.0;
-  static const _knobDampingRatio = 0.6;
-  static const _phaseStiffness = 70.0;
-  static const _swirl = 1.62;
-  static const _burst = 0.38;
-
   late final List<_ParticleSpring> _particles;
+  late final List<ThemeSwitchParticleParameters> _particleParameters;
+  double _realtimeAccumulator = 0;
   double _position = 0;
   double _velocity = 0;
   double _target = 0;
@@ -64,6 +94,14 @@ class ThemeSwitchSimulation {
   double get position => _position;
   double get velocity => _velocity;
 
+  /// Raw pointer anchor whose resisted value is the current presentation.
+  /// Capture this rather than [position] when beginning a drag during overshoot.
+  double get unresistedPosition => _position < 0
+      ? _position / _motion.elasticity
+      : _position > 1
+      ? 1 + (_position - 1) / _motion.elasticity
+      : _position;
+
   void setLight(bool value) {
     resumeDynamics();
     final next = value ? 1.0 : 0.0;
@@ -74,6 +112,7 @@ class ThemeSwitchSimulation {
 
   /// Immediately establishes a settled endpoint, including the particle icon.
   void snapTo(bool value) {
+    _realtimeAccumulator = 0;
     resumeDynamics();
     _target = value ? 1 : 0;
     _position = _target;
@@ -119,8 +158,8 @@ class ThemeSwitchSimulation {
       }
     }
     _presentationControlled = true;
-    if (position != null) _position = position;
-    if (velocity != null) _velocity = velocity;
+    if (position != null) _position = _boundedInput(position);
+    if (velocity != null) _velocity = _boundedInput(velocity);
     if (orbitPhase != null) {
       _phase = _unit(orbitPhase);
       _phaseVelocity = 0;
@@ -157,16 +196,19 @@ class ThemeSwitchSimulation {
       throw ArgumentError('Pointer intervals must be positive and finite.');
     }
     beginDrag();
+    position = _boundedInput(position);
     final outside = position < 0 || position > 1;
     final resisted = position < 0
-        ? position * 0.22
+        ? position * _motion.elasticity
         : position > 1
-        ? 1 + (position - 1) * 0.22
+        ? 1 + (position - 1) * _motion.elasticity
         : position;
     final instantaneous = elapsedSeconds == null
-        ? velocity * (outside ? 0.22 : 1)
+        ? velocity * (outside ? _motion.elasticity : 1)
         : (resisted - _position) / elapsedSeconds;
-    _dragVelocity = _dragVelocity * 0.6 + instantaneous * 0.4;
+    _dragVelocity =
+        _dragVelocity * _motion.velocityRetention +
+        _boundedInput(instantaneous) * (1 - _motion.velocityRetention);
     _position = resisted;
     _velocity = _dragVelocity;
   }
@@ -179,7 +221,7 @@ class ThemeSwitchSimulation {
     _dragging = false;
     _target = cancel
         ? _targetBeforeDrag
-        : _position + _dragVelocity * 0.15 > 0.5
+        : _position + _dragVelocity * _motion.releaseProjection > 0.5
         ? 1
         : 0;
     _kick = cancel ? 0 : 0.6;
@@ -195,29 +237,73 @@ class ThemeSwitchSimulation {
       throw ArgumentError('Frame time must be finite with nonnegative dt.');
     }
     final step = math.min(dt, 1 / 30);
+    _realtimeAccumulator = 0;
+    _advanceFrame(step, time);
+  }
+
+  /// Advances the live model independently of the rendering refresh rate.
+  ///
+  /// [time] is the caller's shared simulation/shader clock; this method does
+  /// not add [ThemeSwitchCalibration.timeOriginSeconds] a second time. Unlike
+  /// [advance], no ordinary 20/30 Hz interval is discarded. A gap longer than
+  /// [maximumRealtimeCatchUpSeconds] settles an unheld handle; a held or measured
+  /// presentation retains its position and bounds catch-up work to that limit.
+  void advanceRealtime(double dt, double time) {
+    if (!dt.isFinite || dt < 0 || !time.isFinite) {
+      throw ArgumentError('Frame time must be finite with nonnegative dt.');
+    }
+    if (dt > maximumRealtimeCatchUpSeconds &&
+        !_dragging &&
+        !_presentationControlled) {
+      _time = time;
+      snapTo(light);
+      return;
+    }
+    _realtimeAccumulator += math.min(dt, maximumRealtimeCatchUpSeconds);
+    while (_realtimeAccumulator + 1e-12 >= realtimeStepSeconds) {
+      final stepTime = time - _realtimeAccumulator + realtimeStepSeconds;
+      _advanceFrame(realtimeStepSeconds, stepTime);
+      _realtimeAccumulator = math.max(
+        0,
+        _realtimeAccumulator - realtimeStepSeconds,
+      );
+    }
+    // Twinkle and shader grain share the actual presentation clock, including
+    // the residual fraction of a fixed simulation step and long hidden gaps.
+    _time = time;
+  }
+
+  void _advanceFrame(double step, double time) {
     _time = time;
 
     if (!_dragging && !_presentationControlled) {
-      final damping = 2 * math.sqrt(_knobStiffness) * _knobDampingRatio;
+      final damping =
+          2 * math.sqrt(_motion.knobStiffness) * _motion.knobDamping;
       final substep = step / 4;
       for (var i = 0; i < 4; i++) {
         final acceleration =
-            -_knobStiffness * (_position - _target) - damping * _velocity;
+            -_motion.knobStiffness * (_position - _target) -
+            damping * _velocity;
         _velocity += acceleration * substep;
         _position += _velocity * substep;
       }
     }
 
-    _hover += (_hoverTarget - _hover) * math.min(1, step * 10);
-    _press += (_pressTarget - _press) * math.min(1, step * 18);
-    _kick *= math.exp(-step * 3.5);
+    _hover +=
+        (_hoverTarget - _hover) * math.min(1, step * _motion.hoverResponse);
+    _press +=
+        (_pressTarget - _press) * math.min(1, step * _motion.pressResponse);
+    _kick *= math.exp(-step * _motion.kickDecay);
 
     final progress = _unit(_position);
     if (!_presentationPhaseControlled) {
       final desiredPhase = _cubicInOut(progress);
       final phaseAcceleration =
-          -_phaseStiffness * (_phase - desiredPhase) -
-          2 * math.sqrt(_phaseStiffness) * _phaseVelocity;
+          -_motion.phaseStiffness * (_phase - desiredPhase) -
+          2 *
+              math.sqrt(_motion.phaseStiffness) *
+              _motion.phaseDamping *
+              _phaseVelocity;
       _phaseVelocity += phaseAcceleration * step;
       _phase += _phaseVelocity * step;
     }
@@ -238,7 +324,8 @@ class ThemeSwitchSimulation {
           ..vy = 0
           ..initialized = true;
       }
-      final damping = 2 * math.sqrt(particle.stiffness) * 0.72;
+      final damping =
+          2 * math.sqrt(particle.stiffness) * _motion.particleDamping;
       particle.vx +=
           (-particle.stiffness * (particle.x - goal.x) -
               damping * particle.vx) *
@@ -256,21 +343,33 @@ class ThemeSwitchSimulation {
   ThemeSwitchSnapshot get snapshot {
     final progress = _unit(_position);
     final overshoot = math.max(math.max(-_position, _position - 1), 0);
-    final stretch = math.min(_velocity.abs() * 6.5, 16);
-    final squeeze = 1 - _press * 0.035;
-    final halfWidth =
-        (restingKnobHalfSize + stretch - overshoot * 110) * squeeze;
-    final halfHeight =
-        math.min(
-          restingKnobHalfSize - stretch * 0.45 + overshoot * 30,
-          restingKnobHalfSize + 5,
-        ) *
-        squeeze;
-    var knobX = -knobTravel / 2 + knobTravel * progress;
+    final stretch = math.min(
+      _velocity.abs() * _motion.stretchRate,
+      _motion.maxStretch,
+    );
+    final squeeze = 1 - _press * _motion.pressSqueeze;
+    final halfWidth = math.max(
+      2.0,
+      (_motion.restingKnobHalfSize +
+              stretch -
+              overshoot * _motion.overshootHorizontal) *
+          squeeze,
+    );
+    final halfHeight = math.max(
+      2.0,
+      math.min(
+            _motion.restingKnobHalfSize -
+                stretch * _motion.verticalStretch +
+                overshoot * _motion.overshootVertical,
+            _motion.restingKnobHalfSize + 5,
+          ) *
+          squeeze,
+    );
+    var knobX = -_motion.knobTravel / 2 + _motion.knobTravel * progress;
     if (_position > 1) {
-      knobX += overshoot * 110;
+      knobX += overshoot * _motion.overshootHorizontal;
     } else if (_position < 0) {
-      knobX -= overshoot * 110;
+      knobX -= overshoot * _motion.overshootHorizontal;
     }
     final phase = _unit(_phase);
     final theta = _orbitDirection > 0
@@ -281,8 +380,8 @@ class ThemeSwitchSimulation {
             _hover * 0.08 +
             math.min(_velocity.abs() * 0.05, 0.18) +
             _kick * 0.12) *
-        lightIntensity;
-    final knobVelocity = _velocity * knobTravel;
+        calibration.optics.lightIntensity;
+    final knobVelocity = _velocity * _motion.knobTravel;
     final drawnParticles = <ThemeSwitchParticle>[];
     for (final particle in _particles) {
       final goal = _particleGoal(particle, progress);
@@ -304,7 +403,7 @@ class ThemeSwitchSimulation {
       halfWidth: halfWidth,
       halfHeight: halfHeight,
       radius: math.min(
-        restingKnobRadius,
+        _motion.restingKnobRadius,
         math.min(halfWidth - 1, halfHeight - 1),
       ),
       theta: theta,
@@ -315,7 +414,9 @@ class ThemeSwitchSimulation {
   }
 
   _ParticleGoal _particleGoal(_ParticleSpring particle, double progress) {
-    final blend = _cubicInOut(_unit((progress - particle.delay) / 0.62));
+    final blend = _cubicInOut(
+      _unit((progress - particle.delay) / _motion.morphSpan),
+    );
     final startX = (particle.moon.x - _centerCell) * pixelPitch;
     final startY = (particle.moon.y - _centerCell) * pixelPitch;
     final endX = (particle.sun.x - _centerCell) * pixelPitch;
@@ -326,12 +427,16 @@ class ThemeSwitchSimulation {
     final denominator = distance == 0 ? 1 : distance;
     final arc = math.sin(math.pi * blend);
     var x =
-        startX + dx * blend - dy / denominator * particle.curl * _swirl * arc;
+        startX +
+        dx * blend -
+        dy / denominator * particle.curl * _motion.swirl * arc;
     var y =
-        startY + dy * blend + dx / denominator * particle.curl * _swirl * arc;
+        startY +
+        dy * blend +
+        dx / denominator * particle.curl * _motion.swirl * arc;
     final radius = math.sqrt(x * x + y * y);
     final radialDenominator = radius == 0 ? 1 : radius;
-    final expansion = particle.radialLift * arc * 1.4 * _burst;
+    final expansion = particle.radialLift * arc * 1.4 * _motion.burst;
     x += x / radialDenominator * expansion;
     y += y / radialDenominator * expansion;
 
@@ -344,7 +449,14 @@ class ThemeSwitchSimulation {
     if (particle.sun.kind == _CellKind.ray) {
       sunBrightness *=
           0.78 +
-          0.22 * (0.5 + 0.5 * math.sin(_time * 2.2 - particle.sun.angle));
+          0.22 *
+              (0.5 +
+                  0.5 *
+                      math.sin(
+                        _time * _motion.sunRayRate +
+                            _motion.sunRayPhase -
+                            particle.sun.angle,
+                      ));
     }
     return _ParticleGoal(
       x,
@@ -355,7 +467,10 @@ class ThemeSwitchSimulation {
     );
   }
 
-  static List<_ParticleSpring> _makeParticles(_UniformRandom random) {
+  static List<_ParticleSpring> _makeParticles(
+    _UniformRandom random,
+    List<ThemeSwitchParticleParameters>? configured,
+  ) {
     final moon = _moonCells()..sort(_compareCells);
     final sun = _sunCells()..sort(_compareCells);
     final moonHasMoreCells = moon.length >= sun.length;
@@ -371,20 +486,30 @@ class ThemeSwitchSimulation {
       previousSmallIndex = smallIndex;
       final moonCell = moonHasMoreCells ? larger[i] : smallerCell;
       final sunCell = moonHasMoreCells ? smallerCell : larger[i];
+      final generated = ThemeSwitchParticleParameters(
+        delay:
+            0.04 +
+            (1 - moonCell.x / (gridSize - 1)) * 0.26 +
+            random.between(0, 0.06),
+        curl: random.between(-1, 1) * 16 + (moonCell.y - _centerCell) * 0.9,
+        lift: random.between(2, 12),
+        stiffness: random.between(260, 460),
+        drag: random.between(0.004, 0.016),
+        phase: random.between(0, math.pi * 2),
+        twinkle: random.between(1.5, 3.2),
+      );
+      final parameters = configured?[i] ?? generated;
       particles.add(
         _ParticleSpring(
           moon: moonCell,
           sun: sunCell,
-          delay:
-              0.04 +
-              (1 - moonCell.x / (gridSize - 1)) * 0.26 +
-              random.between(0, 0.06),
-          curl: random.between(-1, 1) * 16 + (moonCell.y - _centerCell) * 0.9,
-          radialLift: random.between(2, 12),
-          stiffness: random.between(260, 460),
-          motionDrag: random.between(0.004, 0.016),
-          phase: random.between(0, math.pi * 2),
-          twinkleRate: random.between(1.5, 3.2),
+          delay: parameters.delay,
+          curl: parameters.curl,
+          radialLift: parameters.lift,
+          stiffness: parameters.stiffness,
+          motionDrag: parameters.drag,
+          phase: parameters.phase,
+          twinkleRate: parameters.twinkle,
         ),
       );
     }
@@ -599,6 +724,16 @@ class _ParticleSpring {
   final double motionDrag;
   final double phase;
   final double twinkleRate;
+
+  ThemeSwitchParticleParameters get parameters => ThemeSwitchParticleParameters(
+    delay: delay,
+    curl: curl,
+    lift: radialLift,
+    stiffness: stiffness,
+    drag: motionDrag,
+    phase: phase,
+    twinkle: twinkleRate,
+  );
   double x = 0;
   double y = 0;
   double vx = 0;
@@ -627,6 +762,11 @@ class _UniformRandom {
 }
 
 double _unit(double value) => value.clamp(0.0, 1.0);
+
+double _boundedInput(double value) => value.clamp(
+  -ThemeSwitchSimulation._maximumInputMagnitude,
+  ThemeSwitchSimulation._maximumInputMagnitude,
+);
 
 double _smooth(double minimum, double maximum, double value) {
   final t = _unit((value - minimum) / (maximum - minimum));

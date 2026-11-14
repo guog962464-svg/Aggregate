@@ -17,6 +17,10 @@ uniform float energy;
 uniform float raised;
 uniform float orbitAngle;
 uniform vec3 lamp;
+uniform float refraction;
+uniform float frost;
+uniform float pixelGlow;
+uniform float stripHalfAngle;
 uniform sampler2D matrixImage;
 uniform sampler2D diffuseImage;
 out vec4 fragColor;
@@ -39,7 +43,7 @@ float stripDistance(vec2 point) {
   float angularError = atan(sin(atan(offset.y, offset.x) - orbitAngle),
                             cos(atan(offset.y, offset.x) - orbitAngle));
   vec2 deviation = vec2(handleDistance(point) - 6.5,
-                       max(abs(angularError) - 0.92, 0.0) * 104.0);
+                       max(abs(angularError) - stripHalfAngle, 0.0) * 104.0);
   return length(deviation) - 1.5;
 }
 
@@ -80,7 +84,7 @@ vec4 underneath(vec2 point, float softness, vec2 chromatic) {
   vec3 ink = mix(vec3(1.0, 0.965, 0.925), vec3(0.11, 0.105, 0.10), brightFloor);
   ink += mix(lamp * wash * 0.9, vec3(0.25, 0.08, 0.0) * wash, daylight);
   vec3 result = mix(floorColor, ink, coverage);
-  result += vec3(1.0, 0.78, 0.55) * sampleMatrix(point, true) * 0.64 * (1.0 - daylight);
+  result += vec3(1.0, 0.78, 0.55) * sampleMatrix(point, true) * pixelGlow * (1.0 - daylight);
   return vec4(result, coverage.g);
 }
 
@@ -130,8 +134,8 @@ void main() {
     normal /= max(length(normal), 0.0001);
     float depth = max(-glassDistance, 0.0);
     float bevel = pow(1.0 - clamp(depth / 26.0, 0.0, 1.0), 2.6);
-    vec2 insetPoint = point - normal * bevel * 40.0 - (point - handle) * 0.055;
-    vec4 content = underneath(insetPoint, 0.06 + 0.76 * bevel,
+    vec2 insetPoint = point - normal * bevel * refraction - (point - handle) * 0.055;
+    vec4 content = underneath(insetPoint, 0.06 + frost * bevel,
         normal * bevel * 3.2 + (point - handle) * 0.006);
     float vertical = clamp((point.y - handle.y + extent.y) / (2.0 * extent.y), 0.0, 1.0);
     vec3 shadedGlass = content.rgb * 0.84 + 0.135 * (1.0 - vertical * 0.55);

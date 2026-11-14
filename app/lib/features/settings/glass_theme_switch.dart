@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import 'theme_switch_calibration.dart';
 import 'theme_switch_simulation.dart';
 
 /// A single draggable glass handle. All animation state belongs to one clock,
@@ -14,10 +15,12 @@ class GlassThemeSwitch extends StatefulWidget {
     super.key,
     required this.light,
     required this.onChanged,
+    this.calibration = ThemeSwitchCalibration.reference,
   });
 
   final bool light;
   final ValueChanged<bool> onChanged;
+  final ThemeSwitchCalibration calibration;
 
   @override
   State<GlassThemeSwitch> createState() => _GlassThemeSwitchState();
@@ -25,7 +28,7 @@ class GlassThemeSwitch extends StatefulWidget {
 
 class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     with SingleTickerProviderStateMixin {
-  final _simulation = ThemeSwitchSimulation();
+  late ThemeSwitchSimulation _simulation;
   final _focus = FocusNode(debugLabel: 'Theme switch');
   late final Ticker _ticker;
   Duration? _lastTick;
@@ -44,7 +47,10 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   @override
   void initState() {
     super.initState();
+    _simulation = ThemeSwitchSimulation(calibration: widget.calibration);
+    _time = widget.calibration.timeOriginSeconds;
     _simulation.snapTo(widget.light);
+    _simulation.advanceRealtime(0, _time);
     _ticker = createTicker(_tick);
   }
 
@@ -64,6 +70,14 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   @override
   void didUpdateWidget(covariant GlassThemeSwitch oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.calibration != oldWidget.calibration) {
+      _pointer = null;
+      _simulation = ThemeSwitchSimulation(calibration: widget.calibration)
+        ..snapTo(widget.light);
+      _time = widget.calibration.timeOriginSeconds;
+      _simulation.advanceRealtime(0, _time);
+      _lastTick = null;
+    }
     if (widget.light != oldWidget.light) {
       if (_reduceMotion) {
         _simulation.snapTo(widget.light);
@@ -75,11 +89,11 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
 
   void _tick(Duration elapsed) {
     final dt = _lastTick == null
-        ? 1 / 60
+        ? 0.0
         : (elapsed - _lastTick!).inMicroseconds / 1000000;
     _lastTick = elapsed;
-    _time = elapsed.inMicroseconds / 1000000;
-    _simulation.advance(dt, _time);
+    _time += dt;
+    _simulation.advanceRealtime(dt, _time);
     setState(() {});
   }
 
@@ -101,8 +115,8 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   }
 
   Offset _designPoint(Offset local, Size size) =>
-      (local - ThemeSwitchArtwork.sceneOrigin(size)) /
-      ThemeSwitchArtwork.sceneScale(size);
+      (local - ThemeSwitchArtwork.sceneOrigin(size, widget.calibration.scene)) /
+      ThemeSwitchArtwork.sceneScale(size, widget.calibration.scene);
 
   bool _insideTrack(Offset point) => RRect.fromRectAndRadius(
     const Rect.fromLTWH(-216, -112, 432, 224),
@@ -115,7 +129,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     _focus.requestFocus();
     _pointer = event.pointer;
     _startX = point.dx;
-    _startPosition = _simulation.position;
+    _startPosition = _simulation.unresistedPosition;
     _lastPosition = _startPosition;
     _lastPointerTime = event.timeStamp;
     _moved = 0;
@@ -138,9 +152,11 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     final distance = point.dx - _startX;
     _moved = math.max(
       _moved,
-      distance.abs() * ThemeSwitchArtwork.sceneScale(size),
+      distance.abs() *
+          ThemeSwitchArtwork.sceneScale(size, widget.calibration.scene),
     );
-    final position = _startPosition + distance / 208;
+    final position =
+        _startPosition + distance / widget.calibration.motion.knobTravel;
     final dt = math.max(
       0.001,
       (event.timeStamp - _lastPointerTime).inMicroseconds / 1000000,
@@ -160,12 +176,13 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     _simulation.setPressed(false);
     if (cancel) {
       _simulation.releaseDrag(cancel: true);
+      _simulation.setLight(widget.light);
     } else if (_startedOnHandle && _moved >= 4) {
       _simulation.releaseDrag();
       widget.onChanged(_simulation.light);
     } else {
       _simulation.releaseDrag(cancel: true);
-      _select(!_simulation.light);
+      _select(!widget.light);
     }
     setState(() {});
   }
@@ -240,6 +257,8 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
                     child: ThemeSwitchArtwork(
                       frame: _simulation.snapshot,
                       time: _time,
+                      optics: widget.calibration.optics,
+                      scene: widget.calibration.scene,
                     ),
                   ),
                 ),
@@ -270,6 +289,8 @@ class ThemeSwitchArtwork extends StatefulWidget {
     this.program,
     this.scale,
     this.center,
+    this.optics = const ThemeSwitchOptics(),
+    this.scene = const ThemeSwitchScene(),
   });
 
   final ThemeSwitchSnapshot frame;
@@ -277,13 +298,23 @@ class ThemeSwitchArtwork extends StatefulWidget {
   final ui.FragmentProgram? program;
   final double? scale;
   final Offset? center;
+  final ThemeSwitchOptics optics;
+  final ThemeSwitchScene scene;
 
   static Future<ui.FragmentProgram>? _program;
   static Future<ui.FragmentProgram> loadProgram() => _program ??=
       ui.FragmentProgram.fromAsset('shaders/glass_theme_switch.frag');
-  static double sceneScale(Size size) => size.width * 0.76 / 720;
-  static Offset sceneOrigin(Size size) =>
-      Offset(size.width / 2, size.height / 2 - size.width * 3 / 720);
+  static double sceneScale(
+    Size size, [
+    ThemeSwitchScene scene = const ThemeSwitchScene(),
+  ]) => size.width * scene.scale / 720;
+  static Offset sceneOrigin(
+    Size size, [
+    ThemeSwitchScene scene = const ThemeSwitchScene(),
+  ]) => Offset(
+    size.width / 2 + size.width * scene.offsetX / 720,
+    size.height / 2 + size.width * scene.offsetY / 720,
+  );
 
   @override
   State<ThemeSwitchArtwork> createState() => _ThemeSwitchArtworkState();
@@ -402,6 +433,8 @@ class _ThemeSwitchArtworkState extends State<ThemeSwitchArtwork> {
         ratio: MediaQuery.devicePixelRatioOf(context),
         scale: widget.scale,
         center: widget.center,
+        optics: widget.optics,
+        scene: widget.scene,
       ),
     );
   }
@@ -417,6 +450,8 @@ class _GlassPainter extends CustomPainter {
     required this.ratio,
     required this.scale,
     required this.center,
+    required this.optics,
+    required this.scene,
   });
 
   final ui.FragmentShader? shader;
@@ -427,18 +462,20 @@ class _GlassPainter extends CustomPainter {
   final double ratio;
   final double? scale;
   final Offset? center;
+  final ThemeSwitchOptics optics;
+  final ThemeSwitchScene scene;
 
   @override
   void paint(Canvas canvas, Size size) {
     final effect = shader;
     if (effect == null) return;
-    final origin = center ?? ThemeSwitchArtwork.sceneOrigin(size);
+    final origin = center ?? ThemeSwitchArtwork.sceneOrigin(size, scene);
     final uniforms = [
       size.width,
       size.height,
       origin.dx,
       origin.dy,
-      scale ?? ThemeSwitchArtwork.sceneScale(size),
+      scale ?? ThemeSwitchArtwork.sceneScale(size, scene),
       ratio,
       frame.knobX,
       0.0,
@@ -450,9 +487,13 @@ class _GlassPainter extends CustomPainter {
       frame.led,
       frame.lift,
       frame.theta,
-      (111 + (255 - 111) * frame.theme) / 255,
-      (134 + (168 - 134) * frame.theme) / 255,
-      (255 + (46 - 255) * frame.theme) / 255,
+      _lampChannel(16),
+      _lampChannel(8),
+      _lampChannel(0),
+      optics.refraction,
+      optics.frost,
+      optics.pixelGlow,
+      optics.stripHalfAngle,
     ];
     for (var i = 0; i < uniforms.length; i++) {
       effect.setFloat(i, uniforms[i]);
@@ -460,6 +501,12 @@ class _GlassPainter extends CustomPainter {
     effect.setImageSampler(0, matrix, filterQuality: FilterQuality.low);
     effect.setImageSampler(1, diffuse, filterQuality: FilterQuality.low);
     canvas.drawRect(Offset.zero & size, Paint()..shader = effect);
+  }
+
+  double _lampChannel(int shift) {
+    final moon = (optics.moonRgb >> shift) & 0xff;
+    final sun = (optics.sunRgb >> shift) & 0xff;
+    return (moon + (sun - moon) * frame.theme) / 255;
   }
 
   @override

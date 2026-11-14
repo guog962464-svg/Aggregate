@@ -2,6 +2,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
 import 'glass_theme_switch.dart';
+import 'theme_switch_fitted_calibration.dart';
 
 class AppearanceSelector extends StatelessWidget {
   const AppearanceSelector({
@@ -31,6 +32,7 @@ class AppearanceSelector extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: GlassThemeSwitch(
+            calibration: videoFittedThemeSwitch,
             light: light,
             onChanged: (value) => onChanged(
               value ? AppearancePreference.light : AppearancePreference.dark,

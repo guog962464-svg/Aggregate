@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
+import 'package:aggregate/features/settings/theme_switch_calibration.dart';
 import 'package:aggregate/features/settings/theme_switch_simulation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -12,6 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 const _referenceRoot = String.fromEnvironment('THEME_SWITCH_REFERENCE_ROOT');
 const _exportRoot = String.fromEnvironment('THEME_SWITCH_EXPORT_DIR');
 const _modelInput = String.fromEnvironment('THEME_SWITCH_MODEL_INPUT');
+const _calibrationInput = String.fromEnvironment('THEME_SWITCH_CALIBRATION');
+const _motionInput = String.fromEnvironment('THEME_SWITCH_MOTION_INPUT');
+const _timeMappingInput = String.fromEnvironment('THEME_SWITCH_TIME_MAPPING');
 const _seed = int.fromEnvironment(
   'THEME_SWITCH_SEED',
   defaultValue: 0x6d2b79f5,
@@ -61,6 +65,12 @@ void main() {
       );
       final timeOffset = double.parse(_timeOffsetText);
       expect(timeOffset.isFinite, isTrue);
+      final calibration = _calibrationInput.isEmpty
+          ? ThemeSwitchCalibration.reference
+          : ThemeSwitchCalibration.fromJson(
+              jsonDecode(File(_calibrationInput).readAsStringSync())
+                  as Map<String, dynamic>,
+            );
 
       final root = Directory(_referenceRoot).absolute.path;
       final renders = Directory('${output.path}/renders');
@@ -114,7 +124,39 @@ void main() {
       final byIndex = {for (final item in measurements) item.index: item};
       final velocityEstimates = _estimateVelocities(measurements);
 
-      final simulation = ThemeSwitchSimulation(seed: _seed);
+      final simulation = ThemeSwitchSimulation(
+        calibration: calibration,
+        seed: _calibrationInput.isEmpty ? _seed : null,
+      );
+      final motion = _motionInput.isEmpty
+          ? null
+          : _MotionTimeline.fromJson(
+              jsonDecode(File(_motionInput).readAsStringSync())
+                  as Map<String, dynamic>,
+            );
+      final timeMapping = <int, ({double userTime, double sourceTime})>{};
+      if (_timeMappingInput.isNotEmpty) {
+        expect(
+          motion,
+          isNotNull,
+          reason: 'Source-clock mapping needs motion input.',
+        );
+        final mapping = jsonDecode(
+          File(_timeMappingInput).readAsStringSync(),
+        ) as Map<String, dynamic>;
+        var previousSource = double.negativeInfinity;
+        for (final raw in mapping['samples'] as List<dynamic>) {
+          final row = raw as Map<String, dynamic>;
+          final index = (row['frame'] as num).toInt();
+          final sourceTime = (row['sourcePTS'] as num).toDouble();
+          final userTime = (row['userPTS'] as num).toDouble();
+          expect(sourceTime.isFinite && userTime.isFinite, isTrue);
+          expect(sourceTime, greaterThanOrEqualTo(previousSource));
+          expect(timeMapping.containsKey(index), isFalse);
+          timeMapping[index] = (userTime: userTime, sourceTime: sourceTime);
+          previousSource = sourceTime;
+        }
+      }
       final manifestFrames = <Map<String, Object?>>[];
       var previousPts = frames.first.pts;
       _Measurement? previousMeasurement;
@@ -135,9 +177,16 @@ void main() {
           reason: 'Source and measured timeline PTS must agree.',
         );
         final dt = i == 0 ? 0.0 : frame.pts - previousPts;
+        final mappedTime = timeMapping[frame.index];
+        if (mappedTime != null) {
+          expect(mappedTime.userTime, closeTo(frame.pts, 1e-6));
+        }
+        final sourceTime = mappedTime?.sourceTime ?? frame.pts + timeOffset;
         expect(dt, greaterThanOrEqualTo(0));
         final velocity = velocityEstimates[frame.index]!;
-        final integrationSteps = previousMeasurement == null
+        final integrationSteps = motion != null
+            ? motion.advanceTo(simulation, sourceTime)
+            : previousMeasurement == null
             ? _initializeMeasuredState(
                 simulation,
                 observed,
@@ -183,13 +232,23 @@ void main() {
             reason: 'Geometry fit and source frame PTS must agree.',
           );
           if (geometryFit.eligible) {
-            final halfWidth = geometryFit.halfWidth / _scale;
-            final halfHeight = geometryFit.halfHeight / _scale;
+            final sceneScale = _scale * calibration.scene.scale / 0.76;
+            final centerX = 360 + calibration.scene.offsetX;
+            final halfWidth = geometryFit.halfWidth / sceneScale;
+            final halfHeight = geometryFit.halfHeight / sceneScale;
+            final knobX = (geometryFit.centerX - centerX) / sceneScale;
+            final translation = knobX - renderFrame.knobX;
             renderFrame = renderFrame.copyWith(
-              knobX: (geometryFit.centerX - _center.dx) / _scale,
+              knobX: knobX,
               halfWidth: halfWidth,
               halfHeight: halfHeight,
               radius: math.min(58, math.min(halfWidth - 1, halfHeight - 1)),
+              particles: renderFrame.particles
+                  .map(
+                    (particle) =>
+                        particle.copyWith(x: particle.x + translation),
+                  )
+                  .toList(growable: false),
             );
           }
         }
@@ -200,8 +259,10 @@ void main() {
           tester,
           program!,
           renderFrame,
-          time: frame.pts + timeOffset,
+          time: sourceTime,
           outputPath: renderPath,
+          optics: calibration.optics,
+          scene: calibration.scene,
           elapsed: Duration(microseconds: (dt * 1000000).round()),
         );
 
@@ -209,7 +270,8 @@ void main() {
           'index': frame.index,
           'pts': frame.pts,
           'dt': dt,
-          'shaderTime': frame.pts + timeOffset,
+          'shaderTime': sourceTime,
+          'sourceTimeMapped': mappedTime != null,
           'referencePath': '$root/frames/${frame.file}',
           'renderPath': renderPath,
           'renderRelativePath': relativePath,
@@ -228,7 +290,9 @@ void main() {
             if (observed.note.isNotEmpty) observed.note,
           ],
           'measurement': observed.fields,
-          'positionSource': observed.geometryCenterUsed
+          'positionSource': motion != null
+              ? 'independent-body-contour-source-clock'
+              : observed.geometryCenterUsed
               ? 'fitted-body-center'
               : 'legacy-glyph-center',
           if (themeFit != null)
@@ -250,7 +314,9 @@ void main() {
           'integration': {
             'steps': integrationSteps,
             'maximumStepSeconds': 1 / 60,
-            'trajectory': 'linear interpolation between adjacent measured position/velocity values',
+            'trajectory': motion == null
+                ? 'linear interpolation between adjacent measured position/velocity values'
+                : 'source-clock 60 Hz body-contour inputs; fractional presentation does not integrate an extra step',
           },
           'state': _stateParameters(renderFrame),
         });
@@ -264,7 +330,15 @@ void main() {
         'schemaVersion': 1,
         'referenceRoot': root,
         'exportRoot': output.path,
-        'seed': _seed,
+        'seed': simulation.seed,
+        'calibrationSource': _calibrationInput,
+        'calibration': calibration.toJson(),
+        'motionInputSource': _motionInput,
+        'sourceTimeMapping': _timeMappingInput,
+        if (motion != null)
+          'motionClock': _timeMappingInput.isEmpty
+              ? 'source PTS = recording PTS + shaderTimeOffset; fixed source 60 Hz steps, no second calibration epoch offset'
+              : 'listed frames use observed integer source-frame timestamps, others use recording PTS + shaderTimeOffset; no second calibration epoch offset',
         'shaderTimeOffset': timeOffset,
         'sourceAnimationFramesPerSecond': 60,
         'maximumIntegrationStepSeconds': 1 / 60,
@@ -283,10 +357,16 @@ void main() {
             'path': themeFitPath,
             'minimumConfidence': 0.65,
             'excludedStatus': 'player_loop_blend',
-            'appliedFields': ['knobX', 'halfWidth', 'halfHeight', 'radius'],
+            'appliedFields': [
+              'knobX',
+              'halfWidth',
+              'halfHeight',
+              'radius',
+              'particleCenterTranslation',
+            ],
             'motionInput': 'eligible body-center observations; otherwise legacy glyph-center fallback',
             'centerYApplied': false,
-            'scaleApplied': false,
+            'scaleApplied': true,
             'thetaMeasurementCoordinatesChanged': false,
             'groundTruthEstablished': false,
           },
@@ -295,9 +375,9 @@ void main() {
           'width': 720,
           'height': 540,
           'devicePixelRatio': 1,
-          'scale': _scale,
-          'centerX': _center.dx,
-          'centerY': _center.dy,
+          'scale': _scale * calibration.scene.scale / 0.76,
+          'centerX': 360 + calibration.scene.offsetX,
+          'centerY': 270 + calibration.scene.offsetY,
           'referenceCrop': {
             'x': 0,
             'y': _sourceCropTop,
@@ -310,11 +390,11 @@ void main() {
             : '(center_x_est - 360) / (0.76 * 208) + 0.5',
         'limitations': [
           'All timeline observations are low-confidence fitted measurements.',
-          'The source pointer and gallery blend require explicit comparison masks.',
+          'The pointer and gallery blend remain in raw differences; blend frames are separately marked in the eligible summary.',
           'Rendered frames establish a measurable baseline, not proof of exact fidelity.',
           if (_useFittedTheme) 'The fitted background theme does not validate or override knob geometry.',
           if (_useFittedGeometry) 'Body-edge geometry fitting is confidence gated; retained fallback observations can affect velocity interpolation across mixed-confidence intervals.',
-          if (_useFittedGeometry) 'Scene center Y, scene scale, and measured glow-angle coordinates remain fixed and are not validated by geometry fitting.',
+          if (_useFittedGeometry) 'Scene framing comes from calibration, not per-frame body fitting. Only particle centre translation follows the observed handle; relative particle paths remain simulated.',
         ],
         'frames': manifestFrames,
       };
@@ -329,6 +409,87 @@ void main() {
     skip: _exportRoot.isEmpty,
     timeout: const Timeout(Duration(minutes: 5)),
   );
+}
+
+/// Verification input only. The live widget never reads measured trajectories.
+class _MotionTimeline {
+  _MotionTimeline(this.samples);
+
+  factory _MotionTimeline.fromJson(Map<String, dynamic> json) {
+    final samples = (json['samples'] as List<dynamic>).map((raw) {
+      final row = raw as Map<String, dynamic>;
+      return (
+        time: (row['pts'] as num).toDouble(),
+        position: (row['position'] as num).toDouble(),
+        velocity: (row['velocity'] as num).toDouble(),
+      );
+    }).toList();
+    if (samples.isEmpty) throw const FormatException('Empty motion input.');
+    for (var i = 0; i < samples.length; i++) {
+      final row = samples[i];
+      if (![row.time, row.position, row.velocity].every((v) => v.isFinite) ||
+          (i > 0 && row.time <= samples[i - 1].time)) {
+        throw const FormatException(
+          'Motion samples must be finite and ordered.',
+        );
+      }
+    }
+    return _MotionTimeline(samples);
+  }
+
+  final List<({double time, double position, double velocity})> samples;
+  var _next = 0;
+  double? _integratedTime;
+
+  int advanceTo(ThemeSwitchSimulation simulation, double time) {
+    var steps = 0;
+    while (_next < samples.length && samples[_next].time <= time + 1e-10) {
+      final row = samples[_next++];
+      simulation.setPresentation(
+        position: row.position,
+        velocity: row.velocity,
+      );
+      simulation.advance(
+        _integratedTime == null ? 0 : row.time - _integratedTime!,
+        row.time,
+      );
+      _integratedTime = row.time;
+      steps++;
+    }
+    if (_next == samples.length) {
+      while (_integratedTime! + 1 / 60 <= time + 1e-10) {
+        final next = _integratedTime! + 1 / 60;
+        simulation.setPresentation(
+          position: samples.last.position,
+          velocity: 0,
+        );
+        simulation.advance(1 / 60, next);
+        _integratedTime = next;
+        steps++;
+      }
+      simulation.setPresentation(
+        position: samples.last.position,
+        velocity: time <= samples.last.time + 1e-10 ? samples.last.velocity : 0,
+      );
+    } else if (_next > 0) {
+      final a = samples[_next - 1];
+      final b = samples[_next];
+      final fraction = ((time - a.time) / (b.time - a.time)).clamp(0.0, 1.0);
+      simulation.setPresentation(
+        position: a.position + (b.position - a.position) * fraction,
+        velocity: a.velocity + (b.velocity - a.velocity) * fraction,
+      );
+    } else {
+      simulation.setPresentation(
+        position: samples.first.position,
+        velocity: samples.first.velocity,
+      );
+    }
+    // Present the real observation clock without integrating a partial source
+    // step. It is shared by star brightness and the shader's animated grain.
+    simulation.advance(0, time);
+    return steps;
+  }
 }
 
 int _initializeMeasuredState(
@@ -387,6 +548,8 @@ Future<void> _captureSnapshot(
   required double time,
   required String outputPath,
   Duration elapsed = Duration.zero,
+  ThemeSwitchOptics optics = const ThemeSwitchOptics(),
+  ThemeSwitchScene scene = const ThemeSwitchScene(),
 }) async {
   const boundaryKey = ValueKey('theme-switch-reference-boundary');
   await tester.pumpWidget(
@@ -402,8 +565,9 @@ Future<void> _captureSnapshot(
               frame: frame,
               time: time,
               program: program,
-              scale: _scale,
-              center: _center,
+              scale: _scale * scene.scale / 0.76,
+              center: Offset(360 + scene.offsetX, 270 + scene.offsetY),
+              optics: optics,
             ),
           ),
         ),

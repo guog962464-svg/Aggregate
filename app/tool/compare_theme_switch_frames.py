@@ -47,6 +47,7 @@ def main():
         results.append({
             "frame": frame["index"], "pts": frame["pts"],
             "eligible": frame["comparisonEligible"],
+            "openingMedia": manifest.get("sourceMode", "recording") == "recording" and frame["pts"] < 1.52,
             "mae": float(delta.mean()), "controlMae": float(control.mean()),
             "maxError": float(delta.max()),
             "identicalPixels": float((delta.max(axis=2) == 0).mean()),
@@ -54,6 +55,7 @@ def main():
         })
 
     eligible = [row for row in results if row["eligible"]]
+    stable = [row for row in eligible if 1.52 <= row["pts"] <= 4.25]
     summary = {
         "manifest": str(args.manifest.resolve()),
         "sourceMode": manifest.get("sourceMode", "recording"),
@@ -65,6 +67,14 @@ def main():
         "comparison": "same timestamp, fixed crop, no image registration or color correction",
         "limitations": manifest.get("limitations", []),
     }
+    if manifest.get("sourceMode", "recording") == "recording" and stable:
+        summary["stableView"] = {
+            "intervalSeconds": [1.52, 4.25],
+            "frameCount": len(stable),
+            "meanMae": float(np.mean([row["mae"] for row in stable])),
+            "meanControlMae": float(np.mean([row["controlMae"] for row in stable])),
+            "scope": "Additional fixed interval after opening media zoom and before ending gallery blend; all frames remain in the full report.",
+        }
     (output / "metrics.json").write_text(json.dumps({"summary": summary, "frames": results}, indent=2))
     with (output / "metrics.csv").open("w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=[key for key in results[0] if key != "paths"])
