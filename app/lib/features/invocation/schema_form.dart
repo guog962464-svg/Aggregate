@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
 
+const _lazySchemaFieldThreshold = 40;
+
 class SchemaForm extends StatefulWidget {
   const SchemaForm({super.key, required this.schema});
   final JsonMap schema;
@@ -19,6 +21,7 @@ class SchemaFormState extends State<SchemaForm> {
   final selections = <String, String>{};
   final expandedJsonFields = <String>{};
   final summaryFocus = FocusNode();
+  final validationErrors = <String, String>{};
   bool showSummary = false;
 
   Map<String, Object?> get properties {
@@ -41,8 +44,15 @@ class SchemaFormState extends State<SchemaForm> {
   }
 
   bool validate() {
-    final valid = formKey.currentState?.validate() ?? true;
-    setState(() => showSummary = !valid);
+    final allErrors = _validateAllFields();
+    final visibleFieldsValid = formKey.currentState?.validate() ?? true;
+    final valid = allErrors.isEmpty && visibleFieldsValid;
+    setState(() {
+      validationErrors
+        ..clear()
+        ..addAll(allErrors);
+      showSummary = !valid;
+    });
     if (!valid) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) summaryFocus.requestFocus();
@@ -64,7 +74,8 @@ class SchemaFormState extends State<SchemaForm> {
         values[entry.key] = selections[entry.key];
         continue;
       }
-      final raw = controllers[entry.key]?.text.trim() ?? '';
+      final raw = (controllers[entry.key]?.text ?? _defaultFieldText(type))
+          .trim();
       if (raw.isEmpty && !requiredFields.contains(entry.key)) continue;
       values[entry.key] = switch (type) {
         'integer' => int.parse(raw),
@@ -74,6 +85,71 @@ class SchemaFormState extends State<SchemaForm> {
       };
     }
     return values;
+  }
+
+  String _defaultFieldText(Object? type) => switch (type) {
+    'array' => '[]',
+    'object' => '{}',
+    _ => '',
+  };
+
+  Map<String, String> _validateAllFields() {
+    final errors = <String, String>{};
+    for (final entry in properties.entries) {
+      final error = _fieldError(entry);
+      if (error != null) errors[entry.key] = error;
+    }
+    return errors;
+  }
+
+  String _validationSummary() {
+    final labels = validationErrors.keys
+        .take(3)
+        .map((name) {
+          final spec = properties[name];
+          return spec is Map ? '${spec['title'] ?? name}' : name;
+        })
+        .join('、');
+    final remaining = validationErrors.length - 3;
+    return '待检查参数：$labels${remaining > 0 ? '等 $remaining 项' : ''}';
+  }
+
+  String? _fieldError(MapEntry<String, Object?> entry, {String? rawValue}) {
+    final spec = entry.value is Map ? entry.value as Map : const {};
+    final type = spec['type'];
+    final required = requiredFields.contains(entry.key);
+    final label = '${spec['title'] ?? entry.key}${required ? ' *' : ''}';
+    if (type == 'boolean') return null;
+
+    final options = spec['enum'];
+    if (type == 'string' &&
+        options is List &&
+        options.every((item) => item is String)) {
+      final selected = selections[entry.key];
+      return required && selected == null ? '请选择$label' : null;
+    }
+
+    final text =
+        (rawValue ?? controllers[entry.key]?.text ?? _defaultFieldText(type))
+            .trim();
+    if (text.isEmpty) return required ? '请输入$label' : null;
+    if (type == 'integer' && int.tryParse(text) == null) return '请输入整数';
+    if (type == 'number' && num.tryParse(text) == null) return '请输入数字';
+    if (type == 'array' || type == 'object') {
+      try {
+        final parsed = jsonDecode(text);
+        if (type == 'array' && parsed is! List ||
+            type == 'object' && parsed is! Map) {
+          return 'JSON 类型不正确';
+        }
+      } on FormatException {
+        return '请输入有效 JSON';
+      }
+    }
+    if (spec['enum'] is List && !(spec['enum'] as List).contains(text)) {
+      return '请输入列出的选项';
+    }
+    return null;
   }
 
   void _formatJson(String name) {
@@ -94,174 +170,185 @@ class SchemaFormState extends State<SchemaForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Form(
-    key: formKey,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showSummary) ...[
-          Focus(
-            focusNode: summaryFocus,
-            child: Text(
-              '请检查标红字段后重试。',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-        if (properties.isEmpty) const Text('此功能不需要参数。'),
-        for (final entry in properties.entries) ...[
-          Builder(
-            builder: (context) {
-              final spec = entry.value is Map ? entry.value as Map : const {};
-              final type = spec['type'];
-              final label =
-                  '${spec['title'] ?? entry.key}${requiredFields.contains(entry.key) ? ' *' : ''}';
-              if (type == 'boolean') {
-                return SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(label),
-                  value: booleans[entry.key] ?? false,
-                  onChanged: (value) =>
-                      setState(() => booleans[entry.key] = value),
-                );
-              }
-              final options = spec['enum'];
-              if (type == 'string' &&
-                  options is List &&
-                  options.every((item) => item is String)) {
-                return DropdownButtonFormField<String>(
-                  key: Key('field-${entry.key}'),
-                  initialValue: selections[entry.key],
-                  isExpanded: true,
-                  decoration: InputDecoration(labelText: label),
-                  items: [
-                    for (final option in options.cast<String>())
-                      DropdownMenuItem(
-                        value: option,
-                        child: Text(
-                          option,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    if (value == null) {
-                      selections.remove(entry.key);
-                    } else {
-                      selections[entry.key] = value;
-                    }
-                  }),
-                  validator: (value) =>
-                      requiredFields.contains(entry.key) && value == null
-                      ? '请选择$label'
-                      : null,
-                );
-              }
-              final controller = controllers.putIfAbsent(
-                entry.key,
-                () => TextEditingController(
-                  text: type == 'array'
-                      ? '[]'
-                      : type == 'object'
-                      ? '{}'
-                      : '',
-                ),
-              );
-              return TextFormField(
-                key: Key('field-${entry.key}'),
-                controller: controller,
-                decoration: InputDecoration(
-                  labelText: label,
-                  helperText: type == 'array' || type == 'object'
-                      ? '输入 JSON ${type == 'array' ? '数组' : '对象'}'
-                      : spec['enum'] is List
-                      ? '可选：${(spec['enum'] as List).join('、')}'
-                      : null,
-                  suffixIcon: type == 'array' || type == 'object'
-                      ? AggregateIconButton(
-                          tooltip: '格式化 ${spec['title'] ?? entry.key}',
-                          icon: Icons.data_object,
-                          onPressed: () => _formatJson(entry.key),
-                        )
-                      : null,
-                ),
-                minLines: type == 'array' || type == 'object' ? 4 : 1,
-                maxLines: type == 'array' || type == 'object'
-                    ? (expandedJsonFields.contains(entry.key) ? 14 : 6)
-                    : 1,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                textAlignVertical: type == 'array' || type == 'object'
-                    ? TextAlignVertical.top
-                    : null,
-                style: type == 'array' || type == 'object'
-                    ? const TextStyle(fontFamily: 'monospace')
-                    : null,
-                keyboardType: type == 'integer' || type == 'number'
-                    ? TextInputType.number
-                    : type == 'array' || type == 'object'
-                    ? TextInputType.multiline
-                    : null,
-                textInputAction: type == 'array' || type == 'object'
-                    ? TextInputAction.newline
-                    : null,
-                validator: (raw) {
-                  final text = raw?.trim() ?? '';
-                  if (text.isEmpty) {
-                    return requiredFields.contains(entry.key)
-                        ? '请输入$label'
-                        : null;
-                  }
-                  if (type == 'integer' && int.tryParse(text) == null) {
-                    return '请输入整数';
-                  }
-                  if (type == 'number' && num.tryParse(text) == null) {
-                    return '请输入数字';
-                  }
-                  if (type == 'array' || type == 'object') {
-                    try {
-                      final parsed = jsonDecode(text);
-                      if (type == 'array' && parsed is! List ||
-                          type == 'object' && parsed is! Map) {
-                        return 'JSON 类型不正确';
-                      }
-                    } on FormatException {
-                      return '请输入有效 JSON';
-                    }
-                  }
-                  if (spec['enum'] is List &&
-                      !(spec['enum'] as List).contains(text)) {
-                    return '请输入列出的选项';
-                  }
-                  return null;
-                },
-              );
-            },
-          ),
-          if (entry.value is Map &&
-              ((entry.value as Map)['type'] == 'array' ||
-                  (entry.value as Map)['type'] == 'object'))
-            Align(
-              alignment: Alignment.centerRight,
-              child: AggregateActionButton(
-                label: expandedJsonFields.contains(entry.key)
-                    ? '收起 JSON 编辑器'
-                    : '展开 JSON 编辑器',
-                icon: expandedJsonFields.contains(entry.key)
-                    ? Icons.unfold_less
-                    : Icons.unfold_more,
-                style: AggregateActionStyle.quiet,
-                onPressed: () => setState(() {
-                  if (!expandedJsonFields.add(entry.key)) {
-                    expandedJsonFields.remove(entry.key);
-                  }
-                }),
+  Widget build(BuildContext context) {
+    final entries = properties.entries.toList(growable: false);
+    final lazyFields = entries.length >= _lazySchemaFieldThreshold;
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showSummary) ...[
+            Focus(
+              focusNode: summaryFocus,
+              child: Text(
+                '请检查标红字段后重试。',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
-          const SizedBox(height: 16),
+            if (validationErrors.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _validationSummary(),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            const SizedBox(height: 16),
+          ],
+          if (entries.isEmpty) const Text('此功能不需要参数。'),
+          if (lazyFields)
+            SizedBox(
+              key: const Key('schema-field-list'),
+              height: 420,
+              child: ListView.builder(
+                primary: false,
+                padding: EdgeInsets.zero,
+                itemCount: entries.length,
+                itemBuilder: (context, index) =>
+                    _fieldEntry(context, entries[index]),
+              ),
+            )
+          else
+            for (final entry in entries) _fieldEntry(context, entry),
         ],
+      ),
+    );
+  }
+
+  Widget _fieldEntry(BuildContext context, MapEntry<String, Object?> entry) {
+    final spec = entry.value is Map ? entry.value as Map : const {};
+    final type = spec['type'];
+    final required = requiredFields.contains(entry.key);
+    final label = '${spec['title'] ?? entry.key}${required ? ' *' : ''}';
+    final Widget field;
+    if (type == 'boolean') {
+      field = SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(label),
+        value: booleans[entry.key] ?? false,
+        onChanged: (value) => setState(() => booleans[entry.key] = value),
+      );
+    } else {
+      final options = spec['enum'];
+      if (type == 'string' &&
+          options is List &&
+          options.every((item) => item is String)) {
+        field = DropdownButtonFormField<String>(
+          key: Key('field-${entry.key}'),
+          initialValue: selections[entry.key],
+          isExpanded: true,
+          decoration: InputDecoration(labelText: label),
+          items: [
+            for (final option in options.cast<String>())
+              DropdownMenuItem(
+                value: option,
+                child: Text(
+                  option,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: (value) => setState(() {
+            if (value == null) {
+              selections.remove(entry.key);
+            } else {
+              selections[entry.key] = value;
+            }
+            if (showSummary) {
+              final error = _fieldError(entry);
+              if (error == null) {
+                validationErrors.remove(entry.key);
+              } else {
+                validationErrors[entry.key] = error;
+              }
+            }
+          }),
+          validator: (_) => _fieldError(entry),
+        );
+      } else {
+        final controller = controllers.putIfAbsent(
+          entry.key,
+          () => TextEditingController(text: _defaultFieldText(type)),
+        );
+        field = TextFormField(
+          key: Key('field-${entry.key}'),
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            helperText: type == 'array' || type == 'object'
+                ? '输入 JSON ${type == 'array' ? '数组' : '对象'}'
+                : spec['enum'] is List
+                ? '可选：${(spec['enum'] as List).join('、')}'
+                : null,
+            suffixIcon: type == 'array' || type == 'object'
+                ? AggregateIconButton(
+                    tooltip: '格式化 ${spec['title'] ?? entry.key}',
+                    icon: Icons.data_object,
+                    onPressed: () => _formatJson(entry.key),
+                  )
+                : null,
+          ),
+          minLines: type == 'array' || type == 'object' ? 4 : 1,
+          maxLines: type == 'array' || type == 'object'
+              ? (expandedJsonFields.contains(entry.key) ? 14 : 6)
+              : 1,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          textAlignVertical: type == 'array' || type == 'object'
+              ? TextAlignVertical.top
+              : null,
+          style: type == 'array' || type == 'object'
+              ? const TextStyle(fontFamily: 'monospace')
+              : null,
+          keyboardType: type == 'integer' || type == 'number'
+              ? TextInputType.number
+              : type == 'array' || type == 'object'
+              ? TextInputType.multiline
+              : null,
+          textInputAction: type == 'array' || type == 'object'
+              ? TextInputAction.newline
+              : null,
+          onChanged: (raw) {
+            if (!showSummary) return;
+            setState(() {
+              final error = _fieldError(entry, rawValue: raw);
+              if (error == null) {
+                validationErrors.remove(entry.key);
+              } else {
+                validationErrors[entry.key] = error;
+              }
+            });
+          },
+          validator: (raw) => _fieldError(entry, rawValue: raw),
+        );
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        field,
+        if (type == 'array' || type == 'object')
+          Align(
+            alignment: Alignment.centerRight,
+            child: AggregateActionButton(
+              label: expandedJsonFields.contains(entry.key)
+                  ? '收起 JSON 编辑器'
+                  : '展开 JSON 编辑器',
+              icon: expandedJsonFields.contains(entry.key)
+                  ? Icons.unfold_less
+                  : Icons.unfold_more,
+              style: AggregateActionStyle.quiet,
+              onPressed: () => setState(() {
+                if (!expandedJsonFields.add(entry.key)) {
+                  expandedJsonFields.remove(entry.key);
+                }
+              }),
+            ),
+          ),
+        const SizedBox(height: 16),
       ],
-    ),
-  );
+    );
+  }
 }
