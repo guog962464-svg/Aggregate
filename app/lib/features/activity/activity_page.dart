@@ -1,7 +1,12 @@
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_glyph.dart';
+import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
 
@@ -19,6 +24,10 @@ class ActivityPageState extends State<ActivityPage> {
   RunSummary? selected;
   RunState? stateFilter;
   final Set<String> cancellingRunIds = {};
+
+  bool _usesGlassButtons(BuildContext context) =>
+      defaultTargetPlatform == TargetPlatform.macOS &&
+      GlassMotionScope.maybeOf(context) != null;
 
   @override
   void initState() {
@@ -104,10 +113,10 @@ class ActivityPageState extends State<ActivityPage> {
         children: [
           Text('运行记录', style: Theme.of(context).textTheme.titleMedium),
           const Spacer(),
-          IconButton(
+          AggregateIconButton(
             tooltip: '刷新活动',
+            icon: Icons.refresh,
             onPressed: reload,
-            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -153,18 +162,35 @@ class ActivityPageState extends State<ActivityPage> {
               final list = Column(
                 children: [
                   for (final run in runs) ...[
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      selected: current?.id.value == run.id.value,
-                      title: Text(
-                        _capabilityName(run),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    if (_usesGlassButtons(context))
+                      AggregateActionButton(
+                        label: _capabilityName(run),
+                        description: _time(run.latest.occurredAt),
+                        source: _state(run.latest.state),
+                        semanticsLabel:
+                            '${_capabilityName(run)}，${_state(run.latest.state)}，'
+                            '${_time(run.latest.occurredAt)}',
+                        icon: _stateIcon(run.latest.state),
+                        style: AggregateActionStyle.quiet,
+                        onPressed: () => setState(() => selected = run),
+                        selected: current?.id.value == run.id.value,
+                        expand: true,
+                      )
+                    else
+                      ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        selected: current?.id.value == run.id.value,
+                        title: Text(
+                          _capabilityName(run),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(_time(run.latest.occurredAt)),
+                        trailing: Text(_state(run.latest.state)),
+                        onTap: () => setState(() => selected = run),
                       ),
-                      subtitle: Text(_time(run.latest.occurredAt)),
-                      trailing: Text(_state(run.latest.state)),
-                      onTap: () => setState(() => selected = run),
-                    ),
                     const Divider(height: 1),
                   ],
                 ],
@@ -190,14 +216,32 @@ class ActivityPageState extends State<ActivityPage> {
     ],
   );
 
-  Widget _filter(String label, RunState? state) => ChoiceChip(
-    label: Text(label),
-    selected: stateFilter == state,
-    onSelected: (_) => setState(() {
-      stateFilter = state;
-      selected = null;
-    }),
-  );
+  Widget _filter(String label, RunState? state) {
+    final isSelected = stateFilter == state;
+    final icon = state == null ? Icons.grid_view_outlined : _stateIcon(state);
+    if (_usesGlassButtons(context)) {
+      return GlassActionButton(
+        glyph: GlassGlyphCatalog.fromMaterialIcon(icon),
+        label: label,
+        semanticsLabel: '按状态筛选：$label',
+        onPressed: () => setState(() {
+          stateFilter = state;
+          selected = null;
+        }),
+        selected: isSelected,
+        kind: GlassButtonKind.segmented,
+        size: GlassButtonSize.secondary,
+      );
+    }
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => setState(() {
+        stateFilter = state;
+        selected = null;
+      }),
+    );
+  }
 
   Widget _detail(RunSummary run, {bool compact = false}) => Container(
     padding: const EdgeInsets.all(20),
@@ -210,10 +254,11 @@ class ActivityPageState extends State<ActivityPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (compact)
-          TextButton.icon(
+          AggregateActionButton(
+            label: '返回记录',
+            icon: Icons.arrow_back,
+            style: AggregateActionStyle.quiet,
             onPressed: () => setState(() => selected = null),
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text('返回记录'),
           ),
         Text('运行详情', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 18),
@@ -228,27 +273,31 @@ class ActivityPageState extends State<ActivityPage> {
         Wrap(
           spacing: 8,
           children: [
-            OutlinedButton.icon(
+            AggregateActionButton(
+              label:
+                  _canCancel(run.latest.state) ||
+                      run.latest.state == RunState.outcomeUnknown
+                  ? '查看运行'
+                  : '重新打开功能',
+              icon: Icons.open_in_new,
               onPressed: () => reopen(run),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: Text(
-                _canCancel(run.latest.state) ||
-                        run.latest.state == RunState.outcomeUnknown
-                    ? '查看运行'
-                    : '重新打开功能',
-              ),
             ),
             if (_canCancel(run.latest.state))
-              OutlinedButton.icon(
+              AggregateActionButton(
+                label: cancellingRunIds.contains(run.id.value)
+                    ? '取消中…'
+                    : '取消运行',
+                icon: Icons.stop_circle_outlined,
+                style: AggregateActionStyle.danger,
                 onPressed: cancellingRunIds.contains(run.id.value)
                     ? null
                     : () => _cancel(run),
-                icon: const Icon(Icons.stop_circle_outlined, size: 18),
-                label: Text(
-                  cancellingRunIds.contains(run.id.value) ? '取消中…' : '取消运行',
-                ),
+                enabled: !cancellingRunIds.contains(run.id.value),
               ),
-            TextButton.icon(
+            AggregateActionButton(
+              label: '复制诊断',
+              icon: Icons.copy_outlined,
+              style: AggregateActionStyle.quiet,
               onPressed: () async {
                 await Clipboard.setData(
                   ClipboardData(
@@ -261,8 +310,6 @@ class ActivityPageState extends State<ActivityPage> {
                       .showSnackBar(const SnackBar(content: Text('已复制脱敏诊断')));
                 }
               },
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('复制诊断'),
             ),
           ],
         ),
@@ -301,4 +348,15 @@ String _state(RunState value) => switch (value) {
   RunState.awaitingPermission => '等待确认',
   RunState.validating => '验证中',
   RunState.created => '已创建',
+};
+
+IconData _stateIcon(RunState value) => switch (value) {
+  RunState.succeeded => Icons.check_circle_outline,
+  RunState.failed || RunState.timedOut => Icons.error_outline,
+  RunState.cancelled => Icons.close,
+  RunState.outcomeUnknown => Icons.info_outline,
+  RunState.running ||
+  RunState.validating ||
+  RunState.created => Icons.hourglass_top_outlined,
+  RunState.awaitingPermission => Icons.lock_outline,
 };

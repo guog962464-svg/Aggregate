@@ -1,7 +1,11 @@
 import 'dart:convert';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_motion.dart';
 
 final class MusicSearchItem {
   const MusicSearchItem({
@@ -79,6 +83,10 @@ class MusicSearchResults extends StatelessWidget {
   final ValueChanged<MusicSearchItem>? onQueue;
   final bool busy;
 
+  bool _usesGlassButtons(BuildContext context) =>
+      defaultTargetPlatform == TargetPlatform.macOS &&
+      GlassMotionScope.maybeOf(context) != null;
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,34 +125,18 @@ class MusicSearchResults extends StatelessWidget {
             const SizedBox(width: 8),
             if (item.playable)
               if (onQueue != null)
-                Semantics(
-                  container: true,
+                _resultActionButton(
+                  context,
                   label: '将 ${item.name} 加入下一首',
-                  button: true,
-                  enabled: !busy,
-                  onTap: busy ? null : () => onQueue!(item),
-                  child: ExcludeSemantics(
-                    child: IconButton(
-                      tooltip: '将 ${item.name} 加入下一首',
-                      onPressed: busy ? null : () => onQueue!(item),
-                      icon: const Icon(Icons.playlist_add),
-                    ),
-                  ),
+                  icon: Icons.playlist_add,
+                  onPressed: busy ? null : () => onQueue!(item),
                 ),
             if (item.playable)
-              Semantics(
-                container: true,
+              _resultActionButton(
+                context,
                 label: '播放 ${item.name}',
-                button: true,
-                enabled: !busy,
-                onTap: busy ? null : () => onPlay(item),
-                child: ExcludeSemantics(
-                  child: IconButton(
-                    tooltip: '播放 ${item.name}',
-                    onPressed: busy ? null : () => onPlay(item),
-                    icon: const Icon(Icons.play_arrow),
-                  ),
-                ),
+                icon: Icons.play_arrow,
+                onPressed: busy ? null : () => onPlay(item),
               )
             else
               Tooltip(
@@ -160,4 +152,34 @@ class MusicSearchResults extends StatelessWidget {
       ],
     ],
   );
+
+  Widget _resultActionButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    if (_usesGlassButtons(context)) {
+      return AggregateIconButton(
+        tooltip: label,
+        icon: icon,
+        onPressed: onPressed,
+        enabled: onPressed != null,
+      );
+    }
+    return Semantics(
+      container: true,
+      label: label,
+      button: true,
+      enabled: onPressed != null,
+      onTap: onPressed,
+      child: ExcludeSemantics(
+        child: IconButton(
+          tooltip: label,
+          onPressed: onPressed,
+          icon: Icon(icon),
+        ),
+      ),
+    );
+  }
 }

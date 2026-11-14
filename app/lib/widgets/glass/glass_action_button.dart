@@ -25,6 +25,9 @@ class GlassActionButton extends StatefulWidget {
     required this.glyph,
     required this.onPressed,
     this.label,
+    this.busyLabel,
+    this.description,
+    this.source,
     this.semanticsLabel,
     this.kind = GlassButtonKind.secondary,
     this.size = GlassButtonSize.secondary,
@@ -32,6 +35,7 @@ class GlassActionButton extends StatefulWidget {
     this.busy = false,
     this.selected = false,
     this.iconOnly = false,
+    this.expand = false,
     this.focusNode,
     this.autofocus = false,
     this.motionPhaseSeed,
@@ -40,6 +44,9 @@ class GlassActionButton extends StatefulWidget {
 
   final GlassGlyph glyph;
   final String? label;
+  final String? busyLabel;
+  final String? description;
+  final String? source;
   final String? semanticsLabel;
   final GlassButtonKind kind;
   final GlassButtonSize size;
@@ -48,6 +55,7 @@ class GlassActionButton extends StatefulWidget {
   final bool busy;
   final bool selected;
   final bool iconOnly;
+  final bool expand;
   final FocusNode? focusNode;
   final bool autofocus;
   final int? motionPhaseSeed;
@@ -211,6 +219,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       shape: WidgetStatePropertyAll(shape),
       side: const WidgetStatePropertyAll(BorderSide.none),
       padding: WidgetStatePropertyAll(padding),
+      alignment: widget.expand ? Alignment.centerLeft : Alignment.center,
       minimumSize: WidgetStatePropertyAll(
         Size(widget.iconOnly ? height : 0, height),
       ),
@@ -240,7 +249,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       button: true,
       enabled: _enabled,
       selected: widget.selected,
-      value: widget.busy ? '正在处理' : null,
+      value: widget.busy ? widget.busyLabel ?? '正在处理' : null,
       liveRegion: widget.busy,
       onTap: _enabled ? _handlePressed : null,
       child: ExcludeSemantics(
@@ -262,13 +271,16 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               child: SizeChangedLayoutNotifier(
                 child: RepaintBoundary(
                   key: _motionBoxKey,
-                  child: TextButton(
-                    onPressed: _enabled ? _handlePressed : null,
-                    focusNode: widget.focusNode,
-                    autofocus: widget.autofocus,
-                    statesController: _statesController,
-                    style: style,
-                    child: content,
+                  child: SizedBox(
+                    width: widget.expand ? double.infinity : null,
+                    child: TextButton(
+                      onPressed: _enabled ? _handlePressed : null,
+                      focusNode: widget.focusNode,
+                      autofocus: widget.autofocus,
+                      statesController: _statesController,
+                      style: style,
+                      child: content,
+                    ),
                   ),
                 ),
               ),
@@ -302,26 +314,77 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     if (widget.iconOnly) {
       return Center(child: mark);
     }
+    if (widget.description != null || widget.source != null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          mark,
+          const SizedBox(width: 10),
+          Flexible(
+            child: RepaintBoundary(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.busy
+                        ? widget.busyLabel ?? '$visibleLabel中'
+                        : visibleLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: muted
+                          ? tokens.muted
+                          : widget.kind == GlassButtonKind.danger
+                          ? tokens.danger
+                          : tokens.text,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (widget.description case final description?)
+                    Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tokens.muted, fontSize: 11),
+                    ),
+                  if (widget.source case final source?)
+                    Text(
+                      source,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tokens.muted, fontSize: 10),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         mark,
         const SizedBox(width: 8),
-        RepaintBoundary(
-          child: Text(
-            widget.busy ? '$visibleLabel中' : visibleLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: muted
-                  ? tokens.muted
-                  : widget.kind == GlassButtonKind.danger
-                  ? tokens.danger
-                  : tokens.text,
-              fontWeight: widget.kind == GlassButtonKind.primary
-                  ? FontWeight.w600
-                  : FontWeight.w500,
-              fontSize: 13,
+        Flexible(
+          child: RepaintBoundary(
+            child: Text(
+              widget.busy ? widget.busyLabel ?? '$visibleLabel中' : visibleLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: muted
+                    ? tokens.muted
+                    : widget.kind == GlassButtonKind.danger
+                    ? tokens.danger
+                    : tokens.text,
+                fontWeight: widget.kind == GlassButtonKind.primary
+                    ? FontWeight.w600
+                    : FontWeight.w500,
+                fontSize: 13,
+              ),
             ),
           ),
         ),

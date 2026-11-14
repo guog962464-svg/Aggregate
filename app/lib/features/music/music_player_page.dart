@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import 'music_mini_player.dart';
 import 'music_search_results.dart';
@@ -42,6 +46,10 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   RunId? searchRun;
   StreamSubscription<RunEvent>? searchSubscription;
   int searchGeneration = 0;
+
+  bool _usesGlassButtons(BuildContext context) =>
+      defaultTargetPlatform == TargetPlatform.macOS &&
+      GlassMotionScope.maybeOf(context) != null;
 
   Capability? get searchAction {
     for (final item in widget.capabilities) {
@@ -190,13 +198,17 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
             '本次 App 会话中，该连接的后续搜索不再询问。',
           ),
           actions: [
-            TextButton(
+            AggregateActionButton(
+              label: '取消',
+              icon: Icons.close,
+              style: AggregateActionStyle.quiet,
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
             ),
-            FilledButton(
+            AggregateActionButton(
+              label: '允许搜索',
+              icon: Icons.search,
+              style: AggregateActionStyle.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('允许搜索'),
             ),
           ],
         ),
@@ -221,13 +233,17 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
             title: Text('$action ${song.name}？'),
             content: Text('通过 ${widget.connection.label} 控制播放。'),
             actions: [
-              TextButton(
+              AggregateActionButton(
+                label: '取消',
+                icon: Icons.close,
+                style: AggregateActionStyle.quiet,
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('取消'),
               ),
-              FilledButton(
+              AggregateActionButton(
+                label: '执行',
+                icon: Icons.play_arrow,
+                style: AggregateActionStyle.primary,
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('执行'),
               ),
             ],
           ),
@@ -492,17 +508,32 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
                 ),
                 if (session.actions.containsKey('music.stop') && hasTrack)
                   Center(
-                    child: TextButton(
-                      onPressed: session.busy
-                          ? null
-                          : () => confirmMusicControl(
-                              context,
-                              session,
-                              'stop',
-                              '停止播放',
-                            ),
-                      child: const Text('停止播放'),
-                    ),
+                    child: _usesGlassButtons(context)
+                        ? AggregateActionButton(
+                            label: '停止播放',
+                            icon: Icons.stop_circle_outlined,
+                            style: AggregateActionStyle.quiet,
+                            onPressed: session.busy
+                                ? null
+                                : () => confirmMusicControl(
+                                    context,
+                                    session,
+                                    'stop',
+                                    '停止播放',
+                                  ),
+                            enabled: !session.busy,
+                          )
+                        : TextButton(
+                            onPressed: session.busy
+                                ? null
+                                : () => confirmMusicControl(
+                                    context,
+                                    session,
+                                    'stop',
+                                    '停止播放',
+                                  ),
+                            child: const Text('停止播放'),
+                          ),
                   ),
               ],
             ),
@@ -567,20 +598,37 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     required VoidCallback? onPressed,
     required IconData icon,
     bool filled = false,
-  }) => Semantics(
-    container: true,
-    label: label,
-    button: true,
-    enabled: onPressed != null,
-    onTap: onPressed,
-    child: ExcludeSemantics(
-      child: filled
-          ? IconButton.filled(
-              tooltip: label,
-              onPressed: onPressed,
-              icon: Icon(icon),
-            )
-          : IconButton(tooltip: label, onPressed: onPressed, icon: Icon(icon)),
-    ),
-  );
+  }) {
+    if (_usesGlassButtons(context)) {
+      return AggregateIconButton(
+        tooltip: label,
+        icon: icon,
+        onPressed: onPressed,
+        enabled: onPressed != null,
+        selected: filled && label == '暂停',
+        kind: filled ? GlassButtonKind.primary : GlassButtonKind.icon,
+        size: filled ? GlassButtonSize.playback : GlassButtonSize.icon,
+      );
+    }
+    return Semantics(
+      container: true,
+      label: label,
+      button: true,
+      enabled: onPressed != null,
+      onTap: onPressed,
+      child: ExcludeSemantics(
+        child: filled
+            ? IconButton.filled(
+                tooltip: label,
+                onPressed: onPressed,
+                icon: Icon(icon),
+              )
+            : IconButton(
+                tooltip: label,
+                onPressed: onPressed,
+                icon: Icon(icon),
+              ),
+      ),
+    );
+  }
 }

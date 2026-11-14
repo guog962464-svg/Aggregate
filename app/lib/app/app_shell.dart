@@ -12,6 +12,8 @@ import '../features/connections/connections_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/music/music_mini_player.dart';
 import '../features/music/music_session.dart';
+import '../widgets/glass/aggregate_buttons.dart';
+import '../widgets/glass/glass_motion.dart';
 import 'shortcut_scheme.dart';
 
 enum Section {
@@ -34,6 +36,7 @@ class AppShell extends StatefulWidget {
     required this.onPreferencesChanged,
     required this.onClearActivity,
     required this.musicSession,
+    this.glassMotionClock,
     this.platformSettingsSections = const [],
   });
   final RuntimePort runtime;
@@ -41,6 +44,7 @@ class AppShell extends StatefulWidget {
   final ValueChanged<UserPreferences> onPreferencesChanged;
   final Future<void> Function() onClearActivity;
   final MusicSession musicSession;
+  final GlassMotionClock? glassMotionClock;
   final List<Widget> platformSettingsSections;
   @override
   State<AppShell> createState() => AppShellState();
@@ -302,39 +306,28 @@ class AppShellState extends State<AppShell> {
     children: [
       const SizedBox(height: 20),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text('我的连接', style: Theme.of(context).textTheme.bodySmall),
+        padding: const EdgeInsets.only(left: 22, right: 12, top: 8, bottom: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text('我的连接', style: Theme.of(context).textTheme.bodySmall),
+            ),
+            if (defaultTargetPlatform == TargetPlatform.macOS &&
+                widget.runtime.features.connectionKinds.isNotEmpty)
+              AggregateIconButton(
+                tooltip: '添加连接',
+                icon: Icons.add,
+                onPressed: () => addConnection(
+                  ConnectionKind.values.firstWhere(
+                    widget.runtime.features.canAdd,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
       for (final connection in connectionHomes)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          child: ListTile(
-            leading: Icon(switch (experienceFor(connection, catalog)) {
-              ConnectionExperience.music => Icons.music_note_outlined,
-              ConnectionExperience.cli => Icons.terminal_outlined,
-              ConnectionExperience.mcp => Icons.hub_outlined,
-            }, size: 19),
-            title: Text(
-              connection.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            selected:
-                selected == Section.home &&
-                selectedConnectionId == connection.id.value,
-            dense: true,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            onTap: () {
-              if (compact) Navigator.of(context).pop();
-              selectConnection(connection);
-            },
-          ),
-        ),
+        _connectionNavigationItem(connection, compact: compact),
       const SizedBox(height: 20),
       const Divider(height: 1),
       const SizedBox(height: 8),
@@ -349,20 +342,81 @@ class AppShellState extends State<AppShell> {
     ],
   );
 
-  Widget _navigationItem(Section section, {required bool compact}) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-    child: ListTile(
-      leading: Icon(section.icon, size: 19),
-      title: Text(section.label),
-      selected: selected == section,
-      dense: true,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      onTap: () {
-        if (compact) Navigator.of(context).pop();
-        select(section);
-      },
-    ),
-  );
+  Widget _connectionNavigationItem(
+    Connection connection, {
+    required bool compact,
+  }) {
+    final icon = switch (experienceFor(connection, catalog)) {
+      ConnectionExperience.music => Icons.music_note_outlined,
+      ConnectionExperience.cli => Icons.terminal_outlined,
+      ConnectionExperience.mcp => Icons.hub_outlined,
+    };
+    final isSelected =
+        selected == Section.home && selectedConnectionId == connection.id.value;
+    void activate() {
+      if (compact) Navigator.of(context).pop();
+      selectConnection(connection);
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        child: AggregateActionButton(
+          label: connection.label,
+          icon: icon,
+          onPressed: activate,
+          style: AggregateActionStyle.quiet,
+          selected: isSelected,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: ListTile(
+        leading: Icon(icon, size: 19),
+        title: Text(
+          connection.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        selected: isSelected,
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        onTap: activate,
+      ),
+    );
+  }
+
+  Widget _navigationItem(Section section, {required bool compact}) {
+    void activate() {
+      if (compact) Navigator.of(context).pop();
+      select(section);
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        child: AggregateActionButton(
+          label: section.label,
+          icon: section.icon,
+          onPressed: activate,
+          style: AggregateActionStyle.quiet,
+          selected: selected == section,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: ListTile(
+        leading: Icon(section.icon, size: 19),
+        title: Text(section.label),
+        selected: selected == section,
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        onTap: activate,
+      ),
+    );
+  }
 
   Widget _mobileNavigationRail({required bool extended}) => NavigationRail(
     selectedIndex: _mobileSelectedIndex,
@@ -397,16 +451,19 @@ class AppShellState extends State<AppShell> {
     index: selected.index,
     children: [
       if (connection != null)
-        ConnectionHomePage(
-          key: ValueKey('home-${connection.id.value}'),
-          connection: connection,
-          capabilities: catalog,
-          runtime: widget.runtime,
-          musicSession: widget.musicSession,
-          onOpen: openCapability,
-          onAccountChanged: () {
-            unawaited(refreshAfterAccountChange(connection.id));
-          },
+        _pageMotionScope(
+          active: selected == Section.home,
+          child: ConnectionHomePage(
+            key: ValueKey('home-${connection.id.value}'),
+            connection: connection,
+            capabilities: catalog,
+            runtime: widget.runtime,
+            musicSession: widget.musicSession,
+            onOpen: openCapability,
+            onAccountChanged: () {
+              unawaited(refreshAfterAccountChange(connection.id));
+            },
+          ),
         )
       else if (homesLoading)
         const Center(child: CircularProgressIndicator())
@@ -414,42 +471,62 @@ class AppShellState extends State<AppShell> {
         Center(child: Text('加载连接失败：$homesError'))
       else
         const Center(child: Text('添加连接后，在这里使用它。')),
-      WorkspacePage(
-        key: workspaceKey,
-        runtime: widget.runtime,
-        onOpen: openCapability,
-        onAddConnection: addConnection,
-        favoriteKeys: widget.preferences.favoriteCapabilityKeys,
-        onFavoriteChanged: setFavorite,
-        autofocusSearch: selected == Section.workspace,
+      _pageMotionScope(
+        active: selected == Section.workspace,
+        child: WorkspacePage(
+          key: workspaceKey,
+          runtime: widget.runtime,
+          onOpen: openCapability,
+          onAddConnection: addConnection,
+          favoriteKeys: widget.preferences.favoriteCapabilityKeys,
+          onFavoriteChanged: setFavorite,
+          autofocusSearch: selected == Section.workspace,
+        ),
       ),
-      ConnectionsPage(
-        key: connectionsKey,
-        runtime: widget.runtime,
-        onOpen: openCapability,
-        onOpenConnection: _mobilePlatform ? openConnectionWorkspace : null,
-        onAdded: connectionAdded,
-        onChanged: () {
-          reloadConnectionHomes();
-          workspaceKey.currentState?.reloadCatalog();
-        },
+      _pageMotionScope(
+        active: selected == Section.connections,
+        child: ConnectionsPage(
+          key: connectionsKey,
+          runtime: widget.runtime,
+          onOpen: openCapability,
+          onOpenConnection: _mobilePlatform ? openConnectionWorkspace : null,
+          onAdded: connectionAdded,
+          onChanged: () {
+            reloadConnectionHomes();
+            workspaceKey.currentState?.reloadCatalog();
+          },
+        ),
       ),
-      ActivityPage(
-        key: activityKey,
-        runtime: widget.runtime,
-        onOpen: openCapability,
+      _pageMotionScope(
+        active: selected == Section.activity,
+        child: ActivityPage(
+          key: activityKey,
+          runtime: widget.runtime,
+          onOpen: openCapability,
+        ),
       ),
-      TickerMode(
-        enabled: selected == Section.settings,
-        child: SettingsPage(
-          preferences: widget.preferences,
-          onPreferencesChanged: widget.onPreferencesChanged,
-          onClearActivity: widget.onClearActivity,
-          platformSections: widget.platformSettingsSections,
+      _pageMotionScope(
+        active: selected == Section.settings,
+        child: TickerMode(
+          enabled: selected == Section.settings,
+          child: SettingsPage(
+            preferences: widget.preferences,
+            onPreferencesChanged: widget.onPreferencesChanged,
+            onClearActivity: widget.onClearActivity,
+            platformSections: widget.platformSettingsSections,
+          ),
         ),
       ),
     ],
   );
+
+  Widget _pageMotionScope({required bool active, required Widget child}) {
+    if (defaultTargetPlatform != TargetPlatform.macOS) return child;
+    return TickerMode(
+      enabled: active,
+      child: GlassMotionScope(clock: widget.glassMotionClock, child: child),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -539,15 +616,16 @@ class AppShellState extends State<AppShell> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               actions: [
-                IconButton(
+                AggregateIconButton(
                   tooltip: mobileInput
                       ? '搜索所有功能'
                       : '搜索所有功能（${ShortcutScheme(defaultTargetPlatform).searchLabel}）',
                   onPressed: searchAll,
-                  icon: const Icon(Icons.search),
+                  icon: Icons.search,
                 ),
                 const SizedBox(width: 4),
-                if (widget.runtime.features.connectionKinds.isNotEmpty)
+                if (defaultTargetPlatform != TargetPlatform.macOS &&
+                    widget.runtime.features.connectionKinds.isNotEmpty)
                   IconButton(
                     tooltip: '添加连接',
                     onPressed: () => addConnection(

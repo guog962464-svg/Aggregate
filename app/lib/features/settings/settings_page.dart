@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../app/shortcut_scheme.dart';
+import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/page_frame.dart';
 import 'appearance_selector.dart';
 
@@ -33,13 +34,17 @@ class SettingsPage extends StatelessWidget {
               : '本机保存的活动记录将被删除。此操作无法撤销。',
         ),
         actions: [
-          TextButton(
+          AggregateActionButton(
+            label: '取消',
+            icon: Icons.close,
+            style: AggregateActionStyle.quiet,
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
           ),
-          FilledButton(
+          AggregateActionButton(
+            label: '清空记录',
+            icon: Icons.delete_outline,
+            style: AggregateActionStyle.danger,
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('清空记录'),
           ),
         ],
       ),
@@ -122,10 +127,11 @@ class SettingsPage extends StatelessWidget {
       const SizedBox(height: 16),
       Align(
         alignment: Alignment.centerLeft,
-        child: OutlinedButton.icon(
+        child: AggregateActionButton(
+          label: '清空活动记录',
+          icon: Icons.delete_outline,
+          style: AggregateActionStyle.danger,
           onPressed: () => clearActivity(context),
-          icon: const Icon(Icons.delete_outline),
-          label: const Text('清空活动记录'),
         ),
       ),
       for (final section in platformSections) ...[

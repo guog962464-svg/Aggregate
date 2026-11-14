@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/shortcut_scheme.dart';
+import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/result_panel.dart';
 import '../music/music_mini_player.dart';
@@ -22,12 +23,14 @@ class CapabilityRunPage extends StatefulWidget {
     this.musicSession,
     this.onSearchAll,
     this.onOpenMusic,
+    this.embedded = false,
   });
   final RuntimePort runtime;
   final Capability capability;
   final MusicSession? musicSession;
   final VoidCallback? onSearchAll;
   final VoidCallback? onOpenMusic;
+  final bool embedded;
   @override
   State<CapabilityRunPage> createState() => _CapabilityRunPageState();
 }
@@ -395,13 +398,17 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
             ),
           ),
           actions: [
-            TextButton(
+            AggregateActionButton(
+              label: '取消',
+              icon: Icons.close,
+              style: AggregateActionStyle.quiet,
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
             ),
-            FilledButton(
+            AggregateActionButton(
+              label: retryingUnknownOutcome ? '仍然执行' : '执行',
+              icon: Icons.play_arrow_rounded,
+              style: AggregateActionStyle.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: Text(retryingUnknownOutcome ? '仍然执行' : '执行'),
             ),
           ],
         ),
@@ -571,24 +578,27 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        FilledButton.icon(
+        AggregateActionButton(
+          style: AggregateActionStyle.primary,
           onPressed: _isActiveRunState(state) ? null : run,
-          icon: const Icon(Icons.play_arrow, size: 18),
-          label: Text(_isActiveRunState(state) ? '运行中…' : action),
+          icon: Icons.play_arrow,
+          label: _isActiveRunState(state) ? '运行中…' : action,
         ),
         if (kind == CapabilityKind.cliCommand &&
             !widget.runtime.isPreview &&
             widget.runtime.features.terminal)
-          OutlinedButton.icon(
+          AggregateActionButton(
+            style: AggregateActionStyle.secondary,
             onPressed: _isActiveRunState(state) ? null : openTerminal,
-            icon: const Icon(Icons.terminal, size: 18),
-            label: Text(compact ? '终端' : '在终端运行'),
+            icon: Icons.terminal,
+            label: compact ? '终端' : '在终端运行',
           ),
         if (_isActiveRunState(state) && handle != null)
-          OutlinedButton.icon(
+          AggregateActionButton(
+            style: AggregateActionStyle.secondary,
             onPressed: cancel,
-            icon: const Icon(Icons.stop_circle_outlined, size: 18),
-            label: const Text('取消'),
+            icon: Icons.stop_circle_outlined,
+            label: '取消',
           ),
       ],
     );
@@ -621,8 +631,12 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
         ? '预览提示'
         : '运行';
     return Scaffold(
-      appBar: AppBar(title: Text(widget.capability.title)),
-      bottomNavigationBar: compactPhone
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: Text(widget.capability.title)),
+      bottomNavigationBar: widget.embedded
+          ? null
+          : compactPhone
           ? AnimatedPadding(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
@@ -794,7 +808,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                             ),
                     ),
                   );
-                  if (constraints.maxWidth < 760) {
+                  if (widget.embedded || constraints.maxWidth < 760) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

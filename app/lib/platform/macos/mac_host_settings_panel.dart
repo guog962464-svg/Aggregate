@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
 import 'host/host_control_port.dart';
 import 'host/host_pairing_authority.dart';
 import 'host/host_tls_identity.dart';
@@ -263,13 +264,17 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
         title: const Text('撤销设备配对？'),
         content: Text('撤销后，${grant.displayName} 的 Host 会话会立即断开，相关向导草稿也会清理。'),
         actions: [
-          TextButton(
+          AggregateActionButton(
+            label: '取消',
+            icon: Icons.close,
+            style: AggregateActionStyle.quiet,
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
           ),
-          FilledButton(
+          AggregateActionButton(
+            label: '撤销设备',
+            icon: Icons.link_off,
+            style: AggregateActionStyle.danger,
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('撤销设备'),
           ),
         ],
       ),
@@ -299,13 +304,17 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
           '此操作会撤销所有已配对设备的授权并断开会话，然后更换 Host ID 和 TLS 证书。Host 会保持停止；请在重新启动后删除手机里保存的旧 Host 并重新配对、审批。',
         ),
         actions: [
-          TextButton(
+          AggregateActionButton(
+            label: '取消',
+            icon: Icons.close,
+            style: AggregateActionStyle.quiet,
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
           ),
-          FilledButton(
+          AggregateActionButton(
+            label: '撤销授权并轮换',
+            icon: Icons.vpn_key_off_outlined,
+            style: AggregateActionStyle.danger,
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('撤销授权并轮换'),
           ),
         ],
       ),
@@ -451,19 +460,18 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                FilledButton.icon(
+                AggregateActionButton(
+                  label: running ? '停止 Host' : '启动 Host',
+                  icon: running
+                      ? Icons.stop_circle_outlined
+                      : Icons.play_circle_outline,
+                  busyLabel: running ? '正在停止…' : '正在启动…',
+                  style: running
+                      ? AggregateActionStyle.danger
+                      : AggregateActionStyle.primary,
                   onPressed: _busy ? null : () => _setRunning(!running),
-                  icon: _busy
-                      ? const SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          running
-                              ? Icons.stop_circle_outlined
-                              : Icons.play_circle_outline,
-                        ),
-                  label: Text(running ? '停止 Host' : '启动 Host'),
+                  enabled: !_busy,
+                  busy: _busy,
                 ),
               ],
             ),
@@ -490,10 +498,12 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
+              child: AggregateActionButton(
+                label: '轮换 Mac Host 身份',
+                icon: Icons.vpn_key_outlined,
+                style: AggregateActionStyle.danger,
                 onPressed: _busy || !running ? null : _rotateHostIdentity,
-                icon: const Icon(Icons.vpn_key_outlined),
-                label: const Text('轮换 Mac Host 身份'),
+                enabled: !_busy && running,
               ),
             ),
             Padding(
@@ -536,10 +546,11 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                       ),
                     ],
                   ),
-                  OutlinedButton.icon(
+                  AggregateActionButton(
+                    label: '生成新邀请',
+                    icon: Icons.qr_code_2,
                     onPressed: _busy ? null : _createInvitation,
-                    icon: const Icon(Icons.qr_code_2),
-                    label: const Text('生成新邀请'),
+                    enabled: !_busy,
                   ),
                 ],
               ),
@@ -569,10 +580,11 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                         const SizedBox(height: 8),
                         Text('${invitation.endpoints.length} 个本机网络地址'),
                         const SizedBox(height: 12),
-                        OutlinedButton.icon(
+                        AggregateActionButton(
+                          label: '复制配对信息',
+                          icon: Icons.copy_outlined,
+                          style: AggregateActionStyle.quiet,
                           onPressed: _copyInvitation,
-                          icon: const Icon(Icons.copy_outlined),
-                          label: const Text('复制配对信息'),
                         ),
                       ],
                     );
@@ -601,10 +613,11 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                   Expanded(
                     child: Text('待处理设备', style: theme.textTheme.titleSmall),
                   ),
-                  IconButton(
+                  AggregateIconButton(
                     tooltip: '刷新配对设备',
+                    icon: Icons.refresh,
                     onPressed: _busy ? null : _refreshPairings,
-                    icon: const Icon(Icons.refresh),
+                    enabled: !_busy,
                   ),
                 ],
               ),
@@ -646,20 +659,28 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              OutlinedButton(
+              AggregateActionButton(
+                label: '拒绝',
+                icon: Icons.close,
+                style: AggregateActionStyle.danger,
                 onPressed: _busy ? null : () => _reject(request),
-                child: const Text('拒绝'),
+                enabled: !_busy,
               ),
-              OutlinedButton(
+              AggregateActionButton(
+                label: '批准只读',
+                icon: Icons.visibility_outlined,
                 onPressed: _busy
                     ? null
                     : () => _approve(
                         request,
                         scopes: const {HostGrantScope.readConnections},
                       ),
-                child: const Text('批准只读'),
+                enabled: !_busy,
               ),
-              FilledButton(
+              AggregateActionButton(
+                label: '允许连接向导',
+                icon: Icons.settings_outlined,
+                style: AggregateActionStyle.primary,
                 onPressed: _busy
                     ? null
                     : () => _approve(
@@ -669,11 +690,13 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                           HostGrantScope.connectionSetup,
                         },
                       ),
-                child: const Text('允许连接向导'),
+                enabled: !_busy,
               ),
-              OutlinedButton(
+              AggregateActionButton(
+                label: '自定义权限',
+                icon: Icons.tune,
                 onPressed: _busy ? null : () => _configureApproval(request),
-                child: const Text('自定义权限'),
+                enabled: !_busy,
               ),
             ],
           ),
@@ -691,16 +714,21 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     ),
-    trailing: Row(
-      mainAxisSize: MainAxisSize.min,
+    trailing: Wrap(
+      spacing: 8,
       children: [
-        TextButton(
+        AggregateActionButton(
+          label: '修改权限',
+          icon: Icons.tune,
           onPressed: _busy ? null : () => _configurePairedGrant(grant),
-          child: const Text('修改权限'),
+          enabled: !_busy,
         ),
-        TextButton(
+        AggregateActionButton(
+          label: '撤销',
+          icon: Icons.link_off,
+          style: AggregateActionStyle.danger,
           onPressed: _busy ? null : () => _revoke(grant),
-          child: const Text('撤销'),
+          enabled: !_busy,
         ),
       ],
     ),
@@ -920,13 +948,18 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AggregateActionButton(
+          label: '取消',
+          icon: Icons.close,
+          style: AggregateActionStyle.quiet,
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
         ),
-        FilledButton(
+        AggregateActionButton(
+          label: widget.saveLabel,
+          icon: Icons.save_outlined,
+          style: AggregateActionStyle.primary,
           onPressed: canApprove ? _finish : null,
-          child: Text(widget.saveLabel),
+          enabled: canApprove,
         ),
       ],
     );
@@ -936,13 +969,25 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
     Connection connection,
     PermissionLevel permission,
     String label,
-  ) => FilterChip(
-    label: Text(label),
-    selected:
+  ) {
+    final selected =
         _connectionPermissions[connection.id.value]?.contains(permission) ??
-        false,
-    onSelected: (_) => _togglePermission(connection, permission),
-  );
+        false;
+    final icon = switch (permission) {
+      PermissionLevel.read => Icons.visibility_outlined,
+      PermissionLevel.localControl => Icons.desktop_windows_outlined,
+      PermissionLevel.externalWrite => Icons.edit_outlined,
+      PermissionLevel.unknown => Icons.help_outline,
+    };
+    return AggregateActionButton(
+      label: label,
+      icon: icon,
+      style: AggregateActionStyle.secondary,
+      selected: selected,
+      semanticsLabel: '$label权限${selected ? '已选择' : '未选择'}',
+      onPressed: () => _togglePermission(connection, permission),
+    );
+  }
 
   String _scopeLabel(HostGrantScope scope) => switch (scope) {
     HostGrantScope.readConnections => '读取连接',

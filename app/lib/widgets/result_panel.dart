@@ -1,8 +1,34 @@
 import 'dart:convert';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'glass/aggregate_buttons.dart';
+import 'glass/glass_motion.dart';
+
+bool _usesGlassButtons(BuildContext context) =>
+    defaultTargetPlatform == TargetPlatform.macOS &&
+    GlassMotionScope.maybeOf(context) != null;
+
+Future<void> _copyResults(
+  BuildContext context,
+  List<ResultBlock> blocks,
+) async {
+  final content = blocks
+      .map(
+        (block) => block.kind == ResultKind.json
+            ? const JsonEncoder.withIndent('  ').convert(block.value)
+            : '${block.value}',
+      )
+      .join('\n\n');
+  await Clipboard.setData(ClipboardData(text: content));
+  if (context.mounted) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('已复制结果')));
+  }
+}
 
 bool _isActiveRunState(RunState? state) => switch (state) {
   RunState.created ||
@@ -44,25 +70,17 @@ class ResultPanel extends StatelessWidget {
             child: Text('本次运行', style: Theme.of(context).textTheme.titleMedium),
           ),
           if (blocks.isNotEmpty)
-            IconButton(
-              tooltip: '复制结果',
-              onPressed: () async {
-                final content = blocks
-                    .map(
-                      (block) => block.kind == ResultKind.json
-                          ? const JsonEncoder.withIndent('  ')
-                                .convert(block.value)
-                          : '${block.value}',
-                    )
-                    .join('\n\n');
-                await Clipboard.setData(ClipboardData(text: content));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(content: Text('已复制结果')));
-                }
-              },
-              icon: const Icon(Icons.copy_outlined, size: 18),
-            ),
+            _usesGlassButtons(context)
+                ? AggregateIconButton(
+                    tooltip: '复制结果',
+                    icon: Icons.copy_outlined,
+                    onPressed: () => _copyResults(context, blocks),
+                  )
+                : IconButton(
+                    tooltip: '复制结果',
+                    onPressed: () => _copyResults(context, blocks),
+                    icon: const Icon(Icons.copy_outlined, size: 18),
+                  ),
         ],
       ),
       const SizedBox(height: 8),
@@ -216,11 +234,21 @@ class _FailureRecovery extends StatelessWidget {
             Text(recovery),
             if (canCheckActivity && onCheckActivity != null) ...[
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: activityCheckInProgress ? null : onCheckActivity,
-                icon: const Icon(Icons.manage_search),
-                label: Text(activityCheckInProgress ? '检查中…' : '检查活动状态'),
-              ),
+              if (_usesGlassButtons(context))
+                AggregateActionButton(
+                  label: '检查活动状态',
+                  icon: Icons.manage_search,
+                  onPressed: onCheckActivity,
+                  busyLabel: '检查中…',
+                  busy: activityCheckInProgress,
+                  enabled: !activityCheckInProgress,
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: activityCheckInProgress ? null : onCheckActivity,
+                  icon: const Icon(Icons.manage_search),
+                  label: Text(activityCheckInProgress ? '检查中…' : '检查活动状态'),
+                ),
             ],
             const SizedBox(height: 8),
             ExpansionTile(
@@ -256,11 +284,21 @@ class _UnknownOutcomeRecovery extends StatelessWidget {
           const Text('操作可能已经发送，但没有收到最终确认。先检查活动状态和执行端，再决定是否重跑。'),
           if (onCheckActivity != null) ...[
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: activityCheckInProgress ? null : onCheckActivity,
-              icon: const Icon(Icons.manage_search),
-              label: Text(activityCheckInProgress ? '检查中…' : '检查活动状态'),
-            ),
+            if (_usesGlassButtons(context))
+              AggregateActionButton(
+                label: '检查活动状态',
+                icon: Icons.manage_search,
+                onPressed: onCheckActivity,
+                busyLabel: '检查中…',
+                busy: activityCheckInProgress,
+                enabled: !activityCheckInProgress,
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: activityCheckInProgress ? null : onCheckActivity,
+                icon: const Icon(Icons.manage_search),
+                label: Text(activityCheckInProgress ? '检查中…' : '检查活动状态'),
+              ),
           ],
         ],
       ),
@@ -322,19 +360,36 @@ class _FileResultViewState extends State<_FileResultView> {
           spacing: 8,
           children: [
             if (widget.runtime?.features.localFilePreview == true)
-              OutlinedButton(
-                onPressed: busy ? null : _loadPreview,
-                child: const Text('预览文件'),
-              ),
+              _usesGlassButtons(context)
+                  ? AggregateActionButton(
+                      label: '预览文件',
+                      icon: Icons.visibility_outlined,
+                      onPressed: _loadPreview,
+                      enabled: !busy,
+                    )
+                  : OutlinedButton(
+                      onPressed: busy ? null : _loadPreview,
+                      child: const Text('预览文件'),
+                    ),
             if (widget.runtime?.features.localFileReveal == true)
-              TextButton(
-                onPressed: busy ? null : _reveal,
-                child: Text(
-                  Theme.of(context).platform == TargetPlatform.macOS
-                      ? '在访达中显示'
-                      : '在文件管理器中显示',
-                ),
-              ),
+              _usesGlassButtons(context)
+                  ? AggregateActionButton(
+                      label: Theme.of(context).platform == TargetPlatform.macOS
+                          ? '在访达中显示'
+                          : '在文件管理器中显示',
+                      icon: Icons.open_in_new,
+                      onPressed: _reveal,
+                      style: AggregateActionStyle.quiet,
+                      enabled: !busy,
+                    )
+                  : TextButton(
+                      onPressed: busy ? null : _reveal,
+                      child: Text(
+                        Theme.of(context).platform == TargetPlatform.macOS
+                            ? '在访达中显示'
+                            : '在文件管理器中显示',
+                      ),
+                    ),
           ],
         ),
       ],

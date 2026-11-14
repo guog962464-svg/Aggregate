@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+
 class SchemaForm extends StatefulWidget {
   const SchemaForm({super.key, required this.schema});
   final JsonMap schema;
@@ -178,10 +180,10 @@ class SchemaFormState extends State<SchemaForm> {
                       ? '可选：${(spec['enum'] as List).join('、')}'
                       : null,
                   suffixIcon: type == 'array' || type == 'object'
-                      ? IconButton(
+                      ? AggregateIconButton(
                           tooltip: '格式化 ${spec['title'] ?? entry.key}',
+                          icon: Icons.data_object,
                           onPressed: () => _formatJson(entry.key),
-                          icon: const Icon(Icons.data_object),
                         )
                       : null,
                 ),
@@ -242,23 +244,19 @@ class SchemaFormState extends State<SchemaForm> {
                   (entry.value as Map)['type'] == 'object'))
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton.icon(
+              child: AggregateActionButton(
+                label: expandedJsonFields.contains(entry.key)
+                    ? '收起 JSON 编辑器'
+                    : '展开 JSON 编辑器',
+                icon: expandedJsonFields.contains(entry.key)
+                    ? Icons.unfold_less
+                    : Icons.unfold_more,
+                style: AggregateActionStyle.quiet,
                 onPressed: () => setState(() {
                   if (!expandedJsonFields.add(entry.key)) {
                     expandedJsonFields.remove(entry.key);
                   }
                 }),
-                icon: Icon(
-                  expandedJsonFields.contains(entry.key)
-                      ? Icons.unfold_less
-                      : Icons.unfold_more,
-                  size: 18,
-                ),
-                label: Text(
-                  expandedJsonFields.contains(entry.key)
-                      ? '收起 JSON 编辑器'
-                      : '展开 JSON 编辑器',
-                ),
               ),
             ),
           const SizedBox(height: 16),

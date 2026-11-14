@@ -4,6 +4,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
 import 'netease_login_link.dart';
 
 /// A small account entry in the player heading. Provider work stays in the
@@ -100,16 +101,14 @@ class _MusicAccountControlState extends State<MusicAccountControl> {
       constraints: const BoxConstraints(maxWidth: 190),
       child: Tooltip(
         message: '管理网易云音乐账号',
-        child: Semantics(
-          label: '管理网易云音乐账号，$label',
-          button: true,
-          child: TextButton.icon(
-            key: const Key('music-account'),
-            onPressed: _open,
-            icon: const Icon(Icons.account_circle_outlined),
-            label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-            style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
-          ),
+        excludeFromSemantics: true,
+        child: AggregateActionButton(
+          key: const Key('music-account'),
+          label: label,
+          icon: Icons.account_circle_outlined,
+          semanticsLabel: '管理网易云音乐账号，$label',
+          style: AggregateActionStyle.quiet,
+          onPressed: _open,
         ),
       ),
     );
@@ -198,13 +197,17 @@ class _AccountDialogState extends State<_AccountDialog> {
           title: Text(title),
           content: Text(detail),
           actions: [
-            TextButton(
+            AggregateActionButton(
+              label: '取消',
+              icon: Icons.close,
+              style: AggregateActionStyle.quiet,
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
             ),
-            FilledButton(
+            AggregateActionButton(
+              label: action,
+              icon: Icons.logout,
+              style: AggregateActionStyle.primary,
               onPressed: () => Navigator.pop(context, true),
-              child: Text(action),
             ),
           ],
         ),
@@ -388,10 +391,10 @@ class _AccountDialogState extends State<_AccountDialog> {
                     Expanded(
                       child: Text('网易云音乐账号', style: theme.textTheme.titleLarge),
                     ),
-                    IconButton(
+                    AggregateIconButton(
                       tooltip: '关闭账号面板',
+                      icon: Icons.close,
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
                     ),
                   ],
                 ),
@@ -467,32 +470,46 @@ class _AccountDialogState extends State<_AccountDialog> {
                   runSpacing: 8,
                   children: [
                     if (scanning)
-                      TextButton(
+                      AggregateActionButton(
+                        label: '取消扫码',
+                        icon: Icons.close,
+                        style: AggregateActionStyle.quiet,
                         onPressed: _cancelLogin,
-                        child: const Text('取消扫码'),
                       )
                     else ...[
-                      TextButton(
+                      AggregateActionButton(
+                        label: '刷新状态',
+                        icon: Icons.refresh,
+                        style: AggregateActionStyle.quiet,
                         onPressed: busy ? null : _refresh,
-                        child: const Text('刷新状态'),
+                        enabled: !busy,
                       ),
                       if (snapshot.state == AccountState.signedIn) ...[
-                        TextButton(
+                        AggregateActionButton(
+                          label: '退出登录',
+                          icon: Icons.logout,
+                          style: AggregateActionStyle.danger,
                           onPressed: busy
                               ? null
                               : () => _logout(switchAccount: false),
-                          child: const Text('退出登录'),
+                          enabled: !busy,
                         ),
-                        FilledButton(
+                        AggregateActionButton(
+                          label: '切换账号',
+                          icon: Icons.switch_account_outlined,
+                          style: AggregateActionStyle.primary,
                           onPressed: busy
                               ? null
                               : () => _logout(switchAccount: true),
-                          child: const Text('切换账号'),
+                          enabled: !busy,
                         ),
                       ] else
-                        FilledButton(
+                        AggregateActionButton(
+                          label: '扫码登录',
+                          icon: Icons.qr_code_scanner,
+                          style: AggregateActionStyle.primary,
                           onPressed: busy ? null : _startLogin,
-                          child: const Text('扫码登录'),
+                          enabled: !busy,
                         ),
                     ],
                   ],

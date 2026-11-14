@@ -5,6 +5,8 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+
 class ActionEditorDialog extends StatefulWidget {
   const ActionEditorDialog({
     super.key,
@@ -250,20 +252,22 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                   Wrap(
                     spacing: 8,
                     children: [
-                      OutlinedButton.icon(
+                      AggregateActionButton(
+                        label: '新增动作',
+                        icon: Icons.add,
                         onPressed: busy ? null : _addAction,
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('新增动作'),
                       ),
-                      TextButton.icon(
+                      AggregateActionButton(
+                        label: '导入',
+                        icon: Icons.file_open_outlined,
+                        style: AggregateActionStyle.quiet,
                         onPressed: busy ? null : _import,
-                        icon: const Icon(Icons.file_open_outlined, size: 18),
-                        label: const Text('导入'),
                       ),
-                      TextButton.icon(
+                      AggregateActionButton(
+                        label: '导出',
+                        icon: Icons.save_alt,
+                        style: AggregateActionStyle.quiet,
                         onPressed: busy ? null : _export,
-                        icon: const Icon(Icons.save_alt, size: 18),
-                        label: const Text('导出'),
                       ),
                     ],
                   ),
@@ -329,9 +333,10 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton(
+                  AggregateActionButton(
+                    label: '检查并预览参数',
+                    icon: Icons.preview_outlined,
                     onPressed: busy ? null : _preview,
-                    child: const Text('检查并预览参数'),
                   ),
                   if (preview != null) ...[
                     const SizedBox(height: 8),
@@ -358,13 +363,18 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      AggregateActionButton(
+        label: '取消',
+        icon: Icons.close,
+        style: AggregateActionStyle.quiet,
         onPressed: busy ? null : () => Navigator.of(context).pop(false),
-        child: const Text('取消'),
       ),
-      FilledButton(
+      AggregateActionButton(
+        label: '保存动作',
+        icon: Icons.save_outlined,
+        style: AggregateActionStyle.primary,
         onPressed: busy || !loaded ? null : _save,
-        child: const Text('保存动作'),
+        enabled: !busy && loaded,
       ),
     ],
   );

@@ -6,6 +6,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+
 /// Shared form: platform adapters supply the fields and perform the probe.
 class ConnectionSetupDialog extends StatefulWidget {
   const ConnectionSetupDialog({
@@ -472,16 +474,16 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (detect != null)
-                    IconButton(
+                    AggregateIconButton(
                       tooltip: detectTooltip ?? '自动检测程序',
+                      icon: Icons.manage_search_outlined,
                       onPressed: detect,
-                      icon: const Icon(Icons.manage_search_outlined),
                     ),
                   if (file || choose != null)
-                    IconButton(
+                    AggregateIconButton(
                       tooltip: '选择$title',
+                      icon: Icons.folder_open_outlined,
                       onPressed: choose ?? () => _choose(controller),
-                      icon: const Icon(Icons.folder_open_outlined),
                     ),
                 ],
               )
@@ -752,13 +754,22 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
         ),
       ),
     );
-    final testButton = OutlinedButton(
+    final testButton = AggregateActionButton(
+      label: '测试连接',
+      icon: Icons.network_check_outlined,
       onPressed: busy || detectingExecutable ? null : _test,
-      child: Text(busy && !saving ? '正在测试…' : '测试连接'),
+      enabled: !busy && !detectingExecutable,
+      busy: busy && !saving,
+      busyLabel: '正在测试…',
     );
-    final saveButton = FilledButton(
+    final saveButton = AggregateActionButton(
+      label: '保存连接',
+      icon: Icons.save_outlined,
+      style: AggregateActionStyle.primary,
       onPressed: busy || report?.canSave != true ? null : _save,
-      child: Text(saving ? '正在保存…' : '保存连接'),
+      enabled: !busy && report?.canSave == true,
+      busy: saving,
+      busyLabel: '正在保存…',
     );
     return PopScope(
       canPop: !saving,
@@ -771,10 +782,11 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
                         ? '添加连接'
                         : '第 2 步 · 配置连接',
                   ),
-                  leading: IconButton(
+                  leading: AggregateIconButton(
                     tooltip: '关闭添加连接',
+                    icon: Icons.close,
                     onPressed: saving ? null : () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    enabled: !saving,
                   ),
                 ),
                 body: SafeArea(
@@ -803,9 +815,12 @@ class _ConnectionSetupDialogState extends State<ConnectionSetupDialog> {
               ),
               content: form,
               actions: [
-                TextButton(
+                AggregateActionButton(
+                  label: '取消',
+                  icon: Icons.close,
+                  style: AggregateActionStyle.quiet,
                   onPressed: saving ? null : () => Navigator.pop(context),
-                  child: const Text('取消'),
+                  enabled: !saving,
                 ),
                 testButton,
                 saveButton,

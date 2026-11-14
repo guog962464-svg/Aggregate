@@ -4,6 +4,9 @@ import 'package:aggregate/features/music/music_session.dart';
 import 'package:aggregate/app/app_shell.dart';
 import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_action_button.dart';
+import 'package:aggregate/widgets/glass/glass_glyph.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -126,6 +129,70 @@ void main() {
     expect(find.byTooltip('刷新播放状态'), findsOneWidget);
     expect(find.byTooltip('暂停'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('macOS mini player morphs the same playback button', (
+    tester,
+  ) async {
+    await _withPlatform(TargetPlatform.macOS, () async {
+      _useSize(tester, const Size(1024, 768));
+      final clock = ManualGlassMotionClock();
+      final session = _playingSession();
+      session.actions['music.resume'] = Capability(
+        id: const CapabilityId(
+          ConnectionId('music-connection'),
+          CapabilityKind.cliAction,
+          'resume',
+        ),
+        title: '继续播放',
+        description: '',
+        permission: PermissionLevel.localControl,
+        presentation: 'music.resume',
+      );
+      addTearDown(session.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassMotionScope(
+            clock: clock,
+            child: Scaffold(
+              body: const SizedBox.shrink(),
+              bottomNavigationBar: MusicMiniPlayer(session: session),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final pauseFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is GlassActionButton && widget.semanticsLabel == '暂停',
+      );
+      expect(pauseFinder, findsOneWidget);
+      final playbackElement = tester.element(pauseFinder);
+      expect(
+        tester.widget<GlassActionButton>(pauseFinder).glyph,
+        GlassGlyph.pause,
+      );
+
+      session
+        ..playing = false
+        ..notifyListeners();
+      await tester.pump();
+
+      final playFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is GlassActionButton && widget.semanticsLabel == '继续播放',
+      );
+      expect(playFinder, findsOneWidget);
+      expect(identical(playbackElement, tester.element(playFinder)), isTrue);
+      expect(
+        tester.widget<GlassActionButton>(playFinder).glyph,
+        GlassGlyph.play,
+      );
+      expect(find.bySemanticsLabel('上一首'), findsOneWidget);
+      expect(find.bySemanticsLabel('下一首'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   testWidgets('phone mini player opens the matching full music page', (

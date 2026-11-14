@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_motion.dart';
 import 'music_session.dart';
 
 Future<void> confirmMusicControl(
@@ -17,13 +20,17 @@ Future<void> confirmMusicControl(
         title: Text('$label？'),
         content: Text('通过 ${session.source} 执行播放控制。'),
         actions: [
-          TextButton(
+          AggregateActionButton(
+            label: '取消',
+            icon: Icons.close,
+            style: AggregateActionStyle.quiet,
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
           ),
-          FilledButton(
+          AggregateActionButton(
+            label: '执行',
+            icon: Icons.play_arrow,
+            style: AggregateActionStyle.primary,
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('执行'),
           ),
         ],
       ),
@@ -45,6 +52,37 @@ class MusicMiniPlayer extends StatelessWidget {
   final MusicSession session;
   final bool includeBottomSafeArea;
   final VoidCallback? onOpen;
+
+  bool _usesGlassButtons(BuildContext context) =>
+      GlassMotionScope.maybeOf(context) != null;
+
+  Widget _iconButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool primary = false,
+    bool selected = false,
+  }) {
+    if (_usesGlassButtons(context)) {
+      return AggregateIconButton(
+        tooltip: label,
+        icon: icon,
+        onPressed: onPressed,
+        enabled: onPressed != null,
+        selected: selected,
+        kind: primary ? GlassButtonKind.primary : GlassButtonKind.icon,
+        size: primary ? GlassButtonSize.playback : GlassButtonSize.icon,
+      );
+    }
+    return primary
+        ? IconButton.filled(
+            tooltip: label,
+            onPressed: onPressed,
+            icon: Icon(icon),
+          )
+        : IconButton(tooltip: label, onPressed: onPressed, icon: Icon(icon));
+  }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -144,10 +182,11 @@ class MusicMiniPlayer extends StatelessWidget {
         children: [
           Expanded(child: _trackSummary(context, compact: true)),
           if (onOpen != null)
-            IconButton(
-              tooltip: '打开播放器',
+            _iconButton(
+              context,
+              label: '打开播放器',
+              icon: Icons.open_in_full,
               onPressed: onOpen,
-              icon: const Icon(Icons.open_in_full),
             ),
           if (session.actions.containsKey('music.stop') ||
               session.actions.containsKey('music.state'))
@@ -165,10 +204,11 @@ class MusicMiniPlayer extends StatelessWidget {
               ],
               enabled: !session.busy,
             ),
-          IconButton(
-            tooltip: '收起迷你播放器',
+          _iconButton(
+            context,
+            label: '收起迷你播放器',
+            icon: Icons.close,
             onPressed: session.dismiss,
-            icon: const Icon(Icons.close),
           ),
         ],
       ),
@@ -176,15 +216,20 @@ class MusicMiniPlayer extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (session.actions.containsKey('music.prev') && session.canPrev)
-            IconButton(
-              tooltip: '上一首',
+            _iconButton(
+              context,
+              label: '上一首',
+              icon: Icons.skip_previous_rounded,
               onPressed: session.busy
                   ? null
                   : () => confirmMusicControl(context, session, 'prev', '上一首'),
-              icon: const Icon(Icons.skip_previous),
             ),
-          IconButton.filled(
-            tooltip: session.playing == true ? '暂停' : '继续播放',
+          _iconButton(
+            context,
+            label: session.playing == true ? '暂停' : '继续播放',
+            icon: session.playing == true
+                ? Icons.pause_rounded
+                : Icons.play_arrow_rounded,
             onPressed:
                 session.busy || session.playbackStatus == '正在确认' || !canToggle
                 ? null
@@ -194,17 +239,17 @@ class MusicMiniPlayer extends StatelessWidget {
                     session.playing == true ? 'pause' : 'resume',
                     session.playing == true ? '暂停' : '继续播放',
                   ),
-            icon: Icon(
-              session.playing == true ? Icons.pause : Icons.play_arrow,
-            ),
+            primary: true,
+            selected: session.playing == true,
           ),
           if (session.actions.containsKey('music.next') && session.canNext)
-            IconButton(
-              tooltip: '下一首',
+            _iconButton(
+              context,
+              label: '下一首',
+              icon: Icons.skip_next_rounded,
               onPressed: session.busy
                   ? null
                   : () => confirmMusicControl(context, session, 'next', '下一首'),
-              icon: const Icon(Icons.skip_next),
             ),
         ],
       ),
@@ -215,15 +260,20 @@ class MusicMiniPlayer extends StatelessWidget {
     children: [
       Expanded(child: _trackSummary(context, compact: false)),
       if (session.actions.containsKey('music.prev') && session.canPrev)
-        IconButton(
-          tooltip: '上一首',
+        _iconButton(
+          context,
+          label: '上一首',
+          icon: Icons.skip_previous_rounded,
           onPressed: session.busy
               ? null
               : () => confirmMusicControl(context, session, 'prev', '上一首'),
-          icon: const Icon(Icons.skip_previous),
         ),
-      IconButton(
-        tooltip: session.playing == true ? '暂停' : '继续播放',
+      _iconButton(
+        context,
+        label: session.playing == true ? '暂停' : '继续播放',
+        icon: session.playing == true
+            ? Icons.pause_rounded
+            : Icons.play_arrow_rounded,
         onPressed:
             session.busy || session.playbackStatus == '正在确认' || !canToggle
             ? null
@@ -233,42 +283,48 @@ class MusicMiniPlayer extends StatelessWidget {
                 session.playing == true ? 'pause' : 'resume',
                 session.playing == true ? '暂停' : '继续播放',
               ),
-        icon: Icon(session.playing == true ? Icons.pause : Icons.play_arrow),
+        primary: true,
+        selected: session.playing == true,
       ),
       if (session.actions.containsKey('music.next') && session.canNext)
-        IconButton(
-          tooltip: '下一首',
+        _iconButton(
+          context,
+          label: '下一首',
+          icon: Icons.skip_next_rounded,
           onPressed: session.busy
               ? null
               : () => confirmMusicControl(context, session, 'next', '下一首'),
-          icon: const Icon(Icons.skip_next),
         ),
       if (session.actions.containsKey('music.stop'))
-        IconButton(
-          tooltip: '停止播放',
+        _iconButton(
+          context,
+          label: '停止播放',
+          icon: Icons.stop_circle_outlined,
           onPressed: session.busy
               ? null
               : () => confirmMusicControl(context, session, 'stop', '停止播放'),
-          icon: const Icon(Icons.stop),
         ),
       if (session.actions.containsKey('music.state'))
-        IconButton(
-          tooltip: '刷新播放状态',
+        _iconButton(
+          context,
+          label: '刷新播放状态',
+          icon: Icons.refresh_rounded,
           onPressed: session.busy
               ? null
               : () => confirmMusicControl(context, session, 'state', '刷新播放状态'),
-          icon: const Icon(Icons.refresh),
         ),
       if (onOpen != null)
-        IconButton(
-          tooltip: '打开播放器',
+        _iconButton(
+          context,
+          label: '打开播放器',
+          icon: Icons.open_in_full,
           onPressed: onOpen,
-          icon: const Icon(Icons.open_in_full),
         ),
-      IconButton(
-        tooltip: '收起迷你播放器',
+      _iconButton(
+        context,
+        label: '收起迷你播放器',
+        icon: Icons.close,
         onPressed: session.dismiss,
-        icon: const Icon(Icons.close),
       ),
     ],
   );
@@ -347,18 +403,32 @@ class MusicRunPanel extends StatelessWidget {
                         if (session.actions.containsKey('music.${action.$1}') &&
                             (action.$1 != 'next' || session.canNext) &&
                             (action.$1 != 'prev' || session.canPrev))
-                          OutlinedButton.icon(
-                            onPressed: session.busy
-                                ? null
-                                : () => confirmMusicControl(
-                                    context,
-                                    session,
-                                    action.$1,
-                                    action.$2,
-                                  ),
-                            icon: Icon(action.$3, size: 18),
-                            label: Text(action.$2),
-                          ),
+                          GlassMotionScope.maybeOf(context) != null
+                              ? AggregateActionButton(
+                                  label: action.$2,
+                                  icon: action.$3,
+                                  onPressed: session.busy
+                                      ? null
+                                      : () => confirmMusicControl(
+                                          context,
+                                          session,
+                                          action.$1,
+                                          action.$2,
+                                        ),
+                                  enabled: !session.busy,
+                                )
+                              : OutlinedButton.icon(
+                                  onPressed: session.busy
+                                      ? null
+                                      : () => confirmMusicControl(
+                                          context,
+                                          session,
+                                          action.$1,
+                                          action.$2,
+                                        ),
+                                  icon: Icon(action.$3, size: 18),
+                                  label: Text(action.$2),
+                                ),
                     ],
                   ),
                 ],

@@ -2,6 +2,7 @@ import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/features/connections/connections_page.dart';
 import 'package:aggregate/features/music/music_player_page.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +91,12 @@ void main() {
       addTearDown(runtime.dispose);
 
       tester.view.physicalSize = const Size(700, 900);
-      await tester.pumpWidget(AggregateApp(runtime: runtime));
+      await tester.pumpWidget(
+        AggregateApp(
+          runtime: runtime,
+          glassMotionClock: ManualGlassMotionClock(),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
@@ -118,7 +124,12 @@ void main() {
       final runtime = createPreviewRuntime();
       addTearDown(runtime.dispose);
 
-      await tester.pumpWidget(AggregateApp(runtime: runtime));
+      await tester.pumpWidget(
+        AggregateApp(
+          runtime: runtime,
+          glassMotionClock: ManualGlassMotionClock(),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(NavigationBar), findsNothing);
       expect(find.byType(NavigationRail), findsNothing);

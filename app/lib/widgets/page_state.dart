@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'glass/aggregate_buttons.dart';
+
 class PageState extends StatelessWidget {
   const PageState.loading({super.key})
     : message = '正在加载…',
@@ -42,7 +44,11 @@ class PageState extends StatelessWidget {
         ],
         if (onRetry != null) ...[
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+          AggregateActionButton(
+            label: '重试',
+            icon: Icons.refresh_rounded,
+            onPressed: onRetry,
+          ),
         ],
       ],
     ),

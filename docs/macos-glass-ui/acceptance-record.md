@@ -76,6 +76,23 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 | 验证 | `flutter analyze --no-pub`：无问题。`flutter test --no-pub test/glass_design_tokens_test.dart test/glass_theme_switch_test.dart test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart test/theme_switch_calibration_test.dart test/theme_switch_optics_test.dart test/android_theme_transition_test.dart test/android_shell_test.dart`：30 项通过。覆盖 DPR 1×/2× viewport、场景坐标、原主题光学/模拟/实时/校准、macOS 主题过渡，以及 Android 外观过渡与 shell。macOS 颜色预期按新增 macOS palette 更新。 |
 | 平台边界 | `AggregateApp` 仅 macOS 包装 `GlassScene`；macOS `Scaffold`/侧栏透明以显示 root shader。Android/Windows 保留原主题分支；Android 相关测试通过。公共玻璃组件只依赖 Flutter/Dart。 |
 
+## UI-4：页面布局与按钮位置适配
+
+| 字段 | 记录 |
+| --- | --- |
+| 项目 | UI-4.1～UI-4.7 |
+| 结果 | 通过；UI-5 可开始。七个页面域已接入共享点阵玻璃按钮；页面状态源、回调、忙碌/禁用条件和原主题逻辑保持。 |
+| 设计版本 | revision 5；基线 HTML SHA-256 `3e3b7cae0abb58ed6519c2f687cd619a4e2201c613ee5153bc18ba4be0305fd7`。 |
+| 代码范围 | App 外壳/搜索、连接与能力运行、MCP/CLI 结果和终端、音乐主页与迷你播放器、功能目录、活动、设置、Mac Host 面板、共享按钮封装和点阵字形。保留平台无关封装；视觉玻璃仅在 macOS + `GlassMotionScope` 下启用，其他平台继续走 Material 回退。 |
+| 真实界面操作 | Profile 预览入口原生检查：全功能目录行左对齐；连接页呈现左侧列表和右侧详情；CLI 能力执行返回预览结果；设置页背景连续，主题控件、快捷键和危险操作位置可辨；展开“清空记录”确认后取消，未删除记录。音乐页搜索/结果及迷你播放控件在先前 UI-4 子组检查中核对。 |
+| 弹窗与权限边界 | 预览添加连接只显示“不能添加真实连接”说明。正式 Mac Host Profile 中确认 Host 处于停止状态及权限/身份面板布局；未启动监听、生成邀请、批准/撤销真实设备或打开正式授权弹窗。权限选择和授权/撤销路径由 `mac_host_settings_panel_test.dart` 的模拟平台服务覆盖（4 tests passed）；连接向导/动作编辑/删除及危险确认由既有 Flutter 测试覆盖。 |
+| 原主题 | `glass_theme_switch.dart`、模拟与校准文件均未改；`appearance_selector.dart` 只把“跟随系统”入口接入统一按钮外观。主题映射和回调由原主题回归验证。 |
+| 自动检查 | `dart format`：无格式差异；`flutter analyze --no-pub`：无问题；`flutter test --no-pub`：268 tests passed（更新 paste glyph 后重录两张字形 golden，4 项 DPR/明暗 golden 通过）；UI-4D 最后权限按钮修正后重新执行 Host 面板测试：4 tests passed，分析无问题。 |
+| macOS 构建 | `flutter build macos --profile --no-pub -t lib/preview_main.dart` 与 `flutter build macos --profile --no-pub -t lib/main.dart` 均成功；正式入口 Profile 76.4 MB。预览设计操作不触达真实 Runtime。 |
+| 工作树 | 保留用户原有 `pubspec.lock` 修改，未纳入本阶段；点阵字形 golden 更新仅对应新增粘贴图案及画廊布局。 |
+| 限制 | 窗口缩放矩阵、完整 VoiceOver、实际 Host 授权弹窗与真实外部连接流程留给 UI-5/用户已有安全操作边界；CUA 截图只在任务界面查看，未导出到仓库证据目录。 |
+| 提交 | UI-4 独立提交与双远端核对；SHA 见 Git 历史。 |
+
 ## 后续阶段
 
 ## UI-2：统一按钮与细腻点阵
@@ -116,4 +133,4 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 
 ## 后续阶段
 
-UI-0～UI-3 已分别实施、验收并独立提交推送；UI-4～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。
+UI-0～UI-4 已分别实施、验收并独立提交推送；UI-5～UI-6 在各阶段实施完成后追加各自的验收项，保留失败、未测项和对应提交号。用户对最终材质的主观确认仍与自动化、Profile 数据分开记录。

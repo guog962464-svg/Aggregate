@@ -1,6 +1,8 @@
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+
 Future<ExecutionTarget?> showConnectionSetupTargetDialog(
   BuildContext context,
   List<ConnectionSetupTargetOption> options,
@@ -40,23 +42,24 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
             itemBuilder: (context, index) {
               final option = options[index];
               final isHost = option.target.kind == ExecutionTargetKind.host;
-              return ListTile(
-                enabled: option.selectable,
-                minVerticalPadding: 12,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: Icon(
-                  isHost
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: AggregateActionButton(
+                  label: option.label,
+                  description: option.detail,
+                  semanticsLabel: '${option.label}，${option.detail}',
+                  icon: isHost
                       ? Icons.desktop_mac_outlined
                       : Icons.phone_android_outlined,
+                  onPressed: option.selectable
+                      ? () => Navigator.pop(context, option.target)
+                      : null,
+                  enabled: option.selectable,
+                  expand: true,
                 ),
-                title: Text(option.label),
-                subtitle: Text(option.detail),
-                trailing: option.selectable
-                    ? const Icon(Icons.chevron_right)
-                    : const Icon(Icons.lock_outline),
-                onTap: option.selectable
-                    ? () => Navigator.pop(context, option.target)
-                    : null,
               );
             },
           );
@@ -66,10 +69,10 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
         child: Scaffold(
           appBar: AppBar(
             title: const Text('第 1 步 · 选择执行设备'),
-            leading: IconButton(
+            leading: AggregateIconButton(
               tooltip: '关闭选择执行设备',
+              icon: Icons.close,
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
             ),
           ),
           body: SafeArea(child: list),
@@ -81,9 +84,11 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
       title: const Text('先选择执行设备'),
       content: SizedBox(width: 440, child: list),
       actions: [
-        TextButton(
+        AggregateActionButton(
+          label: '取消',
+          icon: Icons.close,
+          style: AggregateActionStyle.quiet,
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
         ),
       ],
     );

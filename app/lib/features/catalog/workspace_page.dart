@@ -5,6 +5,10 @@ import 'package:flutter/services.dart';
 
 import '../../app/shortcut_scheme.dart';
 import '../../widgets/capability_row.dart';
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_glyph.dart';
+import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
 
@@ -39,6 +43,10 @@ class WorkspacePageState extends State<WorkspacePage> {
   CapabilityKind? filter;
   Object? error;
   int generation = 0;
+
+  bool _usesGlassButtons(BuildContext context) =>
+      defaultTargetPlatform == TargetPlatform.macOS &&
+      GlassMotionScope.maybeOf(context) != null;
 
   @override
   void initState() {
@@ -170,6 +178,16 @@ class WorkspacePageState extends State<WorkspacePage> {
                               ),
                             ),
                           )
+                  : _usesGlassButtons(context)
+                  ? AggregateIconButton(
+                      tooltip: '清除搜索',
+                      icon: Icons.close,
+                      onPressed: () {
+                        search.clear();
+                        reloadCatalog();
+                        focusSearch();
+                      },
+                    )
                   : IconButton(
                       tooltip: '清除搜索',
                       icon: const Icon(Icons.close),
@@ -217,24 +235,25 @@ class WorkspacePageState extends State<WorkspacePage> {
                 : '还没有连接。添加第一个 HTTP MCP，功能会出现在这里。',
             actions: [
               if (widget.runtime.features.canAdd(ConnectionKind.cli))
-                FilledButton.icon(
+                AggregateActionButton(
+                  label: '添加 CLI',
+                  icon: Icons.terminal,
+                  style: AggregateActionStyle.primary,
                   onPressed: () => widget.onAddConnection(ConnectionKind.cli),
-                  icon: const Icon(Icons.terminal),
-                  label: const Text('添加 CLI'),
                 ),
               if (widget.runtime.features.canAdd(ConnectionKind.mcpStdio))
-                OutlinedButton.icon(
+                AggregateActionButton(
+                  label: '添加 MCP',
+                  icon: Icons.hub_outlined,
                   onPressed: () =>
                       widget.onAddConnection(ConnectionKind.mcpStdio),
-                  icon: const Icon(Icons.hub_outlined),
-                  label: const Text('添加 MCP'),
                 )
               else if (widget.runtime.features.canAdd(ConnectionKind.mcpHttp))
-                OutlinedButton.icon(
+                AggregateActionButton(
+                  label: '添加 HTTP MCP',
+                  icon: Icons.hub_outlined,
                   onPressed: () =>
                       widget.onAddConnection(ConnectionKind.mcpHttp),
-                  icon: const Icon(Icons.hub_outlined),
-                  label: const Text('添加 HTTP MCP'),
                 ),
             ],
           )
@@ -242,13 +261,15 @@ class WorkspacePageState extends State<WorkspacePage> {
           PageState.empty(
             search.text.isEmpty ? '当前筛选下没有可用功能。' : '没有找到“${search.text}”对应的功能。',
             actions: [
-              TextButton(
+              AggregateActionButton(
+                label: '清除筛选',
+                icon: Icons.close,
+                style: AggregateActionStyle.quiet,
                 onPressed: () {
                   search.clear();
                   setState(() => filter = null);
                   reloadCatalog();
                 },
-                child: const Text('清除筛选'),
               ),
             ],
           )
@@ -308,9 +329,31 @@ class WorkspacePageState extends State<WorkspacePage> {
     );
   }
 
-  Widget _filterChip(String label, CapabilityKind? kind) => ChoiceChip(
-    label: Text(label),
-    selected: filter == kind,
-    onSelected: (_) => setState(() => filter = kind),
-  );
+  Widget _filterChip(String label, CapabilityKind? kind) {
+    final selected = filter == kind;
+    final icon = switch (kind) {
+      null => Icons.grid_view_outlined,
+      CapabilityKind.mcpTool => Icons.build_outlined,
+      CapabilityKind.mcpResource => Icons.description_outlined,
+      CapabilityKind.mcpPrompt => Icons.chat_bubble_outline,
+      CapabilityKind.cliCommand ||
+      CapabilityKind.cliAction => Icons.terminal_outlined,
+    };
+    if (_usesGlassButtons(context)) {
+      return GlassActionButton(
+        glyph: GlassGlyphCatalog.fromMaterialIcon(icon),
+        label: label,
+        semanticsLabel: '按类型筛选：$label',
+        onPressed: () => setState(() => filter = kind),
+        selected: selected,
+        kind: GlassButtonKind.segmented,
+        size: GlassButtonSize.secondary,
+      );
+    }
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => setState(() => filter = kind),
+    );
+  }
 }

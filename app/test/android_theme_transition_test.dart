@@ -3,6 +3,7 @@ import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/features/settings/settings_page.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,7 +71,12 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await runtime.dispose();
     });
-    await tester.pumpWidget(AggregateApp(runtime: runtime));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
     await _openSettings(tester);
     expect(_pageTheme(tester).brightness, Brightness.dark);

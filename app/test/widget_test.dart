@@ -2,6 +2,7 @@ import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/app/app_shell.dart';
 import 'package:aggregate/features/connections/connections_page.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
-  Widget preview() => AggregateApp(runtime: createPreviewRuntime());
+  Widget preview() => AggregateApp(
+    runtime: createPreviewRuntime(),
+    glassMotionClock: ManualGlassMotionClock(),
+  );
 
   Future<void> openAll(WidgetTester tester) async {
     await tester.tap(find.text('所有功能').first);
@@ -204,7 +208,12 @@ void main() {
 
   testWidgets('favorite and appearance persist in the runtime', (tester) async {
     final runtime = createPreviewRuntime();
-    await tester.pumpWidget(AggregateApp(runtime: runtime));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
     await openAll(tester);
     await tester.enterText(find.byKey(const Key('global-search')), 'Git');
@@ -220,7 +229,12 @@ void main() {
       AppearancePreference.dark,
     );
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpWidget(AggregateApp(runtime: runtime));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
     await openAll(tester);
     expect(

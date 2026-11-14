@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../features/invocation/capability_run_page.dart';
 import '../features/music/music_session.dart';
+import '../widgets/glass/glass_motion.dart';
 import '../widgets/glass/glass_scene.dart';
 import 'app_shell.dart';
 import 'shortcut_scheme.dart';
@@ -16,10 +17,12 @@ class AggregateApp extends StatefulWidget {
     super.key,
     required this.runtime,
     this.platformSettingsSections = const [],
+    this.glassMotionClock,
   });
 
   final RuntimePort runtime;
   final List<Widget> platformSettingsSections;
+  final GlassMotionClock? glassMotionClock;
 
   @override
   State<AggregateApp> createState() => _AggregateAppState();
@@ -120,7 +123,12 @@ class _AggregateAppState extends State<AggregateApp> {
         child: Focus(autofocus: true, child: child ?? const SizedBox.shrink()),
       );
       return defaultTargetPlatform == TargetPlatform.macOS
-          ? GlassScene(child: content)
+          ? GlassScene(
+              child: GlassMotionScope(
+                clock: widget.glassMotionClock,
+                child: content,
+              ),
+            )
           : content;
     },
     onGenerateRoute: (settings) {
@@ -134,6 +142,7 @@ class _AggregateAppState extends State<AggregateApp> {
             onPreferencesChanged: (value) => unawaited(_savePreferences(value)),
             onClearActivity: _clearActivity,
             musicSession: musicSession,
+            glassMotionClock: widget.glassMotionClock,
             platformSettingsSections: widget.platformSettingsSections,
           ),
         );
@@ -141,13 +150,18 @@ class _AggregateAppState extends State<AggregateApp> {
       if (settings.name == '/run' && settings.arguments is Capability) {
         return MaterialPageRoute<void>(
           settings: settings,
-          builder: (_) => CapabilityRunPage(
-            runtime: widget.runtime,
-            capability: settings.arguments! as Capability,
-            musicSession: musicSession,
-            onSearchAll: searchAll,
-            onOpenMusic: shellKey.currentState?.openMusicPlayer,
-          ),
+          builder: (_) {
+            final page = CapabilityRunPage(
+              runtime: widget.runtime,
+              capability: settings.arguments! as Capability,
+              musicSession: musicSession,
+              onSearchAll: searchAll,
+              onOpenMusic: shellKey.currentState?.openMusicPlayer,
+            );
+            return defaultTargetPlatform == TargetPlatform.macOS
+                ? GlassMotionScope(clock: widget.glassMotionClock, child: page)
+                : page;
+          },
         );
       }
       return null;

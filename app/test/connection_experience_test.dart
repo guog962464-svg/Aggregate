@@ -3,6 +3,7 @@ import 'package:aggregate/features/connections/connection_experience.dart';
 import 'package:aggregate/features/music/music_mini_player.dart';
 import 'package:aggregate/features/music/music_session.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,7 +69,12 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(AggregateApp(runtime: createPreviewRuntime()));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: createPreviewRuntime(),
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('音乐播放器'), findsOneWidget);
@@ -92,7 +98,12 @@ void main() {
   testWidgets('CLI and MCP connections use their own functional homes', (
     tester,
   ) async {
-    await tester.pumpWidget(AggregateApp(runtime: createPreviewRuntime()));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: createPreviewRuntime(),
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('示例 Git CLI').first);
     await tester.pumpAndSettle();
@@ -107,11 +118,51 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
+  testWidgets('macOS connection home keeps its directory beside the run form', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1024, 768);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = createPreviewRuntime();
+    addTearDown(runtime.dispose);
+
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('示例 Git CLI').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('查看 Git 状态').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('参数'), findsOneWidget);
+    expect(find.text('本次运行'), findsOneWidget);
+    // The selected capability remains visible in the directory beside the
+    // same title in the embedded run pane.
+    expect(find.text('查看 Git 状态'), findsNWidgets(2));
+    await tester.tap(find.text('运行').first);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('运行成功'), findsOneWidget);
+    expect(await runtime.listRecentRuns(), hasLength(1));
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
   testWidgets('the last selected connection opens after restart', (
     tester,
   ) async {
     final runtime = createPreviewRuntime();
-    await tester.pumpWidget(AggregateApp(runtime: runtime));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('示例 Git CLI').first);
     await tester.pumpAndSettle();
@@ -121,7 +172,12 @@ void main() {
     );
 
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpWidget(AggregateApp(runtime: runtime));
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('命令与动作'), findsWidgets);
     expect(find.text('音乐播放器'), findsNothing);

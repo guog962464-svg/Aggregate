@@ -17,6 +17,7 @@ enum GlassGlyph {
   plus,
   stop,
   copy,
+  paste,
   save,
   terminal,
   check,
@@ -91,7 +92,7 @@ abstract final class GlassGlyphCatalog {
     'check_circle_outline' || 'check' => GlassGlyph.check,
     'chevron_right' => GlassGlyph.chevron,
     'close' => GlassGlyph.close,
-    'content_paste' || 'content_paste_outlined' => GlassGlyph.copy,
+    'content_paste' || 'content_paste_outlined' => GlassGlyph.paste,
     'copy' || 'copy_outlined' => GlassGlyph.copy,
     'dark_mode' || 'light_mode' => GlassGlyph.appearance,
     'data_object' => GlassGlyph.data,
@@ -141,7 +142,114 @@ abstract final class GlassGlyphCatalog {
     'visibility_outlined' => GlassGlyph.visibility,
     _ => throw ArgumentError.value(name, 'name', 'Unknown Material glyph name'),
   };
+
+  /// Resolves a Material icon by its stable code point. This lets existing
+  /// IconButton call sites migrate without inspecting debug strings or
+  /// changing their operation callbacks.
+  static GlassGlyph fromMaterialIcon(IconData icon) {
+    if (icon.fontFamily != 'MaterialIcons') {
+      throw ArgumentError.value(
+        icon.fontFamily,
+        'icon.fontFamily',
+        'Only Material icons have a glass glyph mapping',
+      );
+    }
+    final glyph = _materialCodePointGlyphs[icon.codePoint];
+    if (glyph == null) {
+      throw ArgumentError.value(
+        icon.codePoint,
+        'icon.codePoint',
+        'Unknown Material glyph code point',
+      );
+    }
+    return glyph;
+  }
 }
+
+final _materialCodePointGlyphs = <int, GlassGlyph>{
+  Icons.account_circle_outlined.codePoint: GlassGlyph.account,
+  Icons.add.codePoint: GlassGlyph.plus,
+  Icons.arrow_back.codePoint: GlassGlyph.arrowBack,
+  Icons.arrow_downward.codePoint: GlassGlyph.arrowDown,
+  Icons.arrow_forward_rounded.codePoint: GlassGlyph.arrow,
+  Icons.arrow_upward.codePoint: GlassGlyph.arrowUp,
+  Icons.brightness_auto_outlined.codePoint: GlassGlyph.appearance,
+  Icons.build_outlined.codePoint: GlassGlyph.build,
+  Icons.chat_bubble_outline.codePoint: GlassGlyph.chat,
+  Icons.check_circle_outline.codePoint: GlassGlyph.check,
+  Icons.check.codePoint: GlassGlyph.check,
+  Icons.chevron_right.codePoint: GlassGlyph.chevron,
+  Icons.close.codePoint: GlassGlyph.close,
+  Icons.content_paste.codePoint: GlassGlyph.paste,
+  Icons.content_paste_outlined.codePoint: GlassGlyph.paste,
+  Icons.copy.codePoint: GlassGlyph.copy,
+  Icons.copy_outlined.codePoint: GlassGlyph.copy,
+  Icons.dark_mode.codePoint: GlassGlyph.appearance,
+  Icons.data_object.codePoint: GlassGlyph.data,
+  Icons.delete_outline.codePoint: GlassGlyph.trash,
+  Icons.description_outlined.codePoint: GlassGlyph.document,
+  Icons.desktop_mac.codePoint: GlassGlyph.desktop,
+  Icons.desktop_mac_outlined.codePoint: GlassGlyph.desktop,
+  Icons.desktop_windows_outlined.codePoint: GlassGlyph.desktop,
+  Icons.devices_outlined.codePoint: GlassGlyph.device,
+  Icons.edit_outlined.codePoint: GlassGlyph.build,
+  Icons.error_outline.codePoint: GlassGlyph.error,
+  Icons.file_open_outlined.codePoint: GlassGlyph.folder,
+  Icons.flash_off.codePoint: GlassGlyph.flash,
+  Icons.flash_on.codePoint: GlassGlyph.flash,
+  Icons.folder_open_outlined.codePoint: GlassGlyph.folder,
+  Icons.grid_view_outlined.codePoint: GlassGlyph.grid,
+  Icons.history.codePoint: GlassGlyph.history,
+  Icons.history_outlined.codePoint: GlassGlyph.history,
+  Icons.hourglass_empty.codePoint: GlassGlyph.hourglass,
+  Icons.hourglass_top_outlined.codePoint: GlassGlyph.hourglass,
+  Icons.hub.codePoint: GlassGlyph.network,
+  Icons.hub_outlined.codePoint: GlassGlyph.network,
+  Icons.inbox_outlined.codePoint: GlassGlyph.inbox,
+  Icons.info_outline.codePoint: GlassGlyph.info,
+  Icons.key_off_outlined.codePoint: GlassGlyph.key,
+  Icons.lan_outlined.codePoint: GlassGlyph.network,
+  Icons.light_mode.codePoint: GlassGlyph.appearance,
+  Icons.link.codePoint: GlassGlyph.link,
+  Icons.lock_outline.codePoint: GlassGlyph.lock,
+  Icons.manage_search.codePoint: GlassGlyph.search,
+  Icons.manage_search_outlined.codePoint: GlassGlyph.search,
+  Icons.search.codePoint: GlassGlyph.search,
+  Icons.search_outlined.codePoint: GlassGlyph.search,
+  Icons.music_note_outlined.codePoint: GlassGlyph.music,
+  Icons.music_note_rounded.codePoint: GlassGlyph.music,
+  Icons.open_in_full.codePoint: GlassGlyph.expand,
+  Icons.open_in_new.codePoint: GlassGlyph.externalLink,
+  Icons.pause.codePoint: GlassGlyph.pause,
+  Icons.pause_rounded.codePoint: GlassGlyph.pause,
+  Icons.phone_android.codePoint: GlassGlyph.phone,
+  Icons.phone_android_outlined.codePoint: GlassGlyph.phone,
+  Icons.play_arrow.codePoint: GlassGlyph.play,
+  Icons.play_arrow_rounded.codePoint: GlassGlyph.play,
+  Icons.play_circle_outline.codePoint: GlassGlyph.play,
+  Icons.playlist_add.codePoint: GlassGlyph.playlist,
+  Icons.qr_code_2.codePoint: GlassGlyph.qr,
+  Icons.qr_code_scanner.codePoint: GlassGlyph.qr,
+  Icons.refresh.codePoint: GlassGlyph.refresh,
+  Icons.refresh_rounded.codePoint: GlassGlyph.refresh,
+  Icons.save_alt.codePoint: GlassGlyph.save,
+  Icons.skip_next.codePoint: GlassGlyph.next,
+  Icons.skip_next_rounded.codePoint: GlassGlyph.next,
+  Icons.skip_previous.codePoint: GlassGlyph.previous,
+  Icons.skip_previous_rounded.codePoint: GlassGlyph.previous,
+  Icons.star_border_rounded.codePoint: GlassGlyph.star,
+  Icons.star_rounded.codePoint: GlassGlyph.star,
+  Icons.stop.codePoint: GlassGlyph.stop,
+  Icons.stop_circle_outlined.codePoint: GlassGlyph.stop,
+  Icons.terminal.codePoint: GlassGlyph.terminal,
+  Icons.terminal_outlined.codePoint: GlassGlyph.terminal,
+  Icons.tune.codePoint: GlassGlyph.tune,
+  Icons.tune_outlined.codePoint: GlassGlyph.tune,
+  Icons.unfold_less.codePoint: GlassGlyph.collapse,
+  Icons.unfold_more.codePoint: GlassGlyph.expand,
+  Icons.visibility_outlined.codePoint: GlassGlyph.visibility,
+  Icons.vpn_key_outlined.codePoint: GlassGlyph.key,
+};
 
 /// A semantic mark drawn entirely from the same rounded dot cell.
 class GlassGlyphMark extends StatelessWidget {
@@ -374,6 +482,7 @@ List<String> _rowsFor(GlassGlyph glyph) => switch (glyph) {
   GlassGlyph.plus => _GlyphRows.plus,
   GlassGlyph.stop => _GlyphRows.stop,
   GlassGlyph.copy => _GlyphRows.copy,
+  GlassGlyph.paste => _GlyphRows.paste,
   GlassGlyph.save => _GlyphRows.save,
   GlassGlyph.terminal => _GlyphRows.terminal,
   GlassGlyph.check => _GlyphRows.check,
@@ -498,6 +607,17 @@ abstract final class _GlyphRows {
     '100010000',
     '100010000',
     '111110000',
+  ];
+  static const paste = [
+    '000010000',
+    '000111000',
+    '001010100',
+    '000010000',
+    '011111110',
+    '010000010',
+    '010111010',
+    '010101010',
+    '011111110',
   ];
   static const save = [
     '111111110',

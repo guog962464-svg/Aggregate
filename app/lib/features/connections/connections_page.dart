@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
 import '../../widgets/capability_row.dart';
@@ -37,6 +40,10 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   String? selectedId;
   String? error;
   bool addingConnection = false;
+
+  bool _usesGlassButtons(BuildContext context) =>
+      defaultTargetPlatform == TargetPlatform.macOS &&
+      GlassMotionScope.maybeOf(context) != null;
 
   @override
   void initState() {
@@ -160,13 +167,17 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               : '此连接的配置将从本机移除。',
         ),
         actions: [
-          TextButton(
+          AggregateActionButton(
+            label: '取消',
+            icon: Icons.close,
+            style: AggregateActionStyle.quiet,
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
           ),
-          FilledButton(
+          AggregateActionButton(
+            label: '删除',
+            icon: Icons.delete_outline,
+            style: AggregateActionStyle.danger,
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
           ),
         ],
       ),
@@ -219,12 +230,12 @@ class ConnectionsPageState extends State<ConnectionsPage> {
       if (widget.runtime.features.connectionKinds.isNotEmpty)
         Align(
           alignment: Alignment.centerLeft,
-          child: FilledButton.icon(
+          child: AggregateActionButton(
+            label: addingConnection ? '正在准备连接向导…' : '添加连接',
+            icon: addingConnection ? Icons.hourglass_top_outlined : Icons.add,
+            style: AggregateActionStyle.primary,
             onPressed: addingConnection ? null : () => add(),
-            icon: addingConnection
-                ? const Icon(Icons.hourglass_top_outlined)
-                : const Icon(Icons.add),
-            label: Text(addingConnection ? '正在准备连接向导…' : '添加连接'),
+            enabled: !addingConnection,
           ),
         ),
       if (error != null) ...[
@@ -274,32 +285,59 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               final list = Column(
                 children: [
                   for (final connection in connections) ...[
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      selected: selected?.id.value == connection.id.value,
-                      title: Tooltip(
-                        message: connection.label,
-                        child: Text(
-                          connection.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      subtitle: Text(_kind(connection.kind)),
-                      trailing: Text(
-                        widget.runtime.isPreview
+                    if (_usesGlassButtons(context))
+                      AggregateActionButton(
+                        label: connection.label,
+                        description: _kind(connection.kind),
+                        source: widget.runtime.isPreview
                             ? '预览'
                             : _status(connection.status),
-                        style: TextStyle(
-                          color:
-                              connection.status == ConnectionStatus.unavailable
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        semanticsLabel:
+                            '${connection.label}，${_kind(connection.kind)}，'
+                            '${widget.runtime.isPreview ? '预览' : _status(connection.status)}',
+                        icon: switch (connection.kind) {
+                          ConnectionKind.cli => Icons.terminal_outlined,
+                          ConnectionKind.mcpStdio ||
+                          ConnectionKind.mcpHttp => Icons.hub_outlined,
+                        },
+                        style: AggregateActionStyle.quiet,
+                        onPressed: () =>
+                            setState(() => selectedId = connection.id.value),
+                        selected: selected?.id.value == connection.id.value,
+                        expand: true,
+                      )
+                    else
+                      ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
                         ),
+                        selected: selected?.id.value == connection.id.value,
+                        title: Tooltip(
+                          message: connection.label,
+                          child: Text(
+                            connection.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        subtitle: Text(_kind(connection.kind)),
+                        trailing: Text(
+                          widget.runtime.isPreview
+                              ? '预览'
+                              : _status(connection.status),
+                          style: TextStyle(
+                            color:
+                                connection.status ==
+                                    ConnectionStatus.unavailable
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                          ),
+                        ),
+                        onTap: () =>
+                            setState(() => selectedId = connection.id.value),
                       ),
-                      onTap: () =>
-                          setState(() => selectedId = connection.id.value),
-                    ),
                     const Divider(height: 1),
                   ],
                 ],
@@ -347,10 +385,11 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (compact)
-            TextButton.icon(
+            AggregateActionButton(
+              label: '返回连接',
+              icon: Icons.arrow_back,
+              style: AggregateActionStyle.quiet,
               onPressed: () => setState(() => selectedId = null),
-              icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('返回连接'),
             ),
           Text(
             connection.label,
@@ -380,18 +419,19 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           ],
           if (widget.onOpenConnection != null) ...[
             const SizedBox(height: 16),
-            FilledButton.tonalIcon(
+            AggregateActionButton(
+              label:
+                  experienceFor(connection, catalog) ==
+                      ConnectionExperience.music
+                  ? '打开播放器'
+                  : '打开连接工作区',
+              icon:
+                  experienceFor(connection, catalog) ==
+                      ConnectionExperience.music
+                  ? Icons.music_note_outlined
+                  : Icons.open_in_new,
+              style: AggregateActionStyle.secondary,
               onPressed: () => widget.onOpenConnection!(connection),
-              icon: Icon(
-                experienceFor(connection, catalog) == ConnectionExperience.music
-                    ? Icons.music_note_outlined
-                    : Icons.open_in_new,
-              ),
-              label: Text(
-                experienceFor(connection, catalog) == ConnectionExperience.music
-                    ? '打开播放器'
-                    : '打开连接工作区',
-              ),
             ),
           ],
           const SizedBox(height: 20),
@@ -415,33 +455,36 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                IconButton(
+                AggregateIconButton(
                   tooltip: '连接上移',
+                  icon: Icons.arrow_upward,
                   onPressed: canMoveUp ? () => move(connection, -1) : null,
-                  icon: const Icon(Icons.arrow_upward, size: 18),
+                  enabled: canMoveUp,
                 ),
-                IconButton(
+                AggregateIconButton(
                   tooltip: '连接下移',
+                  icon: Icons.arrow_downward,
                   onPressed: canMoveDown ? () => move(connection, 1) : null,
-                  icon: const Icon(Icons.arrow_downward, size: 18),
+                  enabled: canMoveDown,
                 ),
                 if (connection.kind == ConnectionKind.cli &&
                     connection.executionTarget.kind ==
                         ExecutionTargetKind.device)
-                  OutlinedButton.icon(
+                  AggregateActionButton(
+                    label: '编辑动作',
+                    icon: Icons.edit_outlined,
                     onPressed: () => editActions(connection),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('编辑动作'),
                   ),
-                OutlinedButton.icon(
+                AggregateActionButton(
+                  label: '测试连接',
+                  icon: Icons.refresh,
                   onPressed: () => refresh(connection),
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('测试连接'),
                 ),
-                TextButton.icon(
+                AggregateActionButton(
+                  label: '删除连接',
+                  icon: Icons.delete_outline,
+                  style: AggregateActionStyle.danger,
                   onPressed: () => remove(connection),
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('删除连接'),
                 ),
               ],
             ),
@@ -622,10 +665,10 @@ class _AddConnectionDialogState extends State<AddConnectionDialog> {
                 controller: executable,
                 decoration: InputDecoration(
                   labelText: '程序绝对路径',
-                  suffixIcon: IconButton(
+                  suffixIcon: AggregateIconButton(
                     tooltip: '选择程序',
+                    icon: Icons.folder_open_outlined,
                     onPressed: () => choose(executable),
-                    icon: const Icon(Icons.folder_open_outlined),
                   ),
                 ),
               ),
@@ -645,10 +688,10 @@ class _AddConnectionDialogState extends State<AddConnectionDialog> {
                   controller: manifest,
                   decoration: InputDecoration(
                     labelText: '动作清单 JSON（可选）',
-                    suffixIcon: IconButton(
+                    suffixIcon: AggregateIconButton(
                       tooltip: '选择动作清单',
+                      icon: Icons.folder_open_outlined,
                       onPressed: () => choose(manifest),
-                      icon: const Icon(Icons.folder_open_outlined),
                     ),
                   ),
                 ),
@@ -666,11 +709,18 @@ class _AddConnectionDialogState extends State<AddConnectionDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      AggregateActionButton(
+        label: '取消',
+        icon: Icons.close,
+        style: AggregateActionStyle.quiet,
         onPressed: () => Navigator.pop(context),
-        child: const Text('取消'),
       ),
-      FilledButton(onPressed: submit, child: const Text('添加')),
+      AggregateActionButton(
+        label: '添加',
+        icon: Icons.add,
+        style: AggregateActionStyle.primary,
+        onPressed: submit,
+      ),
     ],
   );
 }

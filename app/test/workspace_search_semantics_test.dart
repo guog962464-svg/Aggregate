@@ -1,5 +1,7 @@
 import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+import 'package:aggregate/widgets/glass/glass_action_button.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -13,7 +15,12 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     final semantics = tester.ensureSemantics();
     try {
-      await tester.pumpWidget(AggregateApp(runtime: createPreviewRuntime()));
+      await tester.pumpWidget(
+        AggregateApp(
+          runtime: createPreviewRuntime(),
+          glassMotionClock: ManualGlassMotionClock(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('管理连接').first);
@@ -29,7 +36,7 @@ void main() {
       await tester.pumpAndSettle();
       final result = find.ancestor(
         of: find.text('查看 Git 状态'),
-        matching: find.byType(ListTile),
+        matching: find.byType(GlassActionButton),
       );
       expect(result, findsOneWidget);
       expect(

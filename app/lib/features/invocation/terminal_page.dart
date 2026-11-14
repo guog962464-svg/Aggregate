@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:terminal_view/terminal_view.dart';
+
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_motion.dart';
 
 const _maxClipboardBytes = 256 * 1024;
 
@@ -49,6 +53,10 @@ class _TerminalPageState extends State<TerminalPage> {
     final selection = _terminalController.selection;
     return selection != null && !selection.isCollapsed;
   }
+
+  bool _usesGlassButtons(BuildContext context) =>
+      defaultTargetPlatform == TargetPlatform.macOS &&
+      GlassMotionScope.maybeOf(context) != null;
 
   @override
   void initState() {
@@ -263,11 +271,19 @@ class _TerminalPageState extends State<TerminalPage> {
     appBar: AppBar(
       title: const Text('终端'),
       actions: [
-        IconButton(
-          tooltip: '中断程序',
-          onPressed: _connected ? _interrupt : null,
-          icon: const Icon(Icons.stop_circle_outlined),
-        ),
+        if (_usesGlassButtons(context))
+          AggregateIconButton(
+            tooltip: '中断程序',
+            icon: Icons.stop_circle_outlined,
+            onPressed: _connected ? _interrupt : null,
+            enabled: _connected,
+          )
+        else
+          IconButton(
+            tooltip: '中断程序',
+            onPressed: _connected ? _interrupt : null,
+            icon: const Icon(Icons.stop_circle_outlined),
+          ),
       ],
     ),
     body: Column(
@@ -368,39 +384,70 @@ class _TerminalPageState extends State<TerminalPage> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                key: const Key('terminal-control-ctrl'),
-                tooltip: _ctrlPending ? '取消 Ctrl' : '启用 Ctrl',
-                onPressed: _connected
-                    ? () => setState(() => _ctrlPending = !_ctrlPending)
-                    : null,
-                style: IconButton.styleFrom(
-                  backgroundColor: _ctrlPending
-                      ? Theme.of(context).colorScheme.secondaryContainer
+              if (_usesGlassButtons(context))
+                AggregateActionButton(
+                  key: const Key('terminal-control-ctrl'),
+                  label: 'Ctrl',
+                  icon: Icons.vpn_key_outlined,
+                  onPressed: _connected
+                      ? () => setState(() => _ctrlPending = !_ctrlPending)
                       : null,
+                  enabled: _connected,
+                  selected: _ctrlPending,
+                )
+              else
+                IconButton(
+                  key: const Key('terminal-control-ctrl'),
+                  tooltip: _ctrlPending ? '取消 Ctrl' : '启用 Ctrl',
+                  onPressed: _connected
+                      ? () => setState(() => _ctrlPending = !_ctrlPending)
+                      : null,
+                  style: IconButton.styleFrom(
+                    backgroundColor: _ctrlPending
+                        ? Theme.of(context).colorScheme.secondaryContainer
+                        : null,
+                  ),
+                  icon: const Text('Ctrl'),
                 ),
-                icon: const Text('Ctrl'),
-              ),
               _keyButton(TerminalKey.escape, 'Esc', '发送 Esc 键'),
               _keyButton(TerminalKey.tab, 'Tab', '发送 Tab 键'),
               _keyButton(TerminalKey.arrowUp, '↑', '方向键上'),
               _keyButton(TerminalKey.arrowDown, '↓', '方向键下'),
               _keyButton(TerminalKey.arrowLeft, '←', '方向键左'),
               _keyButton(TerminalKey.arrowRight, '→', '方向键右'),
-              TextButton.icon(
-                key: const Key('terminal-copy'),
-                onPressed: _hasSelection ? _copySelection : null,
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                icon: const Icon(Icons.copy_outlined),
-                label: const Text('复制'),
-              ),
-              TextButton.icon(
-                key: const Key('terminal-paste'),
-                onPressed: _connected ? _pasteClipboard : null,
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                icon: const Icon(Icons.content_paste_outlined),
-                label: const Text('粘贴'),
-              ),
+              if (_usesGlassButtons(context)) ...[
+                AggregateActionButton(
+                  key: const Key('terminal-copy'),
+                  label: '复制',
+                  icon: Icons.copy_outlined,
+                  onPressed: _hasSelection ? _copySelection : null,
+                  enabled: _hasSelection,
+                  style: AggregateActionStyle.quiet,
+                ),
+                AggregateActionButton(
+                  key: const Key('terminal-paste'),
+                  label: '粘贴',
+                  icon: Icons.content_paste_outlined,
+                  onPressed: _connected ? _pasteClipboard : null,
+                  enabled: _connected,
+                  style: AggregateActionStyle.quiet,
+                ),
+              ] else ...[
+                TextButton.icon(
+                  key: const Key('terminal-copy'),
+                  onPressed: _hasSelection ? _copySelection : null,
+                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                  icon: const Icon(Icons.copy_outlined),
+                  label: const Text('复制'),
+                ),
+                TextButton.icon(
+                  key: const Key('terminal-paste'),
+                  onPressed: _connected ? _pasteClipboard : null,
+                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                  icon: const Icon(Icons.content_paste_outlined),
+                  label: const Text('粘贴'),
+                ),
+              ],
             ],
           ),
         ),
@@ -408,13 +455,32 @@ class _TerminalPageState extends State<TerminalPage> {
     ),
   );
 
-  Widget _keyButton(TerminalKey key, String label, String tooltip) =>
-      IconButton(
+  Widget _keyButton(TerminalKey key, String label, String tooltip) {
+    final icon = switch (key) {
+      TerminalKey.escape => Icons.close,
+      TerminalKey.tab => Icons.arrow_forward_rounded,
+      TerminalKey.arrowUp => Icons.arrow_upward,
+      TerminalKey.arrowDown => Icons.arrow_downward,
+      TerminalKey.arrowLeft => Icons.arrow_back,
+      TerminalKey.arrowRight => Icons.arrow_forward_rounded,
+      _ => Icons.more_horiz,
+    };
+    if (_usesGlassButtons(context)) {
+      return AggregateActionButton(
         key: Key('terminal-key-${key.name}'),
-        tooltip: tooltip,
+        label: label,
+        icon: icon,
         onPressed: _connected ? () => _sendKey(key) : null,
-        icon: Text(label),
+        enabled: _connected,
       );
+    }
+    return IconButton(
+      key: Key('terminal-key-${key.name}'),
+      tooltip: tooltip,
+      onPressed: _connected ? () => _sendKey(key) : null,
+      icon: Text(label),
+    );
+  }
 }
 
 String _permissionLabel(PermissionLevel permission) => switch (permission) {
