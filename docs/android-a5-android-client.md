@@ -31,7 +31,7 @@
 - 2026-11-14 已在直连 LAN 上通过原始邀请、NSD 地址发现、新设备 Mac 人工只读审批、WSS pin/auth、`host.hello`、只读 `connection.list`、授权撤销及撤销后请求拒绝；拒绝响应的 JSON-RPC request ID 也已修复并有 WSS 回归测试。实际 Android Keystore 别名轮换仅在可卸载的隔离 `.integration` 包验证，未轮换日常 App 身份。Mac TLS 身份轮换已在唯一且默认的临时 macOS Keychain 中真实运行集成测试，通过身份/证书指纹变化与回读稳定性断言；退出后登录 Keychain 默认项和搜索列表恢复原值，临时 Keychain 删除，当前用户身份及 grant 未动。短暂关闭/恢复 Wi-Fi 后的 NSD/WSS 重连已通过隔离包验收。16 KB 实体设备运行及 Release/signed 权限仍待验收；integration runner 移除普通包后已重装，但重装后的本地 Host 列表为空，既有 Mac grant 保留，后续使用可能需要重新配对。
 - 2026-11-14 隔离 Android KeyStore 测试随后以 `.integration` 包再次通过；先核验 APK applicationId，再使用 Flutter `--no-uninstall`，测试结束后只卸载该隔离包，普通 `io.github.guog962464.aggregate` 安装状态保留。此前直接 LAN/Wi-Fi 验收中 integration runner 曾移除普通包的观察仍成立；只有本次明确核验包名并使用 `--no-uninstall` 的本地身份测试证明未卸载普通包。此前重装后的普通包本地 Host 列表仍为空，原 Mac grant 保留。
 - 没有可用的 16 KB 页实体设备。当前 APK native library 的 ELF 和 ZIP 对齐均通过静态检查，但 16 KB 设备的安装、加载、运行以及 JNI/相机/NSD smoke 仍是外部验收门槛。
-- Android 全局设备身份轮换确认 UI 和 Keystore 别名切换已实现并由 fake/Widget 测试覆盖；实际 Keystore 别名轮换仅在隔离 `.integration` 包验证，没有触碰日常 App 身份。2026-11-14 已实现 Mac TLS 身份轮换 UX：Mac 用户确认后先撤销全部配对授权、停止 Host，再更换 Host ID/证书；Keychain 通过候选密钥和证书校验后切换活动身份记录。Widget 测试验证取消、授权撤销失败保护与成功时序；另在独立临时 Keychain 中执行真实轮换集成测试。当前用户 Keychain 未轮换，以免现有手机 pin 失效。Release/signed App 的 macOS 本地网络权限及 Android Release 包、Host 完整 RPC handler、A5.5 普通 CLI/TUI/MCP/网易云流程仍未完成。
+- Android 全局设备身份轮换确认 UI 和 Keystore 别名切换已实现并由 fake/Widget 测试覆盖；实际 Keystore 别名轮换仅在隔离 `.integration` 包验证，没有触碰日常 App 身份。2026-11-14 已实现 Mac TLS 身份轮换 UX：Mac 用户确认后先撤销全部配对授权、停止 Host，再更换 Host ID/证书；Keychain 通过候选密钥和证书校验后切换活动身份记录。Widget 测试验证取消、授权撤销失败保护与成功时序；另在独立临时 Keychain 中执行真实轮换集成测试。当前用户 Keychain 未轮换，以免现有手机 pin 失效。Release/signed App 的 macOS 本地网络权限及 Android Release 包仍未完成；A5.5 的 Android RemoteRuntime 与生产 Host 普通 CLI/TUI/MCP/网易云业务工作流尚未端到端验收。
 
 ## 复验
 
