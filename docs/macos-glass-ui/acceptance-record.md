@@ -283,3 +283,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 证据：[输入计划](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-live-frames/synchronized-capture-60hz-reversal-hold/events.jsonl>) SHA-256 `f35fd65b1d155095d91a16dfaf7662e4309a46c5aecaab146b243ca32ed82d91`；[只读系统事件](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-live-frames/synchronized-capture-60hz-reversal-hold/observed-events.jsonl>) SHA-256 `04847d168f042fd21021984c76b36cee7c05b90d62afb9b6d4625a4cbde2e808`；[采样帧时间表](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-live-frames/synchronized-capture-60hz-reversal-hold/frames.jsonl>) SHA-256 `7f1c44a0bcc4cffb419f0ec9792818f26b002f4434aaa0cddcce16f895d6e99a`；末端即时帧 [87](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-live-frames/synchronized-capture-60hz-reversal-hold/frame_0087.png>) SHA-256 `3ccab0e041f395e9159a43acf7acfe8385b025ec6b3e79cb9a8af3a6e46d7b3d`；稳定帧 [90](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-live-frames/synchronized-capture-60hz-reversal-hold/frame_0090.png>) SHA-256 `02234dd5d5713ff66e74cb796830c77b375e8df025846d906979bdff05b622b2`。
 - 结论边界：捕获帧不是 display-present 时间戳，约 54 ms 只表示这次系统事件到采样画面中稳定位置的时间差；不能据此把延迟归因于 Flutter build/raster、macOS 合成器或真实输入至光子时间。该路径为合成 CGEvent，也不代替手动拖动主观流畅性测试。因此未改主题拖动/切换逻辑或校准参数，连续视觉相位仍未通过，UI-6 保持部分验收。
 - 自检：检查 tap 的事件类型/数量、末端事件与 mouse-up 的时间差、帧 PTS 序列、终点前后 PNG 及 AX 最终状态；未运行产品测试。`git diff --check` 作为文档阶段提交前检查。
+
+### 2026-11-15 app 失焦期间原生拖动取消尝试
+
+- 目的：检查切换到其他前台应用是否会使主题开关收到原生 pointercancel，并确认已开始的拖动不会在中断时错误提交。
+- 方法：隔离 Profile 初始为深色；经 macOS CoreGraphics 事件路由按住左滑块 `(816,588)` 并拖至浅色端 `(880,588)`。拖动期间调用 Finder 激活，脚本确认 `activate()` 返回成功且 `NSWorkspace.shared.frontmostApplication` 为 `com.apple.finder`，随后在 Finder 仍为前台时对全局坐标 `(880,588)` 释放。另一个只读 session event tap 记录鼠标事件，没有拦截或更改它们。
+- 结果：tap 收到 mouseDown 1、mouseDragged 1、mouseUp 1，拖动跨度约 `609.68 ms`；系统前台切换确已成功，但释放后隔离 Profile 的 AX 主题值变成浅色。这说明本次应用切换没有产生可验收的取消路径；拖动仍正常结束并提交，不得记为 pointercancel 通过。之后在隔离窗口内通过 AX 将主题恢复为深色并重新确认。
+- 证据：[只读系统事件](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-native-drag/cancel-verified-attempt-events.jsonl>) SHA-256 `5e4a18f6bc842154608472d2630972dd02cdd95d5be26ed6ccb3b30f46b765ed`。脚本也在 mouse-up 前打印并确认 Finder 前台，释放后读取 AX 深色/浅色状态。
+- 结论边界：这是一条合成 CGEvent 的原生 AppKit/Flutter 输入路径，不是物理鼠标测试，也没有直接观察到 Flutter `PointerCancelEvent`。因此 native cancel 仍未验证；此前 Escape 尝试和本次 app 激活都不能替代 pointercancel。没有修改控件逻辑，UI-6 保持部分验收。
+- 自检：前台应用标识、系统事件序列、mouse-up 后 AX 终态，以及恢复后的深色终态均已核对；未运行产品测试。`git diff --check` 作为文档阶段提交前检查。
