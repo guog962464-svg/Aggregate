@@ -355,7 +355,16 @@ def main() -> int:
     parser.add_argument("--node-version", default="unknown")
     parser.add_argument("--node-mobile-version", default="unknown")
     parser.add_argument("--ndk-version", default="unknown")
-    parser.add_argument("--source-tree-sha256", default="unknown")
+    parser.add_argument(
+        "--source-git-tree",
+        "--source-tree-sha256",
+        dest="source_git_tree",
+        default="unknown",
+        help=(
+            "Git tree object ID (SHA-1) for the exact Node source tree; "
+            "the old option name is kept as an alias"
+        ),
+    )
     parser.add_argument("--upstream-commit", default="unknown")
     parser.add_argument("--recipe-commit", default="unknown")
     args = parser.parse_args()
@@ -578,7 +587,7 @@ def main() -> int:
         property_item("aggregate:node-version", args.node_version),
         property_item("aggregate:node-mobile-version", args.node_mobile_version),
         property_item("aggregate:ndk-version", args.ndk_version),
-        property_item("aggregate:node-source-tree-sha256", args.source_tree_sha256),
+        property_item("aggregate:node-source-git-tree", args.source_git_tree),
         property_item("aggregate:node-upstream-commit", args.upstream_commit),
         property_item("aggregate:mobile-recipe-commit", args.recipe_commit),
         property_item("aggregate:npm-dependency-edges-resolved", resolved_npm_edges),
