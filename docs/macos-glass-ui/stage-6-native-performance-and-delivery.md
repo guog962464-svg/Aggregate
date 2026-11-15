@@ -41,7 +41,7 @@ flutter run -d macos --profile -t lib/main.dart
 
 ## 3. 本轮执行摘要（2026-11-15）
 
-Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与滚动缩放各三轮，逐轮统计见[验收记录](acceptance-record.md#ui-6原生性能与最终验收部分验收)。新增 1024、1440 logical px 固定窗口滚动/路由交互各三轮；两种宽度的 build/raster P95 均低于 16.667 ms，超预算比例最高 0.429%，宽度场景没有 >100 ms Flutter build/raster 帧。1440 宽第三轮有 932 个采样帧，活动窗覆盖 29.783 秒。1024 宽主题开关另完成三轮往返拖动，每轮 18 次端点拖动、AX 深浅值交替，帧时均满足门槛。2026-11-15 在隔离 Profile 窗口又分别用 450 ms 参数请求浅→深、深→浅原生拖动，两方向 AX 端点均正确；agent-desktop 整条命令耗时为 811/822 ms，轨迹没有逐个指针事件时间戳，因此只证明请求参数和状态结果，不能证明系统实际收到的拖动节奏恰为 450 ms。原生拖动取消仍未验证。
+Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与滚动缩放各三轮，逐轮统计见[验收记录](acceptance-record.md#ui-6原生性能与最终验收部分验收)。新增 1024、1440 logical px 固定窗口滚动/路由交互各三轮；两种宽度的 build/raster P95 均低于 16.667 ms，超预算比例最高 0.429%，宽度场景没有 >100 ms Flutter build/raster 帧。1440 宽第三轮有 932 个采样帧，活动窗覆盖 29.783 秒。1024 宽主题开关另完成三轮往返拖动，每轮 18 次端点拖动、AX 深浅值交替，帧时均满足门槛。2026-11-15 用只读 macOS CGEvent tap 记录原生输入时间戳：`agent-desktop --duration 450` 两向实际移动跨度为 524.0/517.9 ms；校准到 `--duration 397` 后，六次交替拖动的实际跨度为 455.4–466.1 ms（均值 460.8 ms、中位数 460.2 ms），六次 AX 端点均正确。按下到首个移动事件为 189–201 ms，属于工具的拖动拾取等待，应与移动跨度分开看。原生拖动取消仍未验证。
 
 针对连续缩放时整页卡顿，本轮修正 `AppShell` 在 `LayoutBuilder` 每次收到新宽度时重建整个 `IndexedStack` 的问题：页面栈引用现在跨纯布局尺寸变化保持稳定，页面仍按新约束布局，页面状态和主题切换逻辑不变。同一 24 个 CLI 样本连接、90 项 CLI 能力、60 项 MCP 工具和本地样本活动记录下，Mac Profile 原生窗口 800↔1440 logical px 连续缩放完成三轮，每轮采样 40 秒，build/raster P95 均低于 13.9/9.9 ms，超预算帧比例最高 0.292%，没有 >100 ms 帧。
 
@@ -61,18 +61,18 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 
 以下情况使本阶段仍不能结束：
 
-- 800↔1440 logical px 原生连续窗口缩放已完成三轮；工作台、连接、活动、设置四页与连续缩放的联合负载也完成三轮并达到帧时门槛。七个长列表/表单场景各完成三轮原生 Profile 滚动；参数表单原始其中一轮记录到 112.742 ms build 峰值，另五轮不同轮次复测未重现，原因仍未定位，故该场景保留为部分通过。主题开关已完成三轮往返，尚缺精确手势时序、拖动取消和固定动画关键帧对照。
+- 800↔1440 logical px 原生连续窗口缩放已完成三轮；工作台、连接、活动、设置四页与连续缩放的联合负载也完成三轮并达到帧时门槛。七个长列表/表单场景各完成三轮原生 Profile 滚动；参数表单原始其中一轮记录到 112.742 ms build 峰值，另五轮不同轮次复测未重现，原因仍未定位，故该场景保留为部分通过。主题开关已完成三轮往返；只读 CoreGraphics 事件时间戳另实测六次交替拖动，实际移动跨度为 455.4–466.1 ms；拖动取消和固定动画关键帧对照仍缺。
 - 两轮明确的隐藏/恢复采样各出现约 12.9 秒 Flutter.Frame 空档；一次恢复后的 raster 为 102.132 ms，重复轮为 24.851 ms。现有 Widget 测试覆盖 TickerMode、应用生命周期、离屏和 reduced motion，但没有原生 reduced-motion 设置覆盖；资源所有权代码审阅已完成，仍没有原生对象/controller/图像数量证据。RSS 及源码审阅不抵消上述运行时证据缺口。
 - 已观察浅深主题与中间拖动态并归档 Profile 截图；已另建 9 组视频原帧/Flutter 拟合渲染对照，覆盖静置端点、近似 0.25/0.5/0.75/1 位置及视频中实际发生的部分反向轨迹。反向轨迹只到约 0.08 后再次向前，不伪称完整 1→0；关键帧对照不能代替原生连续手势与用户最终材质确认。
-- CUA 已通过 AX 状态逐次确认 54 次主题深浅端点拖动并观察过一次中间光效。焦点环已按实际轨道圆角定位，Profile 实窗截图显示其位于 artwork 上方；Widget 回归检查 2px 线宽、中心、大小与圆角。2026-11-15 新增真实键盘焦点下浅深主题焦点环合成像素测量，最低对比度分别为 3.30:1 / 3.93:1，达到 3:1 项目目标；截图及 SHA-256 见验收记录。按钮 fixture 截图能看到禁用态变暗。2026-11-15 进一步用 Profile 最小夹具检查玻璃按钮、裸 `Semantics`、语义包裹 `TextButton` 与普通禁用 `TextButton` 四种控件；Flutter Widget Semantics 均为禁用且没有 tap action，但 `agent-desktop` 与直接 `AXUIElementCopyAttributeValue(kAXEnabledAttribute)` 均报告原生 `AXEnabled=true`。原因定位到 Flutter 3.47.8 / Engine revision `cf636b1dfb`：桌面 AccessibilityBridge 的 `SetStateFromFlutterUpdate` 没有把 `is_enabled=false` 转成 `Restriction::kDisabled`，而 macOS 的 `AXEnabled` 根据该 restriction 计算。Flutter 官方主干已有对应转换（[bridge](https://github.com/flutter/flutter/blob/master/engine/src/flutter/shell/platform/common/accessibility_bridge.cc#L2297-L2304)、[macOS AX 映射](https://github.com/flutter/flutter/blob/master/engine/src/flutter/third_party/accessibility/ax/platform/ax_platform_node_mac.mm#L3239-L3244)）；本机稳定版尚未包含，现有应用层语义无法修复此桥接缺口。禁用态原生 AX 验收仍不通过，需待项目使用包含修复的稳定 engine 后重验。精确的 450 ms 手势节奏和取消手势仍缺原生对照；既有 `glass_motion_test.dart` 覆盖拖出取消、路由暂停/恢复、离屏注销与减少动态效果，不能代替本机完整拖动验收。
+- CUA 已通过 AX 状态逐次确认 54 次主题深浅端点拖动并观察过一次中间光效。焦点环已按实际轨道圆角定位，Profile 实窗截图显示其位于 artwork 上方；Widget 回归检查 2px 线宽、中心、大小与圆角。2026-11-15 新增真实键盘焦点下浅深主题焦点环合成像素测量，最低对比度分别为 3.30:1 / 3.93:1，达到 3:1 项目目标；截图及 SHA-256 见验收记录。按钮 fixture 截图能看到禁用态变暗。2026-11-15 进一步用 Profile 最小夹具检查玻璃按钮、裸 `Semantics`、语义包裹 `TextButton` 与普通禁用 `TextButton` 四种控件；Flutter Widget Semantics 均为禁用且没有 tap action，但 `agent-desktop` 与直接 `AXUIElementCopyAttributeValue(kAXEnabledAttribute)` 均报告原生 `AXEnabled=true`。原因定位到 Flutter 3.47.8 / Engine revision `cf636b1dfb`：桌面 AccessibilityBridge 的 `SetStateFromFlutterUpdate` 没有把 `is_enabled=false` 转成 `Restriction::kDisabled`，而 macOS 的 `AXEnabled` 根据该 restriction 计算。Flutter 官方主干已有对应转换（[bridge](https://github.com/flutter/flutter/blob/master/engine/src/flutter/shell/platform/common/accessibility_bridge.cc#L2297-L2304)、[macOS AX 映射](https://github.com/flutter/flutter/blob/master/engine/src/flutter/third_party/accessibility/ax/platform/ax_platform_node_mac.mm#L3239-L3244)）；本机稳定版尚未包含，现有应用层语义无法修复此桥接缺口。禁用态原生 AX 验收仍不通过，需待项目使用包含修复的稳定 engine 后重验。原生输入事件已逐次计时，约 450 ms 移动跨度有六次实测；仍缺 pointercancel 原生对照与逐帧关键相位，既有 `glass_motion_test.dart` 覆盖拖出取消、路由暂停/恢复、离屏注销与减少动态效果，不能代替本机 pointercancel 对照。
 
 ## 4. 性能门槛
 
 以下是本方案拟定的项目验收门槛，不是平台性能保证。当前仅部分场景取得实测；逐项范围见上方摘要和验收记录。预算 `B=1000/实际刷新率`：60 Hz 约 16.67 ms，120 Hz 约 8.33 ms。没有对应设备/有效刷新率证据时，120 Hz 标记未验证。
 
-- [ ] **UI-6.1** 部分通过：静置、按钮点击、播放、800/1024/1440/1512 固定宽度目录滚动交互、800↔1440 连续缩放、四页联合滚动缩放及 1024 主题往返拖动均有三轮门槛数据；工作台、连接首页、连接管理目录/能力明细、活动、音乐结果及 90 字段表单等七个长列表/表单场景也各有三轮原生 Profile 滚动数据；另以原生物理合成输入请求 450 ms 双向拖动并确认 AX 端点结果。仍缺事件级手势时序、原生取消对照与关键相位。
+- [ ] **UI-6.1** 部分通过：静置、按钮点击、播放、800/1024/1440/1512 固定宽度目录滚动交互、800↔1440 连续缩放、四页联合滚动缩放及 1024 主题往返拖动均有三轮门槛数据；工作台、连接首页、连接管理目录/能力明细、活动、音乐结果及 90 字段表单等七个长列表/表单场景也各有三轮原生 Profile 滚动数据；另有六次原生双向拖动事件时间戳和 AX 端点证据。仍缺长时间组合负载、原生取消对照与关键相位。
 - [ ] **UI-6.2** 部分通过：固定宽度滚动和三轮连续缩放样本没有 >100 ms Flutter build/raster 帧；长表单原始三轮中有一轮出现 112.742 ms build 峰值，另五轮不同轮次复测均未复现，原因未定位。两轮隐藏恢复样本出现约 12.9 秒 Flutter.Frame 空档，其中一次恢复样本有 102.132 ms raster，重复轮为 24.851 ms。也完成 UI-0 同机方向性基线对照；帧数据仍不等于真实显示器呈现 FPS。
-- [ ] **UI-6.3** 部分通过：已完成 UI-0 同机 Profile 基线与三轮主题往返对照，P95/超预算数据见验收记录；当前拖动与基线端点点击的输入不同。Widget 测试覆盖 450 ms 实时指针过程和取消恢复；隔离 Profile 实窗中另以 `agent-desktop drag --duration 450` 请求浅→深、深→浅各一次，AX 端点正确，命令级总耗时 811/822 ms。轨迹仅记命令边界，未记录每个指针事件的时间戳，故仍不能将其作为精确原生节奏通过证据；原生取消、主题动效关键相位和真实呈现帧率对比仍缺。
+- [ ] **UI-6.3** 部分通过：已完成 UI-0 同机 Profile 基线与三轮主题往返对照，P95/超预算数据见验收记录；当前拖动与基线端点点击的输入不同。Widget 测试覆盖 450 ms 实时指针过程和取消恢复；只读 CGEvent 时间戳显示，`agent-desktop --duration 397` 的六次交替原生拖动跨度为 455.4–466.1 ms，均值 460.8 ms、中位数 460.2 ms，AX 端点逐次正确。`--duration 450` 的两次校准样本实际跨度为 517.9/524.0 ms，因此按系统事件测量而非 CLI 请求值报告节奏。原生取消、主题动效关键相位与真实显示呈现帧率仍缺。
 - [ ] **UI-6.4** 部分验证：Widget 回归覆盖 `TickerMode`、应用生命周期暂停/恢复、完全离屏注销和 reduced-motion 下保留点击功能；两轮原生隐藏/恢复仍各有约 12.9 秒帧流空档，且一次恢复帧为 102.132 ms。仍缺原生离屏与 reduced-motion 覆盖及长帧原因定位。
 - [ ] **UI-6.5** 部分通过：完成 20 轮页面往返（80 次导航）、进程 RSS 时间序列和源码资源所有权审阅，核对共享 Ticker、各 controller/shader/图像的释放路径及进程级 `FragmentProgram` 缓存；没有原生运行时 controller、图像或其他资源对象数量证据，RSS 不作为对象数替代项。
 
@@ -86,7 +86,7 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 
 - [ ] **UI-6.6** 部分目视：浅深设置页 Profile 实窗已导出并归档；正文、主题按钮文字与太阳/月亮点阵核心的合成像素对比度抽样均达到各自目标。选中态光弧仅有探索性局部值（深色 2.32:1、浅色 1.15:1），按次要装饰处理。焦点环按实际轨道的中心、尺寸和圆角在 artwork 前景绘制，Widget 几何断言通过；真实键盘焦点下浅深主题的合成像素最低对比度为 3.30:1 / 3.93:1，截图见验收记录。按钮 fixture 已在 Profile 实窗分别归档深浅主题中的 12 类 96dp 点阵和五种 `GlassButtonSize`/导航、分段、危险、忙碌、禁用样式，截图列在验收记录。生产工作台、所有功能、管理连接、活动和设置页现有双主题 Profile 静态截图样本，范围与限制见[验收记录](acceptance-record.md)；这些静态样本不能代替 VoiceOver 语音、所有控件实例的逐项复核或最终签收。禁用按钮视觉为灰化；在 VoiceOver 已开启、`AXEnhancedUserInterface=1` 的 3.47.8 Profile 探针中，玻璃禁用按钮、禁用 `Semantics` 包装项及其子按钮均报告 `AXEnabled=true`，该项不通过；3.50.0 同夹具的禁用节点又无法以可读 AXRole/名称暴露，不能作为已修复的版本。具体对照见验收记录。视频原帧/拟合渲染选帧对照为 `/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/theme-switch/stage6-keyframes.html`，选帧进度由实测开关中心推算，拟合渲染不代表 macOS 实窗逐帧捕获。
 - [ ] **UI-6.7** 部分目视：隔离的 macOS Profile fixture 已双主题归档五种按钮尺寸（primary、secondary、icon、playback、reference）、12 类参考点阵及导航/分段/危险/忙碌/禁用样式；生产工作台、所有功能、管理连接、活动和设置五页也已有双主题静态窗口样本。样本能复核主要页面布局、材质与控件位置；全部按钮实例仍未逐项签收。
-- [ ] **UI-6.8** 部分通过：播放/暂停、前后曲、翻页和 54 次主题端点拖动已实窗观察，AX 状态逐次交替；Widget 测试验证 450 ms 拖动途中不提交、释放后提交，且 pointer cancel 回到原端点。隔离 Profile 实窗双向拖动以 450 ms 参数请求后均抵达预期 AX 端点，但命令轨迹没有指针事件级时间戳；原生节奏精度与取消仍缺证据。关键帧 HTML 对照保留来源时间与估计位置。
+- [ ] **UI-6.8** 部分通过：播放/暂停、前后曲、翻页和 54 次主题端点拖动已实窗观察，AX 状态逐次交替；Widget 测试验证 450 ms 拖动途中不提交、释放后提交，且 pointer cancel 回到原端点。隔离 Profile 实窗六次交替拖动由只读 CGEvent 逐事件计时，实际移动跨度为 455.4–466.1 ms，AX 端点逐次正确；按下到首个移动事件另有 189–201 ms 拾取等待。原生取消仍缺证据。关键帧 HTML 对照保留来源时间与估计位置。
 - [ ] **UI-6.9** 待用户对原生整窗和重点按钮作最终视觉复核；本轮 CUA 观察不视为用户签收。
 
 ## 6. 最终交付与回退
