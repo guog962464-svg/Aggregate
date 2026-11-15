@@ -259,6 +259,16 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **verified_scope：**临时 Node 24.22.3 arm64 NodeProbe，Gradle 9.3.1 `releaseRuntimeClasspath`，最终 unsigned APK/AAB；依赖解析、POM/源 JAR hash、DEX package、license asset、manifest 入包、BOM 图、schema、zip/ELF alignment、Bundletool 均已核验。未重跑 Node suite、未签名、未作法律批准、未集成进 Aggregate 产品或在 16 KB 实机运行。
 - **retrieval_feedback：**承接前两节 311/337 组件归档清单和静态许可补验；用生成 BOM 的同一隔离 Gradle 工程直接解析两个 Release runtime configuration，校验 Maven cache 中 resolved JAR/POM 与 DEX package 输出，并从归档查找所需 Apache 2.0 文件。只将可追溯结果写入 BOM manifest，未将临时 APK/AAB、Gradle cache 或生成 BOM 提交。
 
+## 2026-11-15 Node 24.22.3-0 静态链接映射补验
+
+- **候选绑定：**以临时 Node 源树 `335255ec039036e696209dcaf65d5289db5c7de1`、NDK r27d `27.3.13750724` 和 unstripped arm64 `libnode.so` 为锚点。按 `out/Makefile` 的 `cmd_solink` 与 `out/libnode.target.mk` 的 `LD_INPUTS` 复现链接，只增加 `-Wl,-Map,<map>` 输出映射；链接结果 SHA-256 为 `8282b0c698d6b0b78d986f5feccc418e2b1a66c9dba158825798e85ad1c44f40`，与此前 4 KB 真机 NodeProbe 候选的未剥离库完全相同。该映射因此对应已测候选，而非另一版库。
+- **静态输入清点：**链接命令将 37 个 Node `.a` 输入放在 `--whole-archive` 范围内。对这些输入执行 `llvm-ar t`，共计 3,608 个归档成员；95,318,146-byte linker map SHA-256 为 `e623d8ad07947617ead460b8b51f7d84c5802498dce85017de7cb45f47defb79`，列出 3,009 个含保留 section 的 archive-object 对，来自 34 个 Node 静态归档。`--gc-sections` 后 `libhighway.a`、`libv8_initializers.a`、`libv8_initializers_slow.a` 没有保留输出 section；这些归档仍是实际链接输入，不能据此判定源码未参与解析。
+- **隐式 NDK 运行库：**映射另显示 50 个 `libclang_rt.builtins-aarch64-android.a` 成员和 5 个 `libunwind.a` 成员进入保留 section。前者 SHA-256 `d2fd71724d9dfc2e7c5ee6ad3653167baaf6a95b087014742d2d3fb8763e49c6`，后者 `553b5c36013e2f17240ce4731575df60cf88629daebebe5c260f32051abdea2f`。NDK LLVM NOTICE SHA-256 `f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1`，NDK 根 NOTICE SHA-256 `4d5224d1c0b54ffa88b0dc0088191638fdbb7227835095dfb98f7f66b416a323`；这两份 NOTICE 已包含在此前隔离 APK/AAB 许可资产核验范围内。
+- **复核摘要与限制：**机器可读摘要位于 `/private/tmp/aggregate-nodejs-mobile-out-24.22.3-linux/node-24.22.3-0-link-map-summary.json`，SHA-256 `213f6bc6a209a59928bfe328168421559f3c8937da29e941f85ca5d1169a189b`；91 MB 原始 map 仅留在 `/private/tmp`。本补验增强了“最终候选与哪些静态归档/NDK 运行库相连”的证据，但不等于完整 CycloneDX 静态组件/版本映射或法律审批；逐对象来源/许可闭包、`ncrypto` 与 SQLite 的许可映射、11 个 Android 平台动态库版本、签名产品包和 16 KB 实机运行仍未完成。A3.6 继续开放，产品 Node/npm/CLI 入口继续关闭。
+- **生成过程说明：**尝试经 GYP make 目标生成 map 时，依赖检查进入了大范围临时源码重编；在最终链接前中止该临时任务，候选 `libnode.so` 哈希保持未变。随后按生成 Makefile 中的链接规则直接链接既有对象/归档并输出 map；最终哈希与目标候选一致。没有更改 Aggregate 源码或仓库内 Node 资产。
+- **verified_scope：**上述候选的 arm64 `libnode.so` hash、精确 GYP 链接输入、37 个归档成员目录和映射中保留 section；没有 16 KB 设备或产品 Release 验收。
+- **retrieval_feedback：**承接静态许可审计 JSON 与候选 `libnode.so` hash；检查 `cmd_solink`、`LD_INPUTS`、每个归档 SHA/成员数、NDK 隐式 runtime archive 及 NOTICE 文件。首次 `make` 目标触发大量临时依赖重建，故中止并用等价链接命令输出 map；以输出库 SHA 与真机候选匹配作为继续采用映射的条件。
+
 
 ## 2026-11-15 临时 Node mobile 元数据修正与 4 KB 真机复验
 
