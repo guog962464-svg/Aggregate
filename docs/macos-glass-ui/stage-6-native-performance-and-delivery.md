@@ -53,6 +53,8 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 
 新增 UI-0 同机帧时基线：在临时 worktree `297762e82730b8a99f324b190796c80aae426a9` 使用相同 Mac、Profile 模式、1024×632 logical px 窗口、DPR 2、60 Hz 和当前锁定的依赖版本，完成三轮各 30 秒活动窗、每轮 18 次主题端点往返点击。基线 build P95 为 4.799–4.918 ms，raster P95 为 0.775–0.812 ms；当前版本 1024 宽 18 次实时拖动三轮的 build P95 为 4.939–4.968 ms、raster P95 为 5.900–5.944 ms。两组都没有超过 16.667 ms 的 build/raster 帧。基线使用端点点击，当前使用连续拖动，因此仅用于同机方向性对照，不视为相同输入的 A/B，也不代表实际显示呈现 FPS。
 
+2026-11-15 在隔离 PreviewRuntime 的 macOS Profile 包中抽查生产工作台、所有功能、管理连接、活动和设置五个页面。每页分别捕获浅/深主题首屏，另外捕获所有功能与设置页底部、设置页侧栏焦点及主题开关焦点，共 17 张静态窗口截图；窗口 AX bounds 为 800×632 logical px，PNG 为 1824×1488 像素。图片文件及 SHA-256 见[验收记录](acceptance-record.md)的“生产页面双主题实窗抽查”。截图使用本地合成 PreviewRuntime 数据，记录生产布局、材质和控件位置，不代表真实服务数据、完整按钮实例逐项签收、动画逐帧或屏幕呈现 FPS；最终视觉签收仍待完成。
+
 新增 20 轮原生页面往返（80 次导航）及进程 RSS 时间序列：RSS 从约 176 MiB 增至约 203 MiB，循环结束约 199 MiB；后续 30 秒静置在约 195–208 MiB 间波动，未见单向增长。该证据不等同于对象、纹理或 controller 数量审计。
 
 源码资源所有权审阅确认：`GlassMotionScope` 每个作用域持有一个共享 Ticker，并在 dispose 时取消 viewport/size timers、移除生命周期监听、dispose Ticker 并 detach clients；`GlassActionButton` dispose 自己的 motion/state controllers；`GlassThemeSwitch` dispose Ticker 和 FocusNode；`ThemeSwitchArtwork` dispose shader 及两张 `ui.Image`，更新贴图后在 post-frame dispose 旧图；`GlassScene` dispose 全窗 shader 与 frame notifier。Flutter 的 `FragmentProgram.fromAsset` 由 SDK 进程级缓存，因此按进程生命周期保留。源码没有额外 `AnimationController` 或 `Texture` widget。现有 `glass_motion_test.dart` 覆盖 reduced-motion 注销、离屏滚动/视口注销和生命周期暂停恢复；`glass_theme_switch_test.dart` 覆盖主题开关 reduced-motion snap。此项只完成所有权路径审阅和 Widget 级生命周期回归，仍没有原生运行时 Ticker/controller/图像对象计数。
@@ -82,8 +84,8 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 2. 保存 idle 与点击归一化时刻 0、0.25、0.5、0.75、1，以及反向切换关键帧；另看真实时间连续动作，静态对齐不能替代节奏验收。
 3. 本轮布局对齐目标：关键按钮外框、中心与相邻控件基线相对确定的设计尺寸偏差不超过 1 个逻辑像素；点阵采用 UI-2 同一设计坐标。跨引擎颜色/光栅差异单列，不以一个全图平均误差代表质感已一致。
 
-- [ ] **UI-6.6** 部分目视：浅深设置页 Profile 实窗已导出并归档；正文、主题按钮文字与太阳/月亮点阵核心的合成像素对比度抽样均达到各自目标。选中态光弧仅有探索性局部值（深色 2.32:1、浅色 1.15:1），按次要装饰处理。焦点环按实际轨道的中心、尺寸和圆角在 artwork 前景绘制；新增 Widget 几何断言及修正后 Profile 截图 `stage6-focus-ring-rounded-profile.png`。按钮 fixture 已在 Profile 实窗分别归档深浅主题中的 12 类 96dp 点阵和五种 `GlassButtonSize`/导航、分段、危险、忙碌、禁用样式，截图列在验收记录。禁用按钮视觉为灰化，但原生 AX 仍报告 `enabled=true`，该项不通过。视频原帧/拟合渲染选帧对照为 `/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/theme-switch/stage6-keyframes.html`，选帧进度由实测开关中心推算，拟合渲染不代表 macOS 实窗逐帧捕获。仍缺生产页面逐页归档、焦点环像素对比及用户签收。
-- [ ] **UI-6.7** 部分目视：隔离的 macOS Profile fixture 已双主题归档五种按钮尺寸（primary、secondary、icon、playback、reference）、12 类参考点阵及导航/分段/危险/忙碌/禁用样式；静态截图能比较质感和状态。生产页的全部位置关系和按钮实例仍未逐页签收。
+- [ ] **UI-6.6** 部分目视：浅深设置页 Profile 实窗已导出并归档；正文、主题按钮文字与太阳/月亮点阵核心的合成像素对比度抽样均达到各自目标。选中态光弧仅有探索性局部值（深色 2.32:1、浅色 1.15:1），按次要装饰处理。焦点环按实际轨道的中心、尺寸和圆角在 artwork 前景绘制；新增 Widget 几何断言及修正后 Profile 截图 `stage6-focus-ring-rounded-profile.png`。按钮 fixture 已在 Profile 实窗分别归档深浅主题中的 12 类 96dp 点阵和五种 `GlassButtonSize`/导航、分段、危险、忙碌、禁用样式，截图列在验收记录。生产工作台、所有功能、管理连接、活动和设置页现有双主题 Profile 静态截图样本，范围与限制见[验收记录](acceptance-record.md)；它不能代替焦点环合成像素对比、VoiceOver 语音、所有控件实例的逐项复核或最终签收。禁用按钮视觉为灰化，但原生 AX 仍报告 `enabled=true`，该项不通过。视频原帧/拟合渲染选帧对照为 `/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/theme-switch/stage6-keyframes.html`，选帧进度由实测开关中心推算，拟合渲染不代表 macOS 实窗逐帧捕获。
+- [ ] **UI-6.7** 部分目视：隔离的 macOS Profile fixture 已双主题归档五种按钮尺寸（primary、secondary、icon、playback、reference）、12 类参考点阵及导航/分段/危险/忙碌/禁用样式；生产工作台、所有功能、管理连接、活动和设置五页也已有双主题静态窗口样本。样本能复核主要页面布局、材质与控件位置；全部按钮实例仍未逐项签收。
 - [ ] **UI-6.8** 部分通过：播放/暂停、前后曲、翻页和 54 次主题端点拖动已实窗观察，AX 状态逐次交替；Widget 测试验证 450 ms 拖动途中不提交、释放后提交，且 pointer cancel 回到原端点。关键帧 HTML 对照保留来源时间与估计位置；精确原生手势时序和取消仍缺原生证据。
 - [ ] **UI-6.9** 待用户对原生整窗和重点按钮作最终视觉复核；本轮 CUA 观察不视为用户签收。
 
