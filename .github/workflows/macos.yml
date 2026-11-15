@@ -28,7 +28,8 @@ jobs:
       - name: Test shared packages
         run: dart test packages/aggregate_contracts/test packages/aggregate_domain/test packages/aggregate_connectors/test packages/aggregate_runtime/test
       - name: Test Flutter UI
-        run: flutter test app/test
+        working-directory: app
+        run: flutter test test
       - name: Build macOS app
         working-directory: app
         run: flutter build macos --debug
