@@ -226,3 +226,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - 自检：PNG 尺寸由 `sips` 检查；主题值和受控焦点状态由隔离 Profile 窗口的 AX 查询确认；所有图像均重新计算 SHA-256。该子阶段只更新验收文档，未重跑产品测试；`git diff --check` 作为提交前检查。
 - 状态：生产页面静态截图抽查完成；UI-6 仍部分验收。禁用态原生 AX 语义、焦点环合成像素对比、精确原生拖动时序/取消、间歇性长帧原因、原生资源对象数量及最终视觉签收仍待补齐。
+
+### 2026-11-15 VoiceOver 增强树复测
+
+- 环境：macOS 隔离 Profile 探针；VoiceOver 在系统设置中从关闭切到开启，并确认应用原生属性 `AXEnhancedUserInterface=1` 后再查询。3.47.8 / Dart 3.13.7 / Engine revision `cf636b1dfb`；测试入口和依赖修改均在 `/private/tmp/aggregate-ui6-focus-after`，未改本仓库文件。
+- 探针含一个禁用 `GlassActionButton`、一个 `Semantics(enabled: false, button: true)` 包裹的禁用 `TextButton` 和一个可用 `TextButton`。屏幕上三者均可见；增强 AX 树提供四个按钮节点（语义包装节点与其子节点重复暴露同一标签）。直接读取 `kAXEnabledAttribute` 时四个节点全部为 `true`，`agent-desktop` 快照也没有禁用状态；这确认了 3.47.8 当前构建下的禁用态原生 AX 失败，而不是只在 VoiceOver 关闭时出现的空树假象。
+- 同一夹具用 Flutter 3.50.0 / Dart 3.14.0 / Engine revision `371f77202a` 补做对照。VoiceOver 开启、`AXEnhancedUserInterface=1` 时，两个禁用语义节点在 AXChildren 中存在，但 `AXRole` 及名称属性不可读；`agent-desktop` 仅识别可用按钮。3.50.0 因而也未通过此项，不能仅凭 bridge 源码变更认定语义已修复。
+- 已在系统设置关闭 VoiceOver，退出并重新启动隔离探针；复核开关为关闭且新进程的 `AXEnhancedUserInterface=0`。本次没有录制/验证实际朗读音频，因此不把它记为 VoiceOver 语音走查通过。没有修改 Flutter 页面、切换按钮逻辑或生产配置；`pubspec.lock` 继续保留原工作区用户修改并未纳入任务。
+- 结论：UI-6 禁用态原生语义仍失败；应用层 Widget Semantics 测试不能代替 macOS engine AX 导出结果。需要项目采用经实机 VoiceOver 验收通过的 Flutter engine 后再关闭该缺陷。

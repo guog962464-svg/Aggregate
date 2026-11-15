@@ -1,6 +1,6 @@
 # UI-6：macOS 原生性能与最终交付
 
-> 状态：部分验收，最终交付待完成 · 前置：[UI-5](stage-5-functional-acceptance.md)自动化与原生 AX 抽查已完成，但实际合成像素对比度和 VoiceOver 语音走查仍未通过。Profile 子场景和未完成项见[验收记录](acceptance-record.md#ui-6原生性能与最终验收部分验收)。
+> 状态：部分验收，最终交付待完成 · 前置：[UI-5](stage-5-functional-acceptance.md)自动化与原生 AX 抽查已完成；本轮在 VoiceOver 已开启且 AX 增强接口确认激活后复测，Flutter 3.47.8 的禁用按钮仍被报告为 enabled，VoiceOver 语音走查及禁用态原生语义未通过。Profile 子场景和未完成项见[验收记录](acceptance-record.md#ui-6原生性能与最终验收部分验收)。
 
 ## 1. 原生测量流程
 
@@ -84,7 +84,7 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 2. 保存 idle 与点击归一化时刻 0、0.25、0.5、0.75、1，以及反向切换关键帧；另看真实时间连续动作，静态对齐不能替代节奏验收。
 3. 本轮布局对齐目标：关键按钮外框、中心与相邻控件基线相对确定的设计尺寸偏差不超过 1 个逻辑像素；点阵采用 UI-2 同一设计坐标。跨引擎颜色/光栅差异单列，不以一个全图平均误差代表质感已一致。
 
-- [ ] **UI-6.6** 部分目视：浅深设置页 Profile 实窗已导出并归档；正文、主题按钮文字与太阳/月亮点阵核心的合成像素对比度抽样均达到各自目标。选中态光弧仅有探索性局部值（深色 2.32:1、浅色 1.15:1），按次要装饰处理。焦点环按实际轨道的中心、尺寸和圆角在 artwork 前景绘制；新增 Widget 几何断言及修正后 Profile 截图 `stage6-focus-ring-rounded-profile.png`。按钮 fixture 已在 Profile 实窗分别归档深浅主题中的 12 类 96dp 点阵和五种 `GlassButtonSize`/导航、分段、危险、忙碌、禁用样式，截图列在验收记录。生产工作台、所有功能、管理连接、活动和设置页现有双主题 Profile 静态截图样本，范围与限制见[验收记录](acceptance-record.md)；它不能代替焦点环合成像素对比、VoiceOver 语音、所有控件实例的逐项复核或最终签收。禁用按钮视觉为灰化，但原生 AX 仍报告 `enabled=true`，该项不通过。视频原帧/拟合渲染选帧对照为 `/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/theme-switch/stage6-keyframes.html`，选帧进度由实测开关中心推算，拟合渲染不代表 macOS 实窗逐帧捕获。
+- [ ] **UI-6.6** 部分目视：浅深设置页 Profile 实窗已导出并归档；正文、主题按钮文字与太阳/月亮点阵核心的合成像素对比度抽样均达到各自目标。选中态光弧仅有探索性局部值（深色 2.32:1、浅色 1.15:1），按次要装饰处理。焦点环按实际轨道的中心、尺寸和圆角在 artwork 前景绘制；新增 Widget 几何断言及修正后 Profile 截图 `stage6-focus-ring-rounded-profile.png`。按钮 fixture 已在 Profile 实窗分别归档深浅主题中的 12 类 96dp 点阵和五种 `GlassButtonSize`/导航、分段、危险、忙碌、禁用样式，截图列在验收记录。生产工作台、所有功能、管理连接、活动和设置页现有双主题 Profile 静态截图样本，范围与限制见[验收记录](acceptance-record.md)；它不能代替焦点环合成像素对比、VoiceOver 语音、所有控件实例的逐项复核或最终签收。禁用按钮视觉为灰化；在 VoiceOver 已开启、`AXEnhancedUserInterface=1` 的 3.47.8 Profile 探针中，玻璃禁用按钮、禁用 `Semantics` 包装项及其子按钮均报告 `AXEnabled=true`，该项不通过；3.50.0 同夹具的禁用节点又无法以可读 AXRole/名称暴露，不能作为已修复的版本。具体对照见验收记录。视频原帧/拟合渲染选帧对照为 `/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/theme-switch/stage6-keyframes.html`，选帧进度由实测开关中心推算，拟合渲染不代表 macOS 实窗逐帧捕获。
 - [ ] **UI-6.7** 部分目视：隔离的 macOS Profile fixture 已双主题归档五种按钮尺寸（primary、secondary、icon、playback、reference）、12 类参考点阵及导航/分段/危险/忙碌/禁用样式；生产工作台、所有功能、管理连接、活动和设置五页也已有双主题静态窗口样本。样本能复核主要页面布局、材质与控件位置；全部按钮实例仍未逐项签收。
 - [ ] **UI-6.8** 部分通过：播放/暂停、前后曲、翻页和 54 次主题端点拖动已实窗观察，AX 状态逐次交替；Widget 测试验证 450 ms 拖动途中不提交、释放后提交，且 pointer cancel 回到原端点。关键帧 HTML 对照保留来源时间与估计位置；精确原生手势时序和取消仍缺原生证据。
 - [ ] **UI-6.9** 待用户对原生整窗和重点按钮作最终视觉复核；本轮 CUA 观察不视为用户签收。
