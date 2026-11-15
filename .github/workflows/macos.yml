@@ -27,6 +27,15 @@ jobs:
         run: sh spikes/phase0/check_boundary.sh
       - name: Test shared packages
         run: dart test packages/aggregate_contracts/test packages/aggregate_domain/test packages/aggregate_connectors/test packages/aggregate_runtime/test
+      # NCM integration fixtures stub ncm-cli, but retain the real runtime
+      # checks for Node.js and mpv. Prepare those dependencies explicitly.
+      - name: Prepare NCM test dependencies
+        run: |
+          node --version
+          if ! command -v mpv >/dev/null 2>&1; then
+            brew install mpv
+          fi
+          mpv --version
       - name: Test Flutter UI
         working-directory: app
         run: flutter test test
