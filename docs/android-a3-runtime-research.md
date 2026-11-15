@@ -337,7 +337,7 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 
 ## 2026-11-15 移动端 Node 候选维护分支复核
 
-- **官方预编译发行：**截至本次复核，`nodejs-mobile/nodejs-mobile` 的 GitHub Releases 将 `v18.20.4` 标为 Latest；该 Android 发行包含 arm64-v8a、armeabi-v7a 和 x86_64，记录的 `process.versions.mobile` 为 `18.17.3`。来源：[官方 v18.20.4 release](https://github.com/nodejs-mobile/nodejs-mobile/releases/tag/v18.20.4)。这只能证明官方发布页当前列出的最新二进制版本，不能据此推断仓库没有维护活动。
+- **官方预编译发行：**截至本次复核，`nodejs-mobile/nodejs-mobile` 的 GitHub Releases 将 `v18.20.4` 标为 Latest；该 Android 发行包含 arm64-v8a、armeabi-v7a 和 x86_64，记录的 `process.versions.mobile` 为 `18.17.3`。Node 官方将 Node 18 维护线标为 2025-03-27 EOL，但这是 Node 运行时版本线的支持状态，不能单独证明移动端仓库没有维护活动。来源：[官方 v18.20.4 release](https://github.com/nodejs-mobile/nodejs-mobile/releases/tag/v18.20.4)、[Node.js EOL schedule](https://nodejs.org/en/about/eol)。
 - **fogtape Node 24 线：**只读克隆 `recipe` 分支得到 HEAD `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`（2026-10-22）；分支 `upstream-base.txt` 固定 `v24.22.1`，README 将 `24.22.1-0` 标为当前移动构建版本。GitHub 的 `v24.22.1-0` 项明确为 Pre-release，并显示发布后 `recipe` 有 25 个提交；来源：[recipe 分支](https://github.com/fogtape/nodejs-mobile/tree/recipe)、[v24.22.1-0 release](https://github.com/fogtape/nodejs-mobile/releases/tag/v24.22.1-0)。
 - **Node 官方安全版本：**Node 官方于 2026-11-11 发布 `v24.22.3` LTS 安全更新；因此本仓库本地重建并测试的 `24.22.3-0` 只能作为源码候选实验，不能称作维护方已发行的匹配 Android 包。来源：[Node.js v24.22.3](https://nodejs.org/en/blog/release/v24.22.3)。
 - **产品决策影响：**A3.6 的供应来源门槛仍开放。要关闭该项，需要得到由维护方发布、明确固定到所选官方 Node tag 的 Android SDK/二进制及校验清单，并重新审查补丁、测试、ABI、16 KB 与分发许可；否则本地构建不能替代正式供应证据，产品 Node/npm/CLI 入口继续关闭。
