@@ -254,3 +254,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 证据：[450 ms 请求·浅到深](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-native-drag/duration450-light-to-dark.jsonl>) SHA-256 `c83a7a82b547797c33280144bb9e6c760af0080afc55ea91ffc62a891f8e679b`；[450 ms 请求·深到浅](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-native-drag/duration450-dark-to-light.jsonl>) SHA-256 `cc3d5dec744db835cb6e45ee3281b7450337e907d931b09ab8787e04ba93e88c`；[校准后的六次事件](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-native-drag/six-drags-duration397.jsonl>) SHA-256 `76f3a52688677384c48584bdb63579ca8cc8bd0692547e29b3ea6c6391e75727`。
 - 取消尝试：1,600 ms 拖动期间发送 Escape 没有卸载设置页，最后仍走完整释放并切到深色；不能算 pointercancel。native pointercancel 与 Widget 已有取消回归的实窗对照仍未完成。UI-6.1/6.8 保持部分验收；UI-6.3 的原生事件时序子项已有证据，其关键相位和呈现帧率仍待补。
 - 本次只有隔离夹具输入和验收记录；没有修改产品源码、太阳/月亮算法、拖动积分、主题映射或偏好逻辑。
+
+### 2026-11-15 原视频指针轨迹 Profile 实时对照
+
+- 构建：macOS Profile 隔离应用 `io.github.guog962464.aggregate.ui6profile`，使用本地 PreviewRuntime 合成设置页；浅色开关起始为深色，完成原视频路径后由原生 AX 确认为浅色。系统 `reduce_motion=false`。没有连接真实账号、服务或 Host，也没有触碰用户的 Debug 实例。
+- 输入：以源视频测得的可见滑块中心坐标和帧时刻重建一条连续鼠标路径，使用原生指针实时拖动，未回放固定动画帧。只读 CoreGraphics event tap 收到 mouse down 1 次、drag 55 次、up 1 次；最大坐标差为 `0.0000298 px`（x）与 `0 px`（y），相对源采样的事件时差范围为 `-5.8678–+4.1161 ms`，down 到 up 共 `1818.14 ms`。源坐标由视频中可见滑块中心反推，不能恢复原始物理鼠标硬件轨迹。
+- 捕获：ScreenCaptureKit 获得 166 张 `720×540` 实窗帧。捕获帧的中位间隔为 `16.66646 ms`，最大间隔 `33.33296 ms`；callback 与媒体 PTS 差为 `-10.5858–+3.0302 ms`。这组间隔含至少一次丢采样，不是显示器实际 present FPS。
+- 对照：无注册、无颜色校正，在控件 ROI `(170,155)-(550,410)` 内计算 MAE；只排除源图没有、实窗里可知位置的 `55×55 px` 鼠标指针。目标源帧 137（PTS `3.058911 s`）与对应实窗帧 87（拖动后 `1143.60 ms`）的 MAE 为 `72.0527/255`。在目标前后 0.5 秒源帧中，最近视觉匹配是源帧 136（PTS `3.003222 s`），MAE `5.4114/255`，对应最近帧偏差约 `-55.6889 ms`。对照图：[source-live-phase-comparison.png](/Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-live-frames/synchronized-capture-7/source-live-phase-comparison.png)，SHA-256 `c6dff3ea80293a1178748971714e5b343bf135a924a02a18a56f2d5ab7c49c7a`；事件记录 SHA-256 `e0f15a482ab888eac146d9c7ea46a89ced2aa411b877bddc3067757a56b9a9e3`；分析 JSON SHA-256 `f97d7ca55e0985c10f7e134e0664a406e77cdd0203a90233f9ec9cee974e88a2`。
+- 结果边界：输入轨迹的逐点坐标与节奏已对齐到测量精度，但实时实窗的太阳/月亮图像和光效没有在目标时刻逐帧匹配，UI-6 动态视觉仍未通过。约 `-55.69 ms` 是由最近源帧推算的估计相位差，不是确定的物理延迟：路径只能重建可见滑块中心，录屏存在 33.33 ms 采样间隔，且没有显示器 present 时间戳。相同进度的光效差异提示仍需检查动效相位/映射；本轮没有据此修改模拟、拖动或切换逻辑。
+- 自检：用户的主题开关逻辑保持原样，工作区产品源码未改；起点为深色、终点 AX 为浅色。截图与原帧对照图已目视复核。该子阶段只更新验收文档，本轮未重跑产品测试；`git diff --check` 为提交前检查。UI-6 仍部分验收，原生取消、动态相位、原生资源计数、恢复长帧根因、VoiceOver 语音和最终视觉签收均未因此关闭。
