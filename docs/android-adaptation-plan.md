@@ -37,7 +37,7 @@
 3. JS 入口和已锁定的纯 JS 依赖在构建时打包；`esbuild` 可以减少文件数量，但动态 `require`、资源文件、原生 `.node` 扩展和外部命令不能假定都能压入单文件。
 4. npm **包依赖可在开发机安装并随 App 发货**，这不等于 Android 设备具备可交互的 npm CLI 或能在手机上执行安装脚本。设备端安装包要另外验证下载、完整性、依赖脚本、二进制插件、存储和升级回滚；首版不把它作为基础能力。
 5. Android 10 起，面向 API 29+ 的 App 不能直接 `execve()` 执行可写 App 私有目录中的文件。当前 fogtape Node 24.22.1-0 真机样本能导入 `child_process`，且 `spawn('/system/bin/sh', ...)` 成功；但启动 app-private JS 的 `app_process64` 子进程和 `fork()` 均因 `Error changing dalvik-cache ownership : Permission denied` 以 `SIGABRT` 结束。nodejs-mobile 文档将 `child_process` 列为不支持，与该样本的部分行为不一致，需按具体构建继续验证。将 `node` 嵌入 App 并不会让 Git、Python、ffmpeg 或 mpv 自动可用。
-6. `nodejs-mobile` 官方仓库的 Android 预编译版仍为 Node 18.20.4，已结束维护；A3 当前 Debug 探针使用 fogtape fork 的 Node 24.22.1 预发布，arm64 在 4 KB 真机运行，arm64/x86_64 成品原生库与 APK/AAB 静态 16 KB 对齐通过。预发布状态、完整分发许可与真实 16 KB 页设备仍须验收。**若无法取得稳定维护且符合目标设备/分发要求的构建，不把这条路线用于正式发布。**
+6. `nodejs-mobile` 官方仓库当前最新 Android 预编译发行仍标为 Node 18.20.4（`process.versions.mobile=18.17.3`）。fogtape fork 的 `24.22.1-0` 是预发布，当前 `recipe` 分支仍固定 Node `v24.22.1`；Node 官方已于 2026-11-11 发布 Node 24.22.3 安全更新。A3 使用 Node 24.22.3 的本地重建样本完成过 arm64/4 KB 真机实验与静态 16 KB ELF 检查，但它不是维护方发布的匹配 Android binary。详见 [当前候选复核](android-a3-runtime-research.md#2026-11-15-移动端-node-候选维护分支复核)。在取得可审计的维护方构建、确认完整分发许可及真实 16 KB 页设备验收前，不把这条路线作为正式发布运行时。
 
 传输优先级：进程内 JNI/消息队列，或独立进程的 Binder；若使用 `127.0.0.1`，随机端口、一次性令牌、仅回环绑定、就绪握手和关闭清理都必须验证。不要固定 `8080`，也不要将本地服务暴露到网络接口。
 

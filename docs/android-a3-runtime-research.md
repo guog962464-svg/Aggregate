@@ -334,3 +334,12 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **边界：**此举补齐候选的直接静态归档图，不关闭法律复核、Abseil/Highway 上游滚动差异、完整 Node 测试结论、维护方发布来源、正式签名产品包或 16 KB 真机运行门槛。BOM 仍不是产品发布 SBOM，产品 Node/npm/CLI 入口保持关闭。
 - **verified_scope：**匹配静态清单的 unsigned arm64 NodeProbe Release APK/AAB，包内 stripped `libnode.so` 和声明资产哈希，26/39 静态组件数量与 36 条关系，APK/AAB 组件引用唯一性、依赖计数以及官方 CycloneDX schema。
 - **retrieval_feedback：**将已审查的 linker map JSON 作为生成器输入；在信任它之前先校验候选二进制/库/许可资产绑定，并在 BOM 中分开保留“归档构建输入”“实际有保留代码的链接依赖”和“源码/许可证据”三种事实，避免把清单简单贴成未经验证的许可列表。
+
+## 2026-11-15 移动端 Node 候选维护分支复核
+
+- **官方预编译发行：**截至本次复核，`nodejs-mobile/nodejs-mobile` 的 GitHub Releases 将 `v18.20.4` 标为 Latest；该 Android 发行包含 arm64-v8a、armeabi-v7a 和 x86_64，记录的 `process.versions.mobile` 为 `18.17.3`。来源：[官方 v18.20.4 release](https://github.com/nodejs-mobile/nodejs-mobile/releases/tag/v18.20.4)。这只能证明官方发布页当前列出的最新二进制版本，不能据此推断仓库没有维护活动。
+- **fogtape Node 24 线：**只读克隆 `recipe` 分支得到 HEAD `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`（2026-10-22）；分支 `upstream-base.txt` 固定 `v24.22.1`，README 将 `24.22.1-0` 标为当前移动构建版本。GitHub 的 `v24.22.1-0` 项明确为 Pre-release，并显示发布后 `recipe` 有 25 个提交；来源：[recipe 分支](https://github.com/fogtape/nodejs-mobile/tree/recipe)、[v24.22.1-0 release](https://github.com/fogtape/nodejs-mobile/releases/tag/v24.22.1-0)。
+- **Node 官方安全版本：**Node 官方于 2026-11-11 发布 `v24.22.3` LTS 安全更新；因此本仓库本地重建并测试的 `24.22.3-0` 只能作为源码候选实验，不能称作维护方已发行的匹配 Android 包。来源：[Node.js v24.22.3](https://nodejs.org/en/blog/release/v24.22.3)。
+- **产品决策影响：**A3.6 的供应来源门槛仍开放。要关闭该项，需要得到由维护方发布、明确固定到所选官方 Node tag 的 Android SDK/二进制及校验清单，并重新审查补丁、测试、ABI、16 KB 与分发许可；否则本地构建不能替代正式供应证据，产品 Node/npm/CLI 入口继续关闭。
+- **verified_scope：**官方 Releases 页面、fogtape recipe 分支 README/upstream pin/release 元数据和 Node 官方 24.22.3 release 页面；没有修改第三方分支、候选库或产品配置。
+- **retrieval_feedback：**直接只读克隆移动端 recipe 分支，复核其 upstream pin 与移动版本，再分别查对官方 Node 24.22.3 和两处 GitHub Releases 页面。将“latest binary release”“分支源码基线”和“Node 官方当前安全 tag”分开记录，避免把本地重建误写成供应方发行。
