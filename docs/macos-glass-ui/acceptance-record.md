@@ -292,3 +292,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 证据：[只读系统事件](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-native-drag/cancel-verified-attempt-events.jsonl>) SHA-256 `5e4a18f6bc842154608472d2630972dd02cdd95d5be26ed6ccb3b30f46b765ed`。脚本也在 mouse-up 前打印并确认 Finder 前台，释放后读取 AX 深色/浅色状态。
 - 结论边界：这是一条合成 CGEvent 的原生 AppKit/Flutter 输入路径，不是物理鼠标测试，也没有直接观察到 Flutter `PointerCancelEvent`。因此 native cancel 仍未验证；此前 Escape 尝试和本次 app 激活都不能替代 pointercancel。没有修改控件逻辑，UI-6 保持部分验收。
 - 自检：前台应用标识、系统事件序列、mouse-up 后 AX 终态，以及恢复后的深色终态均已核对；未运行产品测试。`git diff --check` 作为文档阶段提交前检查。
+
+### 2026-11-15 云端阶段状态复核
+
+- 复核基线：GitHub `guog962464-svg/Aggregate` 与 Gitee `shi-shan/aggregate` 的 `main`，两端 `git ls-remote` 均返回 `e630855dc039992ab7ebbfbfa5dc235c4b170564`。UI-3 实施提交为 `dc6967c`，UI-4 为 `8afa95b`，UI-5 实施/部分验收为 `f453980`；不重复声明这些历史检查在云端重跑通过。
+- 本次仅校正阶段状态：UI-5.4 不能在后续原生禁用节点 `AXEnabled=true` 的失败证据存在时仍勾选通过；总览应区分已完成的设置页合成像素抽样与尚缺的完整状态矩阵。未改动产品源码、主题交互或依赖。
+- 实际执行通过：`git diff --check`；`sh spikes/phase0/check_boundary.sh`（输出 `PASS public Flutter/core boundary`）；三个模拟/校准文件 SHA-256 与 UI-0 表逐字一致。
+- 环境限制：当前仅可访问 Linux 云电脑，没有连接的 Mac，也没有可执行的 Flutter SDK。本次没有重跑 Flutter 测试、macOS 构建、VoiceOver、原生取消/生命周期、图像对象计数或帧时采样。历史 Mac 原始证据位于 Mac 本地，当前未重新读取。
+- 结论：UI-0～UI-4 保持历史完成状态；UI-5/UI-6 保持部分验收。禁用态原生 AX、完整对比度与 VoiceOver、原生 pointer cancel、动态相位、间歇长帧、生命周期/对象计数和最终动态质感签收仍须补齐；不能因本次文档一致性校正而关闭目标。
