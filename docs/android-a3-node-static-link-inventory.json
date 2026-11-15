@@ -9,7 +9,7 @@
         "dependencyNodeCount": 193,
         "kind": "apk",
         "nodeMobileVersion": "24.22.3-0",
-        "sha256": "5c4c17f8b787ef2fea1cab68cfe6352e4890c325e887cc50e889931b05281096",
+        "sha256": "018f5d5b4b4344a9a69916a12b633dde087df15bdba5bca6ffecc92949f4aecc",
         "sourceGitTreeObjectId": "5b1a23adddf4b698abcfa45cc8d22de930c01b32"
       },
       {
@@ -19,7 +19,7 @@
         "dependencyNodeCount": 193,
         "kind": "aab",
         "nodeMobileVersion": "24.22.3-0",
-        "sha256": "d7b038657f1f59e8e5562e56adf3605dae3973c5ba64003046b9efc041b5a328",
+        "sha256": "597cd71c56c3f277f926d1e28d66f3a0b1fdc787f89f5a50f0bb39449aaec87f",
         "sourceGitTreeObjectId": "5b1a23adddf4b698abcfa45cc8d22de930c01b32"
       }
     ],
@@ -76,7 +76,7 @@
   "format": "aggregate-node-static-link-inventory-v1",
   "limitations": [
     "CycloneDX compositions.aggregate remains incomplete: static source components are captured in this supplement, but Android platform DT_NEEDED libraries are not individually versioned and legal review has not approved the candidate.",
-    "Abseil and Highway README revision declarations differ from the V8 DEPS pinned revisions; exact vendored tree IDs are recorded, but source-roll metadata needs maintainer review.",
+    "Abseil vendor files match the V8 Chromium mirror DEPS pin; Highway source files match that pin except hwy/ops/ppc_vsx-inl.h, while README.chromium still names an older upstream revision. libhighway.a contributes no retained section; Highway README/source provenance remains pending maintainer confirmation.",
     "Release artifacts are unsigned NodeProbe experiments, not Aggregate product releases.",
     "No 16 KB physical device was available; runtime and install/load behavior on 16 KB hardware remains an open release gate.",
     "The candidate comes from a locally built Node mobile overlay; it is not an upstream-maintained Android binary release.",
@@ -420,7 +420,7 @@
       ],
       "name": "Abseil C++",
       "notes": [
-        "README.chromium revision fd39cfa4670a1f7995ecf0247f04bda757384ad9 differs from V8 DEPS pin 3fbb10e80d80e3430224b75add53c47c7a711612; exact vendored tree object ID is recorded."
+        "README.chromium revision fd39cfa4670a1f7995ecf0247f04bda757384ad9 is an upstream GitHub commit, while V8 DEPS pins Chromium mirror commit 3fbb10e80d80e3430224b75add53c47c7a711612. File-hash comparison: all 1,546 vendored files are byte-identical to the mirror tree; the source archive omits 21 mirror CI/collaboration files. The recorded Git tree object ID binds the exact vendored subset."
       ],
       "sourceGitTreeObjectId": "0c238961d286add66f17451a3a2bd6a322d52616",
       "sourceRoot": "deps/v8/third_party/abseil-cpp",
@@ -507,7 +507,7 @@
       ],
       "name": "Highway",
       "notes": [
-        "README.chromium revision 8295336dd70f1201d42c22ab5b0861de38cf8fbf differs from V8 DEPS pin 00fe003dac355b979f36157f9407c7c46448958e; link map retains no section from libhighway.a."
+        "README.chromium says upstream revision 8295336dd70f1201d42c22ab5b0861de38cf8fbf; V8 DEPS pins Chromium mirror commit 00fe003dac355b979f36157f9407c7c46448958e. File-hash comparison of the vendored src subtree against the mirror pin found 183 identical files, 57 omitted mirror build/CI files, and one content delta in hwy/ops/ppc_vsx-inl.h. The exact source tree ID is recorded; the README revision and one-file delta require maintainer provenance confirmation. Link map retains no section from libhighway.a."
       ],
       "sourceGitTreeObjectId": "8ff0c677454219b9e10b43d46f08f09e11466ce9",
       "sourceRoot": "deps/v8/third_party/highway",
