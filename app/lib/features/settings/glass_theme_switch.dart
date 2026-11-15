@@ -345,32 +345,53 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
                   if (_pointer == event.pointer) _finish(cancel: true);
                 },
                 child: ExcludeSemantics(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: _focused
-                          ? Border.all(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 2,
-                            )
-                          : null,
-                    ),
-                    position: DecorationPosition.foreground,
-                    child: SizedBox.fromSize(
-                      size: size,
-                      child: ThemeSwitchArtwork(
-                        frame: _simulation.snapshot,
-                        time: _time,
-                        optics: widget.calibration.optics,
-                        scene: widget.calibration.scene,
-                        backdropOrigin:
-                            _sceneScope?.originFor(
-                              context,
-                              onLayoutDeferred: () =>
-                                  _refreshAfterSceneLayout(context),
-                            ) ??
-                            _backdropOrigin,
-                        backdropSize: _sceneScope?.size ?? Size.zero,
-                      ),
+                  child: SizedBox.fromSize(
+                    size: size,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ThemeSwitchArtwork(
+                          frame: _simulation.snapshot,
+                          time: _time,
+                          optics: widget.calibration.optics,
+                          scene: widget.calibration.scene,
+                          backdropOrigin:
+                              _sceneScope?.originFor(
+                                context,
+                                onLayoutDeferred: () =>
+                                    _refreshAfterSceneLayout(context),
+                              ) ??
+                              _backdropOrigin,
+                          backdropSize: _sceneScope?.size ?? Size.zero,
+                        ),
+                        if (_focused)
+                          Positioned.fromRect(
+                            rect: _focusRingRect(size),
+                            child: IgnorePointer(
+                              child: DecoratedBox(
+                                key: const ValueKey('theme-switch-focus-ring'),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    ThemeSwitchSimulation.trackRadius *
+                                            ThemeSwitchArtwork.sceneScale(
+                                              size,
+                                              widget.calibration.scene,
+                                            ) +
+                                        _focusRingGap,
+                                  ),
+                                ),
+                                position: DecorationPosition.foreground,
+                                child: const SizedBox.expand(),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -381,6 +402,21 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
       ),
     ),
   );
+
+  static const double _focusRingGap = 4;
+
+  Rect _focusRingRect(Size size) {
+    final scale = ThemeSwitchArtwork.sceneScale(size, widget.calibration.scene);
+    final origin = ThemeSwitchArtwork.sceneOrigin(
+      size,
+      widget.calibration.scene,
+    );
+    return Rect.fromCenter(
+      center: origin,
+      width: ThemeSwitchSimulation.trackWidth * scale + _focusRingGap * 2,
+      height: ThemeSwitchSimulation.trackHeight * scale + _focusRingGap * 2,
+    );
+  }
 }
 
 /// Filter before joining the arena: canvas padding and secondary pointers must

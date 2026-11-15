@@ -1,5 +1,6 @@
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/features/settings/theme_switch_calibration.dart';
+import 'package:aggregate/features/settings/theme_switch_simulation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -155,16 +156,33 @@ void main() {
 
     final focusRingFinder = find.descendant(
       of: switchFinder,
-      matching: find.byWidgetPredicate(
-        (widget) =>
-            widget is DecoratedBox &&
-            widget.child is SizedBox &&
-            widget.decoration is BoxDecoration,
-      ),
+      matching: find.byKey(const ValueKey('theme-switch-focus-ring')),
     );
     final focusRing = tester.widget<DecoratedBox>(focusRingFinder);
+    final ringDecoration = focusRing.decoration as BoxDecoration;
+    final switchSize = tester.getSize(switchFinder);
+    final ringScale = ThemeSwitchArtwork.sceneScale(switchSize);
+    final ringRect = tester.getRect(focusRingFinder);
+    final sceneCenter =
+        tester.getRect(switchFinder).topLeft +
+        ThemeSwitchArtwork.sceneOrigin(switchSize);
     expect(detector.focusNode!.hasFocus, isTrue);
-    expect((focusRing.decoration as BoxDecoration).border, isNotNull);
+    expect(ringDecoration.border, isNotNull);
+    expect(ringDecoration.border!.top.width, 2);
+    expect(
+      ringDecoration.borderRadius,
+      BorderRadius.circular(ThemeSwitchSimulation.trackRadius * ringScale + 4),
+    );
+    expect(ringRect.center.dx, closeTo(sceneCenter.dx, 0.01));
+    expect(ringRect.center.dy, closeTo(sceneCenter.dy, 0.01));
+    expect(
+      ringRect.width,
+      closeTo(ThemeSwitchSimulation.trackWidth * ringScale + 8, 0.01),
+    );
+    expect(
+      ringRect.height,
+      closeTo(ThemeSwitchSimulation.trackHeight * ringScale + 8, 0.01),
+    );
     expect(focusRing.position, DecorationPosition.foreground);
   });
 

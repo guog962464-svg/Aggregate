@@ -312,13 +312,11 @@ void main() {
           .hasAction(SemanticsAction.tap),
       isFalse,
     );
-    expect(
-      tester
-          .getSemantics(find.bySemanticsLabel('复制结果'))
-          .getSemanticsData()
-          .hasAction(SemanticsAction.tap),
-      isFalse,
-    );
+    final disabledData = tester
+        .getSemantics(find.bySemanticsLabel('复制结果'))
+        .getSemanticsData();
+    expect(disabledData.flagsCollection.isEnabled, ui.Tristate.isFalse);
+    expect(disabledData.hasAction(SemanticsAction.tap), isFalse);
     await tester.tap(find.bySemanticsLabel('保存'));
     await tester.tap(find.bySemanticsLabel('复制结果'));
     await tester.pump();
