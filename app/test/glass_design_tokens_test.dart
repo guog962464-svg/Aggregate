@@ -43,6 +43,14 @@ void main() {
         0.5,
       ),
     );
+    expect(
+      tokens.focusRing,
+      Color.lerp(
+        light.extension<GlassDesignTokens>()!.focusRing,
+        dark.extension<GlassDesignTokens>()!.focusRing,
+        0.5,
+      ),
+    );
   });
 
   test('glass scene follows and releases the theme switch backdrop phase', () {

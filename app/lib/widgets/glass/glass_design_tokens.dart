@@ -18,6 +18,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     required this.glassBottom,
     required this.highlight,
     required this.glow,
+    required this.focusRing,
     required this.ink,
     required this.warm,
     required this.status,
@@ -36,6 +37,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
   final Color glassBottom;
   final Color highlight;
   final Color glow;
+  final Color focusRing;
   final Color ink;
   final Color warm;
   final Color status;
@@ -54,6 +56,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     glassBottom: Color(0xFF242630),
     highlight: Color(0x3BF0F3FF),
     glow: Color(0xFF8B9AFF),
+    focusRing: Color(0xFF8B9AFF),
     ink: Color(0xFFF4EFDF),
     warm: Color(0xFFFFD29B),
     status: Color(0xFFA2D6BC),
@@ -73,6 +76,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     glassBottom: Color(0xFFECECF0),
     highlight: Color(0xF2FFFFFF),
     glow: Color(0xFFB06520),
+    focusRing: Color(0xFF6F3C0D),
     ink: Color(0xFF4F493B),
     warm: Color(0xFF8D4B16),
     status: Color(0xFF35735B),
@@ -109,6 +113,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     Color? glassBottom,
     Color? highlight,
     Color? glow,
+    Color? focusRing,
     Color? ink,
     Color? warm,
     Color? status,
@@ -126,6 +131,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     glassBottom: glassBottom ?? this.glassBottom,
     highlight: highlight ?? this.highlight,
     glow: glow ?? this.glow,
+    focusRing: focusRing ?? this.focusRing,
     ink: ink ?? this.ink,
     warm: warm ?? this.warm,
     status: status ?? this.status,
@@ -151,6 +157,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
       glassBottom: Color.lerp(glassBottom, other.glassBottom, t)!,
       highlight: Color.lerp(highlight, other.highlight, t)!,
       glow: Color.lerp(glow, other.glow, t)!,
+      focusRing: Color.lerp(focusRing, other.focusRing, t)!,
       ink: Color.lerp(ink, other.ink, t)!,
       warm: Color.lerp(warm, other.warm, t)!,
       status: Color.lerp(status, other.status, t)!,

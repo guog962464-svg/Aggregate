@@ -42,6 +42,23 @@ void main() {
       }
     }
   });
+
+  test('focus indicators meet 3:1 across both sides of the glass material', () {
+    for (final tokens in [GlassDesignTokens.light, GlassDesignTokens.dark]) {
+      for (final background in [
+        tokens.surface,
+        tokens.raised,
+        tokens.glassTop,
+        tokens.glassBottom,
+      ]) {
+        expect(
+          _contrast(tokens.focusRing, background),
+          greaterThanOrEqualTo(3),
+          reason: 'Focus indicator against $background for $tokens',
+        );
+      }
+    }
+  });
 }
 
 double _contrast(Color first, Color second) {

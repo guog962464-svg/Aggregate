@@ -679,7 +679,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = isFocused ? 1.7 : 1.0
         ..color = isFocused
-            ? accent.withValues(alpha: .94)
+            ? tokens.focusRing.withValues(alpha: .94)
             : tokens.highlight.withValues(alpha: isDisabled ? .36 : .70),
     );
 
@@ -694,7 +694,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = .7
-            ..color = accent.withValues(alpha: .54),
+            ..color = tokens.focusRing.withValues(alpha: .54),
         );
       }
     }

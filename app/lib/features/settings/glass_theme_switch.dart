@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/glass/glass_scene.dart';
 import 'theme_switch_calibration.dart';
 import 'theme_switch_simulation.dart';
@@ -291,6 +292,10 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
       child: LayoutBuilder(
         builder: (context, constraints) {
           final size = Size(constraints.maxWidth, constraints.maxWidth * 0.75);
+          final theme = Theme.of(context);
+          final focusColor =
+              theme.extension<GlassDesignTokens>()?.focusRing ??
+              theme.colorScheme.primary;
           return MouseRegion(
             cursor: _pointer != null && _startedOnHandle
                 ? SystemMouseCursors.grabbing
@@ -372,9 +377,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
                                 key: const ValueKey('theme-switch-focus-ring'),
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                                    color: focusColor,
                                     width: 2,
                                   ),
                                   borderRadius: BorderRadius.circular(
