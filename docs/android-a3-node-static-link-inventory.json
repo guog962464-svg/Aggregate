@@ -3,23 +3,23 @@
     "abi": "arm64-v8a",
     "cycloneDxBoms": [
       {
-        "componentCount": 340,
+        "componentCount": 405,
         "composition": "incomplete",
-        "dependencyEdgeCount": 362,
-        "dependencyNodeCount": 154,
+        "dependencyEdgeCount": 398,
+        "dependencyNodeCount": 193,
         "kind": "apk",
         "nodeMobileVersion": "24.22.3-0",
-        "sha256": "3f9254e3c1a1c0ab501f170c917a10c1658eb45680671bf9619ba2bcc89f0826",
+        "sha256": "5c4c17f8b787ef2fea1cab68cfe6352e4890c325e887cc50e889931b05281096",
         "sourceGitTreeObjectId": "5b1a23adddf4b698abcfa45cc8d22de930c01b32"
       },
       {
-        "componentCount": 340,
+        "componentCount": 405,
         "composition": "incomplete",
-        "dependencyEdgeCount": 362,
-        "dependencyNodeCount": 154,
+        "dependencyEdgeCount": 398,
+        "dependencyNodeCount": 193,
         "kind": "aab",
         "nodeMobileVersion": "24.22.3-0",
-        "sha256": "1a0fd2384e97a7f76ed6b1dfe11cb60453ca58fc29cf2c494d175700ef59b0d4",
+        "sha256": "d7b038657f1f59e8e5562e56adf3605dae3973c5ba64003046b9efc041b5a328",
         "sourceGitTreeObjectId": "5b1a23adddf4b698abcfa45cc8d22de930c01b32"
       }
     ],

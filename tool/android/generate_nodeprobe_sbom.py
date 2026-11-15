@@ -5,9 +5,11 @@ The archive is the source of truth for packaged native libraries, npm package
 metadata, and embedded license/notice files. Packaged ELF dynamic requirements
 and declared npm dependencies/peer dependencies are recorded. If present, the
 archive's Gradle runtime manifest records resolved Maven source artifacts and
-their dependency edges. This does not infer the full static link graph inside
-libnode.so or platform-provided library versions; the output marks its
-composition incomplete for those reasons.
+their dependency edges. An optional candidate-specific static-link inventory
+can add linker archive components and direct link edges after matching the
+inventory to the exact APK/AAB and packaged libnode.so. Platform library
+versions and legal approval remain outside this generator; the output keeps
+its composition marked incomplete.
 """
 
 from __future__ import annotations
@@ -347,6 +349,232 @@ def resolve_npm_dependency(
     return None
 
 
+def load_static_link_inventory(path: Path) -> dict[str, object]:
+    inventory = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(inventory, dict):
+        raise ValueError("static-link inventory must be a JSON object")
+    if inventory.get("format") != "aggregate-node-static-link-inventory-v1":
+        raise ValueError("unsupported static-link inventory format")
+    candidate = inventory.get("candidate")
+    link_map = inventory.get("linkMap")
+    if not isinstance(candidate, dict) or not isinstance(link_map, dict):
+        raise ValueError("static-link inventory is missing candidate or linkMap data")
+    if not isinstance(inventory.get("sourceComponents"), list):
+        raise ValueError("static-link inventory sourceComponents must be a list")
+    if not isinstance(candidate.get("releaseArtifacts"), dict):
+        raise ValueError("static-link inventory is missing releaseArtifacts")
+    if not isinstance(link_map.get("explicitArchiveInputs"), list):
+        raise ValueError("static-link inventory explicitArchiveInputs must be a list")
+    if not isinstance(link_map.get("implicitNdkToolchainArchives"), list):
+        raise ValueError("static-link inventory implicitNdkToolchainArchives must be a list")
+    return inventory
+
+
+def validate_inventory_digest(value: object, field: str) -> str:
+    if (not isinstance(value, str) or len(value) != 64 or
+            any(char not in "0123456789abcdefABCDEF" for char in value)):
+        raise ValueError(f"{field} must be a SHA-256 hex digest")
+    return value.lower()
+
+
+def static_link_components(
+    inventory: dict[str, object],
+) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str], dict[str, int]]:
+    source_rows = inventory["sourceComponents"]
+    link_map = inventory["linkMap"]
+    assert isinstance(source_rows, list)
+    assert isinstance(link_map, dict)
+
+    components: list[dict[str, object]] = []
+    source_refs: dict[str, str] = {}
+    source_by_id: dict[str, dict[str, object]] = {}
+    for raw in source_rows:
+        if not isinstance(raw, dict):
+            raise ValueError("static-link source component must be an object")
+        component_id = raw.get("id")
+        name = raw.get("name")
+        version = raw.get("version")
+        if not isinstance(component_id, str) or not component_id:
+            raise ValueError("static-link source component requires an id")
+        if component_id in source_refs:
+            raise ValueError(f"duplicate static-link source component id: {component_id}")
+        if not isinstance(name, str) or not name or not isinstance(version, str) or not version:
+            raise ValueError(f"static-link source component {component_id} needs name and version")
+        tree_id = raw.get("sourceGitTreeObjectId")
+        if tree_id is not None and not isinstance(tree_id, str):
+            raise ValueError(f"invalid source Git tree object ID for {component_id}")
+        ref_suffix = tree_id or f"version-{sha256(version.encode('utf-8'))[:16]}"
+        source_ref = f"urn:aggregate:node-static-source:{component_id}:{ref_suffix}"
+        source_refs[component_id] = source_ref
+        source_by_id[component_id] = raw
+        properties = [
+            property_item("aggregate:static-link-source-component-id", component_id),
+            property_item("aggregate:source-version-evidence", json.dumps(raw.get("versionEvidence", []), sort_keys=True)),
+            property_item("aggregate:source-license-evidence", json.dumps(raw.get("licenseEvidence", []), sort_keys=True)),
+        ]
+        source_root = raw.get("sourceRoot")
+        if isinstance(source_root, str):
+            properties.append(property_item("aggregate:source-root", source_root))
+        if tree_id:
+            properties.append(property_item("aggregate:source-git-tree-object-id", tree_id))
+        notes = raw.get("notes")
+        if isinstance(notes, list):
+            properties.extend(
+                property_item("aggregate:source-review-note", note)
+                for note in notes
+                if isinstance(note, str)
+            )
+        components.append(
+            {
+                "type": "library",
+                "bom-ref": source_ref,
+                "name": name,
+                "version": version,
+                "properties": properties,
+            }
+        )
+
+    explicit_archives = link_map["explicitArchiveInputs"]
+    implicit_archives = link_map["implicitNdkToolchainArchives"]
+    assert isinstance(explicit_archives, list)
+    assert isinstance(implicit_archives, list)
+    zero_retained_names_raw = link_map.get("archivesWithNoRetainedSections", [])
+    zero_retained_names = (
+        {name for name in zero_retained_names_raw if isinstance(name, str)}
+        if isinstance(zero_retained_names_raw, list)
+        else set()
+    )
+    archive_names: set[str] = set()
+    archive_dependency_nodes: list[dict[str, object]] = []
+    retained_archive_refs: list[str] = []
+    retained_archive_count = 0
+    explicit_member_count = 0
+
+    for raw in explicit_archives:
+        if not isinstance(raw, dict):
+            raise ValueError("static-link archive input must be an object")
+        name = raw.get("name")
+        component_id = raw.get("sourceComponentId")
+        if not isinstance(name, str) or not name.endswith(".a") or name in archive_names:
+            raise ValueError(f"invalid or duplicate static-link archive input: {name!r}")
+        archive_names.add(name)
+        if not isinstance(component_id, str) or component_id not in source_refs:
+            raise ValueError(f"static-link archive {name} references an unknown source component")
+        digest = validate_inventory_digest(raw.get("sha256"), f"{name} sha256")
+        member_count = raw.get("archiveMemberCount")
+        retained_members = raw.get("membersWithRetainedSections")
+        if (not isinstance(member_count, int) or member_count < 0 or
+                not isinstance(retained_members, int) or retained_members < 0 or
+                retained_members > member_count):
+            raise ValueError(f"invalid member counts for static-link archive {name}")
+        explicit_member_count += member_count
+        source_row = source_by_id[component_id]
+        source_tree = source_row.get("sourceGitTreeObjectId")
+        archive_ref = f"urn:aggregate:node-static-archive:{name}:sha256:{digest}"
+        properties = [
+            property_item("aggregate:component-role", "static-link build archive; object code may be compiled into libnode.so"),
+            property_item("aggregate:source-component-id", component_id),
+            property_item("aggregate:source-component-ref", source_refs[component_id]),
+            property_item("aggregate:archive-member-count", member_count),
+            property_item("aggregate:members-with-retained-sections", retained_members),
+            property_item("aggregate:archive-make-input", raw.get("makeInput", "")),
+        ]
+        if isinstance(source_tree, str):
+            properties.append(property_item("aggregate:source-git-tree-object-id", source_tree))
+        components.append(
+            {
+                "type": "library",
+                "bom-ref": archive_ref,
+                "name": name,
+                "version": str(source_row["version"]),
+                "hashes": [{"alg": "SHA-256", "content": digest}],
+                "properties": properties,
+            }
+        )
+        archive_dependency_nodes.append({"ref": archive_ref, "dependsOn": []})
+        if retained_members > 0:
+            retained_archive_count += 1
+            retained_archive_refs.append(archive_ref)
+        elif name not in zero_retained_names:
+            raise ValueError(f"zero-retained archive {name} is missing from inventory summary")
+
+    if link_map.get("explicitStaticArchiveCount") != len(explicit_archives):
+        raise ValueError("explicit static archive count does not match its entries")
+    if link_map.get("explicitArchiveMemberCount") != explicit_member_count:
+        raise ValueError("explicit archive member count does not match its entries")
+    if link_map.get("archivesWithRetainedSections") != retained_archive_count:
+        raise ValueError("retained archive count does not match its entries")
+    if not isinstance(link_map.get("retainedArchiveObjectPairs"), int):
+        raise ValueError("static-link inventory is missing retained archive object-pair count")
+    actual_zero_names = {
+        raw["name"] for raw in explicit_archives
+        if isinstance(raw, dict) and raw.get("membersWithRetainedSections") == 0
+    }
+    if zero_retained_names != actual_zero_names:
+        raise ValueError("zero-retained archive names do not match their entries")
+
+    for raw in implicit_archives:
+        if not isinstance(raw, dict):
+            raise ValueError("implicit NDK archive must be an object")
+        name = raw.get("name")
+        component_id = raw.get("sourceComponentId")
+        if not isinstance(name, str) or not name.endswith(".a"):
+            raise ValueError("implicit NDK archive requires a .a name")
+        if name in archive_names:
+            raise ValueError(f"duplicate static-link archive input: {name}")
+        archive_names.add(name)
+        if not isinstance(component_id, str) or component_id not in source_refs:
+            raise ValueError(f"implicit NDK archive {name} references an unknown source component")
+        digest = validate_inventory_digest(raw.get("sha256"), f"{name} sha256")
+        retained_members = raw.get("members_with_retained_sections_in_link_map")
+        if not isinstance(retained_members, int) or retained_members <= 0:
+            raise ValueError(f"implicit NDK archive {name} has no retained member evidence")
+        source_row = source_by_id[component_id]
+        source_tree = source_row.get("sourceGitTreeObjectId")
+        archive_ref = f"urn:aggregate:node-static-archive:{name}:sha256:{digest}"
+        properties = [
+            property_item("aggregate:component-role", "implicit NDK static runtime archive linked into libnode.so"),
+            property_item("aggregate:source-component-id", component_id),
+            property_item("aggregate:source-component-ref", source_refs[component_id]),
+            property_item("aggregate:members-with-retained-sections", retained_members),
+            property_item("aggregate:ndk-relative-path", raw.get("ndkRelativePath", "")),
+        ]
+        if isinstance(source_tree, str):
+            properties.append(property_item("aggregate:source-git-tree-object-id", source_tree))
+        components.append(
+            {
+                "type": "library",
+                "bom-ref": archive_ref,
+                "name": name,
+                "version": str(source_row["version"]),
+                "hashes": [{"alg": "SHA-256", "content": digest}],
+                "properties": properties,
+            }
+        )
+        archive_dependency_nodes.append({"ref": archive_ref, "dependsOn": []})
+        retained_archive_refs.append(archive_ref)
+
+    return components, archive_dependency_nodes, retained_archive_refs, {
+        "sourceComponents": len(source_rows),
+        "explicitArchives": len(explicit_archives),
+        "explicitArchiveMembers": explicit_member_count,
+        "explicitRetainedArchives": retained_archive_count,
+        "retainedArchiveObjectPairs": link_map["retainedArchiveObjectPairs"],
+        "zeroRetainedArchives": len(zero_retained_names),
+        "implicitNdkArchives": len(implicit_archives),
+        "retainedArchiveEdges": len(retained_archive_refs),
+    }
+
+
+def archive_member_by_suffix(names: list[str], suffix: str) -> str:
+    matches = [name for name in names if name == suffix or name.endswith("/" + suffix)]
+    if len(matches) != 1:
+        raise ValueError(
+            f"expected one packaged archive entry ending in {suffix!r}; found {len(matches)}"
+        )
+    return matches[0]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archive", type=Path, help="NodeProbe APK or AAB to inventory")
@@ -367,6 +595,11 @@ def main() -> int:
     )
     parser.add_argument("--upstream-commit", default="unknown")
     parser.add_argument("--recipe-commit", default="unknown")
+    parser.add_argument(
+        "--static-link-inventory",
+        type=Path,
+        help="candidate-specific JSON with Node source and linker archive evidence",
+    )
     args = parser.parse_args()
 
     archive_hash = sha256_file(args.archive)
@@ -374,11 +607,51 @@ def main() -> int:
     if artifact_kind not in {"apk", "aab"}:
         parser.error("archive must be an APK or AAB")
 
+    static_inventory: dict[str, object] | None = None
+    static_components: list[dict[str, object]] = []
+    static_archive_dependency_nodes: list[dict[str, object]] = []
+    static_archive_refs: list[str] = []
+    static_inventory_stats: dict[str, int] = {}
+    if args.static_link_inventory is not None:
+        static_inventory = load_static_link_inventory(args.static_link_inventory)
+        candidate = static_inventory["candidate"]
+        assert isinstance(candidate, dict)
+        release_artifacts = candidate["releaseArtifacts"]
+        assert isinstance(release_artifacts, dict)
+        artifact_record = release_artifacts.get(artifact_kind)
+        if not isinstance(artifact_record, dict):
+            parser.error(f"static-link inventory has no {artifact_kind.upper()} artifact record")
+        if artifact_record.get("sha256") != archive_hash:
+            parser.error("archive SHA-256 does not match the static-link inventory candidate")
+        if artifact_record.get("sizeBytes") != args.archive.stat().st_size:
+            parser.error("archive size does not match the static-link inventory candidate")
+
+        inventory_values = {
+            "node_version": candidate.get("nodeVersion"),
+            "node_mobile_version": candidate.get("nodeMobileVersion"),
+            "ndk_version": candidate.get("ndkRevision"),
+            "source_git_tree": candidate.get("nodeSourceGitTreeObjectId"),
+            "upstream_commit": candidate.get("upstreamNodeCommit"),
+            "recipe_commit": candidate.get("mobileRecipeCommit"),
+        }
+        for argument_name, inventory_value in inventory_values.items():
+            if not isinstance(inventory_value, str) or not inventory_value:
+                parser.error(f"static-link inventory has no candidate value for {argument_name}")
+            supplied_value = getattr(args, argument_name)
+            if supplied_value != "unknown" and supplied_value != inventory_value:
+                parser.error(f"--{argument_name.replace('_', '-')} does not match the static-link inventory")
+            setattr(args, argument_name, inventory_value)
+
+        static_components, static_archive_dependency_nodes, static_archive_refs, static_inventory_stats = (
+            static_link_components(static_inventory)
+        )
+
     components: list[dict[str, object]] = []
     package_components: dict[str, dict[str, object]] = {}
     package_metadata: dict[str, dict[str, object]] = {}
     native_library_refs: dict[str, str] = {}
     native_needed_libraries: dict[str, list[str]] = {}
+    static_node_ref: str | None = None
     npm_root: str | None = None
     gradle_runtime_manifest: dict[str, object] | None = None
     gradle_runtime_refs: dict[str, str] = {}
@@ -400,6 +673,67 @@ def main() -> int:
                 gradle_runtime_manifest, names, archive
             )
             components.extend(gradle_components)
+
+        if static_inventory is not None:
+            candidate = static_inventory["candidate"]
+            assert isinstance(candidate, dict)
+            abi = candidate.get("abi")
+            if not isinstance(abi, str) or not abi:
+                raise ValueError("static-link inventory candidate ABI is missing")
+            packaged_node_paths = [
+                path for path in names if PurePosixPath(path).name == "libnode.so"
+            ]
+            if len(packaged_node_paths) != 1:
+                raise ValueError(
+                    f"expected one packaged libnode.so for candidate; found {len(packaged_node_paths)}"
+                )
+            node_path = archive_member_by_suffix(names, f"{abi}/libnode.so")
+            if packaged_node_paths[0] != node_path:
+                raise ValueError("packaged libnode.so ABI does not match the static-link inventory")
+            node_hash = sha256(archive.read(node_path))
+            if node_hash != candidate.get("libnodePackagedStrippedSha256"):
+                raise ValueError("packaged libnode.so SHA-256 does not match the static-link inventory")
+
+            manifest_hash = validate_inventory_digest(
+                candidate.get("licenseManifestSha256"), "license manifest sha256"
+            )
+            manifest_path = archive_member_by_suffix(
+                names, "nodejs-mobile-static-licenses/native-licenses-manifest.json"
+            )
+            if sha256(archive.read(manifest_path)) != manifest_hash:
+                raise ValueError("packaged static license manifest hash does not match the inventory")
+
+            for source_row in static_inventory["sourceComponents"]:
+                if not isinstance(source_row, dict):
+                    raise ValueError("static-link source component must be an object")
+                for evidence in source_row.get("licenseEvidence", []):
+                    if not isinstance(evidence, dict) or not isinstance(evidence.get("packagedAsset"), str):
+                        continue
+                    packaged_asset = evidence["packagedAsset"]
+                    packaged_path = archive_member_by_suffix(names, packaged_asset)
+                    if sha256(archive.read(packaged_path)) != evidence.get("sha256"):
+                        raise ValueError(f"packaged static license asset hash mismatch: {packaged_path}")
+                    continue
+                if evidence.get("path") == "LICENSE" and evidence.get("status") == "source-project license file":
+                    expected_source_license = validate_inventory_digest(
+                        evidence.get("sha256"), "Node source license sha256"
+                    )
+                    matching_source_licenses = [
+                        path for path in names
+                        if PurePosixPath(path).name == "nodejs-mobile-LICENSE.txt"
+                        and sha256(archive.read(path)) == expected_source_license
+                    ]
+                    if len(matching_source_licenses) != 1:
+                        raise ValueError("packaged Node source license does not match the inventory")
+            for notice in static_inventory.get("embeddedNdkNotices", []):
+                if not isinstance(notice, dict) or not isinstance(notice.get("path"), str):
+                    continue
+                notice_path = notice["path"]
+                if not notice_path.startswith("assets/"):
+                    continue
+                packaged_path = archive_member_by_suffix(names, notice_path)
+                if sha256(archive.read(packaged_path)) != notice.get("sha256"):
+                    raise ValueError(f"packaged NDK notice hash mismatch: {packaged_path}")
 
         for path in sorted(names):
             if path.endswith("/"):
@@ -474,6 +808,19 @@ def main() -> int:
             if path.endswith(("-manifest.json", "-package-lock.json")) or basename == "a4-ncm-package.json":
                 components.append(file_component(path, data, "packaged-manifest-or-lock"))
 
+    if static_inventory is not None:
+        candidate = static_inventory["candidate"]
+        assert isinstance(candidate, dict)
+        abi = candidate["abi"]
+        node_paths = [
+            path for path in native_library_refs
+            if path.endswith(f"/{abi}/libnode.so")
+        ]
+        if len(node_paths) != 1:
+            raise ValueError(f"expected one packaged libnode.so for {abi}; found {len(node_paths)}")
+        static_node_ref = native_library_refs[node_paths[0]]
+        components.extend(static_components)
+
     npm_dependencies: list[dict[str, object]] = []
     resolved_npm_edges = 0
     unresolved_npm_edges: list[tuple[str, str, object]] = []
@@ -544,6 +891,18 @@ def main() -> int:
             }
         )
 
+    if static_inventory is not None:
+        assert static_node_ref is not None
+        for dependency in native_dependencies:
+            if dependency["ref"] == static_node_ref:
+                dependency["dependsOn"] = sorted(
+                    set(dependency["dependsOn"]) | set(static_archive_refs)
+                )
+                break
+        else:
+            raise ValueError("packaged libnode.so has no native dependency node")
+        native_dependencies.extend(static_archive_dependency_nodes)
+
     # The exact archive digest gives every archive-level component a stable anchor.
     artifact_ref = f"urn:aggregate:nodeprobe-{artifact_kind}:{archive_hash}"
     gradle_dependency_map: dict[str, set[str]] = {
@@ -576,9 +935,14 @@ def main() -> int:
         else ""
     )
     gradle_edge_count = sum(len(item["dependsOn"]) for item in gradle_dependencies)
-    scope_limit = (
-        "static libnode link closure is incomplete; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator"
-    )
+    if static_inventory is None:
+        scope_limit = (
+            "static libnode link closure is not included; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator"
+        )
+    else:
+        scope_limit = (
+            "candidate-specific static archives and direct linker edges are included; source and license evidence is not legal approval; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator"
+        )
     if gradle_runtime_manifest is not None:
         scope_limit += "; Android Gradle runtime graph is limited to the supplied resolved configuration manifest"
     metadata_properties = [
@@ -607,6 +971,20 @@ def main() -> int:
             scope_limit,
         ),
     ]
+    if static_inventory is not None:
+        metadata_properties.extend(
+            [
+                property_item("aggregate:static-link-inventory-format", static_inventory["format"]),
+                property_item("aggregate:static-link-source-components", static_inventory_stats["sourceComponents"]),
+                property_item("aggregate:static-link-explicit-archives", static_inventory_stats["explicitArchives"]),
+                property_item("aggregate:static-link-explicit-archive-members", static_inventory_stats["explicitArchiveMembers"]),
+                property_item("aggregate:static-link-retained-archives", static_inventory_stats["explicitRetainedArchives"]),
+                property_item("aggregate:static-link-retained-archive-object-pairs", static_inventory_stats["retainedArchiveObjectPairs"]),
+                property_item("aggregate:static-link-zero-retained-archives", static_inventory_stats["zeroRetainedArchives"]),
+                property_item("aggregate:static-link-implicit-ndk-archives", static_inventory_stats["implicitNdkArchives"]),
+                property_item("aggregate:static-link-libnode-archive-edges", static_inventory_stats["retainedArchiveEdges"]),
+            ]
+        )
     if gradle_runtime_manifest is None:
         metadata_properties.append(
             property_item("aggregate:android-gradle-runtime-graph", "not provided")
@@ -654,9 +1032,16 @@ def main() -> int:
         f"{len(native_unbundled_edges)} Android/platform dynamic requirements are unbundled"
     )
     print(
-        "Composition: incomplete (static libnode link closure and platform-library "
-        "versions are not fully reconstructed)"
+        "Composition: incomplete (platform-library versions and legal approval "
+        "are not included)"
     )
+    if static_inventory is not None:
+        print(
+            f"Recorded {static_inventory_stats['sourceComponents']} static source components, "
+            f"{static_inventory_stats['explicitArchives']} explicit archives, "
+            f"{static_inventory_stats['implicitNdkArchives']} implicit NDK archives, and "
+            f"{static_inventory_stats['retainedArchiveEdges']} direct libnode archive edges"
+        )
     if gradle_runtime_manifest is not None:
         print(
             f"Recorded {len(gradle_runtime_refs)} Gradle runtime components and "

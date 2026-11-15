@@ -325,3 +325,12 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **A3.6 判断：**修正候选的静态链接映射、主要源码版本/许可证据与 Release 归档绑定现已补齐，先前“Release 归档仍绑定旧 Node mobile 版本”的缺口已关闭。A3.6 仍开放：BOM 完整度与法律审批、Abseil/Highway 来源滚动差异、未覆盖的 Node/message 测试问题、签名产品 Release、维护方发行来源以及 16 KB 真机安装和运行都未通过。产品 Node/npm/CLI 入口继续关闭。
 - **verified_scope：**当前 NodeProbe arm64 unsigned APK/AAB、包内剥离库与 25 份静态许可文本哈希、静态 link-map summary、生成 BOM 和官方 CycloneDX 1.6 schema、APK zipalign、AAB bundletool validate/config、两种归档中 3 份 ELF 的 11 个 `PT_LOAD`。未安装此 Release 归档、未签名、未在 16 KB 真机运行、未作法律审批或整合进 Aggregate 产品。
 - **retrieval_feedback：**将前一轮 37 个归档的 linker map 候选哈希与旧 Release APK/AAB 内的剥离库哈希逐一对照，发现归档产物仍来自 metadata 修正前的候选；保留旧包后将修正库和对应 manifest 重新打包，再重生成 BOM、核对包内 license/notice 哈希与 16 KB 静态属性。把 Git tree object ID 与 SHA-256 区分，避免候选来源字段误标。
+
+## 2026-11-15 将静态链接清单并入 APK/AAB CycloneDX BOM
+
+- **生成器：**`tool/android/generate_nodeprobe_sbom.py` 新增 `--static-link-inventory`。生成前会比对候选 APK/AAB 的 SHA-256 和大小、Node/移动版本、NDK 版本、上游提交与 Git tree ID；读取包内 `libnode.so` 核对剥离库哈希，并逐一校验随包静态许可资产、Node 根 LICENSE 和 NDK NOTICE。静态清单与归档不匹配时直接失败，避免把旁路审计文件误贴到其他二进制。
+- **静态图：**归档 BOM 现在包含 26 个源码组件、37 个显式链接归档及 2 个隐式 NDK 运行归档。Node 共享库直接指向 34 个有保留 section 的显式归档和 2 个 NDK 归档，共 36 条静态链接边；另外 3 个 `--gc-sections` 后无保留 section 的归档仍作为构建输入记录，但不伪装成最终库的代码依赖。每个归档组件记录 SHA-256、成员/保留成员计数、源码组件 ID/tree 和 linker map 输入名；源码组件保留版本、树 ID、版本证据、许可证文本证据与未解决来源说明。许可证数据只作为可追溯证据，不被自动转换成法律批准或 SPDX 授权结论。
+- **新 BOM：**APK BOM SHA-256 `5c4c17f8b787ef2fea1cab68cfe6352e4890c325e887cc50e889931b05281096`，AAB BOM SHA-256 `d7b038657f1f59e8e5562e56adf3605dae3973c5ba64003046b9efc041b5a328`；各 405 个组件、193 个依赖节点、398 条边，其中 npm 358、动态原生 2、Gradle runtime 2、静态归档 36。两份 BOM 均通过本地缓存的官方 CycloneDX 1.6 JSON Schema（Draft 7），0 个 schema error；`compositions.aggregate` 继续为 `incomplete`。静态清单已更新这两个 BOM 的哈希和关系计数，JSON SHA-256 为 `6c0b02a0e1fb8d0bdb0c199bf5cb7c8d43ee96d1fa2976b7a231843b0c4d6f5c`。
+- **边界：**此举补齐候选的直接静态归档图，不关闭法律复核、Abseil/Highway 上游滚动差异、完整 Node 测试结论、维护方发布来源、正式签名产品包或 16 KB 真机运行门槛。BOM 仍不是产品发布 SBOM，产品 Node/npm/CLI 入口保持关闭。
+- **verified_scope：**匹配静态清单的 unsigned arm64 NodeProbe Release APK/AAB，包内 stripped `libnode.so` 和声明资产哈希，26/39 静态组件数量与 36 条关系，APK/AAB 组件引用唯一性、依赖计数以及官方 CycloneDX schema。
+- **retrieval_feedback：**将已审查的 linker map JSON 作为生成器输入；在信任它之前先校验候选二进制/库/许可资产绑定，并在 BOM 中分开保留“归档构建输入”“实际有保留代码的链接依赖”和“源码/许可证据”三种事实，避免把清单简单贴成未经验证的许可列表。
