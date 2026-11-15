@@ -271,3 +271,14 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **历史结论更正：**本节取代此前“修正后未重跑 3,790 项配置测试子集”的当前状态判断；旧库/旧包的历史结果保留。修正后 240 项 curated 与 3,790 项 parallel/sequential 配置子集均通过；此前 message suite 的 7 个失败以及未覆盖测试类别继续作为独立未决事项。
 - **A3.6 状态与 verified_scope：**本轮现确认 Node/mobile 版本标识修正，并验证 NodeProbe 生命周期、修正后 curated 240 项及 Android `parallel sequential` 配置子集 3,790 项 4 KB arm64 真机集。仍未获得维护方发布的匹配 Android binary、未更新并审阅 source-tree 预期 hash、未完成依赖闭包/法律审查、未签名 Aggregate 产品 Release，也没有 16 KB 实体机或 x86_64/32-bit 真机；完整 message suite 仍为 4/11 通过，Node 其他类别及 flaky/status 排除项未覆盖。A3.6 继续开放，产品 Node/npm/CLI 入口继续关闭。
 - **retrieval_feedback：**采用本节之前 Node 24.22.3 构建、`node_metadata.cc` 和 16 KB ELF 结论作为排查基线；复核临时头文件、构建图、打包 ELF、设备和探针脚本。旧的 v24.22.1-0 固定发布包与 24.22.3 源重建不是同一候选，因此只修正临时重建的元数据，不修改正式固定包。
+
+
+## 2026-11-15 Node 默认 Android 测试套件真机验收
+
+- **候选与设备：**沿用临时 Node 24.22.3-0 arm64 构建。未剥离 `libnode.so` SHA-256 `8282b0c698d6b0b78d986f5feccc418e2b1a66c9dba158825798e85ad1c44f40`；测试 APK SHA-256 `cc3cbb4bbaa68608258b5016ea4a2a346a39d2affbea56e863fe9314d89afce3`；包内 stripped `libnode.so` SHA-256 `5835a04c5c99405e8b6ea7b887d2c0c24ae68e49abadb1102960aa17a4dd5f3f`。在 LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096` 真机运行；未使用模拟器。
+- **命令与覆盖：**从临时 Node 源树运行 `tools/test.py --arch android --flaky-tests=skip --report -j1`。初始报告列出 5,586 项，其中 998 项按测试状态或 flaky 配置跳过，配置执行 4,588 项；命令虽带 `--report` 仍继续运行测试。测试运行器最终退出码为 1。桌面工具截断了末段进度输出；最后能复核的进度为 99%、4,181 通过、403 失败，不能据此冒充完整最终分项计数。未配置重试。
+- **失败特征：**大量子进程测试试图再次启动 `/system/bin/app_process64`，Android 输出 `Error changing dalvik-cache ownership : Permission denied`，随后返回 SIGABRT 或缺少子进程输出；日志还出现 `FORTIFY: pthread_mutex_lock called on a destroyed mutex`。该现象分布于 module hooks、ESM/WASM、test runner、WASI 和 client-proxy 等用例。watch 用例出现未完成的顶层 await/等待超时；pseudo-tty 用例不具备宿主 stdin/TTY 转发，控制台颜色与输入断言不匹配。这些结果证明当前嵌入测试代理/应用沙箱不能满足这批 Node 子进程和交互测试契约；它们不是产品 npm/CLI 功能通过证据，也不能仅凭日志断定是 `libnode.so` 本身缺陷。
+- **测试代理处理：**pseudo-tty 测试令牌的 shell 随机字节管道在测试子进程内持续占用 CPU。只在 `/private/tmp/aggregate-nodejs-mobile-out-24.22.3-linux/out/android.release/node` 将请求关联令牌改为 `${RANDOM}${RANDOM}$$`，使 suite 能继续；没有改动 Node 源码、测试源码或预期基线，也没有提交临时代理文件。该调整不改变测试断言或 Android 子进程启动方式。
+- **清理与边界：**测试 APK `nodejsmobile.test.testnode` 已卸载，确认包路径不存在；Aggregate 主应用 `io.github.guog962464.aggregate` 仍安装。真机页面大小为 4 KB。本轮不覆盖 16 KB 真机、x86_64/32-bit 真机、flaky/status 排除用例、完全跳过的测试目录或产品 CLI/npm 接入；未改变产品代码。默认套件失败使 A3.6 保持开放，Node/npm/CLI 产品入口继续关闭。
+- **verified_scope：**仅临时 Node 24.22.3-0 arm64 候选在 LGE AN10 4 KB 真机上的这次 Node 默认 Android 测试配置；执行退出码、初始筛选数、末段可见进度和失败类别有证据。因为最终计数被工具截断，本条不声称精确总通过/失败数。
+- **retrieval_feedback：**在既有 240 项 curated、3,790 项 parallel/sequential 和 11 项 message suite 记录之后，扩展到默认 Android Node 测试配置。没有过滤失败、修改断言或把运行器限制归类为通过；下次复测应使用可持久化完整输出的 runner 日志，并单独提供能转发子进程环境、stdio 和 TTY 的 Android 执行代理。
