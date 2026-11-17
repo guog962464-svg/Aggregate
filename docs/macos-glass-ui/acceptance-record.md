@@ -406,3 +406,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 控制路径：VoiceOver Utility 的“允许 AppleScript 控制 VoiceOver”原本关闭，复核中保持关闭；Utility 的无障碍操作在该窗口上超时，因此未通过脚本控制绕过真实导航。已将全局分组偏好恢复为“标准”，并在系统设置确认关闭 VoiceOver。
 - 收尾：退出隔离 Profile 探针、VoiceOver Utility 和系统设置；删除 `/private/tmp/aggregate-voiceover2`、临时 XCTest 目录及字幕 OCR 文件。复核后 `git worktree list` 仅有主工作区，进程查询无这三个任务应用残留；主工作区仅有用户原先修改的 `pubspec.lock`，未改动、未暂存。
 - 结论：本轮没有完成可复核的 VoiceOver 控件朗读，不改变 UI-5.4 / UI-5.7 的部分验收结论；仍需用可靠的 VoiceOver 输入完成设置页主流程，并核对控件名称、状态和顺序。
+
+### 2026-11-17 Xcode VoiceOver UI 测试探针
+
+- 方法：在临时 worktree 将 macOS `RunnerTests` 改为 UI testing bundle，编译调用 `XCUIDevice.shared.voiceOverService` 的探针；Flutter Profile 预览应用构建成功。此改动只在临时 worktree，未带回项目。
+- 结果：初次运行因测试运行器未签名而被 macOS 安全策略阻止；改为有效签名后运行器进程可启动，但 Xcode 仍未创建测试 worker，`.xcresult` 显示 `totalTestCount=0` / `result=unknown`，Flutter AUT 与 VoiceOver 均未启动。故这不是实际朗读结果，也不能据此判断 `XCUIVoiceOverService` API 可用性或应用语义。
+- 收尾：停止 Xcode 后台测试运行器，退出相关进程，删除临时 worktree 和结果包；系统 VoiceOver 保持关闭、全局分组恢复“标准”、AppleScript 控制保持关闭。主工作区原有 `pubspec.lock` 未动、未暂存。
+- 结论：Xcode UI 测试 harness 配置/启动问题仍待定位；UI-5.7 VoiceOver 主流程保持部分验收。下一次应先用最小原生 macOS UI testing target 单独验证 runner/worker 生命周期，再接入 Flutter 预览应用。
