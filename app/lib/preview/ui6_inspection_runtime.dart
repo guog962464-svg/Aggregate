@@ -29,12 +29,14 @@ final class Ui6InspectionRuntime
   final Map<String, StreamController<String>> _terminalStreams = {};
   final Map<String, List<String>> _terminalInitialOutput = {};
   final Map<String, JsonMap> _actionManifests = {};
+  final List<RunSummary> _filterStateInspectionActivities = [];
   StreamController<RunEvent>? _inspectionRunEvents;
   var _target = ExecutionTarget.device;
   var _draftCounter = 0;
   var _connectionCounter = 0;
   var _terminalCounter = 0;
   var _activitySeeded = false;
+  var _filterStateActivitiesSeeded = false;
   RunSummary? _runningInspectionActivity;
   AccountSnapshot _musicAccount = const AccountSnapshot(
     AccountState.signedIn,
@@ -52,7 +54,10 @@ final class Ui6InspectionRuntime
 
   /// Seeds local, disposable ActivityPage states for visual inspection.
   /// This method never invokes a host process, network service, or user data.
-  Future<void> seedActivityForInspection({bool includeRunning = false}) async {
+  Future<void> seedActivityForInspection({
+    bool includeRunning = false,
+    bool includeFilterStates = false,
+  }) async {
     if (!_activitySeeded) {
       _activitySeeded = true;
       await _preview.invoke(_activityStatusCapability, const {});
@@ -66,6 +71,24 @@ final class Ui6InspectionRuntime
         const {},
       );
       await _preview.cancel(pending.id);
+    }
+    if (includeFilterStates && !_filterStateActivitiesSeeded) {
+      _filterStateActivitiesSeeded = true;
+      _filterStateInspectionActivities.addAll([
+        _inspectionTerminalActivity(
+          id: 'ui6-inspection-timed-out',
+          state: RunState.timedOut,
+          failure: const RuntimeFailure(RuntimeErrorCode.timedOut, '仅内存预览超时'),
+        ),
+        _inspectionTerminalActivity(
+          id: 'ui6-inspection-outcome-unknown',
+          state: RunState.outcomeUnknown,
+          failure: const RuntimeFailure(
+            RuntimeErrorCode.outcomeUnknown,
+            '仅内存预览结果待确认',
+          ),
+        ),
+      ]);
     }
     if (!includeRunning || _runningInspectionActivity != null) return;
 
@@ -81,6 +104,25 @@ final class Ui6InspectionRuntime
       runId,
       _activityStatusCapability,
       running,
+    );
+  }
+
+  RunSummary _inspectionTerminalActivity({
+    required String id,
+    required RunState state,
+    required RuntimeFailure failure,
+  }) {
+    final runId = RunId(id);
+    return RunSummary(
+      runId,
+      _activityStatusCapability,
+      RunEvent(
+        runId: runId,
+        sequence: 1,
+        state: state,
+        occurredAt: DateTime.now(),
+        failure: failure,
+      ),
     );
   }
 
@@ -383,6 +425,8 @@ final class Ui6InspectionRuntime
   Future<void> clearActivity() async {
     await _preview.clearActivity();
     _runningInspectionActivity = null;
+    _filterStateInspectionActivities.clear();
+    _filterStateActivitiesSeeded = false;
     _activitySeeded = false;
     await _inspectionRunEvents?.close();
     _inspectionRunEvents = null;
@@ -471,7 +515,7 @@ final class Ui6InspectionRuntime
   Future<List<RunSummary>> listRecentRuns() async {
     final runs = await _preview.listRecentRuns();
     final activity = _runningInspectionActivity;
-    return activity == null ? runs : [activity, ...runs];
+    return [?activity, ..._filterStateInspectionActivities, ...runs];
   }
 
   @override

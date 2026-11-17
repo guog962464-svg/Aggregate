@@ -62,6 +62,40 @@ void main() {
     },
   );
 
+  test(
+    'UI inspection can seed missing activity filter states idempotently',
+    () async {
+      final runtime = Ui6InspectionRuntime();
+
+      await runtime.seedActivityForInspection(includeFilterStates: true);
+      await runtime.seedActivityForInspection(includeFilterStates: true);
+      final runs = await runtime.listRecentRuns();
+      final states = runs.map((run) => run.latest.state).toSet();
+
+      expect(runs, hasLength(5));
+      expect(
+        states,
+        containsAll({
+          RunState.succeeded,
+          RunState.failed,
+          RunState.cancelled,
+          RunState.timedOut,
+          RunState.outcomeUnknown,
+        }),
+      );
+      expect(runs.map((run) => run.id.value).toSet(), hasLength(runs.length));
+      expect(
+        runs.every(
+          (run) => run.capability.connection.value.startsWith('ui6-review-'),
+        ),
+        isTrue,
+      );
+
+      await runtime.clearActivity();
+      expect(await runtime.listRecentRuns(), isEmpty);
+    },
+  );
+
   testWidgets('activity list builds more rows as the list scrolls', (
     tester,
   ) async {

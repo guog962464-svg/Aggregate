@@ -19,7 +19,7 @@
 | B004 | `app/lib/app/app_shell.dart:620` | 应用外壳：顶部操作、全局导航 | 暗色首页 `01-home-dark.png`；浅色设置页 `38-settings-light.png` 可见全局搜索入口及侧栏；仅截图中可见实例，动态状态待核 |
 | B005 | `app/lib/features/activity/activity_page.dart:116` | 活动页：记录操作与列表状态 | 深色 `57-activity-dark.png`、浅色 `60b-activity-all-light-current.png` 可见刷新按钮；浅色失败筛选后触发刷新，样例仍在；局部实例已目视 |
 | B006 | `app/lib/features/activity/activity_page.dart:172` | 活动页：记录操作与列表状态 | 深色活动图可见成功/失败/取消行；浅色失败行 `59c-activity-failed-list-light.png` 被选中并打开详情；全量列表含本地样例记录 |
-| B007 | `app/lib/features/activity/activity_page.dart:229` | 活动页：记录操作与列表状态 | 深/浅截图可见七个筛选；点击失败筛选后只显示失败记录，点“全部”恢复完整样例列表；其余筛选动态状态待核 |
+| B007 | `app/lib/features/activity/activity_page.dart:229` | 活动页：记录操作与列表状态 | 深/浅截图可见七个筛选；浅色 Profile 实窗逐个选择成功、失败、取消、超时、运行中、结果待确认，列表各仅显示对应状态；点“全部”后恢复六类样例。仅本地 fixture，动态动效逐项和真实服务记录仍待核 |
 | B008 | `app/lib/features/activity/activity_page.dart:263` | 活动页：记录操作与列表状态 | 浅深紧凑详情可见返回记录；浅色 `59c-activity-failed-list-light.png` 为点击后回到失败列表的状态 |
 | B009 | `app/lib/features/activity/activity_page.dart:282` | 活动页：记录操作与列表状态 | 深浅失败详情 `58a-activity-failed-detail-dark-scrolled.png`、`59b-activity-failed-detail-light-scrolled.png` 可见“重新打开功能”；未打开功能。现有 widget 测试另覆盖运行中“查看运行”按钮 |
 | B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 深/浅 Profile 的运行中列表及详情均已截图；两种主题滚至操作区后“取消运行”语义点击成功，AX 状态变为“已取消”。浅色按钮与 MiniPlayer 暂停控件 AX 矩形相隔 11 个逻辑像素。仅验证隔离内存 fixture，真实服务响应仍待核 |
