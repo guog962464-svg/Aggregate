@@ -148,14 +148,31 @@ Future<void> _verifyScenario(
         usesDarkForeground: useDarkForeground,
         addContrastHalo: needsHalo,
       );
-      final textStyle = textTheme.textTheme.bodyMedium!;
-      expect(textStyle.color, foreground);
-      expect(textStyle.shadows?.length ?? 0, needsHalo ? 8 : 0);
-      if (needsHalo) {
-        expect(
-          textStyle.shadows!.every((shadow) => shadow.color == halo),
-          isTrue,
-        );
+      final textStylesUnderTest = [
+        textTheme.textTheme.headlineMedium!,
+        textTheme.textTheme.titleMedium!,
+        textTheme.textTheme.bodyMedium!,
+        textTheme.textTheme.bodySmall!,
+        textTheme.listTileTheme.titleTextStyle!,
+        textTheme.listTileTheme.subtitleTextStyle!,
+      ];
+      for (final textStyle in textStylesUnderTest) {
+        expect(textStyle.color, foreground);
+        expect(textStyle.shadows?.length ?? 0, needsHalo ? 8 : 0);
+        if (needsHalo) {
+          expect(
+            textStyle.shadows!.every((shadow) => shadow.color == halo),
+            isTrue,
+          );
+        }
+      }
+      for (final buttonLabelStyle in [
+        textTheme.textTheme.labelLarge!,
+        textTheme.textTheme.labelMedium!,
+        textTheme.textTheme.labelSmall!,
+      ]) {
+        expect(buttonLabelStyle.color, foreground);
+        expect(buttonLabelStyle.shadows, isNull);
       }
 
       final boundary = tester.renderObject<RenderRepaintBoundary>(

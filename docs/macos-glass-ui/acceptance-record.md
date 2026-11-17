@@ -260,6 +260,7 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - 补验目标：确认设置页文字描边与前景交接回归在浅色偏好启动时也覆盖正确的生产 shader 背景，而不只在深色偏好启动时成立。
 - 方法：`macos_dynamic_backdrop_text_contrast_test.dart` 现在分别以深色、浅色偏好启动真实 `AggregateApp` PreviewRuntime，再对设置页正文实际矩形重复生产 `glass_scene.frag` 的十个转场相位采样；窗口为 800×600、1024×768、1440×900，DPR 各为 1×/2×，合计 12 组启动偏好/窗口/DPR 组合。每相位仍检查中段描边对背景至少 3:1、正文色对描边至少 7:1，轮廓区外文字色对至少 4.5:1，并在基准样本确认描边窗口确有必要。
+- 样式范围：每个相位另断言页标题、分节标题、正文/副标题和 `ListTile` 标题/副标题同步采用当前黑/白前景及八向描边；三种标签文字维持无描边。此项验证 ThemeData 样式传播，不把其他文字矩形登记为已完成像素采样。
 - 结果：`flutter test --no-pub --reporter compact test/macos_dynamic_backdrop_text_contrast_test.dart` 通过；`dart format` 无改写。该测试从十个相位重放 shader 状态，不是原生窗口的实时输入或 display-present 捕获。
 - 结论与边界：关闭了该回归的“仅深色偏好启动”缺口。禁用态、其他页面材质、VoiceOver 与原生显示捕获仍待验收，UI-5.5 继续部分验收。未改主题模拟、按钮交互或生产色彩阈值。
 
