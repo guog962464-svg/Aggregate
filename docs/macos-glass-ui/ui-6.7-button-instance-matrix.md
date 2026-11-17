@@ -45,8 +45,8 @@
 | B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅/深图 `51-connection-target-light.png`、`51-connection-target-dark.png` 可见本机 Mac 目标；仅打开内存预览配置表单 |
 | B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅/深目标图可见虚构配对 Mac 选项；未选择或连接设备 |
 | B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅/深目标图可见取消按钮；选择目标后在配置表单取消退出 |
-| B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 删除确认对话框取消按钮未捕获 |
-| B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 删除确认按钮未捕获，未删除连接 |
+| B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 深色删除确认图 `55-delete-confirm-dark.png` 可见取消按钮；AX 点击未关闭，最终按 Escape 退出；浅色状态仍待核 |
+| B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 深色删除确认图 `55-delete-confirm-dark.png` 可见危险操作；未点击，未删除内存样例；浅色状态仍待核 |
 | B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅/深连接列表图 `50-connections-list-light.png`、`50-connections-list-dark.png` 可见添加连接按钮并打开目标选择器 |
 | B036 | `app/lib/features/connections/connections_page.dart:332` | 连接管理：连接行、筛选与操作 | 紧凑布局返回按钮未捕获；本次为宽布局 |
 | B037 | `app/lib/features/connections/connections_page.dart:366` | 连接管理：连接行、筛选与操作 | 打开连接工作区按钮在本次 fixture 未呈现，仍待核 |
@@ -55,7 +55,7 @@
 | B040 | `app/lib/features/connections/connections_page.dart:440` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见编辑动作入口；打开编辑器后只查看并取消 |
 | B041 | `app/lib/features/connections/connections_page.dart:445` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见测试连接按钮；未点击 |
 | B042 | `app/lib/features/connections/connections_page.dart:450` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见删除连接入口；未点击，确认弹窗仍待核 |
-| B043 | `app/lib/features/connections/connections_page.dart:500` | 连接管理：连接行、筛选与操作 | 浅/深列表图显示三条样例连接行及选中态；只核对截图中的实例 |
+| B043 | `app/lib/features/connections/connections_page.dart:500` | 连接管理：连接行、筛选与操作 | 浅色图 `56-connection-detail-light.png` 显示选中的内存样例连接详情；列表和详情静态实例已目视，动态状态待核 |
 | B044 | `app/lib/features/connections/connections_page.dart:724` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见程序路径选择图标；未打开文件面板 |
 | B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见动作清单选择图标；未打开文件面板 |
 | B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见取消按钮并用于退出；未保存 |
