@@ -32,6 +32,7 @@ void main() {
   late _SandboxSetupPort setupPort;
   late AndroidHostPairingClient client;
   late String deviceId;
+  _TcpTunnelProxy? proxy;
   AndroidHostManager? manager;
 
   setUp(() async {
@@ -39,6 +40,7 @@ void main() {
       'aggregate-android-host-setup-e2e-',
     );
     manager = null;
+    proxy = null;
     final publicKey = base64Decode(publicKeySpkiBase64);
     deviceId = HostPairingProtocol.deviceIdForPublicKey(publicKey);
     final provider = _FixtureIdentityProvider(
@@ -85,8 +87,9 @@ void main() {
   });
 
   tearDown(() async {
-    await transport.stop();
     await manager?.dispose();
+    await proxy?.close();
+    await transport.stop();
     await directory.delete(recursive: true);
   });
 
@@ -198,6 +201,70 @@ void main() {
       expect(manager!.statusFor(hostId), AndroidHostStatus.online);
       expect(manager!.isConnected(hostId), isTrue);
       expect(manager!.hosts.single.endpoints.single.uri.port, savedPort);
+    },
+  );
+
+  test(
+    'reports an abrupt TCP tunnel drop as offline and reconnects manually',
+    () async {
+      final androidDirectory = Directory('${directory.path}/android-app')
+        ..createSync();
+      manager = AndroidHostManager(
+        AndroidRuntimeStore(androidDirectory),
+        pairingClient: client,
+        discovery: const _NoopHostDiscovery(),
+      );
+      await manager!.load();
+
+      final issued = await transport.createInvitation();
+      final parsed = AndroidHostInvitation.fromQrPayload(issued.qrPayload);
+      proxy = await _TcpTunnelProxy.start(
+        targetPort: parsed.endpoints.single.uri.port,
+      );
+      final invitation = AndroidHostInvitation(
+        hostId: parsed.hostId,
+        certificateSha256: parsed.certificateSha256,
+        nonce: parsed.nonce,
+        expiresAt: parsed.expiresAt,
+        endpoints: [
+          AndroidHostEndpoint(
+            Uri(
+              scheme: 'wss',
+              host: InternetAddress.loopbackIPv4.address,
+              port: proxy!.port,
+              path: '/host',
+            ),
+          ),
+        ],
+      );
+      await manager!.requestPairing(
+        invitation: invitation,
+        displayName: 'Android abrupt disconnect fixture',
+      );
+      await transport.approvePending(
+        deviceId,
+        scopes: const {HostGrantScope.readConnections},
+      );
+      await manager!.completePairing(
+        invitation: invitation,
+        displayName: 'Android abrupt disconnect fixture',
+      );
+      expect(manager!.statusFor(hostId), AndroidHostStatus.online);
+
+      final offlineChange = manager!.statusChanges.firstWhere(
+        (change) =>
+            change.hostId == hostId &&
+            change.status == AndroidHostStatus.offline,
+      );
+      await proxy!.dropActiveTunnels();
+      await offlineChange.timeout(const Duration(seconds: 2));
+      expect(manager!.isConnected(hostId), isFalse);
+      expect(manager!.statusFor(hostId), AndroidHostStatus.offline);
+
+      await manager!.connect(hostId);
+      expect(manager!.statusFor(hostId), AndroidHostStatus.online);
+      expect(manager!.isConnected(hostId), isTrue);
+      expect(manager!.hosts.single.endpoints.single.uri.port, proxy!.port);
     },
   );
 
@@ -384,6 +451,87 @@ final class _LoopbackAddressProvider implements HostWssBindAddressProvider {
   Future<List<HostWssBindTarget>> addresses() async => [
     HostWssBindTarget(address: InternetAddress.loopbackIPv4, interfaceIndex: 1),
   ];
+}
+
+final class _TcpTunnelProxy {
+  _TcpTunnelProxy._(this._server, this._targetPort);
+
+  final ServerSocket _server;
+  final int _targetPort;
+  final List<_TcpTunnel> _tunnels = [];
+
+  int get port => _server.port;
+
+  static Future<_TcpTunnelProxy> start({required int targetPort}) async {
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final proxy = _TcpTunnelProxy._(server, targetPort);
+    server.listen(proxy._accept);
+    return proxy;
+  }
+
+  Future<void> _accept(Socket downstream) async {
+    try {
+      final upstream = await Socket.connect(
+        InternetAddress.loopbackIPv4,
+        _targetPort,
+      );
+      final tunnel = _TcpTunnel(downstream, upstream);
+      _tunnels.add(tunnel);
+      tunnel.forward();
+    } on Object {
+      downstream.destroy();
+    }
+  }
+
+  Future<void> dropActiveTunnels() async {
+    if (_tunnels.isEmpty) {
+      throw StateError('No TCP tunnel was established');
+    }
+    for (final tunnel in _tunnels) {
+      tunnel.destroy();
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+
+  Future<void> close() async {
+    await _server.close();
+    for (final tunnel in _tunnels) {
+      tunnel.destroy();
+    }
+    _tunnels.clear();
+  }
+}
+
+final class _TcpTunnel {
+  _TcpTunnel(this._downstream, this._upstream);
+
+  final Socket _downstream;
+  final Socket _upstream;
+
+  void forward() {
+    _pipe(_downstream, _upstream);
+    _pipe(_upstream, _downstream);
+  }
+
+  void _pipe(Socket source, Socket target) {
+    source.listen(
+      (data) {
+        try {
+          target.add(data);
+        } on Object {
+          destroy();
+        }
+      },
+      onError: (Object _) => destroy(),
+      onDone: target.destroy,
+      cancelOnError: true,
+    );
+  }
+
+  void destroy() {
+    _downstream.destroy();
+    _upstream.destroy();
+  }
 }
 
 final class _NoopHostDiscovery implements AndroidHostDiscoveryPort {

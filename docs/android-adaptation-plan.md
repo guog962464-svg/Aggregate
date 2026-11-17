@@ -209,6 +209,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-17 loopback WSS Host restart 集成补验：AndroidHostManager 经临时证书/真实 pinned TLS/WSS 配对后，Host transport 停止会使 Android session stream 结束并转 offline；同端口、同证书重启隔离 Host fixture 后，利用保存 endpoint 显式 connect、重新认证 host.hello 并恢复 online。该文件 3 项通过；当前全量 Flutter suite 296 项及 analyze 通过。范围仅为同进程 loopback Host stop/start，不含 Android 系统、Wi‑Fi/TCP abrupt drop、NSD 自动发现/重连、production Host 或 16 KB 设备；A5.5 仍开放。详见 [A5.5 WSS 生命周期验收记录](android-a5-android-client.md#2026-11-17-loopback-wss-host-stopstart-手动重连集成测试)。
 
+  - 2026-11-17 loopback WSS 突然断流补验：新增 TCP 透传夹具，在不终止 TLS/WSS 的前提下销毁两端 loopback TCP socket，不发 WebSocket close frame；验证 AndroidHostManager 转 offline，再通过保存 endpoint 显式连接、重新认证并恢复 online。该文件 4 项通过，全量 Flutter suite 297 项、全量 analyze 通过。此项只证明隔离 loopback 传输断流与手动重连，不断言 TCP RST、Wi‑Fi/Android OS/NSD 行为或自动重连；A5.5 意外网络中断实机验收仍开放。详见 [A5.5 突然断流记录](android-a5-android-client.md#2026-11-17-loopback-wss-突然断流与手动重连集成测试)。
+
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 
 **依赖：**A2 + A5；若 A4 通过，可附加白名单本地 JS 执行器。

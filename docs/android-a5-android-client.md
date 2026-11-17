@@ -81,3 +81,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 在 `android_host_setup_wss_e2e_test.dart` 增加 AndroidHostManager→真实 Dart WSS transport 集成场景：通过临时测试证书、证书 SHA-256 pin 与配对流程建立 loopback TLS/WSS 会话；调用 Host transport stop 后确认 Android 会话流结束、Manager 状态变 offline；在相同 loopback 端口与证书重启 Host fixture，再用已保存 endpoint 显式 `manager.connect()`，重新认证 `host.hello` 并恢复 online。
 - Host 配对 store、setup runtime 和操作账本均为隔离测试夹具；没有连接 production Host 或执行真实用户写操作。`flutter test --no-pub --reporter expanded test/android_host_setup_wss_e2e_test.dart`：3 项通过；其后全量 Flutter suite 296 项通过；全量 `flutter analyze --no-pub` 无问题；`dart format` 无改动。
 - 范围：这是同进程的 loopback WSS transport 停止/重启，不是 TCP RST、Wi-Fi/路由切断、Android 系统/NSD 或 16 KB 实机；重连由测试显式调用，不证明自动重试。A5.5 意外网络掉线实机验收仍开放。
+
+## 2026-11-17 loopback WSS 突然断流与手动重连集成测试
+
+- 在 `android_host_setup_wss_e2e_test.dart` 新增只绑定 loopback 的 TCP 透传夹具：它转发客户端与隔离 Host 之间的 TLS/WSS 字节，不终止 TLS；配对后同时销毁代理两端 TCP socket，不发送 WebSocket close frame。断言 AndroidHostManager 将会话标为 offline、释放在线 session，再通过保存的代理 endpoint 显式连接、重新认证并恢复 online。
+- `flutter test --no-pub --reporter expanded test/android_host_setup_wss_e2e_test.dart`：4 项通过；全量 `flutter test --no-pub --reporter compact`：297 项通过；全量 `flutter analyze --no-pub` 无问题；`dart format` 无改动。
+- 范围：这验证 loopback 下没有 WebSocket close frame 的传输断流和手动重连；不保证底层关闭一定表现为 TCP RST，也不覆盖 Wi-Fi/路由切换、Android OS/NSD、自动重连、production Host 或 16 KB 设备。A5.5 的意外网络中断实机验收仍开放。
