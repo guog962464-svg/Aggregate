@@ -21,6 +21,12 @@
 - A3 固定探针的进程崩溃、整 App 重启、重装和后台 `am kill` 后恢复回归通过。普通 Flutter Debug APK 构建并安装成功，包内无 `libnode.so`、JNI 探针或 A4 包资源。
 - **状态**：A4.1 与 A4.2 的 JSON5 样本在上述 4 KB Debug 真机范围内通过，包含实际 APK 包版本升级、文件树清理、配置保留、bundle 对照、成功/非零退出、输出采集、并发拒绝及进程级取消/恢复。该结果不代表设备端 `npm install`、任意 CLI、其他包或产品适配器已经通过。
 
+## A4.2 Node 24.22.3 test-signed Release JSON5 CLI 补验（2026-11-17）
+
+- 使用 NodeProbe arm64 Release 测试签名 APK（SHA-256 `497a13780722206cce30e88c327457dffd6cddb12d193a834b943ff5c070a632`），在 LGE AN10 / Android 15 / API 35 / 4 KB 页真机运行固定 JSON5 2.2.3 `lib/cli.js` 入口。
+- `--version` 与 `--help` 均收到 Messenger `kind=3` 终态：前者 stdout 为 `2.2.3\n`，后者包含 `Usage: json5`；stderr 为空，退出码为 0。实际参数通过 NodeProbe 既有 `a4-json5-cli` intent allowlist 传入。
+- 非 debuggable Release 的结果从 ProbeActivity logcat 读取；执行后卸载隔离 NodeProbe。该补验只覆盖固定 JSON5 入口和两个只读参数，不验证任意包的 CLI、TTY/子进程/原生工具或 Aggregate 产品入口；不改变 Android 通用 CLI 转交 Mac Host 的产品边界。
+
 ## `@music163/ncm-cli` 0.1.7 静态包审查
 
 - npm registry 当前 latest 仍为 0.1.7，要求 Node >=18，bin 为 `dist/index.js`；直接包 1,299,976 字节、解包 3,164,804 字节，仅 4 个文件，未捆绑依赖。运行依赖包括 `@clack/prompts`、`commander`、`fluent-ffmpeg`、`ffprobe-static`、`qrcode-terminal` 等。
