@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#131d28" />
+    <title>光，在玻璃里转身</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Avenir Next", "Segoe UI", sans-serif;
+        background: #131d28;
+        color: #f5f7fa;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: #131d28;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      #scene { z-index: 0; }
+      #glass { z-index: 1; }
+
+      #toggle {
+        --focus-color: #bfe8ff;
+        position: fixed;
+        z-index: 2;
+        top: 60%;
+        left: 50%;
+        width: min(78vw, 568px);
+        height: 172px;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: inherit;
+        transform: translate(-50%, -50%);
+        cursor: grab;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #toggle:active { cursor: grabbing; }
+
+      #toggle:focus { outline: none; }
+
+      #toggle.keyboard-focus {
+        outline: 2px solid var(--focus-color);
+        outline-offset: 8px;
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--focus-color) 18%, transparent);
+      }
+
+      #fallback {
+        display: none;
+        position: fixed;
+        z-index: 3;
+        left: 50%;
+        top: calc(60% + 122px);
+        max-width: min(88vw, 420px);
+        padding: 9px 13px;
+        border: 1px solid #b8c8d4;
+        border-radius: 8px;
+        background: rgba(22, 32, 44, .92);
+        color: #f5f7fa;
+        font-size: 13px;
+        text-align: center;
+        transform: translateX(-50%);
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 640px) {
+        #toggle {
+          top: 61%;
+          width: 88vw;
+          height: 112px;
+        }
+
+        #fallback { top: calc(61% + 88px); }
+      }
+
+      @media (max-height: 600px) and (min-width: 641px) {
+        #toggle { top: 59%; height: 136px; }
+        #fallback { top: calc(59% + 104px); }
+      }
+    </style>
+  </head>
+  <body>
+    <main aria-labelledby="page-title">
+      <h1 id="page-title" class="sr-only">光，在玻璃里转身</h1>
+      <p class="sr-only">明暗外观切换。可以拖动透镜、点击开关或使用方向键。移动时，像素图案会连续变形。</p>
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <canvas id="glass" aria-hidden="true"></canvas>
+      <button
+        id="toggle"
+        type="button"
+        role="switch"
+        aria-label="深色外观"
+        aria-checked="false"
+        aria-describedby="switch-help"
+      ></button>
+      <span id="switch-help" class="sr-only">点击、拖动或使用左右方向键切换页面外观。</span>
+      <span id="switch-status" class="sr-only" aria-live="polite">已选择深色外观。</span>
+      <p id="fallback" role="status">此页面需要 WebGL 才能绘制玻璃光学效果。仍可使用键盘切换外观。</p>
+    </main>
+
+    <script>
+      (() => {
+        'use strict';
+
+        const sceneCanvas = document.querySelector('#scene');
+        const glassCanvas = document.querySelector('#glass');
+        const toggle = document.querySelector('#toggle');
+        const status = document.querySelector('#switch-status');
+        const fallback = document.querySelector('#fallback');
+        let inputMode = 'pointer';
+        const sceneContext = sceneCanvas.getContext('2d', { alpha: false, desynchronized: true });
+        const gl = glassCanvas.getContext('webgl', {
+          alpha: true,
+          antialias: true,
+          premultipliedAlpha: false,
+          preserveDrawingBuffer: false,
+          powerPreference: 'high-performance',
+        });
+
+        const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+        const mix = (a, b, amount) => a + (b - a) * amount;
+        const mixRgb = (a, b, amount) => a.map((value, index) => Math.round(mix(value, b[index], amount)));
+        const rgb = (value) => `rgb(${value[0]} ${value[1]} ${value[2]})`;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+        const vertexSource = `
+          attribute vec2 aPosition;
+          void main() {
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+          }
+        `;
+
+        // One fragment shader owns the rail, lens, refraction, frost, bevel, arc and page spill.
+        const fragmentSource = `
+          precision highp float;
+
+          uniform vec2 uViewport;
+          uniform vec2 uTrackSize;
+          uniform float uCenterY;
+          uniform float uKnobSize;
+          uniform float uProgress;
+          uniform float uBandAngle;
+          uniform float uHover;
+          uniform float uDpr;
+          uniform sampler2D uScene;
+          uniform sampler2D uParticles;
+          uniform float uParticleCount;
+
+          float sdRoundBox(vec2 p, vec2 b, float r) {
+            vec2 q = abs(p) - b + vec2(r);
+            return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+          }
+
+          vec2 sdfNormal(vec2 p, vec2 bounds, float radius) {
+            float e = 1.25;
+            return normalize(vec2(
+              sdRoundBox(p + vec2(e, 0.0), bounds, radius) - sdRoundBox(p - vec2(e, 0.0), bounds, radius),
+              sdRoundBox(p + vec2(0.0, e), bounds, radius) - sdRoundBox(p - vec2(0.0, e), bounds, radius)
+            ) + vec2(0.0001));
+          }
+
+          float angleDistance(float a, float b) {
+            return abs(atan(sin(a - b), cos(a - b)));
+          }
+
+          vec3 blurredScene(vec2 uv, vec2 axis, float radius) {
+            vec2 dx = vec2(radius / uViewport.x, 0.0);
+            vec2 dy = vec2(0.0, radius / uViewport.y);
+            vec2 skew = axis * radius * 0.42 / uViewport;
+            vec3 center = texture2D(uScene, uv).rgb;
+            vec3 sides = texture2D(uScene, uv + dx + skew).rgb
+                       + texture2D(uScene, uv - dx - skew).rgb
+                       + texture2D(uScene, uv + dy - skew).rgb
+                       + texture2D(uScene, uv - dy + skew).rgb;
+            return center * 0.42 + sides * 0.145;
+          }
+
+          void main() {
+            vec2 glPx = gl_FragCoord.xy / uDpr;
+            vec2 p = vec2(glPx.x, uViewport.y - glPx.y);
+            vec2 texUv = glPx / uViewport;
+            vec2 center = vec2(uViewport.x * 0.5, uCenterY);
+            float travel = max(0.0, (uTrackSize.x - uKnobSize) * 0.5 - 11.0);
+            float knobOffset = (uProgress - 0.5) * 2.0 * travel;
+            vec2 knobCenter = center + vec2(knobOffset, 0.0);
+            vec2 local = p - knobCenter;
+            float knobRadius = uKnobSize * 0.235;
+            float dKnob = sdRoundBox(local, vec2(uKnobSize * 0.5), knobRadius);
+            float lens = 1.0 - smoothstep(-0.8, 1.1, dKnob);
+
+            vec3 nightInk = vec3(0.055, 0.086, 0.125);
+            vec3 dayMist = vec3(0.82, 0.864, 0.877);
+            vec3 nightEdge = vec3(0.24, 0.55, 0.76);
+            vec3 dayEdge = vec3(0.92, 0.58, 0.24);
+            vec3 glowColor = mix(vec3(0.32, 0.72, 1.0), vec3(1.0, 0.69, 0.31), uProgress);
+            vec3 tintColor = mix(vec3(0.33, 0.62, 0.82), vec3(1.0, 0.78, 0.48), uProgress);
+
+            float dTrack = sdRoundBox(p - center, uTrackSize * 0.5, uTrackSize.y * 0.43);
+            float trackMask = 1.0 - smoothstep(-1.0, 1.35, dTrack);
+            float trackRim = exp(-pow(dTrack / 2.5, 2.0));
+            float railFace = 1.0 - smoothstep(0.0, uTrackSize.y * 0.48, abs(p.y - center.y));
+            float lateral = clamp((p.x - (center.x - uTrackSize.x * 0.5)) / uTrackSize.x, 0.0, 1.0);
+            vec3 rail = mix(nightInk, dayMist, uProgress);
+            rail = mix(rail, mix(vec3(0.10, 0.15, 0.20), vec3(0.91, 0.93, 0.91), uProgress), lateral * 0.2);
+            rail += mix(nightEdge, dayEdge, uProgress) * (trackRim * 0.23 + railFace * 0.028);
+            float beamY = center.y - sin(uBandAngle) * uTrackSize.y * 0.31;
+            float movingRailBeam = exp(-abs(p.y - beamY) / 4.6)
+                                 * exp(-abs(p.x - knobCenter.x) / (uKnobSize * 0.70));
+            rail += glowColor * movingRailBeam * 0.22;
+
+            vec2 normal = sdfNormal(local, vec2(uKnobSize * 0.5), knobRadius);
+            float edgeFresnel = exp(-pow(dKnob / 4.8, 2.0));
+            float innerBevel = exp(-pow((dKnob + 8.0) / 2.8, 2.0));
+            float highlight = exp(-pow((local.x + uKnobSize * 0.19) / (uKnobSize * 0.25), 2.0)
+                                - pow((local.y + uKnobSize * 0.31) / (uKnobSize * 0.19), 2.0));
+
+            float theta = atan(-local.y, local.x);
+            float arcDistance = angleDistance(theta, uBandAngle);
+            float arc = exp(-pow(arcDistance / 0.32, 2.0));
+            float band = arc * exp(-pow(dKnob / 2.65, 2.0));
+
+            float refractionPx = 3.2 + edgeFresnel * 14.5 + innerBevel * 1.8;
+            vec2 bentUv = clamp(texUv + normal * refractionPx / uViewport, vec2(0.002), vec2(0.998));
+            float frost = mix(1.1, 2.8, 0.36 + 0.64 * edgeFresnel);
+            vec3 frosted = blurredScene(bentUv, normal, frost);
+            float dispersion = 1.4 + edgeFresnel * 5.2;
+            vec2 redUv = clamp(bentUv + normal * dispersion / uViewport, vec2(0.002), vec2(0.998));
+            vec2 blueUv = clamp(bentUv - normal * dispersion / uViewport, vec2(0.002), vec2(0.998));
+            vec3 refracted = vec3(texture2D(uScene, redUv).r, frosted.g, texture2D(uScene, blueUv).b);
+            float inside = smoothstep(0.0, 1.0, -dKnob);
+            vec3 glass = mix(refracted, tintColor, 0.075 + inside * 0.035);
+            glass += vec3(1.0) * (highlight * 0.17 + innerBevel * 0.12);
+            glass += mix(nightEdge, dayEdge, uProgress) * (edgeFresnel * 0.31 + band * 0.98);
+            glass -= vec3(0.045, 0.065, 0.075) * (1.0 - inside) * 0.5;
+
+            vec3 pixelColor = vec3(0.0);
+            float pixelAlpha = 0.0;
+            if (dKnob < 1.0) {
+              for (int i = 0; i < 64; i++) {
+                if (float(i) < uParticleCount) {
+                  vec4 particle = texture2D(uParticles, vec2((float(i) + 0.5) / 64.0, 0.5));
+                  vec2 particleCenter = (particle.rg * 2.0 - 1.0) * uKnobSize;
+                  float particleSize = max(1.2, particle.a * uKnobSize);
+                  vec2 pixelDelta = abs(local + normal * (refractionPx * 0.24) - particleCenter)
+                                  - vec2(particleSize * 0.37);
+                  float pixelDistance = length(max(pixelDelta, 0.0))
+                                      + min(max(pixelDelta.x, pixelDelta.y), 0.0)
+                                      - particleSize * 0.13;
+                  float core = 1.0 - smoothstep(-0.35, 0.75, pixelDistance);
+                  float haze = exp(-max(pixelDistance, 0.0) / (particleSize * 1.55)) * 0.11;
+                  vec3 nightPixel = vec3(0.68, 0.87, 1.0);
+                  vec3 dayPixel = vec3(0.65, 0.40, 0.15);
+                  vec3 pixel = mix(nightPixel, dayPixel, uProgress);
+                  float midflight = pow(clamp(1.0 - abs(uProgress - 0.5) * 2.0, 0.0, 1.0), 1.25) * 0.88;
+                  vec3 suspendedPixel = mod(float(i), 2.0) < 1.0 ? vec3(0.95, 0.97, 0.99) : vec3(0.29, 0.19, 0.12);
+                  pixel = mix(pixel, suspendedPixel, midflight) * particle.b;
+                  pixelColor += pixel * (core + haze) * 0.82;
+                  pixelAlpha = max(pixelAlpha, core * 0.92);
+                }
+              }
+            }
+            glass = mix(glass, clamp(pixelColor, 0.0, 1.0), pixelAlpha);
+
+            float shadow = exp(-pow(max(dKnob, 0.0) / 13.0, 1.25)) * 0.35 * (1.0 - lens) * 0.30;
+            float arcSpill = arc * exp(-max(dKnob, 0.0) / 25.0) * (1.0 - lens) * 0.72;
+            float knobGlow = exp(-length(local) / (uKnobSize * 0.9)) * 0.12;
+            float railWash = movingRailBeam * 0.68;
+            float pageGlow = clamp(max(max(arcSpill, knobGlow), railWash * 0.62), 0.0, 0.52);
+            float glowAlpha = pageGlow * (0.72 + uHover * 0.12);
+            vec3 glow = glowColor * (0.82 + uHover * 0.14);
+
+            vec3 color = rail;
+            color = mix(color, glass, lens);
+            color = mix(color, glow, glowAlpha);
+            float alpha = max(trackMask * 0.96, lens * 0.965);
+            alpha = max(alpha, glowAlpha);
+            alpha = max(alpha, shadow);
+
+            if (alpha < 0.002) {
+              gl_FragColor = vec4(0.0);
+            } else {
+              gl_FragColor = vec4(color, alpha);
+            }
+          }
+        `;
+
+        let program = null;
+        let positionLocation = -1;
+        let textureLocation = null;
+        let particleTextureLocation = null;
+        let uniforms = null;
+
+        function compileShader(type, source) {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            const message = gl.getShaderInfoLog(shader);
+            gl.deleteShader(shader);
+            throw new Error(message || 'Shader compilation failed.');
+          }
+          return shader;
+        }
+
+        function setupWebGL() {
+          if (!gl) return false;
+          try {
+            const vertex = compileShader(gl.VERTEX_SHADER, vertexSource);
+            const fragment = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+            program = gl.createProgram();
+            gl.attachShader(program, vertex);
+            gl.attachShader(program, fragment);
+            gl.linkProgram(program);
+            gl.deleteShader(vertex);
+            gl.deleteShader(fragment);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+              throw new Error(gl.getProgramInfoLog(program) || 'WebGL program link failed.');
+            }
+
+            gl.useProgram(program);
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+            positionLocation = gl.getAttribLocation(program, 'aPosition');
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+            textureLocation = gl.createTexture();
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textureLocation);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            gl.uniform1i(gl.getUniformLocation(program, 'uScene'), 0);
+            gl.activeTexture(gl.TEXTURE1);
+            particleTextureLocation = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, particleTextureLocation);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 64, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, particlePixels);
+            gl.uniform1i(gl.getUniformLocation(program, 'uParticles'), 1);
+            gl.uniform1f(gl.getUniformLocation(program, 'uParticleCount'), Math.min(particles.length, 64));
+            gl.activeTexture(gl.TEXTURE0);
+            uniforms = {
+              viewport: gl.getUniformLocation(program, 'uViewport'),
+              trackSize: gl.getUniformLocation(program, 'uTrackSize'),
+              centerY: gl.getUniformLocation(program, 'uCenterY'),
+              knobSize: gl.getUniformLocation(program, 'uKnobSize'),
+              progress: gl.getUniformLocation(program, 'uProgress'),
+              bandAngle: gl.getUniformLocation(program, 'uBandAngle'),
+              hover: gl.getUniformLocation(program, 'uHover'),
+              dpr: gl.getUniformLocation(program, 'uDpr'),
+              particleCount: gl.getUniformLocation(program, 'uParticleCount'),
+            };
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            return true;
+          } catch (error) {
+            console.error(error);
+            return false;
+          }
+        }
+
+        const moon = [];
+        const sun = [];
+        for (let y = -6; y <= 6; y += 1) {
+          for (let x = -6; x <= 6; x += 1) {
+            const r2 = x * x + y * y;
+            const shiftedMoonR2 = (x + 2.15) * (x + 2.15) + y * y;
+            if (r2 <= 28 && shiftedMoonR2 >= 20) moon.push({ x, y });
+
+            const onDisc = r2 <= 9;
+            const ray = Math.max(Math.abs(x), Math.abs(y)) >= 4
+              && Math.max(Math.abs(x), Math.abs(y)) <= 6
+              && (Math.abs(x) <= 1 || Math.abs(y) <= 1 || Math.abs(Math.abs(x) - Math.abs(y)) <= 1);
+            if (onDisc || ray) sun.push({ x, y });
+          }
+        }
+
+        function angle(point) { return Math.atan2(point.y, point.x); }
+        moon.sort((a, b) => angle(a) - angle(b));
+        sun.sort((a, b) => angle(a) - angle(b));
+        function hash(value) {
+          const raw = Math.sin(value * 127.1 + 311.7) * 43758.5453;
+          return raw - Math.floor(raw);
+        }
+        const particles = moon.map((source, index) => {
+          const targetIndex = Math.round(index * Math.max(0, sun.length - 1) / Math.max(1, moon.length - 1));
+          return {
+            source,
+            target: sun[targetIndex] || sun[0] || source,
+            delay: hash(index + 1) * 0.18,
+            spin: (hash(index + 53) - 0.5) * 1.45,
+            lift: (hash(index + 103) - 0.5) * 2.2,
+            shade: 0.69 + hash(index + 197) * 0.3,
+          };
+        });
+        const particlePixels = new Uint8Array(64 * 4);
+
+        const state = {
+          width: 0,
+          height: 0,
+          dpr: 1,
+          trackWidth: 0,
+          trackHeight: 0,
+          knobSize: 0,
+          centerY: 0,
+          progress: 0,
+          target: 0,
+          velocity: 0,
+          bandAngle: -Math.PI * 0.5,
+          bandVelocity: 0,
+          hover: 0,
+          hoverTarget: 0,
+          dragging: false,
+          pointerMoved: false,
+          grabOffset: 0,
+          lastPointerX: 0,
+          lastFrame: 0,
+          light: false,
+          suppressSyntheticClickUntil: 0,
+        };
+
+        function measure() {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const trackWidth = Math.min(width * (width <= 640 ? 0.88 : 0.78), 568);
+          const trackHeight = Math.min(width <= 640 ? 112 : 172, Math.max(112, trackWidth * 0.302));
+          const knobSize = Math.min(148, trackHeight - 18);
+
+          state.width = width;
+          state.height = height;
+          state.dpr = dpr;
+          state.trackWidth = trackWidth;
+          state.trackHeight = trackHeight;
+          state.knobSize = knobSize;
+          state.centerY = height * (width <= 640 ? 0.61 : height <= 600 ? 0.59 : 0.60);
+
+          const pixelWidth = Math.round(width * dpr);
+          const pixelHeight = Math.round(height * dpr);
+          if (sceneCanvas.width !== pixelWidth || sceneCanvas.height !== pixelHeight) {
+            sceneCanvas.width = pixelWidth;
+            sceneCanvas.height = pixelHeight;
+          }
+          if (glassCanvas.width !== pixelWidth || glassCanvas.height !== pixelHeight) {
+            glassCanvas.width = pixelWidth;
+            glassCanvas.height = pixelHeight;
+            if (gl) gl.viewport(0, 0, pixelWidth, pixelHeight);
+          }
+
+          toggle.style.width = `${trackWidth}px`;
+          toggle.style.height = `${trackHeight}px`;
+          toggle.style.top = `${state.centerY}px`;
+        }
+
+        function springEase(value) {
+          const q = clamp(value, 0, 1);
+          const denominator = 1 - Math.exp(-4.5) * Math.cos(9.0);
+          return (1 - Math.exp(-4.5 * q) * Math.cos(9.0 * q)) / denominator;
+        }
+
+        function drawPage() {
+          const { width: w, height: h, dpr, progress, trackWidth, trackHeight, knobSize } = state;
+          const ctx = sceneContext;
+          const p = progress;
+          const bgTop = mixRgb([18, 27, 39], [244, 246, 241], p);
+          const bgMid = mixRgb([22, 34, 47], [233, 238, 235], p);
+          const bgBottom = mixRgb([28, 45, 57], [216, 227, 229], p);
+          const ink = p < 0.5 ? [250, 252, 253] : [13, 25, 34];
+          const secondary = p < 0.5 ? [226, 236, 243] : [31, 46, 56];
+          const accent = mixRgb([104, 189, 243], [216, 139, 68], p);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, w, h);
+
+          const backdrop = ctx.createLinearGradient(0, 0, 0, h);
+          backdrop.addColorStop(0, rgb(bgTop));
+          backdrop.addColorStop(0.53, rgb(bgMid));
+          backdrop.addColorStop(1, rgb(bgBottom));
+          ctx.fillStyle = backdrop;
+          ctx.fillRect(0, 0, w, h);
+
+          const centerX = w * 0.5;
+          const centerY = state.centerY;
+          const glow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.max(w, h) * 0.56);
+          const glowColor = p < 0.5 ? `rgba(57, 131, 183, ${0.13 * (1 - p * 0.7)})` : `rgba(246, 195, 119, ${0.16 * p})`;
+          glow.addColorStop(0, glowColor);
+          glow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = glow;
+          ctx.fillRect(0, 0, w, h);
+
+          ctx.save();
+          ctx.globalAlpha = 0.075 + 0.035 * (1 - p);
+          ctx.strokeStyle = rgb(mixRgb([132, 162, 184], [92, 110, 119], p));
+          ctx.lineWidth = 1;
+          const gridStep = 54;
+          for (let x = 18; x < w; x += gridStep) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+          }
+          for (let y = 18; y < h; y += gridStep) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.strokeStyle = `rgba(${accent.join(',')}, ${0.10 + p * 0.025})`;
+          ctx.lineWidth = 1;
+          const orbitalRadius = Math.min(w, h) * 0.24;
+          [0.76, 1, 1.24].forEach((scale) => {
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, orbitalRadius * scale, orbitalRadius * scale * 0.7, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          });
+          ctx.restore();
+
+          ctx.save();
+          ctx.fillStyle = rgb(secondary);
+          ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Avenir Next", sans-serif';
+          ctx.fillText('光学试验 / 01', Math.max(28, w * 0.09), Math.max(38, h * 0.105));
+          ctx.textAlign = 'right';
+          ctx.fillText('单片段着色器     实时', w - Math.max(28, w * 0.09), Math.max(38, h * 0.105));
+          ctx.textAlign = 'left';
+
+          const left = Math.max(28, w * 0.09);
+          const titleY = Math.max(128, h * 0.245);
+          const titleSize = w <= 520 ? 39 : w <= 900 ? 48 : 58;
+          ctx.fillStyle = rgb(ink);
+          ctx.font = `400 ${titleSize}px Georgia, "Songti SC", "STSong", serif`;
+          ctx.fillText('光，在玻璃里', left, titleY);
+          ctx.fillText('转个身。', left, titleY + titleSize * 1.05);
+
+          ctx.fillStyle = rgb(secondary);
+          ctx.font = '400 14px -apple-system, BlinkMacSystemFont, "Avenir Next", sans-serif';
+          const subtitle = '拖动透镜，让像素与昼夜一同改变。';
+          ctx.fillText(subtitle, left + 2, titleY + titleSize * 2.18);
+
+          const tagY = h <= 540 ? 52 : h - 68;
+          ctx.fillStyle = rgb(secondary);
+          ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "Avenir Next", sans-serif';
+          ctx.fillText('拖动  /  点击  /  使用方向键', left, tagY);
+          ctx.textAlign = 'right';
+          ctx.fillText(p < 0.5 ? '夜晚  ·  2700 K' : '白昼  ·  6500 K', w - left, tagY);
+          ctx.textAlign = 'left';
+          ctx.restore();
+
+          const railHalf = trackWidth * 0.5;
+          const cellSpacing = knobSize * 0.055;
+          const cellSize = clamp(knobSize * 0.034, 3.2, 5.2);
+          particlePixels.fill(0);
+          particles.slice(0, 64).forEach((particle, index) => {
+            const q = clamp((p - particle.delay) / (1 - particle.delay * 0.55), 0, 1);
+            const eased = clamp(springEase(q), -0.06, 1.08);
+            let x = mix(particle.source.x, particle.target.x, eased);
+            let y = mix(particle.source.y, particle.target.y, eased);
+            const curl = Math.sin(q * Math.PI) * particle.spin;
+            const lift = Math.sin(q * Math.PI) * particle.lift;
+            const cosine = Math.cos(curl);
+            const sine = Math.sin(curl);
+            const rotatedX = x * cosine - y * sine;
+            const rotatedY = x * sine + y * cosine;
+            const vortexMix = Math.sin(q * Math.PI) * 0.78;
+            x = mix(x, rotatedX, vortexMix);
+            y = mix(y, rotatedY, vortexMix) + lift;
+            const offset = index * 4;
+            particlePixels[offset] = Math.round(clamp(0.5 + x * cellSpacing / knobSize * 0.5, 0, 1) * 255);
+            particlePixels[offset + 1] = Math.round(clamp(0.5 + y * cellSpacing / knobSize * 0.5, 0, 1) * 255);
+            particlePixels[offset + 2] = Math.round(particle.shade * 255);
+            particlePixels[offset + 3] = Math.round(cellSize / knobSize * 255);
+          });
+
+          ctx.save();
+          ctx.strokeStyle = `rgba(${accent.join(',')}, 0.48)`;
+          ctx.fillStyle = rgb(secondary);
+          ctx.lineWidth = 1;
+          ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "Avenir Next", sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('夜晚', centerX - railHalf + 3, centerY + trackHeight * 0.68);
+          ctx.textAlign = 'right';
+          ctx.fillText('白昼', centerX + railHalf - 3, centerY + trackHeight * 0.68);
+          ctx.textAlign = 'left';
+          ctx.restore();
+        }
+
+        function syncSemantics() {
+          const isLight = state.progress >= 0.5;
+          const changed = isLight !== state.light;
+          state.light = isLight;
+          toggle.setAttribute('aria-checked', String(isLight));
+          toggle.setAttribute('aria-label', isLight ? '浅色外观' : '深色外观');
+          toggle.style.setProperty('--focus-color', isLight ? '#76501f' : '#bfe8ff');
+          if (changed) status.textContent = `已选择${isLight ? '浅色' : '深色'}外观。`;
+        }
+
+        function settleTo(target) {
+          state.target = target ? 1 : 0;
+          if (reducedMotion.matches) {
+            state.progress = state.target;
+            state.velocity = 0;
+            state.bandAngle = mix(-Math.PI * 0.5, Math.PI * 0.5, state.target);
+            state.bandVelocity = 0;
+          }
+          syncSemantics();
+          requestRender();
+        }
+
+        document.addEventListener('keydown', () => { inputMode = 'keyboard'; }, true);
+        document.addEventListener('pointerdown', () => { inputMode = 'pointer'; }, true);
+        toggle.addEventListener('focus', () => {
+          if (inputMode === 'keyboard') toggle.classList.add('keyboard-focus');
+        });
+        toggle.addEventListener('blur', () => toggle.classList.remove('keyboard-focus'));
+
+        function progressFromPointer(clientX, offset) {
+          const rect = toggle.getBoundingClientRect();
+          const centerX = rect.left + rect.width * 0.5;
+          const travel = Math.max(1, (state.trackWidth - state.knobSize) * 0.5 - 11);
+          const thumbX = clientX - offset;
+          return clamp((thumbX - (centerX - travel)) / (2 * travel), 0, 1);
+        }
+
+        let frameRequest = 0;
+        function requestRender() {
+          if (!frameRequest) frameRequest = requestAnimationFrame(render);
+        }
+
+        toggle.addEventListener('pointerdown', (event) => {
+          if (event.button !== undefined && event.button !== 0) return;
+          toggle.classList.remove('keyboard-focus');
+          event.preventDefault();
+          toggle.focus({ preventScroll: true });
+          const rect = toggle.getBoundingClientRect();
+          const centerX = rect.left + rect.width * 0.5;
+          const travel = Math.max(1, (state.trackWidth - state.knobSize) * 0.5 - 11);
+          const thumbX = centerX + (state.progress - 0.5) * 2 * travel;
+          const insideThumb = Math.abs(event.clientX - thumbX) < state.knobSize * 0.52
+            && Math.abs(event.clientY - (rect.top + rect.height * 0.5)) < state.knobSize * 0.52;
+          state.dragging = true;
+          state.pointerMoved = false;
+          state.lastPointerX = event.clientX;
+          state.grabOffset = insideThumb ? event.clientX - thumbX : 0;
+          state.velocity = 0;
+          toggle.setPointerCapture(event.pointerId);
+          requestRender();
+        });
+
+        toggle.addEventListener('pointermove', (event) => {
+          if (!state.dragging) return;
+          if (Math.abs(event.clientX - state.lastPointerX) > 1.5) state.pointerMoved = true;
+          state.lastPointerX = event.clientX;
+          state.progress = progressFromPointer(event.clientX, state.grabOffset);
+          state.target = state.progress;
+          state.velocity = 0;
+          syncSemantics();
+          requestRender();
+        });
+
+        function finishPointer(event) {
+          if (!state.dragging) return;
+          state.dragging = false;
+          if (toggle.hasPointerCapture(event.pointerId)) toggle.releasePointerCapture(event.pointerId);
+          settleTo(state.pointerMoved ? state.progress >= 0.5 : state.progress < 0.5);
+        }
+        toggle.addEventListener('pointerup', finishPointer);
+        toggle.addEventListener('pointercancel', finishPointer);
+
+        toggle.addEventListener('click', (event) => {
+          if (event.detail === 0 && !state.dragging) {
+            if (performance.now() < state.suppressSyntheticClickUntil) {
+              state.suppressSyntheticClickUntil = 0;
+              return;
+            }
+            settleTo(state.progress < 0.5);
+          }
+        });
+
+        toggle.addEventListener('keydown', (event) => {
+          toggle.classList.add('keyboard-focus');
+          if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            settleTo(1);
+          } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            settleTo(0);
+          } else if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            if (!event.repeat) {
+              state.suppressSyntheticClickUntil = performance.now() + 350;
+              settleTo(state.progress < 0.5);
+            }
+          }
+        });
+
+        toggle.addEventListener('pointerenter', () => { state.hoverTarget = 1; requestRender(); });
+        toggle.addEventListener('pointerleave', () => { state.hoverTarget = 0; requestRender(); });
+
+        function render(timestamp) {
+          frameRequest = 0;
+          const now = timestamp * 0.001;
+          const dt = state.lastFrame ? clamp(now - state.lastFrame, 0, 0.04) : 1 / 60;
+          state.lastFrame = now;
+
+          if (!state.dragging && !reducedMotion.matches) {
+            const stiffness = 112;
+            const damping = 20.5;
+            const acceleration = stiffness * (state.target - state.progress) - damping * state.velocity;
+            state.velocity += acceleration * dt;
+            state.progress += state.velocity * dt;
+            if (Math.abs(state.target - state.progress) < 0.0007 && Math.abs(state.velocity) < 0.003) {
+              state.progress = state.target;
+              state.velocity = 0;
+            }
+
+            const phaseTarget = mix(-Math.PI * 0.5, Math.PI * 0.5, state.progress);
+            const phaseDelta = Math.atan2(Math.sin(phaseTarget - state.bandAngle), Math.cos(phaseTarget - state.bandAngle));
+            state.bandVelocity += phaseDelta * 74 * dt;
+            state.bandVelocity *= Math.exp(-7.6 * dt);
+            state.bandAngle += state.bandVelocity * dt;
+          } else if (state.dragging) {
+            const phaseTarget = mix(-Math.PI * 0.5, Math.PI * 0.5, state.progress);
+            state.bandAngle += (phaseTarget - state.bandAngle) * Math.min(1, dt * 5.2);
+          }
+
+          const hoverBlend = reducedMotion.matches ? 1 : Math.min(1, dt * 8);
+          state.hover += (state.hoverTarget - state.hover) * hoverBlend;
+          syncSemantics();
+          drawPage();
+
+          if (gl && program) {
+            gl.useProgram(program);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textureLocation);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sceneCanvas);
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, particleTextureLocation);
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 64, 1, gl.RGBA, gl.UNSIGNED_BYTE, particlePixels);
+            gl.uniform2f(uniforms.viewport, state.width, state.height);
+            gl.uniform2f(uniforms.trackSize, state.trackWidth, state.trackHeight);
+            gl.uniform1f(uniforms.centerY, state.centerY);
+            gl.uniform1f(uniforms.knobSize, state.knobSize);
+            gl.uniform1f(uniforms.progress, state.progress);
+            gl.uniform1f(uniforms.bandAngle, state.bandAngle);
+            gl.uniform1f(uniforms.hover, state.hover);
+            gl.uniform1f(uniforms.dpr, state.dpr);
+            gl.uniform1f(uniforms.particleCount, Math.min(particles.length, 64));
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          }
+
+          const moving = state.dragging
+            || Math.abs(state.target - state.progress) > 0.0007
+            || Math.abs(state.velocity) > 0.003
+            || Math.abs(state.bandVelocity) > 0.003
+            || Math.abs(state.hoverTarget - state.hover) > 0.01;
+          if (moving) requestRender();
+        }
+
+        measure();
+        window.addEventListener('resize', () => { measure(); requestRender(); }, { passive: true });
+        reducedMotion.addEventListener?.('change', () => {
+          state.velocity = 0;
+          if (reducedMotion.matches) settleTo(state.target);
+          else requestRender();
+        });
+        if (!setupWebGL()) fallback.style.display = 'block';
+        requestRender();
+      })();
+    </script>
+  </body>
+</html>
