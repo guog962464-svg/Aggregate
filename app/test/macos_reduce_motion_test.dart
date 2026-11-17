@@ -124,7 +124,7 @@ void main() {
               .widget<GlassSceneScope>(find.byType(GlassSceneScope))
               .frame;
           final expectedHalo =
-              switchFrame.theme >= 0.46 && switchFrame.theme <= 0.52;
+              switchFrame.theme >= 0.46 && switchFrame.theme <= 0.53;
           expect(
             DefaultTextStyle.of(pageText).style.color,
             expectedForeground,

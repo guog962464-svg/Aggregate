@@ -236,6 +236,9 @@ void main() {
     frame.publishThemeSwitch(1.06, 0.52);
     expect(frame.textContrastNeedsHalo.value, isTrue);
     frame.publishThemeSwitch(1.07, 0.525);
+    frame.publishThemeSwitch(1.08, 0.53);
+    expect(frame.textContrastNeedsHalo.value, isTrue);
+    frame.publishThemeSwitch(1.09, 0.535);
     expect(frame.textContrastNeedsHalo.value, isFalse);
     frame.clearThemeSwitch();
 

@@ -272,6 +272,14 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：浅/深启动各六组窗口/DPR、每组 12 个相位（合计 144 个组合）均通过；轮廓/背景至少 3:1、文字/轮廓至少 7:1，轮廓区外指定文字/背景至少 4.5:1。`flutter test --no-pub --reporter compact test/glass_design_tokens_test.dart test/macos_reduce_motion_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart` 13 项通过；相关四个 Dart 文件的定向 `flutter analyze --no-pub` 无问题，`git diff --check` 通过。
 - 边界：背景数值来自 `GlassScene` 离屏渲染，而不是整页半透明表面合成或 macOS display-present；本轮只扩展设置页六个文字位置，不关闭其他页面材质、禁用态、VoiceOver 或原生显示验收，UI-5.5 保持部分验收。
 
+### 2026-11-18 UI-5.5 多路由标题临界相位补验
+
+- 覆盖：在生产 `AggregateApp` 中采集音乐首页、工作台、连接管理、活动和设置页标题的真实屏幕矩形，并保留设置页副标题、分节标题、正文及两条快捷操作 ListTile 标题；共十个位置。每个位置继续使用同尺寸、同 ThemeData 的生产 `GlassScene` shader 背景样本。
+- 新缺口：新增音乐首页标题位置后，发现 `1024×768@1x`、深色偏好启动、daylight `0.525` 的黑字/背景最低为 `4.428822:1`；此前描边结束值 `0.52` 仍太早。
+- 修正与结果：将描边结束值扩至 `0.53`，前景文字色仍于 `0.5` 交接。增加 `0.53` 描边内相位和 `0.535` 无描边相位；两种初始偏好、六组窗口/DPR 和 14 个相位共 168 组组合全部通过。描边区检查背景对比至少 3:1、文字/描边至少 7:1，窗口外检查文字/背景至少 4.5:1；所有位置每相位同时核对标题/正文/ListTile 样式和按钮标签例外。
+- 验证：`flutter test --no-pub --reporter compact test/glass_design_tokens_test.dart test/macos_reduce_motion_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart` 13 项通过；`flutter analyze --no-pub` 针对 `glass_scene.dart` 与三个相关测试文件通过，`git diff --check` 通过。
+- 边界：这些数值是逐路由文字位置上的离屏 `GlassScene` 背景色对，不是各页面卡片、按钮或半透明表面合成，也不是原生 display-present。其他页面材质、禁用态、VoiceOver 与原生呈现仍未完整验收，UI-5.5 保持部分验收。
+
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
 - 构建：隔离 bundle `io.github.guog962464.aggregate.ui6focusafter` 的 macOS Profile；项目 Flutter 3.47.8 / Dart 3.13.7，PreviewRuntime 本地合成数据。窗口 AX bounds 800×632 logical px，DPR 2，导出 PNG 为 1824×1488。通过物理 Tab 到达主题开关焦点，使用左右键切到浅/深端点；焦点状态由实窗完整轨道环可见性与 AX 主题值复核。

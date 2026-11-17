@@ -34,6 +34,8 @@ const _samples = [
   0.515,
   0.52,
   0.525,
+  0.53,
+  0.535,
 ];
 
 void main() {
@@ -84,15 +86,30 @@ Future<void> _verifyScenario(
       ),
     );
     await tester.pumpAndSettle();
+    final textRegions = <String, Rect>{
+      'music home title': tester.getRect(find.text('示例网易云音乐').last),
+    };
+    await tester.tap(find.text('所有功能').first);
+    await tester.pumpAndSettle();
+    textRegions['workspace title'] = tester.getRect(find.text('工作台').last);
+
+    await tester.tap(find.text('管理连接').first);
+    await tester.pumpAndSettle();
+    textRegions['connections title'] = tester.getRect(find.text('连接').last);
+
+    await tester.tap(find.text('活动').first);
+    await tester.pumpAndSettle();
+    textRegions['activity title'] = tester.getRect(find.text('活动').last);
+
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
 
-    final textRegions = <String, Rect>{
-      'page title': tester.getRect(find.text('设置').last),
+    textRegions.addAll({
+      'settings title': tester.getRect(find.text('设置').last),
       'page subtitle': tester.getRect(find.text('让工作台适应你的使用方式。')),
       'section title': tester.getRect(find.text('外观')),
       'body text': tester.getRect(find.text('主题选择保存在本机。')),
-    };
+    });
     for (final label in ['搜索所有功能', '运行当前功能']) {
       await tester.ensureVisible(find.text(label));
       await tester.pumpAndSettle();
@@ -159,7 +176,7 @@ Future<void> _verifyScenario(
       frame.publishThemeSwitch(shaderSeconds, daylight);
       await tester.pump();
       final useDarkForeground = daylight >= 0.5;
-      final needsHalo = daylight >= 0.46 && daylight <= 0.52;
+      final needsHalo = daylight >= 0.46 && daylight <= 0.53;
       final foreground = useDarkForeground ? Colors.black : Colors.white;
       final halo = useDarkForeground ? Colors.white : Colors.black;
       final textTheme = AggregateTheme.withMacOSBackdropTextContrast(
