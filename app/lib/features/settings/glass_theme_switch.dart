@@ -34,6 +34,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   late ThemeSwitchSimulation _simulation;
   final _focus = FocusNode(debugLabel: 'Theme switch');
   late final Ticker _ticker;
+  late final AppLifecycleListener _lifecycleListener;
   Duration? _lastTick;
   bool _reduceMotion = false;
   GlassSceneScope? _sceneScope;
@@ -62,6 +63,14 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     _simulation.snapTo(widget.light);
     _simulation.advanceRealtime(0, _time);
     _ticker = createTicker(_tick);
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: (state) {
+        if (state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.paused) {
+          _finish(cancel: true);
+        }
+      },
+    );
   }
 
   @override
@@ -126,6 +135,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
 
   @override
   void dispose() {
+    _lifecycleListener.dispose();
     _sceneScope?.frame.clearThemeSwitch();
     _ticker.dispose();
     _focus.dispose();

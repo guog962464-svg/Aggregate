@@ -133,6 +133,93 @@ void main() {
     },
   );
 
+  testWidgets('hiding the app cancels an active theme drag', (tester) async {
+    final changes = <bool>[];
+    await tester.pumpWidget(_host(changes: changes));
+    final artwork = find.byType(ThemeSwitchArtwork);
+    final size = tester.getSize(artwork);
+    final view = tester.widget<ThemeSwitchArtwork>(artwork);
+    final scale = ThemeSwitchArtwork.sceneScale(size, view.scene);
+    final start =
+        tester.getTopLeft(artwork) +
+        ThemeSwitchArtwork.sceneOrigin(size, view.scene) +
+        Offset(view.frame.knobX * scale, 0);
+    final halfway = start.translate(
+      ThemeSwitchCalibration.reference.motion.knobTravel * scale / 2,
+      0,
+    );
+    final pointer = await tester.startGesture(start);
+    await pointer.moveTo(halfway, timeStamp: const Duration(milliseconds: 225));
+    await tester.pump(const Duration(milliseconds: 225));
+    expect(changes, isEmpty);
+    expect(
+      tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+      closeTo(0.5, 0.1),
+    );
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await pointer.up();
+    for (var i = 0; i < 90; i++) {
+      await tester.pump(const Duration(microseconds: 16667));
+    }
+
+    expect(changes, isEmpty);
+    expect(
+      tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+      closeTo(0, 0.005),
+    );
+    await tester.tap(find.bySemanticsLabel('外观主题'));
+    await tester.pump();
+    expect(changes, [true]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('inactive alone does not cancel a visible theme drag', (
+    tester,
+  ) async {
+    final changes = <bool>[];
+    await tester.pumpWidget(_host(changes: changes));
+    final artwork = find.byType(ThemeSwitchArtwork);
+    final size = tester.getSize(artwork);
+    final view = tester.widget<ThemeSwitchArtwork>(artwork);
+    final scale = ThemeSwitchArtwork.sceneScale(size, view.scene);
+    final start =
+        tester.getTopLeft(artwork) +
+        ThemeSwitchArtwork.sceneOrigin(size, view.scene) +
+        Offset(view.frame.knobX * scale, 0);
+    final destination = start.translate(
+      ThemeSwitchCalibration.reference.motion.knobTravel * scale,
+      0,
+    );
+    final halfway = Offset.lerp(start, destination, 0.5)!;
+    final pointer = await tester.startGesture(start);
+    await pointer.moveTo(halfway, timeStamp: const Duration(milliseconds: 225));
+    await tester.pump(const Duration(milliseconds: 225));
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    expect(changes, isEmpty);
+    expect(
+      tester.widget<ThemeSwitchArtwork>(artwork).frame.position,
+      closeTo(0.5, 0.1),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await pointer.moveTo(
+      destination,
+      timeStamp: const Duration(milliseconds: 450),
+    );
+    await tester.pump(const Duration(milliseconds: 225));
+    await pointer.up(timeStamp: const Duration(milliseconds: 450));
+
+    expect(changes, [true]);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('keyboard focus ring is painted above the switch artwork', (
     tester,
   ) async {
