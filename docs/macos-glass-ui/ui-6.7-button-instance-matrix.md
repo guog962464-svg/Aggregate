@@ -22,7 +22,7 @@
 | B007 | `app/lib/features/activity/activity_page.dart:229` | 活动页：记录操作与列表状态 | 深/浅截图可见七个筛选；点击失败筛选后只显示失败记录，点“全部”恢复完整样例列表；其余筛选动态状态待核 |
 | B008 | `app/lib/features/activity/activity_page.dart:263` | 活动页：记录操作与列表状态 | 浅深紧凑详情可见返回记录；浅色 `59c-activity-failed-list-light.png` 为点击后回到失败列表的状态 |
 | B009 | `app/lib/features/activity/activity_page.dart:282` | 活动页：记录操作与列表状态 | 深浅失败详情 `58a-activity-failed-detail-dark-scrolled.png`、`59b-activity-failed-detail-light-scrolled.png` 可见“重新打开功能”；未打开功能。现有 widget 测试另覆盖运行中“查看运行”按钮 |
-| B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 本次实窗只预置终态，未出现“取消运行”；现有 `activity_page_test.dart` 覆盖运行中取消回调，Profile 动态状态仍待核 |
+| B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 深色 Profile 运行中样例见 `62-activity-running-dark-list.png`、详情见 `63-activity-running-detail-dark.png`；滚至操作区后“取消运行”语义点击成功，AX 状态变为“已取消”。仅验证隔离内存 fixture，浅色与真实服务响应仍待核 |
 | B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 深浅失败详情图可见“复制诊断”；未点击，系统剪贴板未改动 |
 | B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |

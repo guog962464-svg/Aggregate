@@ -27,6 +27,41 @@ void main() {
     );
   });
 
+  test(
+    'UI inspection can seed and cancel an in-memory running activity',
+    () async {
+      final runtime = Ui6InspectionRuntime();
+
+      await runtime.seedActivityForInspection(includeRunning: true);
+      await runtime.seedActivityForInspection(includeRunning: true);
+      final runs = await runtime.listRecentRuns();
+      expect(runs, hasLength(4));
+      final running = runs.first;
+      expect(running.latest.state, RunState.running);
+      expect(running.id.value, 'ui6-inspection-running');
+      expect(running.capability.connection.value, 'ui6-review-git');
+
+      final events = <RunEvent>[];
+      final subscription = runtime.watchRun(running.id).listen(events.add);
+      await Future<void>.delayed(Duration.zero);
+      await runtime.cancel(running.id);
+      await Future<void>.delayed(Duration.zero);
+      await subscription.cancel();
+
+      expect(
+        events.map((event) => event.state),
+        containsAll([RunState.running, RunState.cancelled]),
+      );
+      final updatedRuns = await runtime.listRecentRuns();
+      expect(updatedRuns.first.latest.state, RunState.cancelled);
+      expect(
+        updatedRuns.skip(1).map((run) => run.latest.state).toSet(),
+        containsAll({RunState.succeeded, RunState.failed, RunState.cancelled}),
+      );
+      await runtime.clearActivity();
+    },
+  );
+
   testWidgets('activity list builds more rows as the list scrolls', (
     tester,
   ) async {

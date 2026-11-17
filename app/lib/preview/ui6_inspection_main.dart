@@ -6,13 +6,18 @@ import 'ui6_inspection_host.dart';
 import 'ui6_inspection_runtime.dart';
 
 const _seedActivity = bool.fromEnvironment('UI6_SEED_ACTIVITY');
+const _seedRunningActivity = bool.fromEnvironment('UI6_SEED_ACTIVITY_RUNNING');
 
 /// Dedicated macOS Profile entrypoint for reviewing production button contexts.
 /// All runtime, setup, account, terminal, and Host services are in-memory stubs.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final runtime = Ui6InspectionRuntime();
-  if (_seedActivity) await runtime.seedActivityForInspection();
+  if (_seedActivity || _seedRunningActivity) {
+    await runtime.seedActivityForInspection(
+      includeRunning: _seedRunningActivity,
+    );
+  }
   final host = Ui6InspectionHost();
   runApp(
     AggregateApp(

@@ -29,11 +29,13 @@ final class Ui6InspectionRuntime
   final Map<String, StreamController<String>> _terminalStreams = {};
   final Map<String, List<String>> _terminalInitialOutput = {};
   final Map<String, JsonMap> _actionManifests = {};
+  StreamController<RunEvent>? _inspectionRunEvents;
   var _target = ExecutionTarget.device;
   var _draftCounter = 0;
   var _connectionCounter = 0;
   var _terminalCounter = 0;
   var _activitySeeded = false;
+  RunSummary? _runningInspectionActivity;
   AccountSnapshot _musicAccount = const AccountSnapshot(
     AccountState.signedIn,
     nickname: '预览账号',
@@ -42,20 +44,44 @@ final class Ui6InspectionRuntime
   static const _gitId = ConnectionId('ui6-review-git');
   static const _mcpId = ConnectionId('ui6-review-mcp');
   static const _musicId = ConnectionId('ui6-review-music');
+  static const _activityStatusCapability = CapabilityId(
+    _gitId,
+    CapabilityKind.cliAction,
+    'status',
+  );
 
   /// Seeds local, disposable ActivityPage states for visual inspection.
   /// This method never invokes a host process, network service, or user data.
-  Future<void> seedActivityForInspection() async {
-    if (_activitySeeded) return;
-    _activitySeeded = true;
-    const status = CapabilityId(_gitId, CapabilityKind.cliAction, 'status');
-    const add = CapabilityId(_mcpId, CapabilityKind.mcpTool, 'add');
+  Future<void> seedActivityForInspection({bool includeRunning = false}) async {
+    if (!_activitySeeded) {
+      _activitySeeded = true;
+      await _preview.invoke(_activityStatusCapability, const {});
+      await Future<void>.delayed(const Duration(milliseconds: 260));
+      await _preview.invoke(
+        const CapabilityId(_mcpId, CapabilityKind.mcpTool, 'add'),
+        const {'a': 'invalid', 'b': 1},
+      );
+      final pending = await _preview.invoke(
+        _activityStatusCapability,
+        const {},
+      );
+      await _preview.cancel(pending.id);
+    }
+    if (!includeRunning || _runningInspectionActivity != null) return;
 
-    await _preview.invoke(status, const {});
-    await Future<void>.delayed(const Duration(milliseconds: 260));
-    await _preview.invoke(add, const {'a': 'invalid', 'b': 1});
-    final pending = await _preview.invoke(status, const {});
-    await _preview.cancel(pending.id);
+    const runId = RunId('ui6-inspection-running');
+    final running = RunEvent(
+      runId: runId,
+      sequence: 1,
+      state: RunState.running,
+      occurredAt: DateTime.now(),
+    );
+    _inspectionRunEvents ??= StreamController<RunEvent>.broadcast(sync: true);
+    _runningInspectionActivity = RunSummary(
+      runId,
+      _activityStatusCapability,
+      running,
+    );
   }
 
   static const List<Connection> _seedConnections = [
@@ -354,7 +380,13 @@ final class Ui6InspectionRuntime
       _preview.savePreferences(preferences);
 
   @override
-  Future<void> clearActivity() => _preview.clearActivity();
+  Future<void> clearActivity() async {
+    await _preview.clearActivity();
+    _runningInspectionActivity = null;
+    _activitySeeded = false;
+    await _inspectionRunEvents?.close();
+    _inspectionRunEvents = null;
+  }
 
   @override
   Future<List<Connection>> listConnections() async => List.of(_connections);
@@ -421,13 +453,45 @@ final class Ui6InspectionRuntime
   }
 
   @override
-  Stream<RunEvent> watchRun(RunId id) => _preview.watchRun(id);
+  Stream<RunEvent> watchRun(RunId id) {
+    final heldRun = _runningInspectionActivity;
+    if (heldRun == null || heldRun.id.value != id.value) {
+      return _preview.watchRun(id);
+    }
+    return Stream<RunEvent>.multi((controller) {
+      final subscription = _inspectionRunEvents?.stream
+          .where((event) => event.runId.value == id.value)
+          .listen(controller.add);
+      controller.add(_runningInspectionActivity?.latest ?? heldRun.latest);
+      if (subscription != null) controller.onCancel = subscription.cancel;
+    });
+  }
 
   @override
-  Future<List<RunSummary>> listRecentRuns() => _preview.listRecentRuns();
+  Future<List<RunSummary>> listRecentRuns() async {
+    final runs = await _preview.listRecentRuns();
+    final activity = _runningInspectionActivity;
+    return activity == null ? runs : [activity, ...runs];
+  }
 
   @override
-  Future<void> cancel(RunId id) => _preview.cancel(id);
+  Future<void> cancel(RunId id) async {
+    final activity = _runningInspectionActivity;
+    if (activity?.id.value != id.value) {
+      await _preview.cancel(id);
+      return;
+    }
+    if (activity!.latest.state != RunState.running) return;
+    final cancelled = RunEvent(
+      runId: id,
+      sequence: activity.latest.sequence + 1,
+      state: RunState.cancelled,
+      occurredAt: DateTime.now(),
+      failure: const RuntimeFailure(RuntimeErrorCode.cancelled, '仅内存预览取消'),
+    );
+    _runningInspectionActivity = RunSummary(id, activity.capability, cancelled);
+    _inspectionRunEvents?.add(cancelled);
+  }
 
   @override
   Future<List<ResultBlock>> readResource(ResourceRef ref) =>
