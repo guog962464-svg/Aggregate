@@ -358,6 +358,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：`dart format --output=none --set-exit-if-changed lib/widgets/glass/glass_motion.dart test/glass_motion_test.dart` 退出码 0；`flutter analyze --no-pub lib/widgets/glass/glass_motion.dart test/glass_motion_test.dart` 无问题；`flutter test --no-pub` 在 `app/` 下 293 项通过；映射表检查为 61 个 profile（60 个 glyph + `neutral`），action 与完整 profile 配置均无重复；`git diff --check` 通过。
 - 边界：此次没有启动、聚焦或操作原生应用窗口。Widget 测试覆盖 60 个 glyph 的 idle/click/idle 采样与连续性，但不代表 60 个图案均已在 macOS Profile 原生窗口逐项目视通过；这些视觉签收与 UI-5/UI-6 的其余原生缺项仍保持开放。未跟踪的 Android 集成测试和用户自己的原型、锁文件、Android 文档改动均未纳入本项。
 
+### 2026-11-17 当前主线 UI 动效回归复跑
+
+- 基线：当前主线 HEAD `003d0c7d9a411ec3be784712e310a1ec87e510f6`；该提交只改 Android Host 测试与文档，没有改本次测试涉及的玻璃动效或主题控件源码。
+- 命令：在 `app/` 执行 `flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart test/glass_theme_switch_test.dart test/theme_switch_realtime_test.dart`，退出码 `0`，34 项通过。
+- 覆盖：60 个按钮图案映射/动作连续性、点击业务回调、TickerMode/生命周期/离屏/reduced-motion，以及主题开关 450 ms 拖动提交、反向和 pointer cancel 回归。
+- 边界：该轮没有启动或聚焦原生窗口，也没有修改主题模拟、校准、指针识别或提交逻辑。它不替代原生 VoiceOver、pointercancel、离屏/reduced-motion、动态帧相位和呈现帧率验收；UI-6.4 与 UI-6.8 仍部分验收。工作区用户修改的 `pubspec.lock` 未触碰。
+
 ### 2026-11-17 原生按钮图案检查页与 3.50.0 对照补记
 
 - 夹具：把 `app/lib/widgets/glass/glass_buttons_fixture.dart` 的 60 个 glyph 展示从静态图案改为可点击 `GlassActionButton`，使用独立 PreviewRuntime；所有点击回调为空操作，不触发业务行为。macOS Flutter 3.47.8 Profile AX 树列出 60 个 glyph 按钮及其名称。该证据确认可访问节点覆盖，不等于实际逐一朗读或逐项检查动效。
