@@ -142,6 +142,8 @@ flutter test --no-pub tool/theme_switch_reference_frames_test.dart \
 
 `THEME_SWITCH_USE_MEASURED_THETA=true` 可显式使用实测光晕角度；`THEME_SWITCH_USE_FITTED_THEME=true` 可显式使用背景拟合值；`THEME_SWITCH_USE_FITTED_GEOMETRY=true` 仅采用轮廓质量分数至少 0.65 且不含播放器叠化的几何观测。manifest 记录所有实际采用的输入及不确定性。未指定输出目录时，这个工具测试跳过。
 
+离线相位诊断可设置 `THEME_SWITCH_RENDER_CLOCK_OFFSET`，默认 `0` 秒。它在测得的指针输入与粒子状态积分完成后，仅偏移 snapshot 的绝对亮度时间和 shader 时间；不会挪动输入采样时刻，也不会改变产品运行路径。用于区分太阳射线/星点闪烁/光学纹理时钟与拖动轨迹误差，结果仍不能替代 macOS 实窗动态验收。
+
 生成未配准、未校色的参考/渲染/4 倍差分以及逐帧 HTML 报告：
 
 ```sh

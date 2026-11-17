@@ -444,3 +444,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - 分窗：活动窗 build/raster 超预算比例为 0%、0%、0.0434%；各轮 totalSpan 超 16.667 ms 的帧分别为 21、18、27。静置段各有 1240–1254 帧，raster P95 为 7.62–7.82 ms、max 为 8.43–8.52 ms；totalSpan P95 为 8.28–8.47 ms、max 为 9.00–9.13 ms，均无 >16.667 ms 帧。r3 有一帧 raster 16.701 ms，按 5% build/raster 超预算门槛仍达标；totalSpan 峰值单独列示，不等同于 build/raster 超预算率。
 - 结论与边界：该跨类别混合压力子场景通过三轮帧时门槛，UI-6.1 整体仍部分通过。原始 VM-service 输出和临时 URI 文件在记录结果后已删除；Profile fixture 已退出，没有遗留 Aggregate 验收进程。此结果仅证明 Flutter 提交帧，不证明物理呈现 FPS、逐帧主题相位、`PointerCancelEvent`、reduced-motion 原生行为或运行时资源对象数量。
+
+### 2026-11-17 UI-6.3 绝对渲染时钟隔离复核
+
+- 环境：macOS 主机离线 Flutter widget export，Flutter 3.47.8 stable / Dart 3.13.7；当前基线 HEAD `2ce638286ab4bc799db1a4030202d6c270e65119` 加本次仅供验收的导出工具改动。输入为存档 200 帧裁切、实测时间表、拟合背景/几何、运行时校准、连续指针输入和动态 source-time mapping。
+- 方法：基线 `THEME_SWITCH_RENDER_CLOCK_OFFSET=0`；候选 `0.046` 秒。两次均保持每帧 source-time mapping 与 motion input sampling 不变；候选只在状态积分后使用 `simulation.advance(0, renderTime)` 更新绝对点阵亮度时间，并将同一 renderTime 传入 shader。比较固定裁切、相同时间、未配准、未校色、无遮罩。没有运行原生窗口或改动产品的主题切换逻辑。
+- 结果：两次各导出 200 帧且工具测试通过。全帧平均 MAE 为 `7.3371849794` → `7.3376826475/255`；171 帧 eligible mean MAE 为 `6.2835453467` → `6.2841405655/255`；稳定视野 79 帧 mean MAE 为 `4.4272927953` → `4.4283509359/255`；稳定控件区域 mean MAE 为 `7.8285863393` → `7.8281241077/255`。绝对渲染时钟前移 46 ms 对完整图像与稳定视野没有可测的实质改善，不能解释原生采样中 `42–60 ms` 的全局时间偏移；未据此更改产品 `timeOriginSeconds` 或动画物理。
+- 证据：逐帧数值摘要保存在本机 `/Users/guo/.codex/visualizations/2026/11/17/aggregate-ui6-clock-phase/`。`render-clock-0ms.json` SHA-256 `00215f99f199ad3e29418effbe70b92a10c4f22d9b62552d9d2f2d6db777ad68`；`render-clock-plus46ms.json` SHA-256 `8034036bcd02a2a51a884b278ae4e957967d6af0b210627cec2afc3c1927e997`。渲染 PNG 与临时报告已删除；源帧可由本机原始参考目录重建。`dart format --output=none --set-exit-if-changed tool/theme_switch_reference_frames_test.dart` 无格式变更，`flutter analyze --no-pub` 通过。
+- 结论边界：这是离线绝对亮度/shader 时钟的单点隔离试验，不代表 macOS 窗口显示呈现或实时拖动 1:1 通过。`UI-6.3` 仍部分通过；下一步需要能将原生输入采样时间与 display-present 时刻配对的实窗证据，或更可靠的原视频指针输入源。

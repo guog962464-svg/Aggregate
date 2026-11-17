@@ -16,6 +16,10 @@ const _modelInput = String.fromEnvironment('THEME_SWITCH_MODEL_INPUT');
 const _calibrationInput = String.fromEnvironment('THEME_SWITCH_CALIBRATION');
 const _motionInput = String.fromEnvironment('THEME_SWITCH_MOTION_INPUT');
 const _timeMappingInput = String.fromEnvironment('THEME_SWITCH_TIME_MAPPING');
+const _renderClockOffsetText = String.fromEnvironment(
+  'THEME_SWITCH_RENDER_CLOCK_OFFSET',
+  defaultValue: '0',
+);
 const _seed = int.fromEnvironment(
   'THEME_SWITCH_SEED',
   defaultValue: 0x6d2b79f5,
@@ -65,6 +69,8 @@ void main() {
       );
       final timeOffset = double.parse(_timeOffsetText);
       expect(timeOffset.isFinite, isTrue);
+      final renderClockOffset = double.parse(_renderClockOffsetText);
+      expect(renderClockOffset.isFinite, isTrue);
       final calibration = _calibrationInput.isEmpty
           ? ThemeSwitchCalibration.reference
           : ThemeSwitchCalibration.fromJson(
@@ -201,6 +207,12 @@ void main() {
                 velocity.value,
                 timeOffset,
               );
+        // Keep the measured input timeline fixed while varying only the
+        // absolute clock used by fitted particle brightness and the shader.
+        final renderTime = sourceTime + renderClockOffset;
+        if (renderClockOffset != 0) {
+          simulation.advance(0, renderTime);
+        }
         final simulated = simulation.snapshot;
         var renderFrame = _useMeasuredTheta && observed.angle != null
             ? simulated.copyWith(theta: observed.angle! * math.pi / 180)
@@ -259,7 +271,7 @@ void main() {
           tester,
           program!,
           renderFrame,
-          time: sourceTime,
+          time: renderTime,
           outputPath: renderPath,
           optics: calibration.optics,
           scene: calibration.scene,
@@ -270,7 +282,9 @@ void main() {
           'index': frame.index,
           'pts': frame.pts,
           'dt': dt,
-          'shaderTime': sourceTime,
+          'inputSampleTime': sourceTime,
+          'shaderTime': renderTime,
+          'renderClockOffsetSeconds': renderClockOffset,
           'sourceTimeMapped': mappedTime != null,
           'referencePath': '$root/frames/${frame.file}',
           'renderPath': renderPath,
@@ -340,6 +354,7 @@ void main() {
               ? 'source PTS = recording PTS + shaderTimeOffset; fixed source 60 Hz steps, no second calibration epoch offset'
               : 'listed frames use observed integer source-frame timestamps, others use recording PTS + shaderTimeOffset; no second calibration epoch offset',
         'shaderTimeOffset': timeOffset,
+        'renderClockOffsetSeconds': renderClockOffset,
         'sourceAnimationFramesPerSecond': 60,
         'maximumIntegrationStepSeconds': 1 / 60,
         'useMeasuredTheta': _useMeasuredTheta,
