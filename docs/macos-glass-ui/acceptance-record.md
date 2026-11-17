@@ -453,6 +453,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 证据：逐帧数值摘要保存在本机 `/Users/guo/.codex/visualizations/2026/11/17/aggregate-ui6-clock-phase/`。`render-clock-0ms.json` SHA-256 `00215f99f199ad3e29418effbe70b92a10c4f22d9b62552d9d2f2d6db777ad68`；`render-clock-plus46ms.json` SHA-256 `8034036bcd02a2a51a884b278ae4e957967d6af0b210627cec2afc3c1927e997`。渲染 PNG 与临时报告已删除；源帧可由本机原始参考目录重建。`dart format --output=none --set-exit-if-changed tool/theme_switch_reference_frames_test.dart` 无格式变更，`flutter analyze --no-pub` 通过。
 - 结论边界：这是离线绝对亮度/shader 时钟的单点隔离试验，不代表 macOS 窗口显示呈现或实时拖动 1:1 通过。`UI-6.3` 仍部分通过；下一步需要能将原生输入采样时间与 display-present 时刻配对的实窗证据，或更可靠的原视频指针输入源。
 
+### 2026-11-18 UI-6.3 太阳射线频率/相位交叉验证
+
+- 环境与输入：Flutter 3.47.8 stable / Dart 3.13.7 的离线参考帧 exporter；复用已存档 200 帧参考图、79 组太阳射线光度观测、20 个射线格点、指针输入、逐帧 source-time mapping 与现行校准。原始下载视频当前路径不存在。
+- 拟合：对 63 个训练帧联合搜索 `sunRayRate` 和共享 `sunRayPhase`，每格点的 photometric gain/bias 仅作训练拟合的干扰项；16 个 `sourceIndex % 5 == 0` 帧留出。候选 `2.218 / 0.333937 rad`；相较现行 `2.2 / 0.5050001 rad`，光度 RMSE 训练集 `0.05046621 → 0.05005923`、留出集 `0.04949150 → 0.04876729`。
+- 完整图像复核：保持输入、几何、主题和截图时间不变，导出全部 200 帧并对固定画幅做无配准/无校色/无遮罩差分。由于存档 `live-fit/reference` 已是 `720×540` 裁片，导出器还会按原始参考画幅从 y=444 裁切；临时将裁片放回 `720×1080` 画布后重跑，避免双重裁切。现行/候选 all-frame MAE 为 `7.33718507/7.33718438`，稳定视野为 `4.42729291/4.42728696`，稳定控件 ROI 为 `7.82858628/7.82855220`。整体差异可以忽略。
+- 决定与边界：拒绝候选值，产品继续使用 `sunRayRate=2.2`、`sunRayPhase=0.5050001`；没有修改模拟、光效或任意拖动逻辑。200 帧 exporter 通过；离线全图 MAE 约 `7.34/255`，UI-6.3 逐帧实时一致仍未通过。首轮错误裁切的临时参考、渲染和差分文件均已删除，本轮没有产品代码变更。
+
 
 ### 2026-11-18 UI-6.5 Dart VM 资源对象采样
 
