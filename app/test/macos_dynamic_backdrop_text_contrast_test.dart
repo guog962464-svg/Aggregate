@@ -89,6 +89,12 @@ void main() {
         '插值来源文字',
         '插值忙碌按钮',
         '插值危险按钮',
+        '插值主按钮',
+        '插值主禁用按钮',
+        '插值主危险按钮',
+        '插值参考按钮',
+        '插值参考说明',
+        '插值参考来源',
       ];
       final boundaryKey = GlobalKey();
       final darkTheme = AggregateTheme.forPlatform(
@@ -116,7 +122,7 @@ void main() {
                 color: theme.colorScheme.surface,
                 child: Scaffold(
                   body: Padding(
-                    padding: const EdgeInsets.all(96),
+                    padding: const EdgeInsets.all(48),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -155,6 +161,48 @@ void main() {
                           label: '插值危险按钮',
                           kind: GlassButtonKind.danger,
                           onPressed: _noOp,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.play,
+                          label: '插值主按钮',
+                          kind: GlassButtonKind.primary,
+                          size: GlassButtonSize.primary,
+                          onPressed: _noOp,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.refresh,
+                          label: '插值主禁用按钮',
+                          kind: GlassButtonKind.primary,
+                          size: GlassButtonSize.primary,
+                          onPressed: null,
+                          enabled: false,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.trash,
+                          label: '插值主危险按钮',
+                          kind: GlassButtonKind.danger,
+                          size: GlassButtonSize.primary,
+                          onPressed: _noOp,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.play,
+                          label: '插值参考按钮',
+                          size: GlassButtonSize.reference,
+                          onPressed: _noOp,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.error,
+                          label: '插值参考辅助按钮',
+                          description: '插值参考说明',
+                          source: '插值参考来源',
+                          size: GlassButtonSize.reference,
+                          onPressed: null,
+                          enabled: false,
                         ),
                       ],
                     ),
