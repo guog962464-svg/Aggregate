@@ -120,6 +120,7 @@ void main() {
       'save_alt',
       'search',
       'search_outlined',
+      'settings_outlined',
       'skip_next',
       'skip_next_rounded',
       'skip_previous',
@@ -164,6 +165,13 @@ void main() {
     expect(
       GlassGlyphCatalog.fromMaterialIcon(Icons.link_off),
       GlassGlyph.close,
+    );
+  });
+
+  test('Host setup Material icon resolves to the glass settings glyph', () {
+    expect(
+      GlassGlyphCatalog.fromMaterialIcon(Icons.settings_outlined),
+      GlassGlyph.settings,
     );
   });
 
