@@ -399,3 +399,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - VoiceOver：从系统设置开启 VoiceOver，并使用已开启的字幕面板观察实际播报。焦点只报告位于系统 `group` 内，提示需用 Control-Option-Shift-下箭头与上箭头进入/退出；通过 agent-desktop 和 CUA 尝试 VoiceOver 键盘导航后，字幕转为“系统，有新的，窗口”，焦点没有进入应用控件，继续停在根 group。没有读到应用按钮或设置项名称/状态，故主流程朗读顺序未验证，UI-5.7 保持部分验收。
 - 收尾：关闭 VoiceOver；退出唯一隔离 Profile 应用和 VoiceOver Utility；关闭本次打开的系统设置；删除临时 worktree `/private/tmp/aggregate-voiceover` 及 OCR 临时文件。进程查询无 `AggregateVoiceOver`、VoiceOver Utility 或系统设置残留，`git worktree list` 仅有主工作区。减少动态效果保持关闭。未触碰用户应用窗口，主工作区原有 `pubspec.lock` 修改未改动、未暂存。
 - 边界：AX 树中可读的名称不等于 VoiceOver 语音顺序通过。此次结果反映本次系统级导航未成功，不能区分应用语义问题与自动化键盘焦点未送达；需用可操作的真实 VoiceOver 输入完成主要流程朗读后再验收。
+
+### 2026-11-17 VoiceOver 导航复核与清理
+
+- 复核：再次在隔离 Profile 探针中开启 VoiceOver。字幕仍先落在应用根 `group`；将 VoiceOver 分组改为“忽略群组”、初始光标临时设为窗口首项后，尝试 Control-Option-右箭头只得到不完整的字母字幕片段，无法确认焦点进入任何应用控件，也没有读到稳定的按钮名称或状态。此轮仍不能关闭 UI-5.7 的 VoiceOver 主流程项。
+- 控制路径：VoiceOver Utility 的“允许 AppleScript 控制 VoiceOver”原本关闭，复核中保持关闭；Utility 的无障碍操作在该窗口上超时，因此未通过脚本控制绕过真实导航。已将全局分组偏好恢复为“标准”，并在系统设置确认关闭 VoiceOver。
+- 收尾：退出隔离 Profile 探针、VoiceOver Utility 和系统设置；删除 `/private/tmp/aggregate-voiceover2`、临时 XCTest 目录及字幕 OCR 文件。复核后 `git worktree list` 仅有主工作区，进程查询无这三个任务应用残留；主工作区仅有用户原先修改的 `pubspec.lock`，未改动、未暂存。
+- 结论：本轮没有完成可复核的 VoiceOver 控件朗读，不改变 UI-5.4 / UI-5.7 的部分验收结论；仍需用可靠的 VoiceOver 输入完成设置页主流程，并核对控件名称、状态和顺序。
