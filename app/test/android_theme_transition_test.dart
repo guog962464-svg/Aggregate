@@ -2,6 +2,7 @@ import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/features/settings/settings_page.dart';
+import 'package:aggregate/features/settings/theme_switch_fitted_calibration.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
@@ -81,6 +82,12 @@ void main() {
     await tester.pumpAndSettle();
     await _openSettings(tester);
     expect(_pageTheme(tester).brightness, Brightness.dark);
+    final liveSwitch = tester.widget<GlassThemeSwitch>(
+      find.byType(GlassThemeSwitch),
+    );
+    expect(liveSwitch.calibration, same(videoFittedThemeSwitch));
+    expect(liveSwitch.calibration.particleParameters, hasLength(113));
+
     await tester.tap(find.bySemanticsLabel('外观主题'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

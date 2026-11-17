@@ -569,5 +569,5 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - 来源核对：重新取得作者官方 `main.js`，SHA-256 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`，与本机 `inputs/sources.json` 所记摘要一致。原版每次 `requestAnimationFrame` 使用实际间隔并截断到 `1/30 s`；滑块弹簧每帧四个子步，光带相位与点阵弹簧使用本帧步长，太阳射线和月亮星点亮度由同一绝对时间逐帧求值。
 - 修改：删除产品实时路径的固定 `1/60 s` 积分累加器，`advanceRealtime` 现在直接调用原有逐刷新积分。120 Hz 下不再隔帧停止滑块、粒子和光带位置更新。仅改变时间积分采样；拖动、反向、释放、端点提交、主题偏好和减少动态效果逻辑未改，也没有引入参考帧序列。
-- 验证：新增 120 Hz 单刷新步测试，并核对可变刷新间隔的 `1/30 s` 上限；`flutter test --no-pub` 全量 301 项通过，`flutter analyze --no-pub` 无问题，`git diff --check` 通过。离屏光学探针与 60 Hz 独立模型样本均在全量测试中通过。
+- 验证：新增 120 Hz 单刷新步测试，并核对可变刷新间隔的 `1/30 s` 上限；`flutter test --no-pub` 全量 301 项通过，`flutter analyze --no-pub` 无问题，`git diff --check` 通过。离屏光学探针与 60 Hz 独立模型样本均在全量测试中通过。另增强 macOS 实际设置路由回归，断言页面中的 `GlassThemeSwitch` 使用 `videoFittedThemeSwitch`，且配置含完整 113 个粒子参数；`flutter test --no-pub test/android_theme_transition_test.dart` 两平台变体 2 项通过，分析通过。该检查锁住生产接线，不代替逐帧图像对照。
 - 范围边界：这是由官方源码与模型回归证明的更新时间修正，没有新录制原生窗口逐帧差分，也没有测量物理 display-present 时刻或实际 120 Hz 显示面板。原录屏 PTS 映射、初始绝对时钟、粒子随机对应和整帧 MAE 差距仍存在；UI-6.8 继续部分验收，不能据此声称 1:1 完成。
