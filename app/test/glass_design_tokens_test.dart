@@ -53,6 +53,86 @@ void main() {
     );
   });
 
+  test(
+    'macOS foreground colors retain AA contrast during theme interpolation',
+    () {
+      final light = AggregateTheme.forPlatform(
+        AggregateTheme.light,
+        TargetPlatform.macOS,
+      );
+      final dark = AggregateTheme.forPlatform(
+        AggregateTheme.dark,
+        TargetPlatform.macOS,
+      );
+
+      expect(
+        AggregateTheme.withMacOSSurfaceTextContrast(light)
+            .colorScheme
+            .onSurface,
+        light.colorScheme.onSurface,
+      );
+      expect(
+        AggregateTheme.withMacOSSurfaceTextContrast(dark).colorScheme.onSurface,
+        dark.colorScheme.onSurface,
+      );
+
+      for (var frame = 0; frame <= 100; frame++) {
+        final interpolated = ThemeData.lerp(light, dark, frame / 100);
+        final safe = AggregateTheme.withMacOSSurfaceTextContrast(interpolated);
+        final surface = safe.colorScheme.surface;
+        final tokens = safe.extension<GlassDesignTokens>()!;
+
+        expect(
+          _contrast(safe.colorScheme.onSurface, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrast(safe.colorScheme.onSurfaceVariant, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(_contrast(tokens.text, surface), greaterThanOrEqualTo(4.5));
+        expect(_contrast(tokens.muted, surface), greaterThanOrEqualTo(4.5));
+        for (final style in [
+          safe.textTheme.displayLarge,
+          safe.textTheme.displayMedium,
+          safe.textTheme.displaySmall,
+          safe.textTheme.headlineLarge,
+          safe.textTheme.headlineMedium,
+          safe.textTheme.headlineSmall,
+          safe.textTheme.titleLarge,
+          safe.textTheme.titleMedium,
+          safe.textTheme.titleSmall,
+          safe.textTheme.bodyLarge,
+          safe.textTheme.bodyMedium,
+          safe.textTheme.bodySmall,
+          safe.textTheme.labelLarge,
+          safe.textTheme.labelMedium,
+          safe.textTheme.labelSmall,
+        ]) {
+          if (style?.color case final color?) {
+            expect(_contrast(color, surface), greaterThanOrEqualTo(4.5));
+          }
+        }
+        expect(
+          _contrast(safe.appBarTheme.foregroundColor!, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrast(safe.iconTheme.color!, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrast(safe.listTileTheme.titleTextStyle!.color!, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrast(safe.listTileTheme.subtitleTextStyle!.color!, surface),
+          greaterThanOrEqualTo(4.5),
+        );
+      }
+    },
+  );
+
   test('glass scene follows and releases the theme switch backdrop phase', () {
     final frame = GlassSceneFrame();
     var notifications = 0;
@@ -153,4 +233,17 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+}
+
+double _contrast(Color foreground, Color background) {
+  final opaqueForeground = Color.alphaBlend(foreground, background);
+  final foregroundLuminance = opaqueForeground.computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final lighter = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final darker = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
 }

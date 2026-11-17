@@ -47,6 +47,119 @@ abstract final class AggregateTheme {
     );
   }
 
+  /// Keeps macOS foregrounds readable while [ThemeData.lerp] moves between
+  /// the light and dark palettes. Existing colors remain untouched whenever
+  /// they already meet the normal-text contrast target against the surface.
+  static ThemeData withMacOSSurfaceTextContrast(ThemeData theme) {
+    final glass = theme.extension<GlassDesignTokens>();
+    if (glass == null) return theme;
+
+    final surface = theme.colorScheme.surface;
+    final onSurface = _readableOnSurface(theme.colorScheme.onSurface, surface);
+    final onSurfaceVariant = _readableOnSurface(
+      theme.colorScheme.onSurfaceVariant,
+      surface,
+    );
+    final safeTextTheme = _withReadableTextColors(theme.textTheme, surface);
+    final safeGlass = glass.copyWith(
+      text: _readableOnSurface(glass.text, surface),
+      muted: _readableOnSurface(glass.muted, surface),
+    );
+
+    return theme.copyWith(
+      colorScheme: theme.colorScheme.copyWith(
+        onSurface: onSurface,
+        onSurfaceVariant: onSurfaceVariant,
+      ),
+      textTheme: safeTextTheme,
+      appBarTheme: theme.appBarTheme.copyWith(
+        foregroundColor: _readableOnSurface(
+          theme.appBarTheme.foregroundColor ?? onSurface,
+          surface,
+        ),
+      ),
+      iconTheme: theme.iconTheme.copyWith(
+        color: _readableOnSurface(
+          theme.iconTheme.color ?? onSurfaceVariant,
+          surface,
+        ),
+      ),
+      listTileTheme: theme.listTileTheme.copyWith(
+        titleTextStyle: _withReadableTextColor(
+          theme.listTileTheme.titleTextStyle,
+          surface,
+          onSurface,
+        ),
+        subtitleTextStyle: _withReadableTextColor(
+          theme.listTileTheme.subtitleTextStyle,
+          surface,
+          onSurfaceVariant,
+        ),
+        iconColor: _readableOnSurface(
+          theme.listTileTheme.iconColor ?? onSurfaceVariant,
+          surface,
+        ),
+      ),
+      extensions: [
+        for (final extension in theme.extensions.values)
+          if (extension is GlassDesignTokens) safeGlass else extension,
+      ],
+    );
+  }
+
+  static TextTheme _withReadableTextColors(TextTheme textTheme, Color surface) {
+    TextStyle? readable(TextStyle? style) {
+      if (style == null || style.color == null) return style;
+      return style.copyWith(color: _readableOnSurface(style.color!, surface));
+    }
+
+    return TextTheme(
+      displayLarge: readable(textTheme.displayLarge),
+      displayMedium: readable(textTheme.displayMedium),
+      displaySmall: readable(textTheme.displaySmall),
+      headlineLarge: readable(textTheme.headlineLarge),
+      headlineMedium: readable(textTheme.headlineMedium),
+      headlineSmall: readable(textTheme.headlineSmall),
+      titleLarge: readable(textTheme.titleLarge),
+      titleMedium: readable(textTheme.titleMedium),
+      titleSmall: readable(textTheme.titleSmall),
+      bodyLarge: readable(textTheme.bodyLarge),
+      bodyMedium: readable(textTheme.bodyMedium),
+      bodySmall: readable(textTheme.bodySmall),
+      labelLarge: readable(textTheme.labelLarge),
+      labelMedium: readable(textTheme.labelMedium),
+      labelSmall: readable(textTheme.labelSmall),
+    );
+  }
+
+  static TextStyle? _withReadableTextColor(
+    TextStyle? style,
+    Color surface,
+    Color fallback,
+  ) => style?.copyWith(
+    color: _readableOnSurface(style.color ?? fallback, surface),
+  );
+
+  static Color _readableOnSurface(Color preferred, Color surface) {
+    if (_contrastRatio(preferred, surface) >= 4.5) return preferred;
+    final blackContrast = _contrastRatio(Colors.black, surface);
+    final whiteContrast = _contrastRatio(Colors.white, surface);
+    return blackContrast >= whiteContrast ? Colors.black : Colors.white;
+  }
+
+  static double _contrastRatio(Color foreground, Color background) {
+    final opaqueForeground = Color.alphaBlend(foreground, background);
+    final foregroundLuminance = opaqueForeground.computeLuminance();
+    final backgroundLuminance = background.computeLuminance();
+    final lighter = foregroundLuminance > backgroundLuminance
+        ? foregroundLuminance
+        : backgroundLuminance;
+    final darker = foregroundLuminance > backgroundLuminance
+        ? backgroundLuminance
+        : foregroundLuminance;
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
   static ThemeData _macOS(ThemeData theme) {
     final glass = GlassDesignTokens.forBrightness(theme.brightness);
     final scheme = theme.colorScheme.copyWith(

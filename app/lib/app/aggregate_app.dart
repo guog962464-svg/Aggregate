@@ -146,10 +146,15 @@ class _AggregateAppState extends State<AggregateApp> {
         child: Focus(autofocus: true, child: child ?? const SizedBox.shrink()),
       );
       final appContent = defaultTargetPlatform == TargetPlatform.macOS
-          ? GlassScene(
-              child: GlassMotionScope(
-                clock: widget.glassMotionClock,
-                child: content,
+          ? Theme(
+              data: AggregateTheme.withMacOSSurfaceTextContrast(
+                Theme.of(context),
+              ),
+              child: GlassScene(
+                child: GlassMotionScope(
+                  clock: widget.glassMotionClock,
+                  child: content,
+                ),
               ),
             )
           : content;

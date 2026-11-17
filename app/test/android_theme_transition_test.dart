@@ -3,6 +3,7 @@ import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/features/settings/settings_page.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
@@ -88,6 +89,31 @@ void main() {
     expect(surface, isNot(AggregateTheme.dark.colorScheme.surface));
     expect(surface, isNot(AggregateTheme.light.colorScheme.surface));
     expect(_artwork(tester).frame.position, allOf(greaterThan(0), lessThan(1)));
+    await tester.pump(const Duration(milliseconds: 180));
+
+    final midwayTheme = _pageTheme(tester);
+    expect(
+      _contrastRatio(
+        midwayTheme.colorScheme.onSurface,
+        midwayTheme.colorScheme.surface,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      _contrastRatio(
+        midwayTheme.extension<GlassDesignTokens>()!.text,
+        midwayTheme.colorScheme.surface,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      _contrastRatio(
+        midwayTheme.extension<GlassDesignTokens>()!.muted,
+        midwayTheme.colorScheme.surface,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+
     await tester.pump(const Duration(milliseconds: 500));
     expect(_pageTheme(tester).brightness, Brightness.light);
     expect(
@@ -99,6 +125,19 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+}
+
+double _contrastRatio(Color foreground, Color background) {
+  final opaqueForeground = Color.alphaBlend(foreground, background);
+  final foregroundLuminance = opaqueForeground.computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final lighter = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final darker = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 Future<void> _openSettings(WidgetTester tester) async {
