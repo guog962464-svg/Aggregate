@@ -4,6 +4,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/netease_account_fixture.dart';
 
 void main() {
+  test(
+    'trusted built-in actions retain their declared permission levels',
+    () async {
+      final fixture = await NeteaseAccountFixture.create();
+      try {
+        final capabilities = await fixture.runtime.searchCapabilities(
+          const SearchQuery(''),
+        );
+        expect(
+          capabilities
+              .singleWhere((item) => item.presentation == 'music.state')
+              .permission,
+          PermissionLevel.read,
+        );
+        expect(
+          capabilities
+              .singleWhere((item) => item.presentation == 'music.play')
+              .permission,
+          PermissionLevel.localControl,
+        );
+      } finally {
+        await fixture.dispose();
+      }
+    },
+  );
+
   test('verified CLI account reads and confirms logout', () async {
     final fixture = await NeteaseAccountFixture.create();
     try {

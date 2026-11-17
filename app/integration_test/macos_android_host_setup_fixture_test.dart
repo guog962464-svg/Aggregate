@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate/platform/macos/mac_runtime.dart';
 import 'package:aggregate/platform/macos/host/host_device_signature_verifier.dart';
 import 'package:aggregate/platform/macos/host/host_operation_ledger.dart';
@@ -14,6 +15,9 @@ import 'package:aggregate/platform/macos/host/host_tls_identity.dart';
 import 'package:aggregate/platform/macos/host/host_wss_transport.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mcp_dart/mcp_dart.dart' as mcp;
+
+import 'fixtures/android_host_mcp_fixture.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -42,8 +46,52 @@ void main() {
       expect(await executable.exists(), isTrue);
       final runtimeDirectory = Directory('${fixtureDirectory.path}/runtime');
       final runtime = await MacRuntime.open(dataDirectory: runtimeDirectory);
+      final httpMcpServer = mcp.StreamableMcpServer(
+        serverFactory: (_) {
+          return createAndroidHostMcpFixture(
+            name: 'aggregate-http-fixture',
+            resourceUri: 'aggregate://http-fixture/resource',
+            resourceText: 'http-fixture-resource',
+          );
+        },
+        host: '127.0.0.1',
+        port: 0,
+        path: '/mcp',
+        allowedHosts: const {'127.0.0.1'},
+      );
       final androidResultFile = File(
         '${fixtureDirectory.path}/android-result.txt',
+      );
+      final cliManifestFile = File(
+        '${fixtureDirectory.path}/cli-manifest.json',
+      );
+      await cliManifestFile.writeAsString(
+        jsonEncode({
+          'schemaVersion': 1,
+          'id': 'android-host-cli-fixture',
+          'displayName': 'Android Host CLI fixture',
+          'platforms': ['macos'],
+          'executable': '/usr/bin/printf',
+          'actions': [
+            {
+              'id': 'echo',
+              'title': 'Fixture CLI echo',
+              'argv': ['plain-cli:%s\\n', '{{value}}'],
+              'inputSchema': {
+                'type': 'object',
+                'properties': {
+                  'value': {'type': 'string'},
+                },
+                'required': ['value'],
+                'additionalProperties': false,
+              },
+              'output': 'text',
+              'permission': 'externalWrite',
+              'timeoutMs': 30000,
+            },
+          ],
+        }),
+        flush: true,
       );
       final coordinator = HostSetupCoordinator(
         setup: runtime,
@@ -84,34 +132,114 @@ void main() {
 
       var approving = false;
       Object? approvalError;
-      final approvalTimer = Timer.periodic(const Duration(milliseconds: 100), (
-        _,
-      ) async {
-        if (approving) return;
-        approving = true;
-        try {
-          final requests = await transport.pendingRequests();
-          for (final request in requests) {
-            await transport.approvePending(
-              request.deviceId,
-              scopes: const {
-                HostGrantScope.connectionSetup,
-                HostGrantScope.readConnections,
-              },
-            );
-          }
-        } on Object catch (error) {
-          approvalError = error;
-        } finally {
-          approving = false;
-        }
-      });
+      Timer? approvalTimer;
+      late Connection ncmFixtureConnection;
+      late Connection cliFixtureConnection;
+      late Connection httpMcpConnection;
+      late Connection stdioMcpConnection;
 
       try {
+        await httpMcpServer.start();
+        ncmFixtureConnection = await runtime.addConnection(
+          ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Android isolated Netease CLI fixture',
+            executable: executable.path,
+          ),
+        );
+        cliFixtureConnection = await runtime.addConnection(
+          ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Android isolated plain CLI fixture',
+            executable: '/usr/bin/printf',
+            manifestPath: cliManifestFile.path,
+          ),
+        );
+        httpMcpConnection = await runtime.addConnection(
+          ConnectionSpec(
+            kind: ConnectionKind.mcpHttp,
+            label: 'Android isolated HTTP MCP fixture',
+            url: 'http://127.0.0.1:${httpMcpServer.boundPort}/mcp',
+          ),
+        );
+        stdioMcpConnection = await runtime.addConnection(
+          ConnectionSpec(
+            kind: ConnectionKind.mcpStdio,
+            label: 'Android isolated stdio MCP fixture',
+            executable: Platform.environment['AGGREGATE_DART_EXECUTABLE']!,
+            arguments: [
+              '${Directory.current.path}/integration_test/fixtures/android_host_stdio_mcp_server.dart',
+            ],
+            workingDirectory: Directory.current.path,
+          ),
+        );
+        expect(
+          httpMcpConnection.status,
+          ConnectionStatus.ready,
+          reason:
+              httpMcpConnection.diagnostic ?? 'HTTP MCP fixture is unavailable',
+        );
+        expect(
+          stdioMcpConnection.status,
+          ConnectionStatus.ready,
+          reason:
+              stdioMcpConnection.diagnostic ??
+              'stdio MCP fixture is unavailable',
+        );
         await transport.start();
+        approvalTimer = Timer.periodic(const Duration(milliseconds: 100), (
+          _,
+        ) async {
+          if (approving) return;
+          approving = true;
+          try {
+            final requests = await transport.pendingRequests();
+            for (final request in requests) {
+              final mcpToolsPairing =
+                  request.displayName == 'Android MCP integration fixture';
+              await transport.approvePending(
+                request.deviceId,
+                scopes: mcpToolsPairing
+                    ? const {HostGrantScope.readConnections}
+                    : const {
+                        HostGrantScope.connectionSetup,
+                        HostGrantScope.readConnections,
+                        HostGrantScope.account,
+                        HostGrantScope.terminal,
+                      },
+                connectionPermissions: mcpToolsPairing
+                    ? {
+                        ncmFixtureConnection.id.value: const {
+                          PermissionLevel.read,
+                        },
+                        cliFixtureConnection.id.value: const {
+                          PermissionLevel.read,
+                          PermissionLevel.externalWrite,
+                        },
+                        httpMcpConnection.id.value: const {
+                          PermissionLevel.read,
+                          PermissionLevel.externalWrite,
+                        },
+                        stdioMcpConnection.id.value: const {
+                          PermissionLevel.read,
+                          PermissionLevel.externalWrite,
+                        },
+                      }
+                    : const {},
+              );
+            }
+          } on Object catch (error) {
+            approvalError = error;
+          } finally {
+            approving = false;
+          }
+        });
         final invitation = await transport.createInvitation();
+        final mcpInvitation = await transport.createInvitation();
         await File('${fixtureDirectory.path}/invitation.json')
             .writeAsString(invitation.qrPayload, flush: true);
+        await File('${fixtureDirectory.path}/mcp-invitation.json')
+            .writeAsString(mcpInvitation.qrPayload, flush: true);
         final androidResult = await _waitForAndroidResult(androidResultFile);
         expect(androidResult, 'passed', reason: 'Android setup flow failed');
         expect(approvalError, isNull);
@@ -125,10 +253,13 @@ void main() {
         expect(savedJson, isNot(contains(fixtureSecret)));
         final root = jsonDecode(savedJson) as Map<String, Object?>;
         final connections = root['connections']! as List;
-        expect(connections, hasLength(1));
-        final savedSpec =
-            (connections.single as Map<String, Object?>)['spec']!
-                as Map<String, Object?>;
+        expect(connections, hasLength(5));
+        final savedSpec = (connections
+            .map((item) => (item as Map<String, Object?>)['spec']!)
+            .cast<Map<String, Object?>>()
+            .singleWhere(
+              (spec) => spec['label'] == 'Android isolated physical fixture',
+            ));
         expect(savedSpec['label'], 'Android isolated physical fixture');
         expect(savedSpec['executable'], executable.path);
         final profileId = savedSpec['profileId']! as String;
@@ -149,9 +280,10 @@ void main() {
         expect((await profile.stat()).mode & 0x3f, 0);
         expect((await storedKey.stat()).mode & 0x3f, 0);
       } finally {
-        approvalTimer.cancel();
+        approvalTimer?.cancel();
         await transport.stop();
         await runtime.dispose();
+        await httpMcpServer.stop();
       }
     },
     timeout: const Timeout(Duration(minutes: 15)),

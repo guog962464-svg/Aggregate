@@ -873,13 +873,15 @@ final class MacRuntime
     if (isNeteaseCli) {
       await _checkNeteaseEnvironment(entry, verifyLogin: verifyLogin);
     }
+    final trustedBuiltinManifest =
+        isNeteaseCli && (manifestPath == null || manifestPath.isEmpty);
     if ((manifestPath == null || manifestPath.isEmpty) && !isNeteaseCli) {
       return;
     }
-    final manifest = manifestPath == null || manifestPath.isEmpty
+    final manifest = trustedBuiltinManifest
         ? ConnectorManifest.neteaseCli(entry.spec.executable!)
         : ConnectorManifest.fromJson(
-            jsonDecode(await File(manifestPath).readAsString()),
+            jsonDecode(await File(manifestPath!).readAsString()),
           );
     if (!manifest.supports('macos') ||
         manifest.executable != entry.spec.executable) {
@@ -894,9 +896,11 @@ final class MacRuntime
         ),
         title: action.title,
         description: '${manifest.displayName} · ${action.argv.join(' ')}',
-        // A local manifest is user supplied and cannot grant itself read-only
-        // privileges. All CLI actions still require a confirmation.
-        permission: action.permission == PermissionLevel.externalWrite
+        // Only this code-owned manifest can publish read/localControl actions.
+        // User supplied manifests cannot lower their own confirmation level.
+        permission: trustedBuiltinManifest
+            ? action.permission
+            : action.permission == PermissionLevel.externalWrite
             ? PermissionLevel.externalWrite
             : PermissionLevel.unknown,
         inputSchema: action.inputSchema,
@@ -1208,7 +1212,9 @@ final class MacRuntime
           id: CapabilityId(ConnectionId(id), CapabilityKind.mcpTool, tool.name),
           title: tool.title ?? tool.name,
           description: tool.description ?? 'MCP 工具',
-          permission: PermissionLevel.unknown,
+          // MCP annotations are advisory only; a tool can have external side
+          // effects, so it needs the strongest explicit Host grant by default.
+          permission: PermissionLevel.externalWrite,
           inputSchema: Map<String, Object?>.from(tool.inputSchema.toJson()),
         );
         _capabilities[capability.id.key] = capability;

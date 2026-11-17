@@ -90,7 +90,20 @@ def prepare_fake_ncm(fixture_dir: Path) -> Path:
         "      chmod 600 \"$HOME/private-key.pem\"\n"
         "    fi\n"
         "    ;;\n"
-        "  login) printf '{\"success\":false}\\n'; exit 1 ;;\n"
+        "  login)\n"
+        "    if [ \"${2:-}\" = \"--check\" ]; then\n"
+        "      printf '{\"success\":false}\\n'\n"
+        "      exit 1\n"
+        "    fi\n"
+        "    printf 'fixture login is disabled\\n'\n"
+        "    exit 1\n"
+        "    ;;\n"
+        "  state) printf '{\"state\":\"fixture-playback-idle\"}\\n' ;;\n"
+        "  fixture-terminal)\n"
+        "    printf 'FIXTURE_TUI_READY\\n'\n"
+        "    IFS= read -r fixture_line\n"
+        "    printf 'FIXTURE_TUI_ECHO:%s\\n' \"$fixture_line\"\n"
+        "    ;;\n"
         "  *) exit 0 ;;\n"
         "esac\n",
     )
@@ -155,8 +168,21 @@ def main() -> int:
         fixture_secret_file.chmod(0o600)
         fixture_secret = fixture_secret_file.read_text().strip()
         fake_home = prepare_fake_ncm(fixture_dir)
+        flutter_executable = shutil.which("flutter")
+        if flutter_executable is None:
+            raise RuntimeError("flutter executable was not found on PATH")
+        dart_executable = (
+            Path(flutter_executable).resolve().parent
+            / "cache"
+            / "dart-sdk"
+            / "bin"
+            / "dart"
+        )
+        if not dart_executable.is_file():
+            raise RuntimeError("Flutter's bundled Dart executable was not found")
         mac_environment = os.environ.copy()
         mac_environment["HOME"] = str(fake_home)
+        mac_environment["AGGREGATE_DART_EXECUTABLE"] = str(dart_executable)
         with mac_log.open("w") as output:
             mac_process = subprocess.Popen(
                 [
@@ -177,9 +203,15 @@ def main() -> int:
             )
 
         invitation_file = fixture_dir / "invitation.json"
+        mcp_invitation_file = fixture_dir / "mcp-invitation.json"
         deadline = time.monotonic() + 300
         while time.monotonic() < deadline:
-            if invitation_file.exists() and invitation_file.stat().st_size:
+            if (
+                invitation_file.exists()
+                and invitation_file.stat().st_size
+                and mcp_invitation_file.exists()
+                and mcp_invitation_file.stat().st_size
+            ):
                 break
             if mac_process.poll() is not None:
                 raise RuntimeError(
@@ -192,6 +224,8 @@ def main() -> int:
 
         payload = invitation_file.read_text()
         invitation = json.loads(payload)
+        mcp_payload = mcp_invitation_file.read_text()
+        mcp_invitation = json.loads(mcp_payload)
         endpoints = invitation.get("endpoints")
         if invitation.get("serviceType") != SERVICE_TYPE or not isinstance(
             endpoints, list
@@ -210,6 +244,14 @@ def main() -> int:
             or parsed.password
         ):
             raise RuntimeError("fixture invitation is not loopback-only WSS")
+        if (
+            mcp_invitation.get("hostId") != invitation.get("hostId")
+            or mcp_invitation.get("certificateSha256")
+            != invitation.get("certificateSha256")
+            or mcp_invitation.get("endpoints") != endpoints
+            or mcp_invitation.get("serviceType") != SERVICE_TYPE
+        ):
+            raise RuntimeError("MCP fixture invitation does not match the Host")
         reverse_port = parsed.port
         existing_reverse = run(
             ["adb", "-s", device, "reverse", "--list"],
@@ -248,6 +290,8 @@ def main() -> int:
             + base64.b64encode(payload.encode()).decode(),
             "--dart-define=aggregateHostSetupFixtureSecretBase64="
             + base64.b64encode(fixture_secret.encode()).decode(),
+            "--dart-define=aggregateHostMcpFixtureInvitationBase64="
+            + base64.b64encode(mcp_payload.encode()).decode(),
         ]
         try:
             with android_log.open("w") as output:

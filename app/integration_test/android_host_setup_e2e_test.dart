@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -24,6 +25,15 @@ void main() {
     final invitation = AndroidHostInvitation.fromQrPayload(
       utf8.decode(base64Decode(encodedInvitation)),
     );
+    const encodedMcpInvitation = String.fromEnvironment(
+      'aggregateHostMcpFixtureInvitationBase64',
+    );
+    expect(encodedMcpInvitation, isNotEmpty);
+    final mcpInvitation = AndroidHostInvitation.fromQrPayload(
+      utf8.decode(base64Decode(encodedMcpInvitation)),
+    );
+    expect(mcpInvitation.hostId, invitation.hostId);
+    expect(mcpInvitation.certificateSha256, invitation.certificateSha256);
     final directory = await Directory.systemTemp.createTemp(
       'aggregate-android-host-setup-',
     );
@@ -117,6 +127,10 @@ void main() {
       );
 
       final connection = await setup.saveConnectionSetup(report.draftId);
+      await expectLater(
+        setup.saveConnectionSetup(report.draftId),
+        throwsA(isA<StateError>()),
+      );
       expect(
         connection.id.value,
         matches(
@@ -130,6 +144,27 @@ void main() {
       expect(connection.executionTarget, target);
       expect(connection.location, 'Mac Host');
       expect(connection.status, ConnectionStatus.ready);
+      final discardSelection =
+          await (setup as ConnectionSetupExecutableSelectionPort)
+              .detectExecutableSelection('netease-music');
+      final discardedDraft = await setup.testConnectionSetup(
+        ConnectionSetupDraft(
+          adapterId: 'netease-music',
+          executableReference: discardSelection!.reference,
+          values: {'appId': 'fixture-app', 'privateKey': secret},
+          spec: ConnectionSpec(
+            kind: ConnectionKind.cli,
+            label: 'Android isolated discarded fixture',
+            executionTarget: target,
+          ),
+        ),
+      );
+      expect(discardedDraft.canSave, isTrue);
+      await setup.discardConnectionSetup(discardedDraft.draftId);
+      await expectLater(
+        setup.saveConnectionSetup(discardedDraft.draftId),
+        throwsA(isA<StateError>()),
+      );
       final hostMetadata = await File('${directory.path}/hosts.json')
           .readAsString();
       expect(hostMetadata, isNot(contains(secret)));
@@ -138,8 +173,13 @@ void main() {
       final savedHostConnections = remoteConnections
           .where((item) => item.executionTarget == target)
           .toList(growable: false);
-      expect(savedHostConnections, hasLength(1));
-      expect(savedHostConnections.single.id.value, connection.id.value);
+      expect(savedHostConnections, hasLength(5));
+      expect(
+        savedHostConnections.any(
+          (item) => item.id.value == connection.id.value,
+        ),
+        isTrue,
+      );
       final hostCapabilityResponse = await manager.call(
         invitation.hostId,
         'capability.search',
@@ -153,6 +193,306 @@ void main() {
       expect(
         remoteCapabilities.any(
           (capability) => capability.id.connection.value == connection.id.value,
+        ),
+        isTrue,
+      );
+      final plainCliConnection = savedHostConnections.singleWhere(
+        (item) => item.label == 'Android isolated plain CLI fixture',
+      );
+      final plainCliCapability = remoteCapabilities.singleWhere(
+        (capability) =>
+            capability.id.connection.value == plainCliConnection.id.value &&
+            capability.title == 'Fixture CLI echo',
+      );
+      expect(plainCliCapability.permission, PermissionLevel.externalWrite);
+      final ungrantedCliRun = await runtime.invoke(
+        plainCliCapability.id,
+        const {'value': 'ungranted'},
+        permissionGranted: true,
+      );
+      final ungrantedCliResult = await runtime
+          .watchRun(ungrantedCliRun.id)
+          .firstWhere((event) => event.state == RunState.failed)
+          .timeout(const Duration(seconds: 10));
+      expect(
+        ungrantedCliResult.failure?.code,
+        RuntimeErrorCode.permissionDenied,
+      );
+      for (final fixture in [
+        (
+          label: 'Android isolated HTTP MCP fixture',
+          text: 'http-fixture-resource',
+        ),
+        (
+          label: 'Android isolated stdio MCP fixture',
+          text: 'stdio-fixture-resource',
+        ),
+      ]) {
+        final fixtureConnection = savedHostConnections.singleWhere(
+          (item) => item.label == fixture.label,
+        );
+        final resource = remoteCapabilities.singleWhere(
+          (capability) =>
+              capability.id.connection.value == fixtureConnection.id.value &&
+              capability.id.kind == CapabilityKind.mcpResource,
+        );
+        final blocks = await runtime.readResource(
+          ResourceRef(resource.id, Uri.parse(resource.id.name)),
+        );
+        expect(
+          blocks.map((block) => '${block.value}').join('\n'),
+          contains(fixture.text),
+        );
+        final prompt = remoteCapabilities.singleWhere(
+          (capability) =>
+              capability.id.connection.value == fixtureConnection.id.value &&
+              capability.id.kind == CapabilityKind.mcpPrompt,
+        );
+        final promptBlocks = await runtime.getPrompt(
+          PromptRef(prompt.id),
+          const {},
+        );
+        expect(
+          promptBlocks.map((block) => '${block.value}').join('\n'),
+          contains('prompt-fixture:${fixture.text}'),
+        );
+      }
+
+      final ncmFixtureConnection = savedHostConnections.singleWhere(
+        (item) => item.label == 'Android isolated Netease CLI fixture',
+      );
+      final stateCapability = remoteCapabilities.singleWhere(
+        (capability) =>
+            capability.id.connection.value == ncmFixtureConnection.id.value &&
+            capability.presentation == 'music.state',
+      );
+      final stateRun = await runtime.invoke(stateCapability.id, const {});
+      final stateResult = await runtime
+          .watchRun(stateRun.id)
+          .firstWhere(
+            (event) => const {
+              RunState.succeeded,
+              RunState.failed,
+              RunState.cancelled,
+              RunState.timedOut,
+              RunState.outcomeUnknown,
+            }.contains(event.state),
+          )
+          .timeout(const Duration(seconds: 15));
+      expect(
+        stateResult.state,
+        RunState.succeeded,
+        reason: stateResult.failure?.message ?? 'Host CLI action failed',
+      );
+      expect(
+        stateResult.blocks.map((block) => '${block.value}').join('\n'),
+        contains('fixture-playback-idle'),
+      );
+
+      expect(
+        (await runtime.readAccount(ncmFixtureConnection.id))?.state,
+        AccountState.signedOut,
+      );
+      final login = await runtime.beginAccountLogin(ncmFixtureConnection.id);
+      final loginOutput = await runtime
+          .watchTerminal(login)
+          .first
+          .timeout(const Duration(seconds: 15));
+      expect(loginOutput, contains('fixture login is disabled'));
+      expect(await runtime.waitAccountLogin(login), 1);
+      await runtime.closeTerminal(login);
+
+      final terminal = await runtime.openTerminal(
+        CliCommand(ncmFixtureConnection.id, const ['fixture-terminal']),
+      );
+      final terminalOutput = StringBuffer();
+      final terminalReady = Completer<void>();
+      final terminalEchoed = Completer<void>();
+      final terminalSubscription = runtime.watchTerminal(terminal).listen((
+        chunk,
+      ) {
+        terminalOutput.write(chunk);
+        if (chunk.contains('FIXTURE_TUI_READY') && !terminalReady.isCompleted) {
+          terminalReady.complete();
+        }
+        if (terminalOutput.toString().contains(
+              'FIXTURE_TUI_ECHO:fixture-input',
+            ) &&
+            !terminalEchoed.isCompleted) {
+          terminalEchoed.complete();
+        }
+      });
+      try {
+        await terminalReady.future.timeout(const Duration(seconds: 15));
+        await runtime.resizeTerminal(terminal, 96, 32);
+        await runtime.writeTerminal(terminal, 'fixture-input\n');
+        await terminalEchoed.future.timeout(const Duration(seconds: 15));
+        expect(
+          terminalOutput.toString(),
+          contains('FIXTURE_TUI_ECHO:fixture-input'),
+        );
+      } finally {
+        await runtime.closeTerminal(terminal);
+        await terminalSubscription.cancel();
+      }
+
+      final rotatedIdentity = await manager.rotateDeviceIdentity();
+      expect(rotatedIdentity.localHostRecordsCleared, isTrue);
+      expect(rotatedIdentity.deviceId, isNot(receipt.deviceId));
+      await manager.requestPairing(
+        invitation: mcpInvitation,
+        displayName: 'Android MCP integration fixture',
+      );
+      AndroidPairedHost? mcpHost;
+      AndroidHostPairingException? mcpPendingApproval;
+      for (var attempt = 0; attempt < 40; attempt++) {
+        try {
+          mcpHost = await manager.completePairing(
+            invitation: mcpInvitation,
+            displayName: 'Android MCP integration fixture',
+          );
+          mcpPendingApproval = null;
+          break;
+        } on AndroidHostPairingException catch (error) {
+          if (error.failure != AndroidHostPairingFailure.approvalRequired) {
+            rethrow;
+          }
+          mcpPendingApproval = error;
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+        }
+      }
+      expect(
+        mcpPendingApproval,
+        isNull,
+        reason: 'Host fixture did not approve the isolated MCP identity',
+      );
+      expect(mcpHost!.hostId, mcpInvitation.hostId);
+
+      final mcpConnections = (await runtime.listConnections())
+          .where((item) => item.executionTarget == target)
+          .toList(growable: false);
+      expect(mcpConnections, hasLength(4));
+      for (final label in [
+        'Android isolated Netease CLI fixture',
+        'Android isolated plain CLI fixture',
+        'Android isolated HTTP MCP fixture',
+        'Android isolated stdio MCP fixture',
+      ]) {
+        expect(mcpConnections.any((item) => item.label == label), isTrue);
+      }
+      final mcpCapabilities = await runtime.searchCapabilities(
+        const SearchQuery(''),
+      );
+      final plainCli = mcpConnections.singleWhere(
+        (item) => item.label == 'Android isolated plain CLI fixture',
+      );
+      final plainCliTool = mcpCapabilities.singleWhere(
+        (capability) =>
+            capability.id.connection.value == plainCli.id.value &&
+            capability.title == 'Fixture CLI echo',
+      );
+      expect(plainCliTool.permission, PermissionLevel.externalWrite);
+      final unconfirmedCliRun = await runtime.invoke(plainCliTool.id, const {
+        'value': 'unconfirmed',
+      });
+      final unconfirmedCli = await runtime
+          .watchRun(unconfirmedCliRun.id)
+          .firstWhere((event) => event.state == RunState.failed)
+          .timeout(const Duration(seconds: 10));
+      expect(unconfirmedCli.failure?.code, RuntimeErrorCode.permissionDenied);
+      final confirmedCliRun = await runtime.invoke(plainCliTool.id, const {
+        'value': 'android-call',
+      }, permissionGranted: true);
+      final confirmedCli = await runtime
+          .watchRun(confirmedCliRun.id)
+          .firstWhere(
+            (event) => const {
+              RunState.succeeded,
+              RunState.failed,
+              RunState.cancelled,
+              RunState.timedOut,
+              RunState.outcomeUnknown,
+            }.contains(event.state),
+          )
+          .timeout(const Duration(seconds: 15));
+      expect(
+        confirmedCli.state,
+        RunState.succeeded,
+        reason: confirmedCli.failure?.message ?? 'CLI action call failed',
+      );
+      expect(
+        confirmedCli.blocks.map((block) => '${block.value}').join('\n'),
+        contains('plain-cli:android-call'),
+      );
+      for (final connection in mcpConnections.where(
+        (item) =>
+            item.kind == ConnectionKind.mcpHttp ||
+            item.kind == ConnectionKind.mcpStdio,
+      )) {
+        final tool = mcpCapabilities.singleWhere(
+          (capability) =>
+              capability.id.connection.value == connection.id.value &&
+              capability.id.kind == CapabilityKind.mcpTool &&
+              capability.title == 'fixture_echo',
+        );
+        expect(tool.permission, PermissionLevel.externalWrite);
+        final unconfirmedRun = await runtime.invoke(tool.id, const {
+          'value': 'unconfirmed',
+        });
+        final unconfirmed = await runtime
+            .watchRun(unconfirmedRun.id)
+            .firstWhere((event) => event.state == RunState.failed)
+            .timeout(const Duration(seconds: 10));
+        expect(unconfirmed.failure?.code, RuntimeErrorCode.permissionDenied);
+
+        final confirmedRun = await runtime.invoke(tool.id, const {
+          'value': 'android-call',
+        }, permissionGranted: true);
+        final confirmed = await runtime
+            .watchRun(confirmedRun.id)
+            .firstWhere(
+              (event) => const {
+                RunState.succeeded,
+                RunState.failed,
+                RunState.cancelled,
+                RunState.timedOut,
+                RunState.outcomeUnknown,
+              }.contains(event.state),
+            )
+            .timeout(const Duration(seconds: 15));
+        expect(
+          confirmed.state,
+          RunState.succeeded,
+          reason: confirmed.failure?.message ?? 'MCP tool call failed',
+        );
+        expect(
+          confirmed.blocks.map((block) => '${block.value}').join('\n'),
+          contains('tool-fixture:android-call'),
+        );
+      }
+
+      await manager.disconnect(mcpHost.hostId);
+      expect(manager.statusFor(mcpHost.hostId), AndroidHostStatus.offline);
+      final offlineConnections = (await runtime.listConnections())
+          .where((item) => item.executionTarget == target)
+          .toList(growable: false);
+      expect(offlineConnections, hasLength(4));
+      expect(
+        offlineConnections.every(
+          (item) => item.status == ConnectionStatus.unavailable,
+        ),
+        isTrue,
+      );
+      final reconnectedHost = await manager.connect(mcpHost.hostId);
+      expect(reconnectedHost.hostId, mcpHost.hostId);
+      expect(manager.isConnected(mcpHost.hostId), isTrue);
+      final reconnectedConnections = (await runtime.listConnections())
+          .where((item) => item.executionTarget == target)
+          .toList(growable: false);
+      expect(reconnectedConnections, hasLength(4));
+      expect(
+        reconnectedConnections.every(
+          (item) => item.status == ConnectionStatus.ready,
         ),
         isTrue,
       );

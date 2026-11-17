@@ -59,3 +59,13 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 验收断言：Android 收到 `ready` 连接，UI 来源映射为 `Mac Host`；Host 不回传绝对可执行路径，检查详情不含路径或 PEM；PEM 不进入 Mac `connections.json`、Android `hosts.json` 或 Host/Android 测试日志，且只出现在临时 Mac profile 的私钥文件中；测试私钥文件权限为 `0600`，profile 目录为 `0700`，中间 `.setup-private-key.pem` 已删除。脚本退出码 0；integration tests 的定向 `flutter analyze` 无问题，`git diff --check` 通过。
 - 清理后 `getconf PAGE_SIZE` 为 `4096`；ADB reverse 列表为空，`.integration` 与 `.integration.test` 均已卸载，普通 `io.github.guog962464.aggregate` 包仍安装。未启动生产 Mac Host、未写用户连接或 Keychain，测试目录（含邀请、合成密钥和日志）由脚本删除，未使用模拟器。
 - **阶段判定：**A5.3 的实机配对、加密 setup 传输、MacRuntime 测试与保存、私钥隔离/脱敏验收通过；AndroidRuntimePort 另经同一 WSS Host 验证连接列表和能力搜索。该流程是 loopback 测试证书与假 CLI 的可复现集成验收，不等于真实网易云账号登录或生产 Host 写入。A5.5 的 CLI action、TUI、stdio MCP/HTTP MCP 业务调用仍未完成；日常 App 身份轮换、Release 权限及 16 KB 实机也仍未验收。
+
+## 2026-11-17 隔离 Android 真机业务链路验收（A5.5）
+
+- 入口：`python3 app/tool/run_android_host_setup_e2e.py --device AEMN022427001360`。在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页实体机上，`.integration` 包使用真实 Android Keystore 身份、签名与 WSS pin；Mac 使用实际 `MacRuntime`、Host RPC dispatchers、CryptoKit 设备签名校验和临时 operation ledger。Mac listener 仅绑定 `127.0.0.1`，经测试邀请和 ADB reverse 通信；Host 数据目录、HOME、证书及所有连接均为临时夹具。
+- Android→Host 向导以合成 Node/npm/mpv/`ncm-cli` 测试包完成 Netease 可执行文件检测、setup.test、setup.save；同一草稿二次保存在客户端被拒绝且只生成一条连接；再次测试后的草稿通过 setup.discard 清理，丢弃后保存请求被拒绝。Host 私钥 profile 与 setup 脱敏沿用前一节的临时存储断言。
+- 通过 RemoteRuntime 执行只读 `music.state`，读取假账号的 signed-out 状态并走完受控 login terminal；另用 fake `fixture-terminal` 验证 PTY resize、输入、输出和关闭。该终端是交互协议夹具，不代表真实 Netease TUI 或任意 TUI 兼容。
+- 预置的普通 CLI 动作固定调用 `/usr/bin/printf`，参数以 argv 传入、不经过 shell。首个隔离配对无该连接的 `externalWrite` grant，即使客户端确认也由 Host 拒绝；第二个独立 Keystore 身份获逐连接 `read`/`externalWrite` grant 后，Android 显式确认并调用成功。HTTP MCP 与 stdio MCP 各提供只读 resource/prompt 和一个 echo tool；两类 resource/prompt 均可读取，工具在未确认时本地拒绝，确认后经 Host grant 成功。
+- 第二身份完成调用后显式断开 Android Host session，远端连接呈 unavailable；用已保存 Host 记录重连后连接恢复 ready。此项验证显式 disconnect/reconnect，不代表正在执行中的 socket 突发断链或 LAN/NSD；生产 Host 本轮仍只允许此前批准的只读 RPC，未执行生产 setup、CLI、MCP、账号或终端动作。
+- 验证：隔离 loopback 真机 runner 通过并清理 `.integration`/`.integration.test`、ADB reverse 和临时目录；普通 `io.github.guog962464.aggregate` 包仍安装，反向映射为空，设备 `PAGE_SIZE=4096`。全量 `flutter test --no-pub --reporter expanded` 294 项通过；`flutter analyze --no-pub`、Android arm64 Debug APK 和 macOS Debug app 构建通过；APK `zipalign -c -P 16 4` 与包内 7 个 arm64 `.so` 的 `PT_LOAD p_align >= 0x4000` 静态检查通过，仍不替代 16 KB 系统实机运行。
+- **阶段判定：**A5.5 的普通 CLI 动作、交互终端协议、HTTP/stdio MCP、隔离 Netease setup/account，以及拒绝/授权/重复保存/丢弃/显式断开重连已有真实 Android→MacRuntime WSS 证据。仍未验证真实 Netease 账号或播放、真实产品 TUI、活动中的网络掉线恢复、production Host 写入业务、Release/signed 权限、日常 App 身份轮换和 16 KB 真机；A5.5、A5.4 与 A8 不因此关闭。
