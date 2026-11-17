@@ -78,4 +78,61 @@ void main() {
     },
     variant: _macOS,
   );
+
+  testWidgets(
+    'settings text follows the live glass switch in both directions',
+    (tester) async {
+      final runtime = createPreviewRuntime();
+      await runtime.savePreferences(
+        const UserPreferences(appearance: AppearancePreference.dark),
+      );
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await runtime.dispose();
+      });
+
+      await tester.pumpWidget(
+        AggregateApp(
+          runtime: runtime,
+          glassMotionClock: ManualGlassMotionClock(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('设置').first);
+      for (var frame = 0; frame < 60; frame++) {
+        await tester.pump(const Duration(microseconds: 16667));
+      }
+
+      final switchFinder = find.bySemanticsLabel('外观主题');
+      final pageTextFinder = find.text('主题选择保存在本机。');
+      Future<void> verifyFrames() async {
+        for (var frame = 0; frame < 40; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          final switchFrame = tester
+              .widget<ThemeSwitchArtwork>(find.byType(ThemeSwitchArtwork))
+              .frame;
+          final expectedForeground = switchFrame.theme >= 0.5
+              ? Colors.black
+              : Colors.white;
+          final pageText = tester.element(pageTextFinder);
+          expect(
+            DefaultTextStyle.of(pageText).style.color,
+            expectedForeground,
+            reason: 'Shader phase ${switchFrame.theme} at sample $frame',
+          );
+          expect(tester.takeException(), isNull);
+        }
+      }
+
+      await tester.tap(switchFinder);
+      await verifyFrames();
+      await tester.tap(switchFinder);
+      await verifyFrames();
+    },
+    variant: _macOS,
+  );
 }

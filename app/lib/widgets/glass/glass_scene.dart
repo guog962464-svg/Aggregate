@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -155,12 +156,20 @@ class GlassSceneFrame extends ChangeNotifier {
   double _seconds = 0;
   double? _switchDaylight;
   bool _disposed = false;
+  bool _textContrastUpdateScheduled = false;
+  bool? _pendingTextContrastUsesDarkForeground;
+  final ValueNotifier<bool?> _textContrastUsesDarkForeground =
+      ValueNotifier<bool?>(null);
 
   double get seconds => _seconds;
   double? get switchDaylight => _switchDaylight;
+  ValueListenable<bool?> get textContrastUsesDarkForeground =>
+      _textContrastUsesDarkForeground;
 
   void publishThemeSwitch(double seconds, double daylight) {
     if (_disposed) return;
+    final usesDarkForeground = daylight >= 0.5;
+    _updateTextContrastForeground(usesDarkForeground);
     final changed =
         (_seconds - seconds).abs() > 0.000001 ||
         _switchDaylight == null ||
@@ -174,12 +183,37 @@ class GlassSceneFrame extends ChangeNotifier {
     if (_disposed) return;
     if (_switchDaylight == null) return;
     _switchDaylight = null;
+    _updateTextContrastForeground(null);
     notifyListeners();
+  }
+
+  void _updateTextContrastForeground(bool? usesDarkForeground) {
+    if (_textContrastUsesDarkForeground.value == usesDarkForeground &&
+        !_textContrastUpdateScheduled) {
+      return;
+    }
+    _pendingTextContrastUsesDarkForeground = usesDarkForeground;
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      if (_textContrastUpdateScheduled) return;
+      _textContrastUpdateScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _textContrastUpdateScheduled = false;
+        if (!_disposed) {
+          _textContrastUsesDarkForeground.value =
+              _pendingTextContrastUsesDarkForeground;
+        }
+      });
+      return;
+    }
+    _textContrastUsesDarkForeground.value = usesDarkForeground;
   }
 
   @override
   void dispose() {
     _disposed = true;
+    _textContrastUsesDarkForeground.dispose();
     super.dispose();
   }
 }

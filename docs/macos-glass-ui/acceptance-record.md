@@ -237,6 +237,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 结论：UI-6 禁用态原生语义仍失败；应用层 Widget Semantics 测试不能代替 macOS engine AX 导出结果。需要项目采用经实机 VoiceOver 验收通过的 Flutter engine 后再关闭该缺陷。
 
 
+### 2026-11-18 设置页真实 shader 相位跟随
+
+- `GlassSceneFrame` 暴露一个只在 `switchDaylight` 跨越 0.5 时变化的前景明暗监听器；`AggregateApp` 用它重建语义文字主题，`PageFrame` 为无显式样式的正文继承当前 `bodyMedium`。shader 仍每帧绘制，保留任意拖动、主题开关交互及 560 ms 全局主题转场。
+- macOS `AggregateApp` 设置页回归在深→浅和浅→深方向各逐 16 ms 检查 40 帧，断言正文前景与生产 `ThemeSwitchArtwork.frame.theme` 的亮暗侧一致；阈值单测覆盖同侧连续帧不重复通知。`glass_design_tokens_test.dart`、`glass_theme_switch_test.dart`、`accessibility_test.dart`、`macos_reduce_motion_test.dart`、`page_frame_test.dart`、`widget_test.dart` 六个测试文件通过，`flutter analyze --no-pub` 无问题。
+- 另用 1024×768、DPR 2 的生产 shader 离屏合成作诊断采样：约 112 ms 有一处保守边缘像素比为 4.478:1；约 119 ms 切为黑色前景后为 5.317:1。112 ms 的前景仍与 shader 相位一致，该点略低于项目 4.5:1 目标。离屏读回不能代表原生 display-present；本次探针截图已清理，UI-5.5 继续部分验收，尚缺原生窗口逐帧和其他材质/状态矩阵。
+
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
 - 构建：隔离 bundle `io.github.guog962464.aggregate.ui6focusafter` 的 macOS Profile；项目 Flutter 3.47.8 / Dart 3.13.7，PreviewRuntime 本地合成数据。窗口 AX bounds 800×632 logical px，DPR 2，导出 PNG 为 1824×1488。通过物理 Tab 到达主题开关焦点，使用左右键切到浅/深端点；焦点状态由实窗完整轨道环可见性与 AX 主题值复核。

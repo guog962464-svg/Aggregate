@@ -107,11 +107,76 @@ abstract final class AggregateTheme {
     );
   }
 
+  /// Aligns foregrounds with the current luminance side of the moving macOS
+  /// glass backdrop. The caller updates this only when that side changes.
+  static ThemeData withMacOSBackdropTextContrast(
+    ThemeData theme, {
+    required bool usesDarkForeground,
+  }) {
+    final glass = theme.extension<GlassDesignTokens>();
+    if (glass == null) return theme;
+
+    final foreground = usesDarkForeground ? Colors.black : Colors.white;
+    final safeTextTheme = _withForegroundTextColors(
+      theme.textTheme,
+      foreground,
+    );
+    final safeGlass = glass.copyWith(text: foreground, muted: foreground);
+
+    return theme.copyWith(
+      colorScheme: theme.colorScheme.copyWith(
+        onSurface: foreground,
+        onSurfaceVariant: foreground,
+      ),
+      textTheme: safeTextTheme,
+      appBarTheme: theme.appBarTheme.copyWith(foregroundColor: foreground),
+      iconTheme: theme.iconTheme.copyWith(color: foreground),
+      listTileTheme: theme.listTileTheme.copyWith(
+        titleTextStyle: theme.listTileTheme.titleTextStyle?.copyWith(
+          color: foreground,
+        ),
+        subtitleTextStyle: theme.listTileTheme.subtitleTextStyle?.copyWith(
+          color: foreground,
+        ),
+        iconColor: foreground,
+      ),
+      extensions: [
+        for (final extension in theme.extensions.values)
+          if (extension is GlassDesignTokens) safeGlass else extension,
+      ],
+    );
+  }
+
   static TextTheme _withReadableTextColors(TextTheme textTheme, Color surface) {
     TextStyle? readable(TextStyle? style) {
       if (style == null || style.color == null) return style;
       return style.copyWith(color: _readableOnSurface(style.color!, surface));
     }
+
+    return TextTheme(
+      displayLarge: readable(textTheme.displayLarge),
+      displayMedium: readable(textTheme.displayMedium),
+      displaySmall: readable(textTheme.displaySmall),
+      headlineLarge: readable(textTheme.headlineLarge),
+      headlineMedium: readable(textTheme.headlineMedium),
+      headlineSmall: readable(textTheme.headlineSmall),
+      titleLarge: readable(textTheme.titleLarge),
+      titleMedium: readable(textTheme.titleMedium),
+      titleSmall: readable(textTheme.titleSmall),
+      bodyLarge: readable(textTheme.bodyLarge),
+      bodyMedium: readable(textTheme.bodyMedium),
+      bodySmall: readable(textTheme.bodySmall),
+      labelLarge: readable(textTheme.labelLarge),
+      labelMedium: readable(textTheme.labelMedium),
+      labelSmall: readable(textTheme.labelSmall),
+    );
+  }
+
+  static TextTheme _withForegroundTextColors(
+    TextTheme textTheme,
+    Color foreground,
+  ) {
+    TextStyle? readable(TextStyle? style) => style?.copyWith(color: foreground);
 
     return TextTheme(
       displayLarge: readable(textTheme.displayLarge),

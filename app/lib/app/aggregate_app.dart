@@ -145,15 +145,18 @@ class _AggregateAppState extends State<AggregateApp> {
         bindings: {ShortcutScheme(defaultTargetPlatform).search: searchAll},
         child: Focus(autofocus: true, child: child ?? const SizedBox.shrink()),
       );
+      final safeTheme = AggregateTheme.withMacOSSurfaceTextContrast(
+        Theme.of(context),
+      );
       final appContent = defaultTargetPlatform == TargetPlatform.macOS
           ? Theme(
-              data: AggregateTheme.withMacOSSurfaceTextContrast(
-                Theme.of(context),
-              ),
+              data: safeTheme,
               child: GlassScene(
-                child: GlassMotionScope(
-                  clock: widget.glassMotionClock,
-                  child: content,
+                child: _GlassSceneTextContrast(
+                  child: GlassMotionScope(
+                    clock: widget.glassMotionClock,
+                    child: content,
+                  ),
                 ),
               ),
             )
@@ -204,4 +207,35 @@ class _AggregateAppState extends State<AggregateApp> {
       return null;
     },
   );
+}
+
+/// Updates semantic foregrounds only when the glass background crosses its
+/// luminance midpoint; the continuously animated backdrop stays independent.
+class _GlassSceneTextContrast extends StatelessWidget {
+  const _GlassSceneTextContrast({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final frame = GlassSceneScope.maybeOf(context)?.frame;
+    if (frame == null) return child;
+
+    return ValueListenableBuilder<bool?>(
+      valueListenable: frame.textContrastUsesDarkForeground,
+      child: child,
+      builder: (context, usesDarkForeground, child) {
+        final safeTheme = AggregateTheme.withMacOSSurfaceTextContrast(
+          Theme.of(context),
+        );
+        final data = usesDarkForeground == null
+            ? safeTheme
+            : AggregateTheme.withMacOSBackdropTextContrast(
+                safeTheme,
+                usesDarkForeground: usesDarkForeground,
+              );
+        return Theme(data: data, child: child!);
+      },
+    );
+  }
 }

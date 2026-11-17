@@ -133,17 +133,56 @@ void main() {
     },
   );
 
+  test('glass text foreground follows the backdrop luminance side', () {
+    final baseTheme = AggregateTheme.withMacOSSurfaceTextContrast(
+      AggregateTheme.forPlatform(AggregateTheme.dark, TargetPlatform.macOS),
+    );
+
+    for (final (usesDarkForeground, expected) in [
+      (true, Colors.black),
+      (false, Colors.white),
+    ]) {
+      final theme = AggregateTheme.withMacOSBackdropTextContrast(
+        baseTheme,
+        usesDarkForeground: usesDarkForeground,
+      );
+      final tokens = theme.extension<GlassDesignTokens>()!;
+
+      expect(theme.colorScheme.onSurface, expected);
+      expect(theme.colorScheme.onSurfaceVariant, expected);
+      expect(theme.textTheme.bodyMedium?.color, expected);
+      expect(theme.textTheme.bodySmall?.color, expected);
+      expect(theme.appBarTheme.foregroundColor, expected);
+      expect(theme.iconTheme.color, expected);
+      expect(theme.listTileTheme.titleTextStyle?.color, expected);
+      expect(theme.listTileTheme.subtitleTextStyle?.color, expected);
+      expect(tokens.text, expected);
+      expect(tokens.muted, expected);
+    }
+  });
+
   test('glass scene follows and releases the theme switch backdrop phase', () {
     final frame = GlassSceneFrame();
     var notifications = 0;
+    final textForegroundStates = <bool?>[];
     frame.addListener(() => notifications++);
+    frame.textContrastUsesDarkForeground.addListener(
+      () =>
+          textForegroundStates.add(frame.textContrastUsesDarkForeground.value),
+    );
 
     frame.publishThemeSwitch(1.25, 0.42);
-    expect(frame.seconds, 1.25);
-    expect(frame.switchDaylight, 0.42);
+    frame.publishThemeSwitch(1.26, 0.43);
+    frame.publishThemeSwitch(1.27, 0.51);
+    frame.publishThemeSwitch(1.28, 0.62);
+    frame.publishThemeSwitch(1.29, 0.48);
+    expect(frame.seconds, 1.29);
+    expect(frame.switchDaylight, 0.48);
+    expect(textForegroundStates, [false, true, false]);
     frame.clearThemeSwitch();
     expect(frame.switchDaylight, isNull);
-    expect(notifications, 2);
+    expect(textForegroundStates, [false, true, false, null]);
+    expect(notifications, 6);
 
     frame.dispose();
   });

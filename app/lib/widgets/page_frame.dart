@@ -16,7 +16,12 @@ class PageFrame extends StatelessWidget {
   final bool lazyChildren;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context) => DefaultTextStyle.merge(
+    style: Theme.of(context).textTheme.bodyMedium,
+    child: _buildPageContent(context),
+  );
+
+  Widget _buildPageContent(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final heading = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
