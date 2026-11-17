@@ -413,3 +413,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 结果：初次运行因测试运行器未签名而被 macOS 安全策略阻止；改为有效签名后运行器进程可启动，但 Xcode 仍未创建测试 worker，`.xcresult` 显示 `totalTestCount=0` / `result=unknown`，Flutter AUT 与 VoiceOver 均未启动。故这不是实际朗读结果，也不能据此判断 `XCUIVoiceOverService` API 可用性或应用语义。
 - 收尾：停止 Xcode 后台测试运行器，退出相关进程，删除临时 worktree 和结果包；系统 VoiceOver 保持关闭、全局分组恢复“标准”、AppleScript 控制保持关闭。主工作区原有 `pubspec.lock` 未动、未暂存。
 - 结论：Xcode UI 测试 harness 配置/启动问题仍待定位；UI-5.7 VoiceOver 主流程保持部分验收。下一次应先用最小原生 macOS UI testing target 单独验证 runner/worker 生命周期，再接入 Flutter 预览应用。
+
+### 2026-11-17 独立 Xcode UI testing runner 复核与清理
+
+- 方法：根据前一轮记录，另建不依赖 Flutter 的最小原生 SwiftUI 宿主与 `MinimalVoiceOverUITests` UI testing target。测试目标尝试通过 `XCUIDevice.shared.voiceOverService` 启用 VoiceOver 并遍历控件；Xcode 项目与 DerivedData 均放在 `/private/tmp/aggregate-vo-minimal`。
+- 结果：宿主与 UI test target 能被 Xcode 识别，但 `xcodebuild test` 在 runner 初始化阶段失败，退出码为 65；错误为 `MinimalVoiceOverUITests-Runner` 初始化 UI testing 时 “Timed out while enabling automation mode”。测试用例计数没有建立，宿主应用和 VoiceOver 均未启动，因此这次没有朗读、应用语义或控件顺序证据。
+- 清理：VoiceOver 偏好仍为关闭（`voiceOverOnOffKey=0`）；未发现 VoiceOver、最小宿主或 Xcode runner 进程，桌面仅有当前 ChatGPT 会话窗口。已删除 `/private/tmp/aggregate-vo-minimal`（含工程、DerivedData 与 `Run1.xcresult`）；主工作区仅保留用户原有 `pubspec.lock` 改动，未触碰、暂存或提交。
+- 结论：在独立最小原生 target 中仍无法完成 UI automation runner 初始化；失败发生在任何测试执行之前，不能据此推断 `XCUIVoiceOverService` 可用性、Aggregate 的 AX 行为或 VoiceOver 朗读。UI-5.7 仍部分验收。后续若继续此路径，应先解决 Xcode automation mode 初始化环境问题；也可使用经用户确认的真实 VoiceOver 输入完成朗读验收，不能再把构建成功视作 runner 可用。
