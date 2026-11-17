@@ -253,8 +253,8 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - 色对测量：以真实 `AggregateApp` 设置页正文 `主题选择保存在本机。` 的文字矩形为采样区域，在 1024×768 logical px、DPR 1 下，以生产 `glass_scene.frag` 单独绘制同尺寸背景。201 个等距 `switchDaylight` 进度点各取正文区域 9×3 个背景样本，并使用当前指定纯黑/白文字色计算 sRGB 相对亮度对比。白字在 0.475/0.480/0.485/0.490/0.495 时最低为 `4.478/4.415/4.353/4.292/4.233:1`；黑字在 0.500 时为 `4.493:1`。这证明颜色交接附近确有正文色对低于 4.5:1，而单独把文字颜色交接阈值移到附近也不能覆盖这段背景。
 - 修正：不改 `ThemeSwitchSimulation`、0.5 文字颜色交接、shader daylight、560 ms 曲线、任意拖动、端点业务回调或按钮标签。在 `GlassSceneFrame` 另外发布只在阈值变化时通知的描边状态：daylight `0.46–0.51` 时，对正文/标题/列表文字应用 8 个方向、1 logical px 的相反色轮廓；ThemeData 文字颜色和背景仍按原来的 0.5 分界。按钮标签不加轮廓。该做法采用 [W3C G18](https://www.w3.org/WAI/WCAG21/Techniques/general/G18) 对变化背景文字使用轮廓或光晕的方案。
-- 回归：`macos_dynamic_backdrop_text_contrast_test.dart` 用生产 shader 在设置页真实正文矩形取样：轮廓对背景至少 3:1，正文色与轮廓至少 7:1，轮廓区外测得的正文色对至少 4.5:1；`glass_design_tokens_test.dart` 检查轮廓样式、按钮标签排除和阈值去抖；`macos_reduce_motion_test.dart` 在真实双向转场逐帧检查轮廓显示窗口及既有文字色交接。上述三个测试文件通过，相关六个源码/测试文件的 `flutter analyze --no-pub` 通过。测试只读离屏 shader 样本，不证明 macOS display-present 或 VoiceOver 朗读。
-- 结论：设置页中段正文的对比呈现修正通过自动化验收；UI-5.5 仍部分通过。尚需浅色初始态、其他窗口尺寸/DPR、标题/列表/禁用态及其他页面材质的同类矩阵和原生显示捕获。
+- 回归：`macos_dynamic_backdrop_text_contrast_test.dart` 用生产 shader 在设置页真实正文矩形取样，覆盖 800×600、1024×768、1440×900 三种窗口尺寸各自 1×/2× 六组组合；检查轮廓对背景至少 3:1、正文色与轮廓至少 7:1，轮廓区外所测正文色对至少 4.5:1。`glass_design_tokens_test.dart` 检查轮廓样式、按钮标签排除和阈值去抖；`macos_reduce_motion_test.dart` 在真实双向转场逐帧检查轮廓显示窗口及既有文字色交接。合计 13 项定向 Widget 用例通过，相关六个源码/测试文件的 `flutter analyze --no-pub` 通过。测试只读离屏 shader 样本，不证明 macOS display-present 或 VoiceOver 朗读。
+- 结论：设置页中段正文的对比呈现修正通过自动化验收；UI-5.5 仍部分通过。尚需浅色初始态、标题/列表/禁用态、其他页面材质以及原生显示捕获。
 
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
