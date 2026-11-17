@@ -485,3 +485,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 结果：通过系统设置 UI 开启后，其 AX 开关为 `1`，应用标签在两秒内从 `PREFERENCE false MEDIA false` 更新为 `PREFERENCE true MEDIA true`；关闭后开关回 `0`，应用回到 `PREFERENCE false MEDIA false`。`NSWorkspace.shared.accessibilityDisplayShouldReduceMotion` 在测试前后均为 `false`；系统偏好键最初未设置，结束后仍未设置。
 - 依据：AppKit 要求使用 `NSWorkspace.notificationCenter` 监听 `accessibilityDisplayOptionsDidChangeNotification`，并通过 `accessibilityDisplayShouldReduceMotion` 读取当前值；本轮确认该通知能把真实设置变化传入 Flutter 根 `MediaQuery`。[通知文档](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayoptionsdidchangenotification)，[状态属性文档](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayshouldreducemotion)。
 - 清理与结论：退出隔离 Aggregate Profile 应用和本轮启动的 System Settings，停止 Flutter runner，删除 `/private/tmp/aggregate-ui6-reduce-motion-runtime` worktree。查询未发现对应应用/runner 残留；`git worktree list` 仅主工作区；系统偏好恢复为关闭且未设置状态。UI-6.4 的系统开关动态更新子项通过；阶段仍部分验收，隐藏恢复长帧根因和生命周期混合负载未解决。仅更新验收记录，未运行产品测试。
+
+### 2026-11-18 UI-6.7 生产动作按钮共享组件覆盖审计
+
+- 代码覆盖：扫描 `app/lib/**/*.dart`，生产页面共 109 个 `GlassActionButton`、`AggregateActionButton`、`AggregateIconButton` 调用点，分布于 20 个文件。macOS 正式入口的 `AggregateApp.builder` 提供 `GlassMotionScope`；两个平台包装器在该作用域下统一委托 `GlassActionButton`。其他显式 Material 按钮均处于非 macOS 或缺少玻璃作用域的回退路径，Android 专用设置面板不属于 macOS 页面。
+- 变体覆盖：Profile fixture 对应全部七种 `GlassButtonKind`、五种 `GlassButtonSize`，并覆盖 selected、busy、disabled、description/source、iconOnly、expand 等渲染入口。既有 Profile 截图包含浅/深主题的 12 类参考 glyph、按钮尺寸/状态样本和五个生产页面；60 glyph 的完整深色网格与双主题 DPR 1/2 golden 已分别目视/自动检查。
+- 当前验证：在 `app/` 执行 `flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart`，21 项通过。手动时钟测试逐个检查全部 60 个 glyph 的唯一动作 profile、点击归一化采样及静置回归；按钮测试覆盖 Material 图标映射、深浅主题 1×/2× 绘制、尺寸、状态语义和鼠标/键盘激活。三张已归档 Profile 图的 SHA-256 与既有记录一致。
+- 结论与边界：因为全部生产动作按钮通过单一 renderer 和已覆盖的按钮参数变体输出，UI-6.7 按共享组件/变体范围通过，不再要求对 109 个业务回调实例重复拍摄相同材质。此结论不证明每个页面布局都已目视检查，也不覆盖真实原生点击帧/显示器呈现、VoiceOver 或 UI-6.8 的主题实时逐帧相位；对应缺项仍分别按 UI-6.8、UI-6.9 和 UI-5.4/5.7 记录。
