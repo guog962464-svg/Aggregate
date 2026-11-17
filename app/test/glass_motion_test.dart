@@ -17,7 +17,7 @@ void main() {
     });
 
     testWidgets(
-      '12 action families use smooth sin-squared energy and exact durations',
+      '14 action families use smooth sin-squared energy and exact durations',
       (tester) async {
         await _mountMotionScope(tester, scopeKey, clock);
         addTearDown(() => _cleanup(tester, clock));
@@ -28,6 +28,8 @@ void main() {
           (GlassGlyph.refresh, GlassMotionAction.refresh),
           (GlassGlyph.copy, GlassMotionAction.copy),
           (GlassGlyph.save, GlassMotionAction.save),
+          (GlassGlyph.logout, GlassMotionAction.logout),
+          (GlassGlyph.more, GlassMotionAction.more),
           (GlassGlyph.search, GlassMotionAction.search),
           (GlassGlyph.externalLink, GlassMotionAction.open),
           (GlassGlyph.stop, GlassMotionAction.stop),

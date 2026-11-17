@@ -318,6 +318,8 @@ enum GlassMotionAction {
   save,
   search,
   open,
+  logout,
+  more,
   stop,
   remove,
   connect,
@@ -335,6 +337,8 @@ extension GlassMotionActionDetails on GlassMotionAction {
     GlassMotionAction.save => const Duration(milliseconds: 580),
     GlassMotionAction.search => const Duration(milliseconds: 560),
     GlassMotionAction.open => const Duration(milliseconds: 560),
+    GlassMotionAction.logout => const Duration(milliseconds: 560),
+    GlassMotionAction.more => const Duration(milliseconds: 520),
     GlassMotionAction.stop => const Duration(milliseconds: 480),
     GlassMotionAction.remove => const Duration(milliseconds: 640),
     GlassMotionAction.connect => const Duration(milliseconds: 560),
@@ -349,6 +353,8 @@ extension GlassMotionActionDetails on GlassMotionAction {
     GlassGlyph.refresh => GlassMotionAction.refresh,
     GlassGlyph.copy => GlassMotionAction.copy,
     GlassGlyph.save => GlassMotionAction.save,
+    GlassGlyph.logout => GlassMotionAction.logout,
+    GlassGlyph.more => GlassMotionAction.more,
     GlassGlyph.search => GlassMotionAction.search,
     GlassGlyph.externalLink || GlassGlyph.folder => GlassMotionAction.open,
     GlassGlyph.stop => GlassMotionAction.stop,
@@ -726,6 +732,13 @@ class GlassMotionController extends ChangeNotifier {
         .09 *
             actionEnergy *
             math.max(0, math.cos(source.phase - progress * math.pi * 2)),
+      GlassMotionAction.logout => _scanEnergy(
+        source.position.dx,
+        progress,
+        actionEnergy,
+      ),
+      GlassMotionAction.more =>
+        .08 * actionEnergy * math.cos(progress * math.pi * 2 + source.phase),
       _ => 0.0,
     };
     final brightness = 1 + energy * .06 + detailEnergy;
@@ -776,6 +789,10 @@ class GlassMotionController extends ChangeNotifier {
         const Offset(16, 16) + relative * (1 + .045 * energy),
       GlassMotionAction.open =>
         source + Offset(0, -.42 * GlassDesignTokens.glyphPitch * energy),
+      GlassMotionAction.logout =>
+        source + Offset(.58 * GlassDesignTokens.glyphPitch * energy, 0),
+      GlassMotionAction.more =>
+        const Offset(16, 16) + relative * (1 + .12 * energy),
       GlassMotionAction.stop =>
         const Offset(16, 16) + Offset(relative.dx * .86, relative.dy),
       GlassMotionAction.remove =>
