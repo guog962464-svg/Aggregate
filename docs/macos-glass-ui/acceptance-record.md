@@ -336,3 +336,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：完整 UI review `12` 项通过，包含 DPR 1 的 `54` 个金样断言和 DPR 2 的完整导航/布局检查；连接懒构建专项 `4` 项通过；App 全量 `289` 项通过；`flutter analyze --no-pub` 无问题。金样文字使用 Flutter 测试字体，中文方框仍不作为文字可读性验收。
 - 边界：没有启动或聚焦应用窗口，没有鼠标注入；没有修改主题模拟/校准、太阳/月亮切换、偏好映射或回调。图像是 Flutter test 截图，不替代 Profile 原生窗口、动态逐帧、VoiceOver 或 UI-6 最终验收；UI-6 仍部分通过。
 - 切换逻辑冻结复核：`theme_switch_simulation.dart`、`theme_switch_calibration.dart`、`theme_switch_fitted_calibration.dart` 当前 SHA-256 分别为 `2bfa354d3b5511247d213284e36de18b418a7f332545c57f5d3e2625a8906a03`、`c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`、`11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`，与 UI-0 基线一致。对照 `297762e82730b8a99f324b190796c80aae426a9` 审阅差异：`glass_theme_switch.dart` 增加 scene 发布/清理、背景坐标传递和前景焦点绘制；shader 增加可选全窗背景坐标，零尺寸默认值仍退回原 viewport 公式；`appearance_selector.dart` 仅把 macOS glass-scope 下的“跟随系统”入口替换为统一按钮。`_down`/`_move`/`_finish`、tap/drag recognizer、键盘动作、`_select` 与偏好映射没有差异。
+
+### 2026-11-17 UI-2 生产按钮图标覆盖补齐
+
+- 复查范围：扫描 `app/lib` 实际使用的 Material 图标，并逐项对照 `GlassGlyphCatalog` 的 codepoint 表。发现 92 个唯一 `Icons.*` 常量中有 8 个缺少映射，包含可进入 macOS 玻璃按钮作用域的生产操作图标。
+- 实现：为 8 个图标补全语义别名和 codepoint 映射；退出与更多新增专属 9×9 圆角点阵，其余图标复用匹配的既有点阵语义。当前图案字典为 60 项。
+- 回归：测试验证 8 个 codepoint 与名称别名一致、退出/更多图案各自独立，并在 macOS `GlassMotionScope` 下构建 8 个操作按钮和 1 个图标按钮且无映射异常。深浅主题的 1×/2× glyph golden 已更新并通过。
+- 范围边界：本项只证明 Flutter Widget 与 golden 渲染；没有原生 Profile 单项截图，新图案仍需独立 macOS 桌面逐项视觉签收。没有改主题模拟、太阳/月亮图形公式、拖动积分、端点选择、偏好映射、回调或主题动画。

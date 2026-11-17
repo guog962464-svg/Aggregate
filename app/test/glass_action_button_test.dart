@@ -87,6 +87,7 @@ void main() {
       'grid_view_outlined',
       'history',
       'history_outlined',
+      'help_outline',
       'hourglass_empty',
       'hourglass_top_outlined',
       'hub',
@@ -99,10 +100,13 @@ void main() {
       'link',
       'link_off',
       'lock_outline',
+      'logout',
       'manage_search',
       'manage_search_outlined',
       'music_note_outlined',
       'music_note_rounded',
+      'more_horiz',
+      'network_check_outlined',
       'open_in_full',
       'open_in_new',
       'pause',
@@ -113,11 +117,13 @@ void main() {
       'play_arrow_rounded',
       'play_circle_outline',
       'playlist_add',
+      'preview_outlined',
       'qr_code_2',
       'qr_code_scanner',
       'refresh',
       'refresh_rounded',
       'save_alt',
+      'save_outlined',
       'search',
       'search_outlined',
       'settings_outlined',
@@ -129,6 +135,7 @@ void main() {
       'star_rounded',
       'stop',
       'stop_circle_outlined',
+      'switch_account_outlined',
       'terminal',
       'terminal_outlined',
       'tune',
@@ -136,6 +143,7 @@ void main() {
       'unfold_less',
       'unfold_more',
       'visibility_outlined',
+      'vpn_key_off_outlined',
       'vpn_key_outlined',
     ];
 
@@ -160,6 +168,80 @@ void main() {
       );
     }
   });
+
+  test('production button icon codepoints match their named glyph aliases', () {
+    const mappings = <(IconData, String)>[
+      (Icons.help_outline, 'help_outline'),
+      (Icons.logout, 'logout'),
+      (Icons.more_horiz, 'more_horiz'),
+      (Icons.network_check_outlined, 'network_check_outlined'),
+      (Icons.preview_outlined, 'preview_outlined'),
+      (Icons.save_outlined, 'save_outlined'),
+      (Icons.switch_account_outlined, 'switch_account_outlined'),
+      (Icons.vpn_key_off_outlined, 'vpn_key_off_outlined'),
+    ];
+
+    for (final (icon, name) in mappings) {
+      expect(
+        GlassGlyphCatalog.fromMaterialIcon(icon),
+        GlassGlyphCatalog.fromMaterialIconName(name),
+        reason: name,
+      );
+    }
+    expect(
+      GlassGlyphFactory.pointsFor(GlassGlyph.logout),
+      isNot(GlassGlyphFactory.pointsFor(GlassGlyph.externalLink)),
+    );
+    expect(
+      GlassGlyphFactory.pointsFor(GlassGlyph.more),
+      isNot(GlassGlyphFactory.pointsFor(GlassGlyph.grid)),
+    );
+  });
+
+  testWidgets('production action icons build in the macOS glass scope', (
+    tester,
+  ) async {
+    const buttons = <(String, IconData)>[
+      ('未知权限', Icons.help_outline),
+      ('退出登录', Icons.logout),
+      ('更多终端键', Icons.more_horiz),
+      ('测试连接', Icons.network_check_outlined),
+      ('预览参数', Icons.preview_outlined),
+      ('保存设置', Icons.save_outlined),
+      ('切换账号', Icons.switch_account_outlined),
+      ('撤销密钥', Icons.vpn_key_off_outlined),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => GlassMotionScope(child: child!),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                for (final (label, icon) in buttons)
+                  AggregateActionButton(
+                    label: label,
+                    icon: icon,
+                    onPressed: () {},
+                  ),
+                const SizedBox(height: 8),
+                AggregateIconButton(
+                  tooltip: '退出账号',
+                  icon: Icons.logout,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(GlassActionButton), findsNWidgets(buttons.length + 1));
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
 
   test('Host revoke Material icon resolves to the glass close glyph', () {
     expect(
