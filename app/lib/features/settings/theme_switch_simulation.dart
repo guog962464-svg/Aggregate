@@ -42,10 +42,9 @@ class ThemeSwitchSimulation {
   List<ThemeSwitchParticleParameters> get particleParameters =>
       _particleParameters;
 
-  /// Live rendering integrates a fixed 60 Hz clock. Hidden gaps beyond this
-  /// limit settle an unheld handle immediately instead of doing unbounded work.
+  /// Hidden gaps beyond this limit settle an unheld handle immediately instead
+  /// of integrating stale motion after the app becomes visible again.
   static const maximumRealtimeCatchUpSeconds = 2.0;
-  static const realtimeStepSeconds = 1 / 60;
   static const _maximumInputMagnitude = 1000000.0;
 
   static const trackWidth = 432.0;
@@ -69,7 +68,6 @@ class ThemeSwitchSimulation {
   static const _centerCell = 8.0;
   late final List<_ParticleSpring> _particles;
   late final List<ThemeSwitchParticleParameters> _particleParameters;
-  double _realtimeAccumulator = 0;
   double _position = 0;
   double _velocity = 0;
   double _target = 0;
@@ -112,7 +110,6 @@ class ThemeSwitchSimulation {
 
   /// Immediately establishes a settled endpoint, including the particle icon.
   void snapTo(bool value) {
-    _realtimeAccumulator = 0;
     resumeDynamics();
     _target = value ? 1 : 0;
     _position = _target;
@@ -229,25 +226,25 @@ class ThemeSwitchSimulation {
 
   /// Advances one rendered frame; [time] is absolute animation time in seconds.
   ///
-  /// A frame integrates at most 1/30 second, matching the reference's dropped
-  /// frame policy. The caller supplies real presentation intervals rather than
-  /// making this model assume a fixed display refresh rate.
+  /// A frame integrates at most 1/30 second, matching the reference's
+  /// requestAnimationFrame update and dropped-frame policy.
   void advance(double dt, double time) {
     if (!dt.isFinite || dt < 0 || !time.isFinite) {
       throw ArgumentError('Frame time must be finite with nonnegative dt.');
     }
     final step = math.min(dt, 1 / 30);
-    _realtimeAccumulator = 0;
     _advanceFrame(step, time);
   }
 
-  /// Advances the live model independently of the rendering refresh rate.
+  /// Advances the live model using this display refresh's elapsed time.
   ///
   /// [time] is the caller's shared simulation/shader clock; this method does
   /// not add [ThemeSwitchCalibration.timeOriginSeconds] a second time. Unlike
-  /// [advance], no ordinary 20/30 Hz interval is discarded. A gap longer than
+  /// a fixed-rate accumulator, this follows the reference's actual
+  /// requestAnimationFrame delta at 60 Hz, 120 Hz, and variable refresh rates.
+  /// Each visible frame is capped at 1/30 second. A gap longer than
   /// [maximumRealtimeCatchUpSeconds] settles an unheld handle; a held or measured
-  /// presentation retains its position and bounds catch-up work to that limit.
+  /// presentation retains its position and integrates at most 1/30 second.
   void advanceRealtime(double dt, double time) {
     if (!dt.isFinite || dt < 0 || !time.isFinite) {
       throw ArgumentError('Frame time must be finite with nonnegative dt.');
@@ -259,18 +256,7 @@ class ThemeSwitchSimulation {
       snapTo(light);
       return;
     }
-    _realtimeAccumulator += math.min(dt, maximumRealtimeCatchUpSeconds);
-    while (_realtimeAccumulator + 1e-12 >= realtimeStepSeconds) {
-      final stepTime = time - _realtimeAccumulator + realtimeStepSeconds;
-      _advanceFrame(realtimeStepSeconds, stepTime);
-      _realtimeAccumulator = math.max(
-        0,
-        _realtimeAccumulator - realtimeStepSeconds,
-      );
-    }
-    // Twinkle and shader grain share the actual presentation clock, including
-    // the residual fraction of a fixed simulation step and long hidden gaps.
-    _time = time;
+    advance(dt, time);
   }
 
   void _advanceFrame(double step, double time) {

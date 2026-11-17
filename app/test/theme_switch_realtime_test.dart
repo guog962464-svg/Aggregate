@@ -1,31 +1,58 @@
+import 'dart:math' as math;
+
 import 'package:aggregate/features/settings/theme_switch_calibration.dart';
 import 'package:aggregate/features/settings/theme_switch_simulation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('20, 30, 60 and 120 Hz advance the same live response and reversal', () {
-    final expected = _sampleAtRefreshRate(60);
-    for (final fps in [20, 30, 120]) {
-      _samePresentation(_sampleAtRefreshRate(fps), expected);
+  test('120 Hz live frames integrate their actual sub-60 Hz delta', () {
+    final model = ThemeSwitchSimulation()..setLight(true);
+    const dt = 1 / 120;
+    model.advanceRealtime(dt, dt);
+
+    var expectedPosition = 0.0;
+    var expectedVelocity = 0.0;
+    final substep = dt / 4;
+    final damping = 2 * math.sqrt(129) * 0.6;
+    for (var i = 0; i < 4; i++) {
+      final acceleration =
+          -129 * (expectedPosition - 1) - damping * expectedVelocity;
+      expectedVelocity += acceleration * substep;
+      expectedPosition += expectedVelocity * substep;
     }
+
+    expect(model.position, closeTo(expectedPosition, 1e-12));
+    expect(model.velocity, closeTo(expectedVelocity, 1e-12));
+    expect(model.position, greaterThan(0));
+
+    final particles = ThemeSwitchSimulation()
+      ..setPresentation(position: 0.5, velocity: 0);
+    final beforeParticles = particles.snapshot.particles;
+    particles.advanceRealtime(dt, dt);
+    expect(
+      particles.snapshot.particles.first.x,
+      isNot(beforeParticles.first.x),
+    );
   });
 
   test(
-    'irregular render intervals retain time instead of clamping each frame',
+    'variable refresh intervals use the reference 1/30-second frame cap',
     () {
-      final regular = ThemeSwitchSimulation()..setLight(true);
-      final irregular = ThemeSwitchSimulation()..setLight(true);
-      for (var i = 1; i <= 60; i++) {
-        regular.advanceRealtime(1 / 60, i / 60);
-      }
+      final variable = ThemeSwitchSimulation()
+        ..setLight(true)
+        ..setHovered(true);
+      final explicitlyCapped = ThemeSwitchSimulation()
+        ..setLight(true)
+        ..setHovered(true);
       var time = 0.0;
       for (var cycle = 0; cycle < 10; cycle++) {
         for (final dt in [0.005, 0.045, 0.012, 0.038]) {
           time += dt;
-          irregular.advanceRealtime(dt, time);
+          variable.advanceRealtime(dt, time);
+          explicitlyCapped.advanceRealtime(math.min(dt, 1 / 30), time);
         }
       }
-      _samePresentation(irregular.snapshot, regular.snapshot);
+      _samePresentation(variable.snapshot, explicitlyCapped.snapshot);
     },
   );
 
@@ -94,17 +121,6 @@ void main() {
       }
     },
   );
-}
-
-ThemeSwitchSnapshot _sampleAtRefreshRate(int fps) {
-  final model = ThemeSwitchSimulation()
-    ..setLight(true)
-    ..setHovered(true);
-  for (var frame = 1; frame <= fps; frame++) {
-    if (frame == (fps * 0.2).round() + 1) model.setLight(false);
-    model.advanceRealtime(1 / fps, frame / fps);
-  }
-  return model.snapshot;
 }
 
 void _samePresentation(
