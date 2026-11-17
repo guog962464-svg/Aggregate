@@ -59,3 +59,24 @@
 首次整轮探针 11 个操作均生成了带 npm 退出码的应用私有结果文件。首次统计 Messenger 终态时，验证器在 `npmResult` 事件到达后立即读取 Logcat，存在先后时序竞争；该轮 `0/11` 数字作废。修正为最多等待 3 秒后，下一轮日志确认普通 registry 安装与离线安装都收到 Messenger `kind=3`；单独清除 app-private CLI 目录后再次运行 `npm --version`，也确认了资源重拷贝和 `kind=3` 正常。另一轮在 `script-ignored` 操作中 Service 断开，Android crash buffer 记录 `Pointer tag ... was truncated`；单独运行精确授权的 `script-allowed` 时，结果文件写出 npm 127，但随后也记录该 fatal。故不把问题归结为所有 npm 结果都无法通过 Messenger 传递；失败集中在本地生命周期脚本样本附近，根因尚未定位。单次实验能完成缓存/版本用例不代表该边界稳定。
 
 **A4.4 结论：**受限实验已证明该固定 npm 版本能在这台 4 KB arm64 真机执行 CLI、安装普通纯 JS 包、验证 lockfile integrity、复用缓存并升级/卸载包；npm 12 的默认脚本门控也确实阻止未批准脚本。但显式允许后的 shell 依赖以 127 失败，本地生命周期脚本样本触发一次 Node Service fatal，且该次样本没有观察到终态 Messenger 回复。因此只把 A4.4 记为 Debug 可行性实验完成；不把设备端 npm、任意依赖脚本或通用 CLI 加入产品能力。产品决定仍需 A4.7，Play 政策结论、16 KB 真机和其他 ABI 未覆盖。
+
+## 2026-11-17 Node 24.22.3 test-signed Release npm 补验
+
+在上一节生成的 NodeProbe arm64 Release APK 上追加固定 npm 样本。APK SHA-256 `497a13780722206cce30e88c327457dffd6cddb12d193a834b943ff5c070a632`，使用一次性本地测试证书；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页。包内 Node 主版本为 v24.22.3，npm CLI 为 12.2.2。APK 非 debuggable，原 `verify_a4_npm.py` 使用 `run-as` 读取结果文件会被拒绝；本次临时执行器从 ProbeActivity 的 `kind=3` Messenger 日志读取同一 JSON 结果，没有修改仓库中的验证脚本。
+
+| 固定动作 | Release 实测 |
+| --- | --- |
+| `version` | 终态收到；Node `v24.22.3`、npm `12.2.2`，npm 退出码 0。 |
+| `install` | 终态收到；registry 安装 `supports-color@7.2.0` 与 `has-flag@4.0.0`，SHA-512 lockfile integrity 完整，包可从应用私有目录加载；退出码 0。 |
+| `offline` | 使用前一步预热的应用私有 npm cache，在全新 workspace 离线重装同一依赖并加载成功；退出码 0。这不是首次启动离线验证。 |
+| `integrity-bad` | 错误 SHA-512 被拒绝，npm 退出码 1，integrity 错误可见且 package 未生成。 |
+| `upgrade-old` / `upgrade-new` | `json5` 2.2.2 安装、升级到 2.2.3 均退出码 0，lockfile 版本符合目标。 |
+| `uninstall` / `cache-verify` | 卸载移除了固定 `json5` 包；npm cache verify 退出码 0。 |
+| `script-ignored` | 两次隔离 Release 执行均先发出 `npmResult`（npm 退出码 0），随后 Node Service 断开；没有 Messenger `kind=3` 终态，因此 Release harness 未取得完整结果 JSON，脚本 marker 状态未知。`adb logcat -b crash` 同期记录 fatal pointer-tag 文本（`Pointer tag ... was truncated`）。第一次发生在 version/install/offline 后的整轮；第二次为新安装后的单独复现。 |
+
+Release 测试只证明表列固定动作。`script-default` 与 `script-allowed` 没有在 Release APK 执行；Debug 版此前的 `script-allowed` 仍是 `sh -c node install.js` 退出 127，不能外推成 Release 通过。本次 pointer-tag fatal 文本与脚本样本有时间关联，但没有足够堆栈证据定位到 `libnode`、Android framework 或 Probe teardown 根因，不能把 npm 的 `exitCode=0` 事件当作完整成功，也不能把该 fatal 直接归因为 Node runtime 缺陷。隔离 NodeProbe 测试包已卸载，主 Aggregate 包仍安装。
+
+**结论：**Node 24.22.3 test-signed Release 已验证 npm 版本、普通 registry/预热 cache 离线安装、integrity 拒绝、版本升级/卸载和 cache verify；本地生命周期 fixture 在 `script-ignored` 阶段两次未取得终态。A4.4 原复选仍表示固定 npm Debug 可行性实验完成；该 Release 补验扩展了候选证据，不批准用户任意 npm、安装脚本、通用 CLI 或产品 Node 入口。无 16 KB 真机、无 Aggregate 产品签名或发布验证。
+
+- **verified_scope：**NodeProbe `24.22.3-0` arm64 test-signed Release APK、Android 15/API 35/4 KB LGE AN10、npm 12.2.2 固定 action intents；Messenger terminal JSON 对所有标记为“终态收到”的动作均从 kind=3 Activity log 取得。脚本 fixture 的两次 action 只有 kind=7 npmResult、无 kind=3；其完整 result file/marker 未读取。未运行 Release `script-default`/`script-allowed`、16 KB 设备、其它 ABI 或 Aggregate 产品包。
+- **retrieval_feedback：**复核本项目 A4.4 的固定 fixture、`verify_a4_npm.py` assertions、NodeProbe Service 的 intent allowlist/result protocol 和 2026-11-12 Debug 结果；复用相同 package versions、registry integrity 与升级检查，但不把 Debug 结论外推至本次 Node 24.22.3 Release。A3.6 的测试签名 APK/hash 与现场 logcat 核对，Release private result 改从既有 Messenger kind=3 Activity detail 读取；脚本 action 没有 kind=3 时保持未知。未检索其他项目。
