@@ -336,6 +336,37 @@ void main() {
         await terminalSubscription.cancel();
       }
 
+      final interruptedTerminal = await runtime.openTerminal(
+        CliCommand(ncmFixtureConnection.id, const ['fixture-terminal-held']),
+      );
+      final interruptedReady = Completer<void>();
+      final interruptedSubscription = runtime
+          .watchTerminal(interruptedTerminal)
+          .listen((chunk) {
+            if (chunk.contains('FIXTURE_TUI_HELD_READY') &&
+                !interruptedReady.isCompleted) {
+              interruptedReady.complete();
+            }
+          });
+      try {
+        await interruptedReady.future.timeout(const Duration(seconds: 15));
+        await manager.disconnect(invitation.hostId);
+        expect(manager.statusFor(invitation.hostId), AndroidHostStatus.offline);
+        final disconnectedConnections = (await runtime.listConnections())
+            .where((item) => item.executionTarget == target)
+            .toList(growable: false);
+        expect(disconnectedConnections, hasLength(5));
+        expect(
+          disconnectedConnections.every(
+            (item) => item.status == ConnectionStatus.unavailable,
+          ),
+          isTrue,
+        );
+        await runtime.closeTerminal(interruptedTerminal);
+      } finally {
+        await interruptedSubscription.cancel();
+      }
+
       final rotatedIdentity = await manager.rotateDeviceIdentity();
       expect(rotatedIdentity.localHostRecordsCleared, isTrue);
       expect(rotatedIdentity.deviceId, isNot(receipt.deviceId));

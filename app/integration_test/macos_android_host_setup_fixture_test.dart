@@ -243,6 +243,10 @@ void main() {
         final androidResult = await _waitForAndroidResult(androidResultFile);
         expect(androidResult, 'passed', reason: 'Android setup flow failed');
         expect(approvalError, isNull);
+        final terminalPidFile = File('$fixtureHome/host-terminal-pid');
+        await _waitForFile(terminalPidFile);
+        final terminalPid = int.parse(await terminalPidFile.readAsString());
+        await _waitForProcessExit(terminalPid);
         final savedConnections = File(
           '${runtimeDirectory.path}/connections.json',
         );
@@ -297,6 +301,25 @@ Future<String> _waitForAndroidResult(File resultFile) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   throw TimeoutException('Android fixture did not report its result');
+}
+
+Future<void> _waitForFile(File file) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 10));
+  while (DateTime.now().isBefore(deadline)) {
+    if (await file.exists()) return;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  throw TimeoutException('Host did not stop its terminal after disconnect');
+}
+
+Future<void> _waitForProcessExit(int pid) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 10));
+  while (DateTime.now().isBefore(deadline)) {
+    final result = await Process.run('/bin/kill', ['-0', '$pid']);
+    if (result.exitCode != 0) return;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  throw TimeoutException('Host terminal process $pid remained alive');
 }
 
 final class _LoopbackAddressProvider implements HostWssBindAddressProvider {

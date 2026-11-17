@@ -104,6 +104,12 @@ def prepare_fake_ncm(fixture_dir: Path) -> Path:
         "    IFS= read -r fixture_line\n"
         "    printf 'FIXTURE_TUI_ECHO:%s\\n' \"$fixture_line\"\n"
         "    ;;\n"
+        "  fixture-terminal-held)\n"
+        "    printf '%s\\n' \"$$\" > \"$HOME/host-terminal-pid\"\n"
+        "    trap 'printf stopped > \"$HOME/host-terminal-stopped\"; exit 0' TERM\n"
+        "    printf 'FIXTURE_TUI_HELD_READY\\n'\n"
+        "    while :; do sleep 1; done\n"
+        "    ;;\n"
         "  *) exit 0 ;;\n"
         "esac\n",
     )
