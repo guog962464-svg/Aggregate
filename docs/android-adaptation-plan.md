@@ -168,6 +168,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-17 上游 suite/16 KB 证据对照：fogtape Node 24 当前预发布 `24.22.1-0` 按 Android 限制调整 child-Node 测试；Node 官方已发布含安全修复的 `24.22.3`。移动 full suite 只覆盖 `.status` 未跳过的 `parallel`/`sequential`，且公开 workflow 使用 x86_64 emulator；fork `build.yml` 明确移除 BrowserStack 16 KB 真机作业。成功 prerelease run #78 未列出真机 smoke。因此 4,588 项默认 suite 失败不能直接当作维护方移动 gate 的失败，供应包也不能据 README/TESTING 声称视为 16 KB 实机通过；此前 3,790 项子集的精确 runner 清单未保存，仍需在 `v24.22.3` 候选上重跑并保存逐项 verdict。设备当前未连接，本轮未重跑；A3.6 继续开放。详见 [上游移动测试套件与硬件证据对照](android-a3-runtime-research.md#2026-11-17-上游移动测试套件与默认-node-suite-对照)。
 
+  - 2026-11-17 供应包静态构建基线：使用锁定的 fogtape `24.22.1-0` archive（SHA-256 `d6fd9f610fe5d81fede8f0d400c5a62723247725a19831835f15abf4f0604250`）和 NDK `28.2.13676358` 构建隔离 NodeProbe Release APK/AAB；Bundletool 1.18.3 validate、AAB `PAGE_ALIGNMENT_16K`、APK `zipalign -P 16` 以及 APK/AAB 内全部四个 arm64 `.so`/`.node` ELF 对齐检查通过。CycloneDX 311 项仅是明确不完整的归档级 inventory；APK/AAB 均未签名，本轮无 ADB 设备，未安装运行。该 `24.22.1-0` 仍是较旧预发布包，只证明可构建和静态容器/ELF 基线，不替代 Node 24.22.3 安全候选、完整移动 suite、许可/静态链接闭包审查或 16 KB 实机验收，A3.6 保持开放；详情见 [A3.6 运行时研究记录](android-a3-runtime-research.md#2026-11-17-fogtape-24221-0-release-apkaab-供应包静态基线)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
