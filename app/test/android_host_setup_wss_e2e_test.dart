@@ -28,14 +28,17 @@ void main() {
 
   late Directory directory;
   late HostWssTransport transport;
+  late HostWssServices services;
   late _SandboxSetupPort setupPort;
   late AndroidHostPairingClient client;
   late String deviceId;
+  AndroidHostManager? manager;
 
   setUp(() async {
     directory = await Directory.systemTemp.createTemp(
       'aggregate-android-host-setup-e2e-',
     );
+    manager = null;
     final publicKey = base64Decode(publicKeySpkiBase64);
     deviceId = HostPairingProtocol.deviceIdForPublicKey(publicKey);
     final provider = _FixtureIdentityProvider(
@@ -66,16 +69,12 @@ void main() {
       ledger: ledger,
       authorization: pairing,
     );
-    transport = HostWssTransport(
-      loadServices: () async => HostWssServices(
-        identity: identity,
-        pairing: pairing,
-        dispatcher: dispatcher,
-      ),
-      bindAddressProvider: const _LoopbackAddressProvider(),
-      bonjourPublisher: const NoopHostBonjourPublisher(),
-      requestedPort: 0,
+    services = HostWssServices(
+      identity: identity,
+      pairing: pairing,
+      dispatcher: dispatcher,
     );
+    transport = _createTransport(services, 0);
     await transport.start();
     client = AndroidHostPairingClient(
       identity: _FixtureAndroidIdentity(
@@ -87,6 +86,7 @@ void main() {
 
   tearDown(() async {
     await transport.stop();
+    await manager?.dispose();
     await directory.delete(recursive: true);
   });
 
@@ -153,6 +153,53 @@ void main() {
       await session.close();
     }
   });
+
+  test(
+    'reports WSS Host restart as offline and reconnects using saved endpoint',
+    () async {
+      final androidDirectory = Directory('${directory.path}/android-app')
+        ..createSync();
+      manager = AndroidHostManager(
+        AndroidRuntimeStore(androidDirectory),
+        pairingClient: client,
+        discovery: const _NoopHostDiscovery(),
+      );
+      await manager!.load();
+      final issued = await transport.createInvitation();
+      final invitation = AndroidHostInvitation.fromQrPayload(issued.qrPayload);
+      final savedPort = invitation.endpoints.single.uri.port;
+      await manager!.requestPairing(
+        invitation: invitation,
+        displayName: 'Android WSS reconnect fixture',
+      );
+      await transport.approvePending(
+        deviceId,
+        scopes: const {HostGrantScope.readConnections},
+      );
+      await manager!.completePairing(
+        invitation: invitation,
+        displayName: 'Android WSS reconnect fixture',
+      );
+      expect(manager!.statusFor(hostId), AndroidHostStatus.online);
+
+      final offlineChange = manager!.statusChanges.firstWhere(
+        (change) =>
+            change.hostId == hostId &&
+            change.status == AndroidHostStatus.offline,
+      );
+      await transport.stop();
+      await offlineChange.timeout(const Duration(seconds: 2));
+      expect(manager!.isConnected(hostId), isFalse);
+      expect(manager!.statusFor(hostId), AndroidHostStatus.offline);
+
+      transport = _createTransport(services, savedPort);
+      await transport.start();
+      await manager!.connect(hostId);
+      expect(manager!.statusFor(hostId), AndroidHostStatus.online);
+      expect(manager!.isConnected(hostId), isTrue);
+      expect(manager!.hosts.single.endpoints.single.uri.port, savedPort);
+    },
+  );
 
   test(
     'Android RuntimePort routes setup drafts through the paired Host',
@@ -237,6 +284,16 @@ void main() {
     },
   );
 }
+
+HostWssTransport _createTransport(
+  HostWssServices services,
+  int requestedPort,
+) => HostWssTransport(
+  loadServices: () async => services,
+  bindAddressProvider: const _LoopbackAddressProvider(),
+  bonjourPublisher: const NoopHostBonjourPublisher(),
+  requestedPort: requestedPort,
+);
 
 final class _FixtureAndroidIdentity implements AndroidHostIdentityPort {
   const _FixtureAndroidIdentity(this.identity);

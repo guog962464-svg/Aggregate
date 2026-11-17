@@ -207,6 +207,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-17 Android Host 掉线状态单测：新增 `android_host_pairing_client_test.dart` 用例，令已认证会话的 fake socket message stream 在未调用 `manager.disconnect()` 时结束；验证 Host 状态转 offline、会话不可用，并经显式 `connect()` 重新认证恢复 online。该文件 9 项 Flutter 测试通过；随后全量 Flutter suite 295 项通过，全量 `flutter analyze --no-pub` 无问题。它只覆盖 fake connector 的状态机，不覆盖实际 TCP/WSS、Android 真机或 Wi‑Fi 中断，A5.5 意外网络掉线验收仍开放。详情见 [A5.5 真机与重连验收记录](android-a5-android-client.md#2026-11-17-android-host-session-stream-结束后的手动重连单元测试)。
 
+  - 2026-11-17 loopback WSS Host restart 集成补验：AndroidHostManager 经临时证书/真实 pinned TLS/WSS 配对后，Host transport 停止会使 Android session stream 结束并转 offline；同端口、同证书重启隔离 Host fixture 后，利用保存 endpoint 显式 connect、重新认证 host.hello 并恢复 online。该文件 3 项通过；当前全量 Flutter suite 296 项及 analyze 通过。范围仅为同进程 loopback Host stop/start，不含 Android 系统、Wi‑Fi/TCP abrupt drop、NSD 自动发现/重连、production Host 或 16 KB 设备；A5.5 仍开放。详见 [A5.5 WSS 生命周期验收记录](android-a5-android-client.md#2026-11-17-loopback-wss-host-stopstart-手动重连集成测试)。
+
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 
 **依赖：**A2 + A5；若 A4 通过，可附加白名单本地 JS 执行器。
