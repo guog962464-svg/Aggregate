@@ -357,3 +357,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 逻辑边界：保留共享时钟、点击能量包络、重复触发连续性、`TickerMode`/生命周期/离屏注销及 reduced-motion 路径。没有改太阳/月亮主题控件、拖动积分、主题映射、偏好或业务回调。
 - 验证：`dart format --output=none --set-exit-if-changed lib/widgets/glass/glass_motion.dart test/glass_motion_test.dart` 退出码 0；`flutter analyze --no-pub lib/widgets/glass/glass_motion.dart test/glass_motion_test.dart` 无问题；`flutter test --no-pub` 在 `app/` 下 293 项通过；映射表检查为 61 个 profile（60 个 glyph + `neutral`），action 与完整 profile 配置均无重复；`git diff --check` 通过。
 - 边界：此次没有启动、聚焦或操作原生应用窗口。Widget 测试覆盖 60 个 glyph 的 idle/click/idle 采样与连续性，但不代表 60 个图案均已在 macOS Profile 原生窗口逐项目视通过；这些视觉签收与 UI-5/UI-6 的其余原生缺项仍保持开放。未跟踪的 Android 集成测试和用户自己的原型、锁文件、Android 文档改动均未纳入本项。
+
+### 2026-11-17 原生按钮图案检查页与 3.50.0 对照补记
+
+- 夹具：把 `app/lib/widgets/glass/glass_buttons_fixture.dart` 的 60 个 glyph 展示从静态图案改为可点击 `GlassActionButton`，使用独立 PreviewRuntime；所有点击回调为空操作，不触发业务行为。macOS Flutter 3.47.8 Profile AX 树列出 60 个 glyph 按钮及其名称。该证据确认可访问节点覆盖，不等于实际逐一朗读或逐项检查动效。
+- 视觉证据：深色 800×632 按钮样本、浅色 800×632 按钮样本和深色 1512×949 logical px 完整 glyph 网格均归档在 [stage6-native-review](/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage6-native-review/)。PNG SHA-256 分别为 `72ee7dc973616cb2d2a05262d3c0abcf1e705ab645baac305207271d5f476baf`、`6aa7a202f3dc0c994e0d58620a9b7b1f700dae2ab6cdffbce56eac0911af3207`、`94b94482010c2a40b6028205e2d8c6533dbcb90a7e73bda7f5e52e6c77d05280`。已目视检查浅/深按钮样本；完整网格截图已保存但本轮没有逐项放大检查或逐个点击 60 个 glyph，故不据此关闭 UI-3 原生视觉或 UI-6.7。
+- 3.50.0：官方下载 Flutter 3.50.0 stable arm64 archive 并校验其官方 manifest SHA-256 `ed2d08a3e3c023e84cbe9316d21bd88fda6ee9552f90c1eb4da41a07c170fb35`；隔离 Profile fixture 构建成功。官方[Flutter 3.50.0 release notes](https://docs.flutter.dev/release/release-notes/release-notes-3.50.0)列出将 disabled/read-only semantics 映射为 AX node restriction 的 engine 变更。本轮原生检查误读了普通参考样本的 enabled 属性，且 disabled 样本未出现在当时查看的树范围，因此这次探测对修复是否生效没有结论；不覆盖此前增强 AX 树记录的“禁用节点 role/名称不可读”，UI-5.4 仍部分通过，需在可精准定位禁用节点的真实 VoiceOver 树中重验。
+- 回归：当前工作树下 `app/` 的 `flutter test --no-pub` 完整测试通过 294 项。此次只改 fixture 与 UI 阶段验收文档；未改主题开关、业务回调或生产运行逻辑。隔离 app 进程、临时 worktree 与临时 Flutter SDK 均已关闭/清理；工作区其他 Android、Runtime 与 lockfile 修改未纳入本项。

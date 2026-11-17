@@ -258,23 +258,25 @@ class GlassButtonsFixturePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               sliver: SliverToBoxAdapter(
                 child: _FixtureSectionHeading(
-                  title: '实际操作图案字典',
-                  detail: '目录、连接、Host、弹窗、音乐与设置使用同一颗粒绘制路径',
+                  title: '60 种点阵独立动效',
+                  detail: '每个 glyph 均可直接点击，逐项检查静置与点击光效',
                   tokens: tokens,
                 ),
               ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(32, 16, 32, 36),
-              sliver: SliverToBoxAdapter(
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final glyph in GlassGlyph.values)
-                      _GlyphSample(glyph: glyph, tokens: tokens),
-                  ],
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 112,
+                  mainAxisExtent: 122,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
                 ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final glyph = GlassGlyph.values[index];
+                  return _GlyphSample(glyph: glyph, tokens: tokens);
+                }, childCount: GlassGlyph.values.length),
               ),
             ),
           ],
@@ -382,22 +384,26 @@ class _GlyphSample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: glyph.name,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: tokens.raised.withValues(alpha: .52),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: tokens.line.withValues(alpha: .7)),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GlassActionButton(
+          label: glyph.name,
+          semanticsLabel: glyph.name,
+          glyph: glyph,
+          kind: GlassButtonKind.secondary,
+          size: GlassButtonSize.reference,
+          iconOnly: true,
+          onPressed: () {},
         ),
-        child: SizedBox(
-          width: 52,
-          height: 48,
-          child: Center(
-            child: GlassGlyphMark(glyph: glyph, size: 26, color: tokens.ink),
-          ),
+        const SizedBox(height: 4),
+        Text(
+          glyph.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: tokens.muted, fontSize: 10),
         ),
-      ),
+      ],
     );
   }
 }
