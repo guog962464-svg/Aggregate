@@ -589,5 +589,5 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - 问题来源：浅色 Profile 截图 `48-error-result-light-scrolled.png` 中，“检查活动状态”按钮靠近结果区当前视口下沿。截图的滚动位置没有到达末尾，单凭该画面无法确认是否与固定 MiniPlayer 重叠。
 - 复现路径：新增 `capability_run_page_test.dart` 的 macOS Widget 回归，使用生产 `ConnectionHomePage`、嵌入式 `CapabilityRunPage`、`ResultPanel` 和 `MusicMiniPlayer`，向隔离 Runtime 注入 MCP 连接失败结果；将页面滚动到最大范围后比较按钮与 MiniPlayer 的实际矩形。
-- 结果：按钮底边低于或等于 MiniPlayer 顶边，检查无布局异常。滚动到最大范围后恢复操作完整可见；未发现生产布局缺陷，因此没有改产品布局代码。矩阵 B106 与 UI-6.7 范围说明已校正截图结论。
-- 验证：`flutter test --no-pub test/capability_run_page_test.dart` 10 项通过；`flutter analyze --no-pub` 无问题；Dart 格式与 `git diff --check` 通过。该结果验证 Flutter 布局与可达性，仍需原生实窗末尾位置截图补足视觉签收；UI-6.7 保持部分验收。
+- 原生补证：隔离 Profile 的浅色错误恢复页面滚到末尾后截图 [`61-error-result-light-scroll-end.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-inspection-runtime/61-error-result-light-scroll-end.png>)，SHA-256 `f02561f9a5c307038afd3bf50f5cd0ea25bce6018a6412e3398b9cf841ee50d1`。恢复按钮 AX 矩形为 `{x:422,y:578,width:139,height:40}`，错误详情行是 `{x:422,y:627,width:668,height:48}`，MiniPlayer 歌曲标签从 `{x:408,y:764}` 开始；再次向下滚动 12 个滚轮单位后前两项位置不变，确认已到滚动末尾。截图中错误卡片、恢复按钮和详情行完整显示，MiniPlayer 位于其下方。
+- 结果与验证：Widget 和浅色原生实窗都确认滚到最大范围后恢复操作完整可见；未发现生产布局缺陷，因此没有改产品布局代码。`flutter test --no-pub test/capability_run_page_test.dart` 10 项通过；`flutter analyze --no-pub` 无问题；Dart 格式与 `git diff --check` 通过。B106 及 UI-6.7 范围说明已加入原生证据；UI-6.7 仍因其他按钮实例和动态状态未全量签收而保持部分验收。
