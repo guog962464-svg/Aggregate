@@ -107,3 +107,4 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - APK `aapt dump badging` 只列出 `arm64-v8a`，versionCode 8、versionName 0.3.7；APK 包含 7 个 arm64 ELF，AAB 也只含 arm64 的这 7 个 ELF。每个 ELF 的所有 `PT_LOAD p_align` 均不小于 `0x4000`；Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。
 - Bundletool 1.18.3 `validate` 通过，`dump config` 报告 `PAGE_ALIGNMENT_16K`。`apksigner` 与 `jarsigner` 均确认产物未签名；APK/AAB 均不含 NodeProbe、NodeBridge、`libnode.so` 或 npm `node_modules`。
 - 本次只构建并静态检查，没有安装或运行产物。当前 ADB 设备列表为空；这不替代 16 KB 系统实机、正式签名或生产 Host/音乐链路验收。
+- 4 KB 真机覆盖新鲜度：`aecbd0c` 是 A5.5 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 业务集成验收对应代码提交。核对 `aecbd0c..HEAD` 的 `app/android` 与 `app/lib` 差异，Android 原生平台目录没有变化；Dart 侧唯一差异是 `glass_buttons_fixture.dart` 独立 UI 演示夹具。故此前 4 KB 真机证据仍覆盖当前 Android 运行时/平台桥接源码；本次新 Release 工件本身未安装，当前亦无设备可补跑安装验收。
