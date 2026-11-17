@@ -241,7 +241,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 - `GlassSceneFrame` 暴露一个只在 `switchDaylight` 跨越 0.5 时变化的前景明暗监听器；`AggregateApp` 用它重建语义文字主题，`PageFrame` 为无显式样式的正文继承当前 `bodyMedium`。shader 仍每帧绘制，保留任意拖动、主题开关交互及 560 ms 全局主题转场。
 - macOS `AggregateApp` 设置页回归在深→浅和浅→深方向各逐 16 ms 检查 40 帧，断言正文前景与生产 `ThemeSwitchArtwork.frame.theme` 的亮暗侧一致；阈值单测覆盖同侧连续帧不重复通知。`glass_design_tokens_test.dart`、`glass_theme_switch_test.dart`、`accessibility_test.dart`、`macos_reduce_motion_test.dart`、`page_frame_test.dart`、`widget_test.dart` 六个测试文件通过，`flutter analyze --no-pub` 无问题。
-- 另用 1024×768、DPR 2 的生产 shader 离屏合成作诊断采样：约 112 ms 有一处保守边缘像素比为 4.478:1；约 119 ms 切为黑色前景后为 5.317:1。112 ms 的前景仍与 shader 相位一致，该点略低于项目 4.5:1 目标。离屏读回不能代表原生 display-present；本次探针截图已清理，UI-5.5 继续部分验收，尚缺原生窗口逐帧和其他材质/状态矩阵。
+- 另用 1024×768、DPR 2 的生产 shader 离屏合成作诊断采样：约 112 ms 有一处保守边缘像素比为 4.478:1；约 119 ms 切为黑色前景后同一采样方法为 5.317:1。112 ms 的前景仍与 shader 相位一致；该栅格边缘比值未记录指定前景/背景色对，不能作为规范通过或失败判定，详见下方方法复核。离屏读回不能代表原生 display-present；本次探针截图已清理，UI-5.5 继续部分验收，尚缺实际色对、原生窗口逐帧和其他材质/状态矩阵。
+
+### 2026-11-18 UI-5.5 对比度边缘采样方法复核
+
+- 复核对象：上方设置页真实 shader 相位跟随记录中的 4.478:1 / 5.317:1，是 1024×768、DPR 2 离屏图像上的保守边缘像素读数。原始探针图已清理，现有记录没有保存像素坐标、抗锯齿覆盖率、对应的字形内点或指定背景色样本。
+- 判定：WCAG 2.2 SC 1.4.3 要以用户代理/样式中的前景色与正常使用时指定背景色评估；抗锯齿屏幕边缘值不等于规范所测色对。W3C G18 也说明，图文亮度变化时可以对字形后方背景做遮罩，或按其所在位置调整文字亮度。故 4.478:1 不能独立作为失败数值，5.317:1 也不能代表全动画通过。参见 [WCAG 2.2 对比度说明](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) 与 [W3C G18](https://www.w3.org/TR/WCAG20-HTML-TECHS/G18.html)。
+- 结论与后续：撤销“该边缘采样略低于 4.5:1 即动态对比失败”的结论，不据此改产品颜色或背景。UI-5.5 仍部分验收；待获取实际指定文字色、对应文字后方背景色和动画样本，再覆盖禁用态及其他页面材质。该方法修正不构成实窗或 display-present 证据，也未重跑产品测试。
 
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
