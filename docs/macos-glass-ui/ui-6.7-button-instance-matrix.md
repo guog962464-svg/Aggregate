@@ -13,10 +13,10 @@
 
 | 编号 | 当前源码位置 | 页面/控件上下文 | 当前证据状态 |
 | --- | --- | --- | --- |
-| B001 | `app/lib/app/app_shell.dart:317` | 应用外壳：顶部操作、全局导航 | 既有五个主页面截图可定位部分外壳控件；逐项待核 |
-| B002 | `app/lib/app/app_shell.dart:364` | 应用外壳：顶部操作、全局导航 | 既有五个主页面截图可定位部分外壳控件；逐项待核 |
-| B003 | `app/lib/app/app_shell.dart:399` | 应用外壳：顶部操作、全局导航 | 既有五个主页面截图可定位部分外壳控件；逐项待核 |
-| B004 | `app/lib/app/app_shell.dart:620` | 应用外壳：顶部操作、全局导航 | 既有五个主页面截图可定位部分外壳控件；逐项待核 |
+| B001 | `app/lib/app/app_shell.dart:317` | 应用外壳：顶部操作、全局导航 | 2026-11-18 暗色首页实窗图 `01-home-dark.png`；仅签收截图中可见实例，其他页面/主题/状态待核 |
+| B002 | `app/lib/app/app_shell.dart:364` | 应用外壳：顶部操作、全局导航 | 2026-11-18 暗色首页实窗图 `01-home-dark.png`；仅签收截图中可见实例，其他页面/主题/状态待核 |
+| B003 | `app/lib/app/app_shell.dart:399` | 应用外壳：顶部操作、全局导航 | 2026-11-18 暗色首页实窗图 `01-home-dark.png`；仅签收截图中可见实例，其他页面/主题/状态待核 |
+| B004 | `app/lib/app/app_shell.dart:620` | 应用外壳：顶部操作、全局导航 | 2026-11-18 暗色首页实窗图 `01-home-dark.png`；仅签收截图中可见实例，其他页面/主题/状态待核 |
 | B005 | `app/lib/features/activity/activity_page.dart:116` | 活动页：记录操作与列表状态 | 既有活动页截图；逐实例待核 |
 | B006 | `app/lib/features/activity/activity_page.dart:172` | 活动页：记录操作与列表状态 | 既有活动页截图；逐实例待核 |
 | B007 | `app/lib/features/activity/activity_page.dart:229` | 活动页：记录操作与列表状态 | 既有活动页截图；逐实例待核 |
@@ -24,12 +24,12 @@
 | B009 | `app/lib/features/activity/activity_page.dart:282` | 活动页：记录操作与列表状态 | 既有活动页截图；逐实例待核 |
 | B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 既有活动页截图；逐实例待核 |
 | B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 既有活动页截图；逐实例待核 |
-| B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：功能行及收藏操作 | 既有工作台截图；逐实例待核 |
-| B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：功能行及收藏操作 | 既有工作台截图；逐实例待核 |
-| B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：功能行及收藏操作 | 既有工作台截图；逐实例待核 |
-| B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：功能行及收藏操作 | 既有工作台截图；逐实例待核 |
-| B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：功能行及收藏操作 | 既有工作台截图；逐实例待核 |
-| B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：功能行及收藏操作 | 既有工作台截图；逐实例待核 |
+| B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
 | B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
 | B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
@@ -60,13 +60,13 @@
 | B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
 | B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
 | B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 无运行表单/结果页截图 |
-| B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 无运行表单/结果页截图 |
-| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 无运行表单/结果页截图 |
-| B051 | `app/lib/features/invocation/capability_run_page.dart:590` | 功能调用：运行表单与结果页 | 无运行表单/结果页截图 |
-| B052 | `app/lib/features/invocation/capability_run_page.dart:597` | 功能调用：运行表单与结果页 | 无运行表单/结果页截图 |
-| B053 | `app/lib/features/invocation/schema_form.dart:286` | 功能调用：动态参数表单字段 | 无表单字段截图 |
-| B054 | `app/lib/features/invocation/schema_form.dart:335` | 功能调用：动态参数表单字段 | 无表单字段截图 |
+| B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 未捕获：PreviewRuntime 会跳过执行确认对话框；确认按钮实例仍待核 |
+| B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 未捕获：PreviewRuntime 会跳过执行确认对话框；确认按钮实例仍待核 |
+| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 2026-11-18 暗色实窗表单图 `03-run-form-dark.png`；运行按钮位置可见，busy/disabled 与浅色待核 |
+| B051 | `app/lib/features/invocation/capability_run_page.dart:590` | 功能调用：运行表单与结果页 | 未捕获：PreviewRuntime 隐藏终端按钮，真实终端路径未启用 |
+| B052 | `app/lib/features/invocation/capability_run_page.dart:597` | 功能调用：运行表单与结果页 | 未捕获：演示调用未停留在活动运行态，取消按钮未呈现 |
+| B053 | `app/lib/features/invocation/schema_form.dart:286` | 功能调用：动态参数表单字段 | 2026-11-18 暗色实窗表单图 `03c-run-form-after-keypress.png`、`03d-run-form-focus-path.png`；只见基础数字字段，复杂字段/浅色/校验状态待核 |
+| B054 | `app/lib/features/invocation/schema_form.dart:335` | 功能调用：动态参数表单字段 | 未捕获：所用演示表单没有 JSON 展开控件 |
 | B055 | `app/lib/features/invocation/terminal_page.dart:275` | 功能调用：终端输出与输入 | 无终端页截图 |
 | B056 | `app/lib/features/invocation/terminal_page.dart:388` | 功能调用：终端输出与输入 | 无终端页截图 |
 | B057 | `app/lib/features/invocation/terminal_page.dart:419` | 功能调用：终端输出与输入 | 无终端页截图 |
@@ -81,17 +81,17 @@
 | B066 | `app/lib/features/music/music_account_control.dart:488` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
 | B067 | `app/lib/features/music/music_account_control.dart:497` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
 | B068 | `app/lib/features/music/music_account_control.dart:507` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B069 | `app/lib/features/music/music_mini_player.dart:23` | 全局迷你播放器 | 无播放中迷你播放器截图 |
-| B070 | `app/lib/features/music/music_mini_player.dart:29` | 全局迷你播放器 | 无播放中迷你播放器截图 |
-| B071 | `app/lib/features/music/music_mini_player.dart:68` | 全局迷你播放器 | 无播放中迷你播放器截图 |
-| B072 | `app/lib/features/music/music_mini_player.dart:407` | 全局迷你播放器 | 无播放中迷你播放器截图 |
-| B073 | `app/lib/features/music/music_player_page.dart:201` | 网易云音乐：播放器与搜索入口 | 既有连接首页截图覆盖部分播放器操作；逐实例待核 |
-| B074 | `app/lib/features/music/music_player_page.dart:207` | 网易云音乐：播放器与搜索入口 | 既有连接首页截图覆盖部分播放器操作；逐实例待核 |
-| B075 | `app/lib/features/music/music_player_page.dart:236` | 网易云音乐：播放器与搜索入口 | 既有连接首页截图覆盖部分播放器操作；逐实例待核 |
-| B076 | `app/lib/features/music/music_player_page.dart:242` | 网易云音乐：播放器与搜索入口 | 既有连接首页截图覆盖部分播放器操作；逐实例待核 |
-| B077 | `app/lib/features/music/music_player_page.dart:512` | 网易云音乐：播放器与搜索入口 | 既有连接首页截图覆盖部分播放器操作；逐实例待核 |
-| B078 | `app/lib/features/music/music_player_page.dart:603` | 网易云音乐：播放器与搜索入口 | 既有连接首页截图覆盖部分播放器操作；逐实例待核 |
-| B079 | `app/lib/features/music/music_search_results.dart:180` | 网易云音乐：搜索结果操作 | 无非空搜索结果截图 |
+| B069 | `app/lib/features/music/music_mini_player.dart:23` | 全局迷你播放器 | 未捕获：播放后离开音乐主页的全局迷你播放器尚未截图 |
+| B070 | `app/lib/features/music/music_mini_player.dart:29` | 全局迷你播放器 | 未捕获：播放后离开音乐主页的全局迷你播放器尚未截图 |
+| B071 | `app/lib/features/music/music_mini_player.dart:68` | 全局迷你播放器 | 未捕获：播放后离开音乐主页的全局迷你播放器尚未截图 |
+| B072 | `app/lib/features/music/music_mini_player.dart:407` | 全局迷你播放器 | 未捕获：播放后离开音乐主页的全局迷你播放器尚未截图 |
+| B073 | `app/lib/features/music/music_player_page.dart:201` | 网易云音乐：播放器与搜索入口 | 未捕获：PreviewRuntime 跳过搜索授权确认对话框 |
+| B074 | `app/lib/features/music/music_player_page.dart:207` | 网易云音乐：播放器与搜索入口 | 未捕获：PreviewRuntime 跳过搜索授权确认对话框 |
+| B075 | `app/lib/features/music/music_player_page.dart:236` | 网易云音乐：播放器与搜索入口 | 未捕获：PreviewRuntime 跳过歌曲控制确认对话框 |
+| B076 | `app/lib/features/music/music_player_page.dart:242` | 网易云音乐：播放器与搜索入口 | 未捕获：PreviewRuntime 跳过歌曲控制确认对话框 |
+| B077 | `app/lib/features/music/music_player_page.dart:512` | 网易云音乐：播放器与搜索入口 | 2026-11-18 暗色播放启动图 `06-music-starting-dark.png`；仅见 busy 状态的停止按钮，未测可用点击 |
+| B078 | `app/lib/features/music/music_player_page.dart:603` | 网易云音乐：播放器与搜索入口 | 2026-11-18 暗色音乐主页图 `05-music-search-results-dark.png`、`06-music-starting-dark.png`；PreviewRuntime 未到稳定播放态 |
+| B079 | `app/lib/features/music/music_search_results.dart:180` | 网易云音乐：搜索结果操作 | 2026-11-18 暗色非空搜索图 `05-music-search-results-dark.png`；可播放/不可播放行的操作差异已目视，点击动画/浅色待核 |
 | B080 | `app/lib/features/settings/appearance_selector.dart:48` | 设置：明暗主题选择器 | 既有设置页及焦点截图；逐实例/动态状态待核 |
 | B081 | `app/lib/features/settings/settings_page.dart:37` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
 | B082 | `app/lib/features/settings/settings_page.dart:43` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
@@ -114,10 +114,10 @@
 | B099 | `app/lib/platform/macos/mac_host_settings_panel.dart:951` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
 | B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
 | B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B102 | `app/lib/widgets/capability_row.dart:35` | 工作台/搜索：功能行 | 既有工作台截图；逐实例待核 |
-| B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 既有工作台截图；逐实例待核 |
+| B102 | `app/lib/widgets/capability_row.dart:35` | 工作台/搜索：功能行 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 无空态/错误态截图 |
-| B105 | `app/lib/widgets/result_panel.dart:74` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
+| B105 | `app/lib/widgets/result_panel.dart:74` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色成功结果图 `04-run-result-dark.png`；仅复制按钮静态外观已目视，复制动作未验证 |
 | B106 | `app/lib/widgets/result_panel.dart:238` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
 | B107 | `app/lib/widgets/result_panel.dart:288` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
 | B108 | `app/lib/widgets/result_panel.dart:364` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
