@@ -1,9 +1,32 @@
 import 'package:aggregate/features/activity/activity_page.dart';
+import 'package:aggregate/preview/ui6_inspection_runtime.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('UI inspection activity seed is isolated and terminal', () async {
+    final runtime = Ui6InspectionRuntime();
+
+    await runtime.seedActivityForInspection();
+    await runtime.seedActivityForInspection();
+    final runs = await runtime.listRecentRuns();
+    final states = runs.map((run) => run.latest.state).toSet();
+
+    expect(runs, hasLength(3));
+    expect(
+      states,
+      containsAll({RunState.succeeded, RunState.failed, RunState.cancelled}),
+    );
+    expect(runs.every((run) => run.id.value.startsWith('preview-')), isTrue);
+    expect(
+      runs.every(
+        (run) => run.capability.connection.value.startsWith('ui6-review-'),
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets('activity list builds more rows as the list scrolls', (
     tester,
   ) async {

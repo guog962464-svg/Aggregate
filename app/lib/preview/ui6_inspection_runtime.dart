@@ -33,6 +33,7 @@ final class Ui6InspectionRuntime
   var _draftCounter = 0;
   var _connectionCounter = 0;
   var _terminalCounter = 0;
+  var _activitySeeded = false;
   AccountSnapshot _musicAccount = const AccountSnapshot(
     AccountState.signedIn,
     nickname: '预览账号',
@@ -41,6 +42,21 @@ final class Ui6InspectionRuntime
   static const _gitId = ConnectionId('ui6-review-git');
   static const _mcpId = ConnectionId('ui6-review-mcp');
   static const _musicId = ConnectionId('ui6-review-music');
+
+  /// Seeds local, disposable ActivityPage states for visual inspection.
+  /// This method never invokes a host process, network service, or user data.
+  Future<void> seedActivityForInspection() async {
+    if (_activitySeeded) return;
+    _activitySeeded = true;
+    const status = CapabilityId(_gitId, CapabilityKind.cliAction, 'status');
+    const add = CapabilityId(_mcpId, CapabilityKind.mcpTool, 'add');
+
+    await _preview.invoke(status, const {});
+    await Future<void>.delayed(const Duration(milliseconds: 260));
+    await _preview.invoke(add, const {'a': 'invalid', 'b': 1});
+    final pending = await _preview.invoke(status, const {});
+    await _preview.cancel(pending.id);
+  }
 
   static const List<Connection> _seedConnections = [
     Connection(
