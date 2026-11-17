@@ -161,6 +161,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-15 修正候选 Release 归档与静态依赖清单：发现此前未签名 APK/AAB 仍打包旧 `libnode.so` `7a7faf…`、mobile `24.22.1-0`；保留旧包后，以已在 4 KB 真机通过的修正库重新构建，APK/AAB 哈希为 `a8947195…`/`f07ad17d…`，包内库 hash `5835a04c…`。25 份静态许可文本逐份匹配源树，Node/NDK notice 哈希通过；静态 JSON 清单映射 37 个归档、3,608 个成员和 3,009 个保留 archive-object 对，并记录版本来源。新 CycloneDX BOM 各 340 组件、362 条关系且通过 schema，但仍 incomplete；修正 generator 的 Git tree 元数据命名。zipalign、Bundletool `PAGE_ALIGNMENT_16K` 和 11 个 ELF `PT_LOAD` 静态对齐检查通过。产物仍未签名、未作为 Aggregate 产品发布，16 KB 真机、法律审批、来源 revision 冲突和其他 Node 测试仍开放；A3.6 保持开放。详见 [修正候选 Release 与静态依赖版本映射](android-a3-runtime-research.md#2026-11-15-修正候选-release-归档与静态依赖版本映射)。
 
 
+  - 2026-11-17 隔离 NodeProbe Release 补验：从已安装测试 APK 恢复 Node `24.22.3-0` 候选库，确认 stripped `libnode.so` SHA-256 为 `5835a04c…`；用官方 Node v24.22.3 headers、NDK r27d 根 NOTICE 和 LLVM NOTICE 重建独立 arm64 Release APK/AAB。APK 使用一次性本地非生产测试证书签名，并在 LGE AN10 / Android 15 / API 35 / 4 KB 真机安装启动；logcat 证实 Node `v24.22.3` ready、loopback HTTP、文件写读及正常退出。APK `zipalign -c -P 16 4` 通过，三个 `.so` 的全部 `PT_LOAD` 均为 16 KB 对齐；AAB Bundletool 1.18.3 `validate` 通过且配置为 `PAGE_ALIGNMENT_16K`。卸载了两个隔离测试包并恢复仓库忽略的 Node 24.22.1 构建输入，普通 Aggregate App 仍安装。此项仅关闭“隔离 NodeProbe Release 未签名/未在 4 KB 真机运行”这一窄缺口；测试证书不是产品签名，AAB 未签名，未证明 Aggregate 产品 Release、16 KB 设备或分发资格。默认 Node suite 的后续尝试仍被中断：最后可见约 85%、3,877 通过/63 失败，不是终态；此前完整工具退出码为 1 的运行也只留下 99%、4,181/403 的截断快照。A3.6 仍开放，详见 [2026-11-17 隔离 NodeProbe Release 4 KB 真机验收](android-a3-runtime-research.md#2026-11-17-隔离-nodeprobe-release-4-kb-真机验收)。
+
 **交付物：**最小探针、版本/体积/性能表、原生兼容报告。**通过门槛：**目标设备上稳定启动、通信、失败恢复；能取得可维护的原生库且满足分发要求。**停止条件：**维护版本、16 KB、崩溃隔离或生命周期任一关键项无可行方案时，不进入本地 Node 产品化。
 
 ### A4：npm 包与 CLI 兼容性实验及选型决定
