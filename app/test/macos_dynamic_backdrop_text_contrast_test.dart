@@ -4,6 +4,9 @@ import 'dart:ui' as ui;
 import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_action_button.dart';
+import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
+import 'package:aggregate/widgets/glass/glass_glyph.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate/widgets/glass/glass_scene.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
@@ -56,6 +59,194 @@ void main() {
     },
     variant: _macOS,
   );
+
+  testWidgets('glass button labels remain readable over the live scene', (
+    tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final initialAppearance in [
+      AppearancePreference.dark,
+      AppearancePreference.light,
+    ]) {
+      await _verifyGlassButtonContrast(tester, initialAppearance);
+    }
+  }, variant: _macOS);
+}
+
+Future<void> _verifyGlassButtonContrast(
+  WidgetTester tester,
+  AppearancePreference initialAppearance,
+) async {
+  const size = Size(1024, 768);
+  const pixelRatio = 1.0;
+  tester.view.physicalSize = Size(
+    size.width * pixelRatio,
+    size.height * pixelRatio,
+  );
+  tester.view.devicePixelRatio = pixelRatio;
+
+  const enabledLabel = '普通按钮样本';
+  const disabledLabel = '不可用按钮样本';
+  const disabledDescription = '暂不可用说明';
+  const disabledSource = '样本来源';
+  const busyLabel = '正在同步样本…';
+  const dangerLabel = '清理按钮样本';
+  final boundaryKey = GlobalKey();
+  final runtime = createPreviewRuntime();
+  final reduceMotion = ValueNotifier(true);
+  try {
+    await runtime.savePreferences(
+      UserPreferences(appearance: initialAppearance),
+    );
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: boundaryKey,
+        child: AggregateApp(
+          runtime: runtime,
+          glassMotionClock: ManualGlassMotionClock(),
+          systemDisableAnimations: reduceMotion,
+          platformSettingsSections: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('按钮对比度预览'),
+                const SizedBox(height: 8),
+                const GlassActionButton(
+                  glyph: GlassGlyph.play,
+                  label: enabledLabel,
+                  onPressed: _noOp,
+                ),
+                const SizedBox(height: 8),
+                const GlassActionButton(
+                  glyph: GlassGlyph.refresh,
+                  label: disabledLabel,
+                  description: disabledDescription,
+                  source: disabledSource,
+                  onPressed: null,
+                  enabled: false,
+                ),
+                const SizedBox(height: 8),
+                const GlassActionButton(
+                  glyph: GlassGlyph.hourglass,
+                  label: '同步按钮样本',
+                  busyLabel: busyLabel,
+                  busy: true,
+                  onPressed: null,
+                ),
+                const SizedBox(height: 8),
+                const GlassActionButton(
+                  glyph: GlassGlyph.trash,
+                  label: dangerLabel,
+                  kind: GlassButtonKind.danger,
+                  onPressed: _noOp,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(disabledLabel));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(busyLabel));
+    await tester.pumpAndSettle();
+
+    final labels = [
+      enabledLabel,
+      disabledLabel,
+      disabledDescription,
+      disabledSource,
+      busyLabel,
+      dangerLabel,
+    ];
+    final labelRects = {
+      for (final label in labels) label: tester.getRect(find.text(label)),
+    };
+    final frame = tester
+        .widget<GlassSceneScope>(find.byType(GlassSceneScope))
+        .frame;
+    final sceneSeconds = frame.seconds;
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+
+    final imageWidth = (size.width * pixelRatio).round();
+    for (final daylight in _samples) {
+      frame.publishThemeSwitch(sceneSeconds, daylight);
+      await tester.pump();
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(boundaryKey),
+      );
+      final pixelData = await tester.runAsync(() async {
+        final image = await boundary.toImage(pixelRatio: pixelRatio);
+        try {
+          return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        } finally {
+          image.dispose();
+        }
+      });
+      final pixels = pixelData!.buffer.asUint8List(
+        pixelData.offsetInBytes,
+        pixelData.lengthInBytes,
+      );
+
+      for (final label in labels) {
+        final labelFinder = find.text(label);
+        final labelContext = tester.element(labelFinder);
+        final tokens = Theme.of(labelContext).extension<GlassDesignTokens>()!;
+        final textStyle = tester.widget<Text>(labelFinder).style!;
+        final foreground = textStyle.color!;
+        expect(textStyle.shadows, isNull);
+        final rect = labelRects[label]!;
+        final buttonFinder = find.ancestor(
+          of: labelFinder,
+          matching: find.byType(GlassActionButton),
+        );
+        expect(buttonFinder, findsOneWidget);
+        final buttonRect = tester.getRect(buttonFinder);
+        final rightGap = buttonRect.right - rect.right;
+        expect(rightGap, greaterThanOrEqualTo(6));
+        var minimumTextContrast = double.infinity;
+        Color? minimumBackground;
+        Offset? minimumPoint;
+        final y = rect.center.dy;
+        for (var xIndex = 0; xIndex < 3; xIndex++) {
+          final x = ((rect.right + rightGap * (xIndex + 1) / 4) * pixelRatio)
+              .floor();
+          final background = _pixel(
+            pixels,
+            x,
+            (y * pixelRatio).floor(),
+            imageWidth,
+          );
+          final contrast = _contrast(foreground, background);
+          if (contrast < minimumTextContrast) {
+            minimumTextContrast = contrast;
+            minimumBackground = background;
+            minimumPoint = Offset(x.toDouble(), y.toDouble());
+          }
+        }
+        expect(
+          minimumTextContrast,
+          greaterThanOrEqualTo(4.5),
+          reason:
+              '${initialAppearance.name} start, $label, daylight $daylight, '
+              'foreground $foreground, background $minimumBackground '
+              'at $minimumPoint, token surface ${tokens.surface}, '
+              'top ${tokens.glassTop}, bottom ${tokens.glassBottom}, '
+              'button $buttonRect, label $rect',
+        );
+      }
+    }
+  } finally {
+    await tester.pumpWidget(const SizedBox.shrink());
+    reduceMotion.dispose();
+    await runtime.dispose();
+  }
 }
 
 Future<void> _verifyScenario(
@@ -301,5 +492,6 @@ double _contrast(Color foreground, Color background) {
 }
 
 double min(double a, double b) => a < b ? a : b;
-
 double max(double a, double b) => a > b ? a : b;
+
+void _noOp() {}

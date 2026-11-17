@@ -280,6 +280,14 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：`flutter test --no-pub --reporter compact test/glass_design_tokens_test.dart test/macos_reduce_motion_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart` 13 项通过；`flutter analyze --no-pub` 针对 `glass_scene.dart` 与三个相关测试文件通过，`git diff --check` 通过。
 - 边界：这些数值是逐路由文字位置上的离屏 `GlassScene` 背景色对，不是各页面卡片、按钮或半透明表面合成，也不是原生 display-present。其他页面材质、禁用态、VoiceOver 与原生呈现仍未完整验收，UI-5.5 保持部分验收。
 
+
+### 2026-11-18 UI-5.5 玻璃操作按钮文字相邻材质采样
+
+- 新缺口：实际合成场景里，禁用/忙碌文字及说明、来源小字沿用 `muted` 后，在浅深过渡期间无法保证与各自玻璃按钮面的 4.5:1；同时不能把正文亮暗交接直接套给按钮，因为按钮材质仍属于当前选择的主题。
+- 修正：`withMacOSBackdropTextContrast` 保留玻璃令牌的当前主题色。非危险按钮标题（包括禁用/忙碌）继续使用主题正文色；说明/来源小字以 `muted` 向正文色调整 18%，保持次要层级。危险文字仍使用危险色。禁用面 `.52` 透明度、语义状态、图标、点击和动效规则不变；按钮文字不加转场描边。
+- 验证：`macos_dynamic_backdrop_text_contrast_test.dart` 在 1024×768、DPR 1 的 `AggregateApp` PreviewRuntime 设置页，对普通、禁用、忙碌、危险按钮标题及禁用说明/来源共六类文字，覆盖浅/深两种初始偏好和 14 个临界相位（168 组文字/相位组合）。每个文字基线右侧的同一按钮面取三个未被文字覆盖的相邻像素，全部达到 4.5:1；按钮文本无阴影。该取样较此前错误映射到工具栏按钮的采样已修正。本轮四个回归文件共 25 项通过，六个 Dart 文件定向 `flutter analyze --no-pub` 无问题，格式检查和 `git diff --check` 通过。
+- 边界：此处是离屏合成中同一玻璃按钮面相邻像素样本，不是 glyph 下方精确背景反演，也不是 macOS display-present。只覆盖设置页合成样本，不覆盖全部 109 个按钮调用点、其他页面材质/状态、VoiceOver；UI-5.5 仍部分验收。
+
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
 - 构建：隔离 bundle `io.github.guog962464.aggregate.ui6focusafter` 的 macOS Profile；项目 Flutter 3.47.8 / Dart 3.13.7，PreviewRuntime 本地合成数据。窗口 AX bounds 800×632 logical px，DPR 2，导出 PNG 为 1824×1488。通过物理 Tab 到达主题开关焦点，使用左右键切到浅/深端点；焦点状态由实窗完整轨道环可见性与 AX 主题值复核。

@@ -107,8 +107,9 @@ abstract final class AggregateTheme {
     );
   }
 
-  /// Aligns foregrounds with the current luminance side of the moving macOS
-  /// glass backdrop. The caller updates this only when that side changes.
+  /// Aligns page foregrounds with the current luminance side of the moving
+  /// macOS glass backdrop while preserving the control material palette. The
+  /// caller updates this only when that side changes.
   static ThemeData withMacOSBackdropTextContrast(
     ThemeData theme, {
     required bool usesDarkForeground,
@@ -123,7 +124,7 @@ abstract final class AggregateTheme {
       foreground,
       addContrastHalo: addContrastHalo,
     );
-    final safeGlass = glass.copyWith(text: foreground, muted: foreground);
+    final safeGlass = glass;
 
     return theme.copyWith(
       colorScheme: theme.colorScheme.copyWith(

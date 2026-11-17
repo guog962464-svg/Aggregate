@@ -349,6 +349,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
   }
 
   Widget _buildContent(GlassDesignTokens tokens, double height) {
+    // Keep supporting copy subdued while protecting it against intermediate
+    // glass tones produced by the live theme transition.
+    final mutedLabelColor = Color.lerp(tokens.muted, tokens.text, .18)!;
     final iconSize = switch (widget.size) {
       GlassButtonSize.reference => 32.0,
       GlassButtonSize.primary => 22.0,
@@ -358,6 +361,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     };
     final muted = !_enabled || widget.busy;
     final visibleLabel = widget.label ?? widget.semanticsLabel!;
+    // Keep status cues on the glyph and face while preserving label contrast.
     final mark = GlassGlyphMark(
       glyph: widget.glyph,
       size: iconSize,
@@ -390,9 +394,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: muted
-                          ? tokens.muted
-                          : widget.kind == GlassButtonKind.danger
+                      color: widget.kind == GlassButtonKind.danger
                           ? tokens.danger
                           : tokens.text,
                       fontWeight: FontWeight.w600,
@@ -404,14 +406,14 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                       description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: tokens.muted, fontSize: 11),
+                      style: TextStyle(color: mutedLabelColor, fontSize: 11),
                     ),
                   if (widget.source case final source?)
                     Text(
                       source,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: tokens.muted, fontSize: 10),
+                      style: TextStyle(color: mutedLabelColor, fontSize: 10),
                     ),
                 ],
               ),
@@ -432,9 +434,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: muted
-                    ? tokens.muted
-                    : widget.kind == GlassButtonKind.danger
+                color: widget.kind == GlassButtonKind.danger
                     ? tokens.danger
                     : tokens.text,
                 fontWeight: widget.kind == GlassButtonKind.primary
