@@ -36,3 +36,11 @@
 ## 复验
 
 Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验证，当前用户身份保持不变；后续扩大验收集中在日常 Android 身份轮换、Release/signed App 本地网络权限与 16 KB 实体设备安装/运行，并采集 page-size、启动、native load、scanner/NSD 日志。direct LAN 首次审批、只读调用、撤销、撤销后拒绝及 Wi-Fi 中断恢复已由隔离身份验证；测试期间普通包被 integration runner 移除后已重装，当前本地 Host 列表为空，原 Mac grant 保留。
+
+## 2026-11-17 当前网络环境下的只读 Host 复验
+
+- 设备仍为 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页实体机。当前手机与 Mac Host 处于不可互通的 Wi-Fi 网段，直接连接 Host 端口超时；这与 2026-11-14 在另一可互通网络完成的 LAN/NSD 验收是不同环境，不互相替代。
+- 为按已批准的只读范围继续验收，使用隔离 `.integration` App/Keystore 身份，把测试邀请 endpoint 临时改为 `wss://127.0.0.1:47322/host`，由 Mac loopback TCP 代理转发至生产 Host 的 `47321`，并用 `adb reverse` 接通；原 Host ID、证书 SHA-256 pin 和 WSS 协议保持不变。Mac UI 的验证码与 Android 请求匹配，人工只批准“读取连接”。
+- 配对后及 App 重启重连后，`host.hello` 成功；随后只读 `connection.list` 返回 1 项。为避免 `ConnectionsPage` 初始化时额外调用 `capability.search`，此项使用临时 Android 诊断入口直接调用。诊断代码随后从源码撤回；没有调用 setup、能力搜索、CLI/TUI/MCP、账号、终端或任何写入型 RPC。
+- 清理：隔离 `.integration` 包已卸载，ADB reverse 与本机临时代理已移除，Mac Host 已停止且 `47321` 无监听。Mac 设置 UI 同时显示两条相同“这台手机 · 读取连接”grant 且不显示可区分 ID；为避免撤销原有授权，本次没有盲目删除，测试创建的只读 grant 仍留在 Host 上。
+- 限制：本轮未验证 direct LAN/Bonjour NSD；2026-11-14 的直连 LAN 结果仍保留其原有范围。没有 16 KB 页实体设备；本轮没有进行 16 KB 系统运行验收。
