@@ -24,12 +24,12 @@
 | B009 | `app/lib/features/activity/activity_page.dart:282` | 活动页：记录操作与列表状态 | 深浅失败详情 `58a-activity-failed-detail-dark-scrolled.png`、`59b-activity-failed-detail-light-scrolled.png` 可见“重新打开功能”；未打开功能。现有 widget 测试另覆盖运行中“查看运行”按钮 |
 | B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 深/浅 Profile 的运行中列表及详情均已截图；两种主题滚至操作区后“取消运行”语义点击成功，AX 状态变为“已取消”。浅色按钮与 MiniPlayer 暂停控件 AX 矩形相隔 11 个逻辑像素。仅验证隔离内存 fixture，真实服务响应仍待核 |
 | B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 深浅失败详情图可见“复制诊断”；未点击，系统剪贴板未改动 |
-| B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
-| B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
-| B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
-| B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
-| B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
-| B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
+| B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：搜索框清除按钮 | 仅在有搜索文本时出现；本轮未用真实键盘输入验收清除行为，浅色/点击态待核 |
+| B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：空连接态添加 CLI | Profile 使用了本地样例连接，按钮未出现；空连接态待核 |
+| B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：空连接态添加 MCP | Profile 使用了本地样例连接，按钮未出现；空连接态待核 |
+| B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：空连接态添加 HTTP MCP | Profile 使用了本地样例连接，按钮未出现；空连接态待核 |
+| B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：无匹配结果清除筛选 | 本轮未形成有效无匹配搜索状态，按钮未验收 |
+| B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：类型筛选分段按钮 | 浅色 Profile 实窗逐项选择工具、资源、提示、CLI；AX 结果数依次为 3、1、1、12；恢复“全部”后为 17。截图及 SHA-256 见验收记录。仅签收筛选结果与静态外观，动效逐帧待核 |
 | B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见新增动作；未点击 |
 | B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见导入；未导入文件 |
 | B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见导出；未导出文件 |
