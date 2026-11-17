@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -74,6 +75,10 @@ def prepare_fake_ncm(fixture_dir: Path) -> Path:
             }
         )
     )
+    shutil.copyfile(
+        APP_DIR / "integration_test" / "fixtures" / "android_host_tui_fixture.py",
+        fake_home / "fixture_tui.py",
+    )
     write_executable(
         package / "bin" / "ncm-cli",
         "#!/bin/sh\n"
@@ -99,11 +104,9 @@ def prepare_fake_ncm(fixture_dir: Path) -> Path:
         "    exit 1\n"
         "    ;;\n"
         "  state) printf '{\"state\":\"fixture-playback-idle\"}\\n' ;;\n"
-        "  fixture-terminal)\n"
-        "    printf 'FIXTURE_TUI_READY\\n'\n"
-        "    IFS= read -r fixture_line\n"
-        "    printf 'FIXTURE_TUI_ECHO:%s\\n' \"$fixture_line\"\n"
-        "    ;;\n"
+        "  fixture-tui) exec "
+        + shlex.quote(sys.executable)
+        + " \"$HOME/fixture_tui.py\" ;;\n"
         "  fixture-terminal-held)\n"
         "    printf '%s\\n' \"$$\" > \"$HOME/host-terminal-pid\"\n"
         "    trap 'printf stopped > \"$HOME/host-terminal-stopped\"; exit 0' TERM\n"

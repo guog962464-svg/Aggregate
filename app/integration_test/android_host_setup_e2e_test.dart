@@ -303,11 +303,12 @@ void main() {
       await runtime.closeTerminal(login);
 
       final terminal = await runtime.openTerminal(
-        CliCommand(ncmFixtureConnection.id, const ['fixture-terminal']),
+        CliCommand(ncmFixtureConnection.id, const ['fixture-tui']),
       );
       final terminalOutput = StringBuffer();
       final terminalReady = Completer<void>();
       final terminalEchoed = Completer<void>();
+      final terminalResized = Completer<void>();
       final terminalSubscription = runtime.watchTerminal(terminal).listen((
         chunk,
       ) {
@@ -321,16 +322,22 @@ void main() {
             !terminalEchoed.isCompleted) {
           terminalEchoed.complete();
         }
+        if (terminalOutput.toString().contains('FIXTURE_TUI_SIZE:96x32') &&
+            !terminalResized.isCompleted) {
+          terminalResized.complete();
+        }
       });
       try {
         await terminalReady.future.timeout(const Duration(seconds: 15));
         await runtime.resizeTerminal(terminal, 96, 32);
         await runtime.writeTerminal(terminal, 'fixture-input\n');
         await terminalEchoed.future.timeout(const Duration(seconds: 15));
+        await terminalResized.future.timeout(const Duration(seconds: 15));
         expect(
           terminalOutput.toString(),
           contains('FIXTURE_TUI_ECHO:fixture-input'),
         );
+        expect(terminalOutput.toString(), contains('FIXTURE_TUI_SIZE:96x32'));
       } finally {
         await runtime.closeTerminal(terminal);
         await terminalSubscription.cancel();
