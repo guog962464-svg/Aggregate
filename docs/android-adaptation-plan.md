@@ -246,6 +246,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - [x] A8.4 已审查原生库与 npm 版本/许可证/漏洞、密钥与日志、动态代码分发政策、APK/AAB 体积、构建和签名边界。修复非回环 HTTP、MCP 响应资源上限及 Host 不存在草稿 discard 账本放大；Host 全局账本仍有 10,000 条/4 MiB 上限，并在验收文档定义人工恢复步骤（未做生产演练）。Release 注册表用 release-only no-op integration_test 插件修复，APK/AAB 构建成功并保持未签名；Bundletool 1.18.3 validate、APK zipalign 与 APK/AAB 7 个 arm64 原生库 ELF 16 KB 静态对齐通过。后续增加 Android 全局 16 项 MCP POST 上限，MCP 请求 deadline 超时会中止 HTTP 请求并关闭会话；Stream/并发/取消回归测试覆盖这些边界。LGE AN10 真机 Android HTTP MCP 集成文件 4 项通过，外部 HTTPS 测试跳过；Flutter 全量 211 项、analyze、格式/边界/共享包门禁通过。Codex Security 原差异审查为 0 项可报告漏洞但 coverage partial；外部 HTTPS 当前版本复验仍缺真实 endpoint，Host 账本维护流程尚未演练。无正式签名、16 KB 真机或 production Host/音乐闭环；Node 24.22.1-0 仍为预发布 fork，`a4-ncm` 样本 npm audit 有 8 条 advisory 且不进入主 App Release。详见 [A8 验收记录](android-a8-acceptance.md)。
 - [x] A8.5 新增 [Android 内部测试指南](android-user-guide.md)，并更新[故障排查](troubleshooting.md#android-内部测试)；记录 Android 手机能力、Mac Host 配对、Debug 安装、各能力执行位置、网易云 Mac 音频输出和 A8 实测/未测边界。当前无正式 Android 发布包，文档不能视为发布声明。
 
+  - 2026-11-17 当前主线 Release 构建复验：在 `ea23879034fa8c7bd2a81ff45a98c966f818f152` 重建 arm64 APK/AAB；Bundletool 1.18.3 `validate`、AAB `PAGE_ALIGNMENT_16K`、APK `zipalign -P 16` 与两种产物内 7 个原生 ELF 的 16 KB `PT_LOAD` 对齐均通过。APK/AAB 未签名且不含 Node/npm；未安装运行。尺寸、哈希与签名结果见 [A8 验收记录](android-a8-acceptance.md#2026-11-17-当前主线-release-构建复验)。
+
 **交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
 
 ## 5. UI 验收矩阵

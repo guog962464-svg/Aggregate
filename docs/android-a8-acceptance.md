@@ -97,3 +97,13 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 在精确提交 `82b49e42144b4c026456b265695da90e5a555349` 的隔离 worktree 中，初次标准 `flutter build apk --release --no-pub` 因根级任务图同时构建独立 NodeProbe/NodeBridge 而要求忽略的 `libnode.so`，在未准备探针时失败。现把这两个实验模块改为只有显式 `a3Probe=true` 才加入 Gradle 项目图，并更新探针重建/升级说明。修正后标准 Flutter Android Debug APK、Release APK 与 Release AAB 命令均成功；默认项目图没有 NodeProbe，显式 `-Pa3Probe=true` 或 `ORG_GRADLE_PROJECT_a3Probe=true` 时仍包括探针模块。
 
 此 HEAD 的主 App Release APK SHA-256 为 `ed8d595e60593e593c1e1f628a638d681bf5fc2a34d80382786927d4fca1db5c`，大小 27,575,804 bytes；AAB SHA-256 为 `b066e65f77c1b217b45d051731c3dc593df8fe68f99423a0ce15d50b838e6765`，大小 25,362,693 bytes。两种包各含 7 个 arm64 native libraries，不含 `libnode.so`、NodeBridge、npm `node_modules` 或 nodejs-mobile 声明。Build Tools 36.0.0 的 APK `zipalign -c -P 16 4`、每个 ELF 的 `PT_LOAD p_align >= 0x4000` 与 offset/virtual-address congruence 检查、Bundletool 1.18.3 AAB `validate` 和 `PAGE_ALIGNMENT_16K` 配置检查均通过。APK 与 AAB 仍未签名；本检查是 Node-free 主 App 的静态构建证据，不是 Node 候选发行 SBOM、正式签名或 16 KB 真机运行验收。完整哈希和范围见 [A3.6 运行时研究](android-a3-runtime-research.md#2026-11-14-aggregate-release-干净构建与原生库复核)。
+
+## 2026-11-17 当前主线 Release 构建复验
+
+基于当前主线提交 `ea23879034fa8c7bd2a81ff45a98c966f818f152` 重新执行：
+
+- `flutter build apk --release --no-pub --target-platform android-arm64`：通过。APK 27,708,052 bytes，SHA-256 `cf9a0e881594b6d148780bcf7362326271cd1e935e7101612be541b6c33c51bb`。
+- `flutter build appbundle --release --no-pub --target-platform android-arm64`：通过。AAB 25,466,264 bytes，SHA-256 `47a476c841492d6c32c87b032a577de6c598d253a10da6afe4843df3b1ad043a`。
+- APK `aapt dump badging` 只列出 `arm64-v8a`，versionCode 8、versionName 0.3.7；APK 包含 7 个 arm64 ELF，AAB 也只含 arm64 的这 7 个 ELF。每个 ELF 的所有 `PT_LOAD p_align` 均不小于 `0x4000`；Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。
+- Bundletool 1.18.3 `validate` 通过，`dump config` 报告 `PAGE_ALIGNMENT_16K`。`apksigner` 与 `jarsigner` 均确认产物未签名；APK/AAB 均不含 NodeProbe、NodeBridge、`libnode.so` 或 npm `node_modules`。
+- 本次只构建并静态检查，没有安装或运行产物。当前 ADB 设备列表为空；这不替代 16 KB 系统实机、正式签名或生产 Host/音乐链路验收。
