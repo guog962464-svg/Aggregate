@@ -392,3 +392,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 清理：关闭唯一 Profile 探针进程并删除临时 app 与临时 Dart 入口；系统 `reduceMotion` 恢复到原始关闭值 `0`，新 Swift 进程读取 `NSWorkspace...` 为 `false`；工作区仅保留本次源代码/测试/阶段文档改动及用户已有的 `pubspec.lock` 改动。无临时 worktree 遗留。
 - 结论：UI-5.7 的减少动态效果功能子项与 UI-6.4 的原生启用态覆盖通过。UI-5.7 仍因实际 VoiceOver 主流程未走查而部分验收；UI-6.4 仍因隐藏/恢复长帧及生命周期、离屏混合场景未完成而部分验收。未修改太阳/月亮主题模拟、校准、任意拖动、端点提交、偏好或业务回调。
 - 依据：Apple 文档说明 `NSWorkspace.accessibilityDisplayShouldReduceMotion` 提供该状态，并通过 workspace `accessibilityDisplayOptionsDidChangeNotification` 通知显示选项变化：[属性](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayshouldreducemotion)、[通知](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayoptionsdidchangenotification)。
+
+### 2026-11-17 VoiceOver 主流程实窗尝试
+
+- 环境：隔离 macOS Profile 应用，Flutter 3.47.8 / Dart 3.13.7，bundle `io.github.guog962464.aggregate.voiceoverprobe`，使用 PreviewRuntime。AX 树可列出主导航、播放器和设置页文字；经“所有功能”进入“设置”后也能读到当前主题值与页面说明。
+- VoiceOver：从系统设置开启 VoiceOver，并使用已开启的字幕面板观察实际播报。焦点只报告位于系统 `group` 内，提示需用 Control-Option-Shift-下箭头与上箭头进入/退出；通过 agent-desktop 和 CUA 尝试 VoiceOver 键盘导航后，字幕转为“系统，有新的，窗口”，焦点没有进入应用控件，继续停在根 group。没有读到应用按钮或设置项名称/状态，故主流程朗读顺序未验证，UI-5.7 保持部分验收。
+- 收尾：关闭 VoiceOver；退出唯一隔离 Profile 应用和 VoiceOver Utility；关闭本次打开的系统设置；删除临时 worktree `/private/tmp/aggregate-voiceover` 及 OCR 临时文件。进程查询无 `AggregateVoiceOver`、VoiceOver Utility 或系统设置残留，`git worktree list` 仅有主工作区。减少动态效果保持关闭。未触碰用户应用窗口，主工作区原有 `pubspec.lock` 修改未改动、未暂存。
+- 边界：AX 树中可读的名称不等于 VoiceOver 语音顺序通过。此次结果反映本次系统级导航未成功，不能区分应用语义问题与自动化键盘焦点未送达；需用可操作的真实 VoiceOver 输入完成主要流程朗读后再验收。
