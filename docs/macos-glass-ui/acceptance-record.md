@@ -540,11 +540,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 ### 2026-11-18 UI-6.7 浅色实窗补证与临时进程清理
 
 - 环境：沿用隔离 macOS Profile `lib/preview/ui6_inspection_main.dart` 与进程内 PreviewRuntime；将生产设置控件切到浅色后检查少量页面。所有搜索/运行数据均为本地验收样例。
-- 实际覆盖：浅色设置页可见全局搜索、侧栏、主题控件及底部样例播放器；CLI 运行表单显示运行按钮；填入无敏感文本 `UI-6.7 light fixture` 后打开真实“确认执行”弹窗，核对写入权限说明与取消/执行按钮，并点击取消，未执行写入；音乐页可见播放器样例、搜索框和全局 MiniPlayer；本地模拟错误结果的“检查活动状态”恢复按钮在滚动后可见，但被固定 MiniPlayer 轻微遮挡。证据和哈希如下：
+- 实际覆盖：浅色设置页可见全局搜索、侧栏、主题控件及底部样例播放器；CLI 运行表单显示运行按钮；填入无敏感文本 `UI-6.7 light fixture` 后打开真实“确认执行”弹窗，核对写入权限说明与取消/执行按钮，并点击取消，未执行写入；音乐页可见播放器样例、搜索框和全局 MiniPlayer；本地模拟错误结果的“检查活动状态”恢复按钮在滚动后靠近当前视口下沿。截图当时没有把滚动位置推进到末尾，不能据此判断按钮与 MiniPlayer 是否重叠。证据和哈希如下：
   - [浅色设置页](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-inspection-runtime/38-settings-light.png>) SHA-256 `ccd7f0575af222614b3e9215dfd54f1cf2d45061f8e5e30c4dda21cf6325bfde`。
   - [浅色运行表单](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-inspection-runtime/40-cli-result-form-light.png>) SHA-256 `f0d8aab6712e4290310ede4be42b6d67907164181ed77530ea5ff337ae020fbf`；[浅色确认执行弹窗](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-inspection-runtime/45-write-confirm-dialog-light.png>) SHA-256 `1d1aba019762c91c746b6baca325ef6730ae16198288115e6e0e3650baee01ae`。
   - [浅色音乐页](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-inspection-runtime/49-music-light.png>) SHA-256 `24c3455cb2837dbebe11cdad6820d1663fd7c31d31af0569b9d92f3e49266fb3`；[浅色错误恢复位置](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-inspection-runtime/48-error-result-light-scrolled.png>) SHA-256 `5dde4670e803152ee3c7ac7c0a4cf9c8cc0fd66f64036afada2b33b52e8e62cd`。
-- 未完成项：音乐搜索触发的授权弹窗未能可靠验证点击结果，截图中没有授权弹窗或搜索结果；未访问外部服务。其余浅色调用点、所有静置/点击收尾、稳定音乐状态及恢复按钮无遮挡布局仍待核验，UI-6.7 继续部分验收。
+- 未完成项：音乐搜索触发的授权弹窗未能可靠验证点击结果，截图中没有授权弹窗或搜索结果；未访问外部服务。其余浅色调用点、所有静置/点击收尾、稳定音乐状态及恢复按钮在原生实窗最终滚动位置的画面仍待核验，UI-6.7 继续部分验收。
 - 清理：给搜索授权按钮的辅助功能点击返回“已投递、未验证”，后续快照仍显示弹窗；未重试，直接对临时 Flutter Profile runner 发送 `q` 并收到 `Application finished.`。随后进程核对没有 Aggregate 预览或对应 Flutter runner；协作任务列表只含当前主任务。未关闭用户的其他软件，工作区中原有 `pubspec.lock` 改动仍保留。此批只更新验收文档，未运行产品测试。
 
 ### 2026-11-18 UI-6.7 连接页面与弹窗浅深补证
@@ -584,3 +584,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 复现校验：基线重导出与既有归档基线一致，eligible 171 帧 mean MAE 为 `6.2835453467/255`（既有 `6.2835454119`）；稳定视野 79 帧为 `4.4272927953/255`（既有 `4.4272929147`）。
 - 结果：候选在 eligible 171 帧将 mean MAE 从 `6.2835453467` 增至 `6.2842520947/255`（差 `+0.0007067480`）；稳定视野 79 帧从 `4.4272927953` 增至 `4.4289982701/255`（差 `+0.0017054748`）；稳定控件 ROI 从 `7.8285863393` 增至 `7.8290721107/255`。稳定视野中的 76 个已参与时钟映射帧亦略有变差；未参与映射的稳定留出帧仅 3 个，不足以支持独立泛化结论。候选未显示稳定改善，故拒绝，不修改产品时间原点、动画物理或交互逻辑。
 - 证据与限制：逐帧指标与每帧数据保存在本机 [`summary.json`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-8-clock-map-reevaluation/summary.json>)，SHA-256 `52169c4fc1c2e50a8256fe18822eec829d6f3ba65c1627a87e43c097a522453d`。这只是用重建裁片/拟合几何进行的离线候选比较；映射约有 `18.5 ms` 拟合残差，留出帧太少，也没有原生 display-present 时间戳，不能据此认定实际显示相位或逐帧 1:1。临时 200 帧渲染目录已删除，未启动或切换用户桌面应用；UI-6.8 继续部分验收。
+
+### 2026-11-18 UI-6.7 失败恢复按钮与 MiniPlayer 可达性复核
+
+- 问题来源：浅色 Profile 截图 `48-error-result-light-scrolled.png` 中，“检查活动状态”按钮靠近结果区当前视口下沿。截图的滚动位置没有到达末尾，单凭该画面无法确认是否与固定 MiniPlayer 重叠。
+- 复现路径：新增 `capability_run_page_test.dart` 的 macOS Widget 回归，使用生产 `ConnectionHomePage`、嵌入式 `CapabilityRunPage`、`ResultPanel` 和 `MusicMiniPlayer`，向隔离 Runtime 注入 MCP 连接失败结果；将页面滚动到最大范围后比较按钮与 MiniPlayer 的实际矩形。
+- 结果：按钮底边低于或等于 MiniPlayer 顶边，检查无布局异常。滚动到最大范围后恢复操作完整可见；未发现生产布局缺陷，因此没有改产品布局代码。矩阵 B106 与 UI-6.7 范围说明已校正截图结论。
+- 验证：`flutter test --no-pub test/capability_run_page_test.dart` 10 项通过；`flutter analyze --no-pub` 无问题；Dart 格式与 `git diff --check` 通过。该结果验证 Flutter 布局与可达性，仍需原生实窗末尾位置截图补足视觉签收；UI-6.7 保持部分验收。

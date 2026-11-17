@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:aggregate/app/theme.dart';
+import 'package:aggregate/features/connections/connection_home_page.dart';
 import 'package:aggregate/features/invocation/capability_run_page.dart';
+import 'package:aggregate/features/music/music_mini_player.dart';
+import 'package:aggregate/features/music/music_session.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +29,99 @@ void main() {
       );
     }
   });
+
+  testWidgets('embedded failure recovery stays above the global mini player', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1512, 870);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final runtime = _RunRuntime();
+    addTearDown(runtime.dispose);
+    final musicSession = MusicSession(runtime)
+      ..visible = true
+      ..title = '示例歌曲';
+    addTearDown(musicSession.dispose);
+    const capability = Capability(
+      id: CapabilityId(
+        ConnectionId('connection-1'),
+        CapabilityKind.mcpTool,
+        'restore-error',
+      ),
+      title: '失败恢复演示',
+      description: '检查固定迷你播放器旁的恢复操作是否完整可见。',
+      permission: PermissionLevel.read,
+      inputSchema: {},
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: MusicMiniPlayer(session: musicSession),
+          body: ConnectionHomePage(
+            connection: _hostConnection(),
+            capabilities: const [capability],
+            runtime: runtime,
+            musicSession: musicSession,
+            onOpen: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(capability.title));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('运行'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    runtime.events.add(
+      RunEvent(
+        runId: const RunId('run-1'),
+        sequence: 1,
+        state: RunState.failed,
+        occurredAt: DateTime.utc(2026, 11, 14),
+        failure: const RuntimeFailure(
+          RuntimeErrorCode.connectionFailed,
+          'Mac Host 离线',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final pageScroll = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byType(CapabilityRunPage),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    pageScroll.position.jumpTo(pageScroll.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+
+    final recoveryButton = tester.getRect(find.text('检查活动状态'));
+    final pageViewport = tester.getRect(
+      find
+          .descendant(
+            of: find.byType(CapabilityRunPage),
+            matching: find.byType(SingleChildScrollView),
+          )
+          .first,
+    );
+    final miniPlayer = tester.getRect(find.byType(MusicMiniPlayer));
+    expect(recoveryButton.top, greaterThanOrEqualTo(pageViewport.top));
+    expect(recoveryButton.bottom, lessThanOrEqualTo(pageViewport.bottom));
+    expect(
+      recoveryButton.bottom,
+      lessThanOrEqualTo(miniPlayer.top),
+      reason: 'the fixed mini player must not cover the last recovery action',
+    );
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
 
   testWidgets(
     'phone run shows execution context, redacts submitted secrets, and expands long output',
