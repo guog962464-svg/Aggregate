@@ -112,6 +112,7 @@ abstract final class AggregateTheme {
   static ThemeData withMacOSBackdropTextContrast(
     ThemeData theme, {
     required bool usesDarkForeground,
+    bool addContrastHalo = false,
   }) {
     final glass = theme.extension<GlassDesignTokens>();
     if (glass == null) return theme;
@@ -120,6 +121,7 @@ abstract final class AggregateTheme {
     final safeTextTheme = _withForegroundTextColors(
       theme.textTheme,
       foreground,
+      addContrastHalo: addContrastHalo,
     );
     final safeGlass = glass.copyWith(text: foreground, muted: foreground);
 
@@ -129,14 +131,30 @@ abstract final class AggregateTheme {
         onSurfaceVariant: foreground,
       ),
       textTheme: safeTextTheme,
-      appBarTheme: theme.appBarTheme.copyWith(foregroundColor: foreground),
+      appBarTheme: theme.appBarTheme.copyWith(
+        foregroundColor: foreground,
+        titleTextStyle: _withBackdropForeground(
+          theme.appBarTheme.titleTextStyle,
+          foreground,
+          addContrastHalo: addContrastHalo,
+        ),
+        toolbarTextStyle: _withBackdropForeground(
+          theme.appBarTheme.toolbarTextStyle,
+          foreground,
+          addContrastHalo: addContrastHalo,
+        ),
+      ),
       iconTheme: theme.iconTheme.copyWith(color: foreground),
       listTileTheme: theme.listTileTheme.copyWith(
-        titleTextStyle: theme.listTileTheme.titleTextStyle?.copyWith(
-          color: foreground,
+        titleTextStyle: _withBackdropForeground(
+          theme.listTileTheme.titleTextStyle,
+          foreground,
+          addContrastHalo: addContrastHalo,
         ),
-        subtitleTextStyle: theme.listTileTheme.subtitleTextStyle?.copyWith(
-          color: foreground,
+        subtitleTextStyle: _withBackdropForeground(
+          theme.listTileTheme.subtitleTextStyle,
+          foreground,
+          addContrastHalo: addContrastHalo,
         ),
         iconColor: foreground,
       ),
@@ -174,9 +192,15 @@ abstract final class AggregateTheme {
 
   static TextTheme _withForegroundTextColors(
     TextTheme textTheme,
-    Color foreground,
-  ) {
-    TextStyle? readable(TextStyle? style) => style?.copyWith(color: foreground);
+    Color foreground, {
+    required bool addContrastHalo,
+  }) {
+    TextStyle? readable(TextStyle? style, {bool allowHalo = true}) =>
+        _withBackdropForeground(
+          style,
+          foreground,
+          addContrastHalo: addContrastHalo && allowHalo,
+        );
 
     return TextTheme(
       displayLarge: readable(textTheme.displayLarge),
@@ -191,10 +215,40 @@ abstract final class AggregateTheme {
       bodyLarge: readable(textTheme.bodyLarge),
       bodyMedium: readable(textTheme.bodyMedium),
       bodySmall: readable(textTheme.bodySmall),
-      labelLarge: readable(textTheme.labelLarge),
-      labelMedium: readable(textTheme.labelMedium),
-      labelSmall: readable(textTheme.labelSmall),
+      labelLarge: readable(textTheme.labelLarge, allowHalo: false),
+      labelMedium: readable(textTheme.labelMedium, allowHalo: false),
+      labelSmall: readable(textTheme.labelSmall, allowHalo: false),
     );
+  }
+
+  static TextStyle? _withBackdropForeground(
+    TextStyle? style,
+    Color foreground, {
+    required bool addContrastHalo,
+  }) {
+    if (style == null) return null;
+    return style.copyWith(
+      color: foreground,
+      shadows: addContrastHalo ? _contrastHalo(foreground) : style.shadows,
+    );
+  }
+
+  static List<Shadow> _contrastHalo(Color foreground) {
+    final halo = foreground == Colors.black ? Colors.white : Colors.black;
+    const offsets = [
+      Offset(-1, -1),
+      Offset(0, -1),
+      Offset(1, -1),
+      Offset(-1, 0),
+      Offset(1, 0),
+      Offset(-1, 1),
+      Offset(0, 1),
+      Offset(1, 1),
+    ];
+    return [
+      for (final offset in offsets)
+        Shadow(color: halo, offset: offset, blurRadius: 0),
+    ];
   }
 
   static TextStyle? _withReadableTextColor(

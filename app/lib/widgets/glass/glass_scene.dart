@@ -153,23 +153,37 @@ class GlassSceneScope extends InheritedWidget {
 /// Rendering-only phase published by the original switch so its backdrop
 /// samples the same grain time and theme-interpolation value.
 class GlassSceneFrame extends ChangeNotifier {
+  static const _textContrastHaloStartDaylight = 0.46;
+  static const _textContrastHaloEndDaylight = 0.51;
+
   double _seconds = 0;
   double? _switchDaylight;
   bool _disposed = false;
   bool _textContrastUpdateScheduled = false;
   bool? _pendingTextContrastUsesDarkForeground;
+  bool _textContrastHaloUpdateScheduled = false;
+  bool _pendingTextContrastNeedsHalo = false;
   final ValueNotifier<bool?> _textContrastUsesDarkForeground =
       ValueNotifier<bool?>(null);
+  final ValueNotifier<bool> _textContrastNeedsHalo = ValueNotifier(false);
 
   double get seconds => _seconds;
   double? get switchDaylight => _switchDaylight;
   ValueListenable<bool?> get textContrastUsesDarkForeground =>
       _textContrastUsesDarkForeground;
+  ValueListenable<bool> get textContrastNeedsHalo => _textContrastNeedsHalo;
 
   void publishThemeSwitch(double seconds, double daylight) {
     if (_disposed) return;
     final usesDarkForeground = daylight >= 0.5;
     _updateTextContrastForeground(usesDarkForeground);
+    // A pixel sweep of the production settings text found the low-contrast
+    // window around the foreground crossover. The halo never feeds back into
+    // the switch simulation or the shader's live daylight value.
+    _updateTextContrastHalo(
+      daylight >= _textContrastHaloStartDaylight &&
+          daylight <= _textContrastHaloEndDaylight,
+    );
     final changed =
         (_seconds - seconds).abs() > 0.000001 ||
         _switchDaylight == null ||
@@ -184,6 +198,7 @@ class GlassSceneFrame extends ChangeNotifier {
     if (_switchDaylight == null) return;
     _switchDaylight = null;
     _updateTextContrastForeground(null);
+    _updateTextContrastHalo(false);
     notifyListeners();
   }
 
@@ -210,10 +225,33 @@ class GlassSceneFrame extends ChangeNotifier {
     _textContrastUsesDarkForeground.value = usesDarkForeground;
   }
 
+  void _updateTextContrastHalo(bool needsHalo) {
+    if (_textContrastNeedsHalo.value == needsHalo &&
+        !_textContrastHaloUpdateScheduled) {
+      return;
+    }
+    _pendingTextContrastNeedsHalo = needsHalo;
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      if (_textContrastHaloUpdateScheduled) return;
+      _textContrastHaloUpdateScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _textContrastHaloUpdateScheduled = false;
+        if (!_disposed) {
+          _textContrastNeedsHalo.value = _pendingTextContrastNeedsHalo;
+        }
+      });
+      return;
+    }
+    _textContrastNeedsHalo.value = needsHalo;
+  }
+
   @override
   void dispose() {
     _disposed = true;
     _textContrastUsesDarkForeground.dispose();
+    _textContrastNeedsHalo.dispose();
     super.dispose();
   }
 }

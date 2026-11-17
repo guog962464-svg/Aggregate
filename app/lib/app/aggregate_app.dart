@@ -221,21 +221,27 @@ class _GlassSceneTextContrast extends StatelessWidget {
     final frame = GlassSceneScope.maybeOf(context)?.frame;
     if (frame == null) return child;
 
-    return ValueListenableBuilder<bool?>(
-      valueListenable: frame.textContrastUsesDarkForeground,
+    return ValueListenableBuilder<bool>(
+      valueListenable: frame.textContrastNeedsHalo,
       child: child,
-      builder: (context, usesDarkForeground, child) {
-        final safeTheme = AggregateTheme.withMacOSSurfaceTextContrast(
-          Theme.of(context),
-        );
-        final data = usesDarkForeground == null
-            ? safeTheme
-            : AggregateTheme.withMacOSBackdropTextContrast(
-                safeTheme,
-                usesDarkForeground: usesDarkForeground,
+      builder: (context, addContrastHalo, child) =>
+          ValueListenableBuilder<bool?>(
+            valueListenable: frame.textContrastUsesDarkForeground,
+            child: child,
+            builder: (context, usesDarkForeground, child) {
+              final safeTheme = AggregateTheme.withMacOSSurfaceTextContrast(
+                Theme.of(context),
               );
-        return Theme(data: data, child: child!);
-      },
+              final data = usesDarkForeground == null
+                  ? safeTheme
+                  : AggregateTheme.withMacOSBackdropTextContrast(
+                      safeTheme,
+                      usesDarkForeground: usesDarkForeground,
+                      addContrastHalo: addContrastHalo,
+                    );
+              return Theme(data: data, child: child!);
+            },
+          ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:aggregate/features/settings/settings_page.dart';
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
+import 'package:aggregate/widgets/glass/glass_scene.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,10 +120,25 @@ void main() {
               ? Colors.black
               : Colors.white;
           final pageText = tester.element(pageTextFinder);
+          final haloFrame = tester
+              .widget<GlassSceneScope>(find.byType(GlassSceneScope))
+              .frame;
+          final expectedHalo =
+              switchFrame.theme >= 0.46 && switchFrame.theme <= 0.51;
           expect(
             DefaultTextStyle.of(pageText).style.color,
             expectedForeground,
             reason: 'Shader phase ${switchFrame.theme} at sample $frame',
+          );
+          expect(
+            haloFrame.textContrastNeedsHalo.value,
+            expectedHalo,
+            reason: 'Contrast halo phase ${switchFrame.theme} at sample $frame',
+          );
+          expect(
+            DefaultTextStyle.of(pageText).style.shadows?.length ?? 0,
+            expectedHalo ? 8 : 0,
+            reason: 'Text outline phase ${switchFrame.theme} at sample $frame',
           );
           expect(tester.takeException(), isNull);
         }

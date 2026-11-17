@@ -161,6 +161,38 @@ void main() {
     }
   });
 
+  test('glass text gets a one-pixel contrasting halo only when needed', () {
+    final baseTheme = AggregateTheme.withMacOSSurfaceTextContrast(
+      AggregateTheme.forPlatform(AggregateTheme.dark, TargetPlatform.macOS),
+    );
+
+    for (final (usesDarkForeground, foreground, halo) in [
+      (true, Colors.black, Colors.white),
+      (false, Colors.white, Colors.black),
+    ]) {
+      final theme = AggregateTheme.withMacOSBackdropTextContrast(
+        baseTheme,
+        usesDarkForeground: usesDarkForeground,
+        addContrastHalo: true,
+      );
+      final textStyle = theme.textTheme.bodyMedium!;
+
+      expect(textStyle.color, foreground);
+      expect(textStyle.shadows, hasLength(8));
+      expect(theme.textTheme.labelLarge?.shadows, isNull);
+      expect(
+        textStyle.shadows!.every((shadow) => shadow.color == halo),
+        isTrue,
+      );
+    }
+
+    final noHalo = AggregateTheme.withMacOSBackdropTextContrast(
+      baseTheme,
+      usesDarkForeground: false,
+    );
+    expect(noHalo.textTheme.bodyMedium!.shadows, isNull);
+  });
+
   test('glass scene follows and releases the theme switch backdrop phase', () {
     final frame = GlassSceneFrame();
     var notifications = 0;
@@ -184,6 +216,28 @@ void main() {
     expect(textForegroundStates, [false, true, false, null]);
     expect(notifications, 6);
 
+    frame.dispose();
+  });
+
+  test('glass scene halo changes only at the measured contrast window', () {
+    final frame = GlassSceneFrame();
+    final haloStates = <bool>[];
+    frame.textContrastNeedsHalo.addListener(
+      () => haloStates.add(frame.textContrastNeedsHalo.value),
+    );
+
+    frame.publishThemeSwitch(1, 0.455);
+    expect(frame.textContrastNeedsHalo.value, isFalse);
+    frame.publishThemeSwitch(1.01, 0.46);
+    frame.publishThemeSwitch(1.02, 0.475);
+    frame.publishThemeSwitch(1.03, 0.5);
+    frame.publishThemeSwitch(1.04, 0.51);
+    expect(frame.textContrastNeedsHalo.value, isTrue);
+    frame.publishThemeSwitch(1.05, 0.515);
+    expect(frame.textContrastNeedsHalo.value, isFalse);
+    frame.clearThemeSwitch();
+
+    expect(haloStates, [true, false]);
     frame.dispose();
   });
 
