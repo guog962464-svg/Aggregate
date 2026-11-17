@@ -205,7 +205,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 **交付物：**可由测试客户端连接的 Mac Host、协议文档及配对/草稿失败样本。**通过门槛：**已授权手机能对 Mac 已登记适配器完成向导与调用；Mac 路径只由 Mac 使用；未授权设备和越权命令被拒绝；断线后的草稿/进程可清理，外部写入显示“结果待确认”。
 
-  - 2026-11-17 Android Host 掉线状态单测：新增 `android_host_pairing_client_test.dart` 用例，令已认证会话的 fake socket message stream 在未调用 `manager.disconnect()` 时结束；验证 Host 状态转 offline、会话不可用，并经显式 `connect()` 重新认证恢复 online。该文件 9 项 Flutter 测试与定向 analyze 通过；它只覆盖 fake connector 的状态机，不覆盖实际 TCP/WSS、Android 真机或 Wi‑Fi 中断，A5.5 意外网络掉线验收仍开放。详情见 [A5.5 真机与重连验收记录](android-a5-android-client.md#2026-11-17-android-host-session-stream-结束后的手动重连单元测试)。
+  - 2026-11-17 Android Host 掉线状态单测：新增 `android_host_pairing_client_test.dart` 用例，令已认证会话的 fake socket message stream 在未调用 `manager.disconnect()` 时结束；验证 Host 状态转 offline、会话不可用，并经显式 `connect()` 重新认证恢复 online。该文件 9 项 Flutter 测试通过；随后全量 Flutter suite 295 项通过，全量 `flutter analyze --no-pub` 无问题。它只覆盖 fake connector 的状态机，不覆盖实际 TCP/WSS、Android 真机或 Wi‑Fi 中断，A5.5 意外网络掉线验收仍开放。详情见 [A5.5 真机与重连验收记录](android-a5-android-client.md#2026-11-17-android-host-session-stream-结束后的手动重连单元测试)。
 
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 

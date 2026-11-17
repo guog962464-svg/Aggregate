@@ -73,5 +73,5 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 ## 2026-11-17 Android Host session stream 结束后的手动重连单元测试
 
 - 在 `app/test/android_host_pairing_client_test.dart` 新增 AndroidHostManager 状态回归用例。模拟已认证 `AndroidHostAuthenticatedSession` 的 fake socket message stream 自行结束，而不是调用 `manager.disconnect()`；断言状态通知转为 offline、`isConnected` 为 false，再通过保存的 Host 元数据显式 `manager.connect()`，确认第二次认证发送 `host.hello` 且状态回到 online。
-- `flutter test --no-pub --reporter expanded test/android_host_pairing_client_test.dart`：9 项通过；`flutter analyze --no-pub test/android_host_pairing_client_test.dart`：无问题；`dart format`：无改动。
+- `flutter test --no-pub --reporter expanded test/android_host_pairing_client_test.dart`：9 项通过；全量 `flutter test --no-pub --reporter compact`：295 项通过；定向与全量 `flutter analyze --no-pub` 均无问题；`dart format`：无改动。
 - 范围：这是 fake connector 的本地 Flutter 单元测试，不包含 TCP/TLS/WSS 服务端、Android 系统、Wi-Fi/路由断开、实际 NSD 地址更新或自动重试；只补强“会话流结束后标离线并可手动重连”的状态机证据，不能表述为意外网络掉线的实机验收。A5.5 保持开放。
