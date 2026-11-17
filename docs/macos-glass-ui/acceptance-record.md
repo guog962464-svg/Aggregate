@@ -256,6 +256,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 回归：`macos_dynamic_backdrop_text_contrast_test.dart` 用生产 shader 在设置页真实正文矩形取样，覆盖 800×600、1024×768、1440×900 三种窗口尺寸各自 1×/2× 六组组合；检查轮廓对背景至少 3:1、正文色与轮廓至少 7:1，轮廓区外所测正文色对至少 4.5:1。`glass_design_tokens_test.dart` 检查轮廓样式、按钮标签排除和阈值去抖；`macos_reduce_motion_test.dart` 在真实双向转场逐帧检查轮廓显示窗口及既有文字色交接。合计 13 项定向 Widget 用例通过，相关六个源码/测试文件的 `flutter analyze --no-pub` 通过。测试只读离屏 shader 样本，不证明 macOS display-present 或 VoiceOver 朗读。
 - 结论：设置页中段正文的对比呈现修正通过自动化验收；UI-5.5 仍部分通过。尚需浅色初始态、标题/列表/禁用态、其他页面材质以及原生显示捕获。
 
+### 2026-11-18 UI-5.5 浅深初始主题动态采样
+
+- 补验目标：确认设置页文字描边与前景交接回归在浅色偏好启动时也覆盖正确的生产 shader 背景，而不只在深色偏好启动时成立。
+- 方法：`macos_dynamic_backdrop_text_contrast_test.dart` 现在分别以深色、浅色偏好启动真实 `AggregateApp` PreviewRuntime，再对设置页正文实际矩形重复生产 `glass_scene.frag` 的十个转场相位采样；窗口为 800×600、1024×768、1440×900，DPR 各为 1×/2×，合计 12 组启动偏好/窗口/DPR 组合。每相位仍检查中段描边对背景至少 3:1、正文色对描边至少 7:1，轮廓区外文字色对至少 4.5:1，并在基准样本确认描边窗口确有必要。
+- 结果：`flutter test --no-pub --reporter compact test/macos_dynamic_backdrop_text_contrast_test.dart` 通过；`dart format` 无改写。该测试从十个相位重放 shader 状态，不是原生窗口的实时输入或 display-present 捕获。
+- 结论与边界：关闭了该回归的“仅深色偏好启动”缺口。禁用态、其他页面材质、VoiceOver 与原生显示捕获仍待验收，UI-5.5 继续部分验收。未改主题模拟、按钮交互或生产色彩阈值。
+
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
 - 构建：隔离 bundle `io.github.guog962464.aggregate.ui6focusafter` 的 macOS Profile；项目 Flutter 3.47.8 / Dart 3.13.7，PreviewRuntime 本地合成数据。窗口 AX bounds 800×632 logical px，DPR 2，导出 PNG 为 1824×1488。通过物理 Tab 到达主题开关焦点，使用左右键切到浅/深端点；焦点状态由实窗完整轨道环可见性与 AX 主题值复核。

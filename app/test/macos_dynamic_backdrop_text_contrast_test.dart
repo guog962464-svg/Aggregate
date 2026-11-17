@@ -41,15 +41,24 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      for (final scenario in _scenarios) {
-        await _verifyScenario(tester, scenario);
+      for (final initialAppearance in [
+        AppearancePreference.dark,
+        AppearancePreference.light,
+      ]) {
+        for (final scenario in _scenarios) {
+          await _verifyScenario(tester, scenario, initialAppearance);
+        }
       }
     },
     variant: _macOS,
   );
 }
 
-Future<void> _verifyScenario(WidgetTester tester, _Scenario scenario) async {
+Future<void> _verifyScenario(
+  WidgetTester tester,
+  _Scenario scenario,
+  AppearancePreference initialAppearance,
+) async {
   final size = scenario.size;
   final pixelRatio = scenario.pixelRatio;
   final imageWidth = (size.width * pixelRatio).round();
@@ -63,7 +72,7 @@ Future<void> _verifyScenario(WidgetTester tester, _Scenario scenario) async {
   final reduceMotion = ValueNotifier(true);
   try {
     await runtime.savePreferences(
-      const UserPreferences(appearance: AppearancePreference.dark),
+      UserPreferences(appearance: initialAppearance),
     );
     await tester.pumpWidget(
       AggregateApp(
@@ -84,7 +93,12 @@ Future<void> _verifyScenario(WidgetTester tester, _Scenario scenario) async {
     await tester.pumpWidget(const SizedBox.shrink());
 
     final baseTheme = AggregateTheme.withMacOSSurfaceTextContrast(
-      AggregateTheme.forPlatform(AggregateTheme.dark, TargetPlatform.macOS),
+      AggregateTheme.forPlatform(
+        initialAppearance == AppearancePreference.light
+            ? AggregateTheme.light
+            : AggregateTheme.dark,
+        TargetPlatform.macOS,
+      ),
     );
     final boundaryKey = GlobalKey();
     await tester.pumpWidget(
@@ -175,7 +189,8 @@ Future<void> _verifyScenario(WidgetTester tester, _Scenario scenario) async {
         }
       }
 
-      final reason = '${scenario.name}, shader phase $daylight';
+      final reason =
+          '${initialAppearance.name} start, ${scenario.name}, shader phase $daylight';
       if (needsHalo) {
         expect(
           minimumHaloContrast,
