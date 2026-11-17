@@ -320,3 +320,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 采集作废项：一轮 ScreenCaptureKit 未核验前台进程，帧不属于 Aggregate Profile，未纳入证据；另一轮虽采到 Profile 窗口，但合成拖动缺少左键按下标志，event tap 记录 down 1、drag 71、up 1，而 Flutter 没有对应的主题拖动回调、滑块也未移动，故整轮作废。两轮都没有作为视觉通过样本。用户要求不再切换其屏幕后，停止了前台激活和鼠标注入；Profile 诊断进程已关闭。
 - 证据：[Flutter Profile trace](/Users/guo/.codex/visualizations/2026/11/17/aggregate-ui6-frame-trace/flutter-frame-trace.jsonl)，SHA-256 `d49d2b412b98b4a79b273298282193451ae010bac5fdaddec1569f4cd02c1504`；[时钟配对](/Users/guo/.codex/visualizations/2026/11/17/aggregate-ui6-frame-trace/run3/clock-pairs.jsonl)，SHA-256 `6e714a1d4a80b4f878c10ac975e4751b15ecdb17667d3cc725e39867fae81b29`；[无效拖动的原生事件记录](/Users/guo/.codex/visualizations/2026/11/17/aggregate-ui6-frame-trace/run5/event-tap-raw.jsonl)，SHA-256 `fbb7deb1e9dd0452a78bdb2027b0bfac184e190f51a3e41e2e1c36fea152f434`。不保留错误前台应用的屏幕帧。
 - 自检：临时 Profile build 成功；定向 `flutter analyze --no-pub lib/preview/frame_trace.dart lib/preview_main.dart lib/features/settings/glass_theme_switch.dart` 通过，未运行完整产品测试。诊断文件已恢复，`pubspec.lock` 用户改动保留未暂存。主题拖动、端点提交、太阳/月亮模拟、偏好映射和动画参数均未修改；UI-6 仍部分验收。
+
+### 2026-11-17 Flutter 玻璃动效与主题拖动组件回归
+
+- 命令：在 `app/` 执行 `flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart test/glass_theme_switch_test.dart test/theme_switch_realtime_test.dart`，进程退出码 `0`，30 项测试通过。
+- 覆盖：按钮 reduced-motion 点击可用性、完全离屏后共享时钟注销、`TickerMode` 与应用生命周期暂停/恢复、按钮 200% 文字/键盘操作，以及切换 450 ms 实时拖动释放提交、反向拖动和 pointer cancel 恢复端点；实时模型另覆盖 20/30/60/120 Hz 与长隐藏间隔。
+- 证据范围：这是 Flutter test 下的组件/模型回归，不是原生 macOS 窗口验收。它不证明 AppKit 离屏/减少动态效果集成、原生 `PointerCancelEvent`、屏幕捕获相位、显示器实际呈现帧率或 VoiceOver 语音；UI-6.4、UI-6.8 与最终签收仍为部分验收。
+- 自检：四个测试文件完整运行并显示 `All tests passed!`；本轮没有启动、聚焦或注入输入到应用窗口，没有修改主题切换生产逻辑。当前工作树其他未提交项（`docs/android-a3-runtime-research.md`、`docs/android-a4-npm-install-research.md`、`docs/android-adaptation-plan.md`、`pubspec.lock`）不属于本次改动，保留原样。
