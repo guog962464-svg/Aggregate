@@ -491,4 +491,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 代码覆盖：扫描 `app/lib/**/*.dart`，生产页面共 109 个 `GlassActionButton`、`AggregateActionButton`、`AggregateIconButton` 调用点，分布于 20 个文件。macOS 正式入口的 `AggregateApp.builder` 提供 `GlassMotionScope`；两个平台包装器在该作用域下统一委托 `GlassActionButton`。其他显式 Material 按钮均处于非 macOS 或缺少玻璃作用域的回退路径，Android 专用设置面板不属于 macOS 页面。
 - 变体覆盖：Profile fixture 对应全部七种 `GlassButtonKind`、五种 `GlassButtonSize`，并覆盖 selected、busy、disabled、description/source、iconOnly、expand 等渲染入口。既有 Profile 截图包含浅/深主题的 12 类参考 glyph、按钮尺寸/状态样本和五个生产页面；60 glyph 的完整深色网格与双主题 DPR 1/2 golden 已分别目视/自动检查。
 - 当前验证：在 `app/` 执行 `flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart`，21 项通过。手动时钟测试逐个检查全部 60 个 glyph 的唯一动作 profile、点击归一化采样及静置回归；按钮测试覆盖 Material 图标映射、深浅主题 1×/2× 绘制、尺寸、状态语义和鼠标/键盘激活。三张已归档 Profile 图的 SHA-256 与既有记录一致。
-- 结论与边界：因为全部生产动作按钮通过单一 renderer 和已覆盖的按钮参数变体输出，UI-6.7 按共享组件/变体范围通过，不再要求对 109 个业务回调实例重复拍摄相同材质。此结论不证明每个页面布局都已目视检查，也不覆盖真实原生点击帧/显示器呈现、VoiceOver 或 UI-6.8 的主题实时逐帧相位；对应缺项仍分别按 UI-6.8、UI-6.9 和 UI-5.4/5.7 记录。
+- 结论与边界：本轮完成了共享组件调用点与参数变体审计，但提交时将它扩大解释为 UI-6.7 通过；随后对照阶段原标准发现这一结论过宽，已由下方范围纠正恢复为部分验收。测试仍证明组件/模型覆盖，不证明每个真实页面位置均已目视签收。
+
+### 2026-11-18 UI-6.7 实例签收范围纠正
+
+- 更正原因：阶段条目要求检查所有产品按钮实例。共享渲染器、完整 glyph 模型测试和少量 Profile 样本不能证明不同页面/弹窗里的真实尺寸、邻接关系、文案长度及状态呈现都正确；把它们当作逐实例视觉验收的替代品会缩小原验收范围。
+- 当前有效结论：UI-6.7 保持部分验收。保留 109 个调用点/20 个文件的源码映射、21 项动作与组件测试结果、五种尺寸和七种类型的 fixture 样本，以及五个生产页面截图作为已完成证据；这些证据不关闭其他布局位置的实例签收。
+- 后续工作：按调用文件与实际可达页面/弹窗建立逐实例清单，先复用已有 Profile 截图核销能明确定位的实例，再补齐终端、音乐播放器/账户、运行表单、连接和动作对话框、Mac Host 设置区等遗漏的真实页面状态。每个实例需核对尺寸/位置、相邻控件、浅深主题及适用的 disabled/busy/selected 状态；未能由当前 fixture 到达的状态继续标未验证。
