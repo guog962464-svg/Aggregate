@@ -371,3 +371,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 视觉证据：深色 800×632 按钮样本、浅色 800×632 按钮样本和深色 1512×949 logical px 完整 glyph 网格均归档在 [stage6-native-review](/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage6-native-review/)。PNG SHA-256 分别为 `72ee7dc973616cb2d2a05262d3c0abcf1e705ab645baac305207271d5f476baf`、`6aa7a202f3dc0c994e0d58620a9b7b1f700dae2ab6cdffbce56eac0911af3207`、`94b94482010c2a40b6028205e2d8c6533dbcb90a7e73bda7f5e52e6c77d05280`。浅/深按钮样本和完整网格均已目视检查；另外用左右半屏视图逐项查看了 60 个静态 glyph，点阵颗粒、按钮材质与排列整体一致，未发现明显错位或渲染异常。此检查不覆盖各图案的静置/点击动效、运动相位或真实生产实例，故不据此关闭 UI-3 动效逐项验收或 UI-6.7。
 - 3.50.0：官方下载 Flutter 3.50.0 stable arm64 archive 并校验其官方 manifest SHA-256 `ed2d08a3e3c023e84cbe9316d21bd88fda6ee9552f90c1eb4da41a07c170fb35`；隔离 Profile fixture 构建成功。官方[Flutter 3.50.0 release notes](https://docs.flutter.dev/release/release-notes/release-notes-3.50.0)列出将 disabled/read-only semantics 映射为 AX node restriction 的 engine 变更。本轮原生检查误读了普通参考样本的 enabled 属性，且 disabled 样本未出现在当时查看的树范围，因此这次探测对修复是否生效没有结论；不覆盖此前增强 AX 树记录的“禁用节点 role/名称不可读”，UI-5.4 仍部分通过，需在可精准定位禁用节点的真实 VoiceOver 树中重验。
 - 回归：当前工作树下 `app/` 的 `flutter test --no-pub` 完整测试通过 294 项。此次只改 fixture 与 UI 阶段验收文档；未改主题开关、业务回调或生产运行逻辑。隔离 app 进程、临时 worktree 与临时 Flutter SDK 均已关闭/清理；工作区其他 Android、Runtime 与 lockfile 修改未纳入本项。
+
+### 2026-11-17 Flutter 3.50.0 精确定位禁用节点复测
+
+- 环境：隔离 macOS Profile fixture，Flutter 3.50.0 / Dart 3.14.0 / Engine revision `371f77202a`。以当时主线 `ea23879034fa8c7bd2a81ff45a98c966f818f152` 创建临时 worktree；该基线到当前主线的差异没有改动 `app/lib`、本次测试或本阶段文档。临时 bundle ID 为 `io.github.guog962464.aggregate.axprobe350`。
+- 定位：fixture 将禁用玻璃按钮 `AX_DISABLED_GLASS_PROBE`、可用玻璃按钮 `AX_ENABLED_GLASS_PROBE` 和禁用 `TextButton` `AX_DISABLED_TEXT_PROBE` 放在窗口顶层可见区域，避免把普通参考节点误认为禁用节点。Profile 构建成功，窗口大小 800×632 logical px。
+- 原生结果：VoiceOver 未开启；将原先未设置的 `AXEnhancedUserInterface` 临时设为 `true` 后直接遍历 macOS AX 树。树可读到 `AX_ENABLED_GLASS_PROBE` 且 `AXEnabled=true`；禁用节点没有可读的 AXRole、标题、描述、值、帮助、标识符或 enabled 属性，读到一个属性均返回 `kAXErrorNoValue` 的未知叶节点。`agent-desktop` 同样只识别可用玻璃按钮。此轮是对禁用节点的明确失败结果；它不等于 VoiceOver 语音走查。
+- Widget 对照：使用同一临时源码和 Flutter 3.50.0 执行 `flutter test --no-pub test/glass_action_button_test.dart test/accessibility_test.dart`，14 项全部通过；其中禁用按钮 Semantics 明确为 `isEnabled=false` 且没有 tap action。这表明 Widget 暴露的禁用语义正确，但本机 macOS AX 集成没有提供可读禁用节点。
+- 清理：按启动前的原始状态删除 `AXEnhancedUserInterface` 键；探针应用进程已退出。随后删除临时 Aggregate 与 Flutter worktree，不接触用户的其他应用。主工作树仅保留原有 `pubspec.lock` 修改。
+- 结论：Flutter 3.50.0 Widget 语义测试通过，原生 AX 禁用态仍不通过，UI-5.4 继续部分验收；不因 engine 源码包含 restriction 映射而推断 macOS app 已修复。生产源码、太阳/月亮切换逻辑及业务行为均未改动。
