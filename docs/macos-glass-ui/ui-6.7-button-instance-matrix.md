@@ -96,24 +96,24 @@
 | B081 | `app/lib/features/settings/settings_page.dart:37` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
 | B082 | `app/lib/features/settings/settings_page.dart:43` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
 | B083 | `app/lib/features/settings/settings_page.dart:130` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
-| B084 | `app/lib/platform/macos/mac_host_settings_panel.dart:267` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B085 | `app/lib/platform/macos/mac_host_settings_panel.dart:273` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B086 | `app/lib/platform/macos/mac_host_settings_panel.dart:307` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B087 | `app/lib/platform/macos/mac_host_settings_panel.dart:313` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B088 | `app/lib/platform/macos/mac_host_settings_panel.dart:463` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B089 | `app/lib/platform/macos/mac_host_settings_panel.dart:501` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B090 | `app/lib/platform/macos/mac_host_settings_panel.dart:549` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B091 | `app/lib/platform/macos/mac_host_settings_panel.dart:583` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B092 | `app/lib/platform/macos/mac_host_settings_panel.dart:616` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B093 | `app/lib/platform/macos/mac_host_settings_panel.dart:662` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B094 | `app/lib/platform/macos/mac_host_settings_panel.dart:669` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B095 | `app/lib/platform/macos/mac_host_settings_panel.dart:680` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B096 | `app/lib/platform/macos/mac_host_settings_panel.dart:695` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B097 | `app/lib/platform/macos/mac_host_settings_panel.dart:720` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B098 | `app/lib/platform/macos/mac_host_settings_panel.dart:726` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B099 | `app/lib/platform/macos/mac_host_settings_panel.dart:951` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
-| B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 当前 PreviewRuntime 不提供该 Host 服务，未截图 |
+| B084 | `app/lib/platform/macos/mac_host_settings_panel.dart:267` | 设置：Mac Host 配对和权限操作 | 未捕获：撤销配对确认弹窗尚未打开 |
+| B085 | `app/lib/platform/macos/mac_host_settings_panel.dart:273` | 设置：Mac Host 配对和权限操作 | 未捕获：撤销配对确认弹窗尚未打开 |
+| B086 | `app/lib/platform/macos/mac_host_settings_panel.dart:307` | 设置：Mac Host 配对和权限操作 | 未捕获：身份轮换确认弹窗尚未打开 |
+| B087 | `app/lib/platform/macos/mac_host_settings_panel.dart:313` | 设置：Mac Host 配对和权限操作 | 未捕获：身份轮换确认弹窗尚未打开 |
+| B088 | `app/lib/platform/macos/mac_host_settings_panel.dart:463` | 设置：Mac Host 配对和权限操作 | 暗色 Host 停止/运行图 `17-settings-host-stopped-dark.png`、`18-settings-host-running-dark.png`；只核静态状态，按钮点击动效/浅色待核 |
+| B089 | `app/lib/platform/macos/mac_host_settings_panel.dart:501` | 设置：Mac Host 配对和权限操作 | 暗色运行态图 `18-settings-host-running-dark.png`；轮换入口静态外观已目视，确认流程待核 |
+| B090 | `app/lib/platform/macos/mac_host_settings_panel.dart:549` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；新邀请入口静态外观已目视，弹窗待核 |
+| B091 | `app/lib/platform/macos/mac_host_settings_panel.dart:583` | 设置：Mac Host 配对和权限操作 | 未捕获：邀请弹窗及复制入口尚未打开 |
+| B092 | `app/lib/platform/macos/mac_host_settings_panel.dart:616` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |
+| B093 | `app/lib/platform/macos/mac_host_settings_panel.dart:662` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |
+| B094 | `app/lib/platform/macos/mac_host_settings_panel.dart:669` | 设置：Mac Host 配对和权限操作 | 暗色图 `20-settings-host-pairing-dark.png` 可见按钮；点击后 `22-host-approved-dark.png` 显示待处理项消失、已配对数变为 2；操作为内存 stub |
+| B095 | `app/lib/platform/macos/mac_host_settings_panel.dart:680` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |
+| B096 | `app/lib/platform/macos/mac_host_settings_panel.dart:695` | 设置：Mac Host 配对和权限操作 | 暗色待处理图 `20-settings-host-pairing-dark.png`；打开后的自定义权限弹窗见 `21-host-custom-permissions-dark.png`，取消退出 |
+| B097 | `app/lib/platform/macos/mac_host_settings_panel.dart:720` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；修改入口静态外观已目视，弹窗待核 |
+| B098 | `app/lib/platform/macos/mac_host_settings_panel.dart:726` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；撤销入口静态外观已目视，确认流程待核 |
+| B099 | `app/lib/platform/macos/mac_host_settings_panel.dart:951` | 设置：Mac Host 配对和权限操作 | 暗色自定义权限弹窗图 `21-host-custom-permissions-dark.png`；取消按钮可见，点击后回到面板 |
+| B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 暗色自定义权限弹窗图 `21-host-custom-permissions-dark.png`；保存/批准按钮仅静态可见，未点击 |
+| B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 暗色自定义权限弹窗图 `21-host-custom-permissions-dark.png`；权限选项行仅静态检查，未更改权限 |
 | B102 | `app/lib/widgets/capability_row.dart:35` | 工作台/搜索：功能行 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 无空态/错误态截图 |
@@ -125,4 +125,4 @@
 
 ## 当前结论
 
-这张清单建立了调用点到页面的映射，不关闭 UI-6.7。现有五个生产页面截图只能作为页面级定位线索；对话框、终端、运行表单、音乐账户/搜索结果/迷你播放器和 Mac Host 面板仍缺对应实窗证据。逐调用点目视结果应在此表对应行补充截图路径与核验状态，再更新阶段验收记录。
+这张清单建立了调用点到页面的映射，不关闭 UI-6.7。现已为部分连接/动作对话框、终端、运行表单、音乐账户和 Mac Host 面板增加暗色隔离实窗证据；浅色对应页、其余音乐对话框、全局迷你播放器、撤销/轮换确认、邀请详情及未覆盖的页面实例仍未完成签收。逐调用点状态继续按截图能证明的范围记录。
