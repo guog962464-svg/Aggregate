@@ -18,11 +18,13 @@ class AggregateApp extends StatefulWidget {
     required this.runtime,
     this.platformSettingsSections = const [],
     this.glassMotionClock,
+    this.systemDisableAnimations,
   });
 
   final RuntimePort runtime;
   final List<Widget> platformSettingsSections;
   final GlassMotionClock? glassMotionClock;
+  final ValueListenable<bool>? systemDisableAnimations;
 
   @override
   State<AggregateApp> createState() => _AggregateAppState();
@@ -34,16 +36,36 @@ class _AggregateAppState extends State<AggregateApp> {
   final shellKey = GlobalKey<AppShellState>();
   final messengerKey = GlobalKey<ScaffoldMessengerState>();
   late final MusicSession musicSession;
+  late bool _systemDisableAnimations;
 
   @override
   void initState() {
     super.initState();
+    _systemDisableAnimations = widget.systemDisableAnimations?.value ?? false;
+    widget.systemDisableAnimations?.addListener(_systemMotionChanged);
     musicSession = MusicSession(widget.runtime);
     unawaited(_loadPreferences());
   }
 
   @override
+  void didUpdateWidget(covariant AggregateApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.systemDisableAnimations != widget.systemDisableAnimations) {
+      oldWidget.systemDisableAnimations?.removeListener(_systemMotionChanged);
+      _systemDisableAnimations = widget.systemDisableAnimations?.value ?? false;
+      widget.systemDisableAnimations?.addListener(_systemMotionChanged);
+    }
+  }
+
+  void _systemMotionChanged() {
+    final next = widget.systemDisableAnimations?.value ?? false;
+    if (next == _systemDisableAnimations || !mounted) return;
+    setState(() => _systemDisableAnimations = next);
+  }
+
+  @override
   void dispose() {
+    widget.systemDisableAnimations?.removeListener(_systemMotionChanged);
     musicSession.dispose();
     super.dispose();
   }
@@ -88,7 +110,8 @@ class _AggregateAppState extends State<AggregateApp> {
       // The switch has its own continuous animation. Interpolating ThemeData
       // for the whole Android page on each vsync exceeds the high-refresh frame
       // budget; apply the selected page theme once while the switch keeps moving.
-      MediaQuery.disableAnimationsOf(context) ||
+      _systemDisableAnimations ||
+          MediaQuery.disableAnimationsOf(context) ||
           defaultTargetPlatform == TargetPlatform.android
       ? Duration.zero
       : const Duration(milliseconds: 560);
@@ -122,7 +145,7 @@ class _AggregateAppState extends State<AggregateApp> {
         bindings: {ShortcutScheme(defaultTargetPlatform).search: searchAll},
         child: Focus(autofocus: true, child: child ?? const SizedBox.shrink()),
       );
-      return defaultTargetPlatform == TargetPlatform.macOS
+      final appContent = defaultTargetPlatform == TargetPlatform.macOS
           ? GlassScene(
               child: GlassMotionScope(
                 clock: widget.glassMotionClock,
@@ -130,6 +153,15 @@ class _AggregateAppState extends State<AggregateApp> {
               ),
             )
           : content;
+      final mediaQuery = MediaQuery.of(context);
+      final disableAnimations =
+          mediaQuery.disableAnimations || _systemDisableAnimations;
+      return disableAnimations == mediaQuery.disableAnimations
+          ? appContent
+          : MediaQuery(
+              data: mediaQuery.copyWith(disableAnimations: disableAnimations),
+              child: appContent,
+            );
     },
     onGenerateRoute: (settings) {
       if (settings.name == '/' || settings.name == null) {

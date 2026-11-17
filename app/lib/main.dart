@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app/aggregate_app.dart';
 import 'features/settings/android_host_settings_panel.dart';
+import 'platform/macos/reduce_motion_preference.dart';
 import 'platform/android/android_runtime_port.dart';
 import 'platform/macos/mac_host_settings_panel.dart';
 import 'platform/macos/local_runtime_port.dart';
@@ -23,7 +25,15 @@ Future<void> main() async {
     ],
     _ => const <Widget>[],
   };
+  final reduceMotionPreference = defaultTargetPlatform == TargetPlatform.macOS
+      ? MacReduceMotionPreference()
+      : null;
+  await reduceMotionPreference?.start();
   runApp(
-    AggregateApp(runtime: runtime, platformSettingsSections: settingsSections),
+    AggregateApp(
+      runtime: runtime,
+      platformSettingsSections: settingsSections,
+      systemDisableAnimations: reduceMotionPreference,
+    ),
   );
 }

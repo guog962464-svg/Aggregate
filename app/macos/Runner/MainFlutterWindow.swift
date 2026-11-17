@@ -6,6 +6,7 @@ class MainFlutterWindow: NSWindow {
   private var hostSignatureChannel: HostDeviceSignatureChannel?
   private var hostPairingStoreChannel: HostPairingStoreChannel?
   private var hostBonjourChannel: HostBonjourChannel?
+  private var reduceMotionChannel: MacReduceMotionChannel?
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -24,6 +25,9 @@ class MainFlutterWindow: NSWindow {
       messenger: flutterViewController.engine.binaryMessenger
     )
     hostBonjourChannel = HostBonjourChannel(
+      messenger: flutterViewController.engine.binaryMessenger
+    )
+    reduceMotionChannel = MacReduceMotionChannel(
       messenger: flutterViewController.engine.binaryMessenger
     )
 

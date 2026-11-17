@@ -382,3 +382,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - Widget 对照：Flutter 3.50.0 下，`test/glass_action_button_test.dart` 与 `test/accessibility_test.dart` 共 14 项通过；额外临时回归再断言标准 Material、显式 Semantics、玻璃按钮三者均保留名称、button flag、`isEnabled=false` 和无 tap action，1 项通过。故 Flutter framework 层输出正确，缺陷出现在 Profile 应用的 macOS AX 暴露结果。
 - 清理：两轮完成后分别退出唯一隔离应用，PID 查询为空；删除临时 `AXEnhancedUserInterface` 键并确认恢复为启动前的未设置状态；删除临时 Aggregate/Flutter worktree 和 Swift 查询脚本，不接触用户其他应用。
 - 结论：Flutter 3.50.0 Widget 语义测试通过，原生 AX 禁用态仍不通过，UI-5.4 继续部分验收。启动前打开 AX 增强树、换用标准按钮或静态文本都没有修复，因此目前没有证据支持应用层无损补丁；不因 engine 源码包含 restriction 映射而推断 macOS app 已修复。生产源码、太阳/月亮切换逻辑及业务行为均未改动。
+
+### 2026-11-17 macOS 系统减少动态效果接线
+
+- 原因：在隔离 Profile 探针中，将 macOS 系统 Reduce Motion 开启且确认 `NSWorkspace.shared.accessibilityDisplayShouldReduceMotion == true` 后，原应用窗口仍读到 `MediaQuery.disableAnimations == false`。当前 Flutter macOS Runner 没有把 AppKit 该偏好映射到 Flutter accessibility features。
+- 实现：macOS Runner 新增 `aggregate/macos_reduce_motion` EventChannel，初次订阅读取 `NSWorkspace.shared.accessibilityDisplayShouldReduceMotion`，并监听 `accessibilityDisplayOptionsDidChangeNotification`；共享 `AggregateApp` 只接收平台无关的 `ValueListenable<bool>`，在根 `MediaQuery` 合并 `disableAnimations`，不让公共组件直接依赖 AppKit。既有 GlassThemeSwitch/GlassActionButton reduced-motion 路径与太阳/月亮模拟、拖动、端点提交、偏好映射保持不变。
+- 自动化：新增 app-level macOS Widget 回归，通过注入 `ValueListenable` 检查禁用动画状态可正反更新、主题开关在关闭装饰动画时仍可操作。全量 `flutter test --no-pub` 298 项通过；`flutter analyze --no-pub` 无问题；`flutter build macos --profile --no-pub` 成功，Flutter 3.47.8 stable / Dart 3.13.7。
+- 原生验证：隔离 bundle `io.github.guog962464.aggregate.reducemotionprobe`，macOS 27.2.1 / Mac17,9 arm64，窗口 800×632 logical px。系统 Reduce Motion 开启时，Swift 读值为 `true`，Flutter AX 静态文字为 `SYSTEM_REDUCE_MOTION true`；点阵按钮实际点击后 `BUTTON_CLICKS 1`，主题开关点击后 `THEME_LIGHT true` 且 AX 值为“浅色”。这验证了启用态初次读取与功能可用，不证明系统设置打开期间的反向实时切换通知或显示器逐帧呈现。
+- 清理：关闭唯一 Profile 探针进程并删除临时 app 与临时 Dart 入口；系统 `reduceMotion` 恢复到原始关闭值 `0`，新 Swift 进程读取 `NSWorkspace...` 为 `false`；工作区仅保留本次源代码/测试/阶段文档改动及用户已有的 `pubspec.lock` 改动。无临时 worktree 遗留。
+- 结论：UI-5.7 的减少动态效果功能子项与 UI-6.4 的原生启用态覆盖通过。UI-5.7 仍因实际 VoiceOver 主流程未走查而部分验收；UI-6.4 仍因隐藏/恢复长帧及生命周期、离屏混合场景未完成而部分验收。未修改太阳/月亮主题模拟、校准、任意拖动、端点提交、偏好或业务回调。
+- 依据：Apple 文档说明 `NSWorkspace.accessibilityDisplayShouldReduceMotion` 提供该状态，并通过 workspace `accessibilityDisplayOptionsDidChangeNotification` 通知显示选项变化：[属性](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayshouldreducemotion)、[通知](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayoptionsdidchangenotification)。
