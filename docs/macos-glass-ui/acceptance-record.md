@@ -292,3 +292,20 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 证据：[只读系统事件](</Users/guo/.codex/visualizations/2026/11/15/aggregate-ui6-native-drag/cancel-verified-attempt-events.jsonl>) SHA-256 `5e4a18f6bc842154608472d2630972dd02cdd95d5be26ed6ccb3b30f46b765ed`。脚本也在 mouse-up 前打印并确认 Finder 前台，释放后读取 AX 深色/浅色状态。
 - 结论边界：这是一条合成 CGEvent 的原生 AppKit/Flutter 输入路径，不是物理鼠标测试，也没有直接观察到 Flutter `PointerCancelEvent`。因此 native cancel 仍未验证；此前 Escape 尝试和本次 app 激活都不能替代 pointercancel。没有修改控件逻辑，UI-6 保持部分验收。
 - 自检：前台应用标识、系统事件序列、mouse-up 后 AX 终态，以及恢复后的深色终态均已核对；未运行产品测试。`git diff --check` 作为文档阶段提交前检查。
+
+### 2026-11-15 云端阶段状态复核
+
+- 复核基线：GitHub `guog962464-svg/Aggregate` 与 Gitee `shi-shan/aggregate` 的 `main`，两端 `git ls-remote` 均返回 `e630855dc039992ab7ebbfbfa5dc235c4b170564`。UI-3 实施提交为 `dc6967c`，UI-4 为 `8afa95b`，UI-5 实施/部分验收为 `f453980`；不重复声明这些历史检查在云端重跑通过。
+- 本次仅校正阶段状态：UI-5.4 不能在后续原生禁用节点 `AXEnabled=true` 的失败证据存在时仍勾选通过；总览应区分已完成的设置页合成像素抽样与尚缺的完整状态矩阵。未改动产品源码、主题交互或依赖。
+- 实际执行通过：`git diff --check`；`sh spikes/phase0/check_boundary.sh`（输出 `PASS public Flutter/core boundary`）；三个模拟/校准文件 SHA-256 与 UI-0 表逐字一致。
+- 环境限制：当前仅可访问 Linux 云电脑，没有连接的 Mac，也没有可执行的 Flutter SDK。本次没有重跑 Flutter 测试、macOS 构建、VoiceOver、原生取消/生命周期、图像对象计数或帧时采样。历史 Mac 原始证据位于 Mac 本地，当前未重新读取。
+- 结论：UI-0～UI-4 保持历史完成状态；UI-5/UI-6 保持部分验收。禁用态原生 AX、完整对比度与 VoiceOver、原生 pointer cancel、动态相位、间歇长帧、生命周期/对象计数和最终动态质感签收仍须补齐；不能因本次文档一致性校正而关闭目标。
+
+### 2026-11-15 macOS CI 闸门修复与实测
+
+- 起点 `e61e7fedf36508a4e46fa96ceeff926e2dde2062` 的 [run 43699234553](https://github.com/guog962464-svg/Aggregate/actions/runs/43699234553)：格式、分析、公共边界和 15 项共享包测试通过；Flutter 测试 273 通过、13 失败，macOS 构建跳过。此前仅查询 commit statuses 得到空数组，不能代表 Actions 通过。
+- 独立提交 [`2020125`](https://github.com/guog962464-svg/Aggregate/commit/2020125ba93a07ae6c1176086512d0df538b3b31) 将 CI 的 UI 测试工作目录设为 `app`，执行 `flutter test test`，与 `tool/check.sh` 一致。4 个 fixture 文件路径静态核验可达。[run 43726553133](https://github.com/guog962464-svg/Aggregate/actions/runs/43726553133) 实测 283 通过、3 失败：8 项缺 fixture 与 PTY native asset 错误不再出现；Android arena-release 此轮也通过，但未据单轮结果定位其历史失败原因。剩余 3 项均为 NCM 环境相关测试，构建仍跳过。
+- 独立提交 [`2ccb960`](https://github.com/guog962464-svg/Aggregate/commit/2ccb960da002e0fb5ca54296ba858113a15cdc3c) 在 CI 明确检查 Node、在 mpv 缺失时通过 Homebrew 安装真实 mpv，再打印版本。没有跳过或弱化用例，没有用假 mpv 替代生产环境检查；测试原有的本地 ncm-cli shell fixture 保留，不连接真实音乐服务或账号。
+- [run 43727152456](https://github.com/guog962464-svg/Aggregate/actions/runs/43727152456) 对精确提交 `2ccb960da002e0fb5ca54296ba858113a15cdc3c` **成功**：锁文件恢复、格式、分析、公共边界、15 项共享包测试、286 项 Flutter 测试与 macOS Debug 构建均通过。日志记录 Node `v24.22.2`、Homebrew `mpv--0.41.0_12.arm64_tahoe.bottle.tar.gz`、`mpv v0.41.0`，并输出 `Built build/macos/Build/Products/Debug/Aggregate.app`。NCM 三项及 Android arena-release 通过；原太阳/月亮实现和断言均未修改。
+- 发布：两次 CI 修复均已通过 GitHub 连接器发布到 `main`，随后 `git fetch` 与本地内容逐字核对。对同一实际远端提交的 Gitee 正常推送仍失败：`could not read Username for 'https://gitee.com': No such device or address`。没有强推；双端交付尚未完成。
+- 范围限制：本次仅改 CI 环境与闸门入口，不改产品源码、主题逻辑或锁文件。CI 的 Debug 构建、Widget/Runtime fixture 测试不等于 Mac 实窗 Profile 性能、VoiceOver、原生禁用 AX、pointer cancel、动态相位、生命周期及最终质感验收；UI-5/UI-6 仍保持部分验收。
