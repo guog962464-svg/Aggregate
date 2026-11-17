@@ -91,6 +91,8 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
   static const double secondaryHeight = 40;
   static const double iconButtonSize = 46;
   static const double referenceHeight = 96;
+  static const double disabledButtonFaceOpacity = .52;
+  static const double restingButtonInsetOpacity = .13;
 
   static const int glyphGridSize = 9;
   static const double glyphPitch = 2.7;

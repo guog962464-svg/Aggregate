@@ -288,6 +288,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：`macos_dynamic_backdrop_text_contrast_test.dart` 在 1024×768、DPR 1 的 `AggregateApp` PreviewRuntime 设置页，对普通、禁用、忙碌、危险按钮标题及禁用说明/来源共六类文字，覆盖浅/深两种初始偏好和 14 个临界相位（168 组文字/相位组合）。每个文字基线右侧的同一按钮面取三个未被文字覆盖的相邻像素，全部达到 4.5:1；按钮文本无阴影。该取样较此前错误映射到工具栏按钮的采样已修正。本轮四个回归文件共 25 项通过，六个 Dart 文件定向 `flutter analyze --no-pub` 无问题，格式检查和 `git diff --check` 通过。
 - 边界：此处是离屏合成中同一玻璃按钮面相邻像素样本，不是 glyph 下方精确背景反演，也不是 macOS display-present。只覆盖设置页合成样本，不覆盖全部 109 个按钮调用点、其他页面材质/状态、VoiceOver；UI-5.5 仍部分验收。
 
+### 2026-11-18 UI-5.5 内容表面与按钮文字插值补验
+
+- 新缺口：把可读性检查扩展到整个深浅主题混合过程后，正文在 `surfaceContainerLow` 上曾落到 4.499:1 附近；按钮的透明禁用面与危险标签也不能只用端点色或玻璃渐变的单一中点推断。
+- 修正：`withMacOSSurfaceTextContrast` 同时检查 `surface`、`surfaceContainerLow`、`surfaceContainer`；找不到同时满足 4.5:1 的纯黑/纯白前景时，页面文字使用 8 向零模糊轮廓，并保持文字/轮廓至少 7:1、轮廓/三种表面至少 3:1。玻璃按钮文字按按钮渐变位置和禁用态 `.52` 面透明度估算材质；跨越灰阶临界区时以同一轮廓规则提供过渡对比。`GlassDesignTokens` 继续承载主题端点材料，按钮面透明度、状态语义、交互和太阳/月亮切换逻辑不变。
+- 验证：`glass_design_tokens_test.dart` 对深到浅的 101 个 ThemeData 插值点、6 种页面文字样式和 3 种内容面逐点验证；`macos_dynamic_backdrop_text_contrast_test.dart` 对普通、禁用、说明、来源、忙碌、危险六类按钮文字，在 1024×768、DPR 1 的每个插值点采同按钮面 3 个相邻像素，逐点验证文字对比或轮廓规则。玻璃令牌/按钮/reduced-motion/文字对比度四个测试文件共 27 项通过；七个 Dart 文件定向 `flutter analyze --no-pub` 无问题，格式检查与 `git diff --check` 通过。
+- 边界：跨表面/主题插值用 ThemeData 和 Widget 离屏合成，按钮像素取样是文字旁同一按钮面的邻近像素，不是 glyph 下方背景反演，也不是原生 display-present。未覆盖所有 109 个调用点、全部页面材质状态矩阵、VoiceOver 和无障碍认证；UI-5.5 继续部分验收。
+
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
 - 构建：隔离 bundle `io.github.guog962464.aggregate.ui6focusafter` 的 macOS Profile；项目 Flutter 3.47.8 / Dart 3.13.7，PreviewRuntime 本地合成数据。窗口 AX bounds 800×632 logical px，DPR 2，导出 PNG 为 1824×1488。通过物理 Tab 到达主题开关焦点，使用左右键切到浅/深端点；焦点状态由实窗完整轨道环可见性与 AX 主题值复核。

@@ -134,6 +134,86 @@ void main() {
   );
 
   test(
+    'macOS page text remains readable on raised surfaces while blending',
+    () {
+      final light = AggregateTheme.forPlatform(
+        AggregateTheme.light,
+        TargetPlatform.macOS,
+      );
+      final dark = AggregateTheme.forPlatform(
+        AggregateTheme.dark,
+        TargetPlatform.macOS,
+      );
+      final styles = [
+        (
+          name: 'headline',
+          get: (ThemeData theme) => theme.textTheme.headlineMedium,
+        ),
+        (name: 'title', get: (ThemeData theme) => theme.textTheme.titleMedium),
+        (name: 'body', get: (ThemeData theme) => theme.textTheme.bodyMedium),
+        (
+          name: 'small body',
+          get: (ThemeData theme) => theme.textTheme.bodySmall,
+        ),
+        (
+          name: 'list title',
+          get: (ThemeData theme) => theme.listTileTheme.titleTextStyle,
+        ),
+        (
+          name: 'list subtitle',
+          get: (ThemeData theme) => theme.listTileTheme.subtitleTextStyle,
+        ),
+      ];
+
+      for (var frame = 0; frame <= 100; frame++) {
+        final safe = AggregateTheme.withMacOSSurfaceTextContrast(
+          ThemeData.lerp(dark, light, frame / 100),
+        );
+        final surfaces = [
+          (name: 'surface', color: safe.colorScheme.surface),
+          (name: 'low', color: safe.colorScheme.surfaceContainerLow),
+          (name: 'container', color: safe.colorScheme.surfaceContainer),
+        ];
+        for (final style in styles) {
+          final textStyle = style.get(safe);
+          final foreground = textStyle?.color;
+          if (textStyle == null || foreground == null) continue;
+          final needsHalo = textStyle.shadows?.isNotEmpty ?? false;
+          expect(textStyle.shadows?.length ?? 0, needsHalo ? 8 : 0);
+          if (needsHalo) {
+            final halo = foreground == Colors.black
+                ? Colors.white
+                : Colors.black;
+            expect(
+              textStyle.shadows!.every((shadow) => shadow.color == halo),
+              isTrue,
+            );
+            expect(_contrast(foreground, halo), greaterThanOrEqualTo(7));
+          }
+          for (final surface in surfaces) {
+            if (needsHalo) {
+              final halo = textStyle.shadows!.first.color;
+              expect(
+                _contrast(halo, surface.color),
+                greaterThanOrEqualTo(3),
+                reason: 'frame $frame ${style.name} halo on ${surface.name}',
+              );
+            } else {
+              expect(
+                _contrast(foreground, surface.color),
+                greaterThanOrEqualTo(4.5),
+                reason:
+                    'frame $frame ${style.name} color $foreground on '
+                    '${surface.name} (${surface.color})',
+              );
+            }
+          }
+        }
+      }
+    },
+  );
+
+  test(
     'page text follows the backdrop while button tokens follow the theme',
     () {
       final baseTheme = AggregateTheme.withMacOSSurfaceTextContrast(

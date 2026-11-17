@@ -47,23 +47,26 @@ abstract final class AggregateTheme {
     );
   }
 
-  /// Keeps macOS foregrounds readable while [ThemeData.lerp] moves between
-  /// the light and dark palettes. Existing colors remain untouched whenever
-  /// they already meet the normal-text contrast target against the surface.
+  /// Keeps macOS foregrounds readable on content surfaces while
+  /// [ThemeData.lerp] moves between the light and dark palettes. Existing
+  /// colors remain untouched when they meet the target on every surface.
   static ThemeData withMacOSSurfaceTextContrast(ThemeData theme) {
     final glass = theme.extension<GlassDesignTokens>();
     if (glass == null) return theme;
 
-    final surface = theme.colorScheme.surface;
-    final onSurface = _readableOnSurface(theme.colorScheme.onSurface, surface);
-    final onSurfaceVariant = _readableOnSurface(
-      theme.colorScheme.onSurfaceVariant,
-      surface,
+    final surfaces = _macOSContentSurfaces(theme.colorScheme);
+    final onSurface = _readableOnSurfaces(
+      theme.colorScheme.onSurface,
+      surfaces,
     );
-    final safeTextTheme = _withReadableTextColors(theme.textTheme, surface);
+    final onSurfaceVariant = _readableOnSurfaces(
+      theme.colorScheme.onSurfaceVariant,
+      surfaces,
+    );
+    final safeTextTheme = _withReadableTextColors(theme.textTheme, surfaces);
     final safeGlass = glass.copyWith(
-      text: _readableOnSurface(glass.text, surface),
-      muted: _readableOnSurface(glass.muted, surface),
+      text: _readableOnSurfaces(glass.text, surfaces),
+      muted: _readableOnSurfaces(glass.muted, surfaces),
     );
 
     return theme.copyWith(
@@ -73,31 +76,31 @@ abstract final class AggregateTheme {
       ),
       textTheme: safeTextTheme,
       appBarTheme: theme.appBarTheme.copyWith(
-        foregroundColor: _readableOnSurface(
+        foregroundColor: _readableOnSurfaces(
           theme.appBarTheme.foregroundColor ?? onSurface,
-          surface,
+          surfaces,
         ),
       ),
       iconTheme: theme.iconTheme.copyWith(
-        color: _readableOnSurface(
+        color: _readableOnSurfaces(
           theme.iconTheme.color ?? onSurfaceVariant,
-          surface,
+          surfaces,
         ),
       ),
       listTileTheme: theme.listTileTheme.copyWith(
         titleTextStyle: _withReadableTextColor(
           theme.listTileTheme.titleTextStyle,
-          surface,
+          surfaces,
           onSurface,
         ),
         subtitleTextStyle: _withReadableTextColor(
           theme.listTileTheme.subtitleTextStyle,
-          surface,
+          surfaces,
           onSurfaceVariant,
         ),
-        iconColor: _readableOnSurface(
+        iconColor: _readableOnSurfaces(
           theme.listTileTheme.iconColor ?? onSurfaceVariant,
-          surface,
+          surfaces,
         ),
       ),
       extensions: [
@@ -166,10 +169,24 @@ abstract final class AggregateTheme {
     );
   }
 
-  static TextTheme _withReadableTextColors(TextTheme textTheme, Color surface) {
-    TextStyle? readable(TextStyle? style) {
+  static List<Color> _macOSContentSurfaces(ColorScheme scheme) => [
+    scheme.surface,
+    scheme.surfaceContainerLow,
+    scheme.surfaceContainer,
+  ];
+
+  static TextTheme _withReadableTextColors(
+    TextTheme textTheme,
+    List<Color> surfaces,
+  ) {
+    TextStyle? readable(TextStyle? style, {bool allowHalo = true}) {
       if (style == null || style.color == null) return style;
-      return style.copyWith(color: _readableOnSurface(style.color!, surface));
+      return _withReadableTextColor(
+        style,
+        surfaces,
+        style.color!,
+        allowHalo: allowHalo,
+      );
     }
 
     return TextTheme(
@@ -185,9 +202,9 @@ abstract final class AggregateTheme {
       bodyLarge: readable(textTheme.bodyLarge),
       bodyMedium: readable(textTheme.bodyMedium),
       bodySmall: readable(textTheme.bodySmall),
-      labelLarge: readable(textTheme.labelLarge),
-      labelMedium: readable(textTheme.labelMedium),
-      labelSmall: readable(textTheme.labelSmall),
+      labelLarge: readable(textTheme.labelLarge, allowHalo: false),
+      labelMedium: readable(textTheme.labelMedium, allowHalo: false),
+      labelSmall: readable(textTheme.labelSmall, allowHalo: false),
     );
   }
 
@@ -254,16 +271,38 @@ abstract final class AggregateTheme {
 
   static TextStyle? _withReadableTextColor(
     TextStyle? style,
-    Color surface,
-    Color fallback,
-  ) => style?.copyWith(
-    color: _readableOnSurface(style.color ?? fallback, surface),
-  );
+    List<Color> surfaces,
+    Color fallback, {
+    bool allowHalo = true,
+  }) {
+    if (style == null) return null;
+    final foreground = _readableOnSurfaces(style.color ?? fallback, surfaces);
+    final needsHalo =
+        allowHalo && !_meetsTextContrastOnSurfaces(foreground, surfaces);
+    return style.copyWith(
+      color: foreground,
+      shadows: needsHalo ? _contrastHalo(foreground) : style.shadows,
+    );
+  }
 
-  static Color _readableOnSurface(Color preferred, Color surface) {
-    if (_contrastRatio(preferred, surface) >= 4.5) return preferred;
-    final blackContrast = _contrastRatio(Colors.black, surface);
-    final whiteContrast = _contrastRatio(Colors.white, surface);
+  static bool _meetsTextContrastOnSurfaces(
+    Color foreground,
+    List<Color> surfaces,
+  ) => surfaces.every((surface) => _contrastRatio(foreground, surface) >= 4.5);
+
+  static Color _readableOnSurfaces(Color preferred, List<Color> surfaces) {
+    if (_meetsTextContrastOnSurfaces(preferred, surfaces)) return preferred;
+    double minimumContrast(Color foreground) {
+      var minimum = double.infinity;
+      for (final surface in surfaces) {
+        final contrast = _contrastRatio(foreground, surface);
+        if (contrast < minimum) minimum = contrast;
+      }
+      return minimum;
+    }
+
+    final blackContrast = minimumContrast(Colors.black);
+    final whiteContrast = minimumContrast(Colors.white);
     return blackContrast >= whiteContrast ? Colors.black : Colors.white;
   }
 

@@ -72,6 +72,158 @@ void main() {
       await _verifyGlassButtonContrast(tester, initialAppearance);
     }
   }, variant: _macOS);
+
+  testWidgets(
+    'glass button labels remain readable while theme surfaces blend',
+    (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const size = Size(1024, 768);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+
+      const labels = [
+        '插值普通按钮',
+        '插值禁用按钮',
+        '插值说明文字',
+        '插值来源文字',
+        '插值忙碌按钮',
+        '插值危险按钮',
+      ];
+      final boundaryKey = GlobalKey();
+      final darkTheme = AggregateTheme.forPlatform(
+        AggregateTheme.dark,
+        TargetPlatform.macOS,
+      );
+      final lightTheme = AggregateTheme.forPlatform(
+        AggregateTheme.light,
+        TargetPlatform.macOS,
+      );
+      final imageWidth = size.width.round();
+
+      for (var frame = 0; frame <= 100; frame++) {
+        final phase = frame / 100;
+        final theme = AggregateTheme.withMacOSSurfaceTextContrast(
+          ThemeData.lerp(darkTheme, lightTheme, phase),
+        );
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: boundaryKey,
+            child: MaterialApp(
+              theme: theme,
+              themeAnimationDuration: Duration.zero,
+              home: ColoredBox(
+                color: theme.colorScheme.surface,
+                child: Scaffold(
+                  body: Padding(
+                    padding: const EdgeInsets.all(96),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const GlassActionButton(
+                          glyph: GlassGlyph.play,
+                          label: '插值普通按钮',
+                          onPressed: _noOp,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.refresh,
+                          label: '插值禁用按钮',
+                          onPressed: null,
+                          enabled: false,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.error,
+                          label: '插值辅助按钮',
+                          description: '插值说明文字',
+                          source: '插值来源文字',
+                          onPressed: null,
+                          enabled: false,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.hourglass,
+                          label: '插值同步按钮',
+                          busyLabel: '插值忙碌按钮',
+                          busy: true,
+                          onPressed: null,
+                        ),
+                        const SizedBox(height: 8),
+                        const GlassActionButton(
+                          glyph: GlassGlyph.trash,
+                          label: '插值危险按钮',
+                          kind: GlassButtonKind.danger,
+                          onPressed: _noOp,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(boundaryKey),
+        );
+        final pixelData = await tester.runAsync(() async {
+          final image = await boundary.toImage(pixelRatio: 1);
+          try {
+            return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+          } finally {
+            image.dispose();
+          }
+        });
+        final pixels = pixelData!.buffer.asUint8List(
+          pixelData.offsetInBytes,
+          pixelData.lengthInBytes,
+        );
+
+        for (final label in labels) {
+          final labelFinder = find.text(label);
+          expect(labelFinder, findsOneWidget);
+          final rect = tester.getRect(labelFinder);
+          final buttonFinder = find.ancestor(
+            of: labelFinder,
+            matching: find.byType(GlassActionButton),
+          );
+          final buttonRect = tester.getRect(buttonFinder);
+          final rightGap = buttonRect.right - rect.right;
+          expect(rightGap, greaterThanOrEqualTo(6));
+          final textStyle = tester.widget<Text>(labelFinder).style!;
+          final foreground = textStyle.color!;
+          final shadows = textStyle.shadows;
+          if (shadows != null) {
+            expect(shadows, hasLength(8));
+            expect(
+              _contrast(foreground, shadows.first.color),
+              greaterThanOrEqualTo(7),
+            );
+            expect(shadows.map((shadow) => shadow.color).toSet(), hasLength(1));
+          }
+          final y = rect.center.dy.floor();
+          for (var point = 1; point <= 3; point++) {
+            final x = (rect.right + rightGap * point / 4).floor();
+            final background = _pixel(pixels, x, y, imageWidth);
+            final threshold = shadows == null ? 4.5 : 3.0;
+            final contrastingColor = shadows?.first.color ?? foreground;
+            expect(
+              _contrast(contrastingColor, background),
+              greaterThanOrEqualTo(threshold),
+              reason:
+                  'theme phase $phase, $label, foreground $foreground, '
+                  'halo ${shadows?.first.color}, background $background, '
+                  'point ($x, $y), button $buttonRect',
+            );
+          }
+        }
+      }
+    },
+    variant: _macOS,
+  );
 }
 
 Future<void> _verifyGlassButtonContrast(

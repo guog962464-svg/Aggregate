@@ -255,7 +255,11 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     final padding = widget.iconOnly
         ? EdgeInsets.zero
         : EdgeInsets.symmetric(horizontal: small ? 12 : 16);
-    final content = _buildContent(tokens, height);
+    final content = _buildContent(
+      tokens,
+      height,
+      underlay: theme.colorScheme.surface,
+    );
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(_radiusFor(widget.size)),
     );
@@ -348,10 +352,42 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     );
   }
 
-  Widget _buildContent(GlassDesignTokens tokens, double height) {
+  Widget _buildContent(
+    GlassDesignTokens tokens,
+    double height, {
+    required Color underlay,
+  }) {
+    final muted = !_enabled || widget.busy;
     // Keep supporting copy subdued while protecting it against intermediate
     // glass tones produced by the live theme transition.
-    final mutedLabelColor = Color.lerp(tokens.muted, tokens.text, .18)!;
+    final labelAppearance = _readableGlassLabelAppearance(
+      tokens.text,
+      tokens,
+      underlay: underlay,
+      translucent: muted,
+      gradientPosition: .5,
+    );
+    final descriptionAppearance = _readableGlassLabelAppearance(
+      Color.lerp(tokens.muted, tokens.text, .18)!,
+      tokens,
+      underlay: underlay,
+      translucent: muted,
+      gradientPosition: .56,
+    );
+    final sourceAppearance = _readableGlassLabelAppearance(
+      Color.lerp(tokens.muted, tokens.text, .18)!,
+      tokens,
+      underlay: underlay,
+      translucent: muted,
+      gradientPosition: 1,
+    );
+    final dangerLabelAppearance = _readableGlassLabelAppearance(
+      tokens.danger,
+      tokens,
+      underlay: underlay,
+      translucent: muted,
+      gradientPosition: .5,
+    );
     final iconSize = switch (widget.size) {
       GlassButtonSize.reference => 32.0,
       GlassButtonSize.primary => 22.0,
@@ -359,7 +395,6 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       GlassButtonSize.icon ||
       GlassButtonSize.playback => 20.0,
     };
-    final muted = !_enabled || widget.busy;
     final visibleLabel = widget.label ?? widget.semanticsLabel!;
     // Keep status cues on the glyph and face while preserving label contrast.
     final mark = GlassGlyphMark(
@@ -395,8 +430,11 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: widget.kind == GlassButtonKind.danger
-                          ? tokens.danger
-                          : tokens.text,
+                          ? dangerLabelAppearance.color
+                          : labelAppearance.color,
+                      shadows: widget.kind == GlassButtonKind.danger
+                          ? dangerLabelAppearance.shadows
+                          : labelAppearance.shadows,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -406,14 +444,22 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                       description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: mutedLabelColor, fontSize: 11),
+                      style: TextStyle(
+                        color: descriptionAppearance.color,
+                        shadows: descriptionAppearance.shadows,
+                        fontSize: 11,
+                      ),
                     ),
                   if (widget.source case final source?)
                     Text(
                       source,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: mutedLabelColor, fontSize: 10),
+                      style: TextStyle(
+                        color: sourceAppearance.color,
+                        shadows: sourceAppearance.shadows,
+                        fontSize: 10,
+                      ),
                     ),
                 ],
               ),
@@ -435,8 +481,11 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: widget.kind == GlassButtonKind.danger
-                    ? tokens.danger
-                    : tokens.text,
+                    ? dangerLabelAppearance.color
+                    : labelAppearance.color,
+                shadows: widget.kind == GlassButtonKind.danger
+                    ? dangerLabelAppearance.shadows
+                    : labelAppearance.shadows,
                 fontWeight: widget.kind == GlassButtonKind.primary
                     ? FontWeight.w600
                     : FontWeight.w500,
@@ -465,6 +514,101 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.icon || GlassButtonSize.playback => 14,
 };
 
+_GlassLabelAppearance _readableGlassLabelAppearance(
+  Color preferred,
+  GlassDesignTokens tokens, {
+  required Color underlay,
+  required bool translucent,
+  required double gradientPosition,
+}) {
+  var opaqueSurface = Color.lerp(
+    tokens.glassTop,
+    tokens.glassBottom,
+    gradientPosition,
+  )!;
+  if (gradientPosition > .72) {
+    final insetAlpha =
+        GlassDesignTokens.restingButtonInsetOpacity *
+        ((gradientPosition - .72) / .28);
+    opaqueSurface = Color.alphaBlend(
+      tokens.inset.withValues(alpha: insetAlpha),
+      opaqueSurface,
+    );
+  }
+  final surface = translucent
+      ? Color.alphaBlend(
+          opaqueSurface.withValues(
+            alpha: GlassDesignTokens.disabledButtonFaceOpacity,
+          ),
+          underlay,
+        )
+      : opaqueSurface;
+  const targetContrast = 5.1;
+  if (_buttonContrastRatio(preferred, surface) >= targetContrast) {
+    return (color: preferred, shadows: null);
+  }
+  final blackContrast = _buttonContrastRatio(Colors.black, surface);
+  final whiteContrast = _buttonContrastRatio(Colors.white, surface);
+  // A disabled face composites against the page surface; keep the white
+  // side through the gray crossover so black takes over with a safer margin.
+  final preferWhite = translucent
+      ? whiteContrast >= 4.0
+      : whiteContrast > blackContrast;
+  final target = preferWhite ? Colors.white : Colors.black;
+  final achievableContrast = preferWhite ? whiteContrast : blackContrast;
+  if (achievableContrast < targetContrast) {
+    return (
+      color: target,
+      shadows: achievableContrast < 4.9 ? _buttonTextHalo(target) : null,
+    );
+  }
+
+  var lower = 0.0;
+  var upper = 1.0;
+  for (var iteration = 0; iteration < 12; iteration++) {
+    final middle = (lower + upper) / 2;
+    final candidate = Color.lerp(preferred, target, middle)!;
+    if (_buttonContrastRatio(candidate, surface) >= targetContrast) {
+      upper = middle;
+    } else {
+      lower = middle;
+    }
+  }
+  return (color: Color.lerp(preferred, target, upper)!, shadows: null);
+}
+
+List<Shadow> _buttonTextHalo(Color foreground) {
+  final halo = foreground == Colors.white ? Colors.black : Colors.white;
+  const offsets = [
+    Offset(-1, -1),
+    Offset(0, -1),
+    Offset(1, -1),
+    Offset(-1, 0),
+    Offset(1, 0),
+    Offset(-1, 1),
+    Offset(0, 1),
+    Offset(1, 1),
+  ];
+  return [for (final offset in offsets) Shadow(color: halo, offset: offset)];
+}
+
+typedef _GlassLabelAppearance = ({Color color, List<Shadow>? shadows});
+
+double _buttonContrastRatio(Color foreground, Color background) {
+  final foregroundLuminance = Color.alphaBlend(
+    foreground,
+    background,
+  ).computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final lighter = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final darker = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 class _GlassButtonSurfacePainter extends CustomPainter {
   _GlassButtonSurfacePainter({
     required this.tokens,
@@ -492,7 +636,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isSelected = states.contains(WidgetState.selected);
     final isReferenceSize = radius >= 22;
     final accent = kind == GlassButtonKind.danger ? tokens.danger : tokens.glow;
-    final opacity = isDisabled ? .52 : 1.0;
+    final opacity = isDisabled
+        ? GlassDesignTokens.disabledButtonFaceOpacity
+        : 1.0;
     final motionEnergy = motion.energy;
 
     canvas.drawRRect(
@@ -527,7 +673,11 @@ class _GlassButtonSurfacePainter extends CustomPainter {
               tokens.highlight.withValues(alpha: isDisabled ? .34 : .74),
               Colors.white.withValues(alpha: isDisabled ? .02 : .07),
               Colors.transparent,
-              tokens.inset.withValues(alpha: isPressed ? .22 : .13),
+              tokens.inset.withValues(
+                alpha: isPressed
+                    ? .22
+                    : GlassDesignTokens.restingButtonInsetOpacity,
+              ),
             ],
             stops: const [0, .12, .72, 1],
           ).createShader(inset),
