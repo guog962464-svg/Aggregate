@@ -30,36 +30,36 @@
 | B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：功能行及收藏操作 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
-| B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
-| B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
-| B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
-| B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
-| B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
-| B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 无对应对话框截图 |
-| B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 无对应对话框截图 |
-| B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 无对应对话框截图 |
-| B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 无对应对话框截图 |
-| B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 无对应对话框截图 |
-| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 无对应对话框截图 |
-| B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 无对应对话框截图 |
-| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 无对应对话框截图 |
-| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 无对应对话框截图 |
-| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 无对应对话框截图 |
-| B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B036 | `app/lib/features/connections/connections_page.dart:332` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B037 | `app/lib/features/connections/connections_page.dart:366` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B038 | `app/lib/features/connections/connections_page.dart:425` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B039 | `app/lib/features/connections/connections_page.dart:431` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B040 | `app/lib/features/connections/connections_page.dart:440` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B041 | `app/lib/features/connections/connections_page.dart:445` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B042 | `app/lib/features/connections/connections_page.dart:450` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B043 | `app/lib/features/connections/connections_page.dart:500` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B044 | `app/lib/features/connections/connections_page.dart:724` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
-| B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：连接行、筛选与操作 | 既有连接管理页面截图；对话框/状态仍待核 |
+| B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见新增动作；未点击 |
+| B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见导入；未导入文件 |
+| B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见导出；未导出文件 |
+| B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 浅/深滚动图 `53a-action-editor-light-scrolled.png`、`54a-action-editor-dark-scrolled.png` 可见参数预览按钮；未执行预览 |
+| B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅/深动作编辑器截图可见取消按钮并用于关闭；未修改清单 |
+| B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅/深动作编辑器截图可见保存按钮；未保存 |
+| B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 自动检测仅在特定类型/适配器出现；本次 CLI 预览未显示该按钮，仍待核 |
+| B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅/深配置图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 可见程序路径选择按钮；未打开文件面板 |
+| B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见测试连接按钮；未点击 |
+| B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见禁用的保存连接按钮；未保存 |
+| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 紧凑全屏路径的关闭按钮未捕获 |
+| B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见取消按钮并用于退出；未保存连接 |
+| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅/深图 `51-connection-target-light.png`、`51-connection-target-dark.png` 可见本机 Mac 目标；仅打开内存预览配置表单 |
+| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅/深目标图可见虚构配对 Mac 选项；未选择或连接设备 |
+| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅/深目标图可见取消按钮；选择目标后在配置表单取消退出 |
+| B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 删除确认对话框取消按钮未捕获 |
+| B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 删除确认按钮未捕获，未删除连接 |
+| B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅/深连接列表图 `50-connections-list-light.png`、`50-connections-list-dark.png` 可见添加连接按钮并打开目标选择器 |
+| B036 | `app/lib/features/connections/connections_page.dart:332` | 连接管理：连接行、筛选与操作 | 紧凑布局返回按钮未捕获；本次为宽布局 |
+| B037 | `app/lib/features/connections/connections_page.dart:366` | 连接管理：连接行、筛选与操作 | 打开连接工作区按钮在本次 fixture 未呈现，仍待核 |
+| B038 | `app/lib/features/connections/connections_page.dart:425` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见禁用的连接上移按钮；未点击 |
+| B039 | `app/lib/features/connections/connections_page.dart:431` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见连接下移按钮；未点击 |
+| B040 | `app/lib/features/connections/connections_page.dart:440` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见编辑动作入口；打开编辑器后只查看并取消 |
+| B041 | `app/lib/features/connections/connections_page.dart:445` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见测试连接按钮；未点击 |
+| B042 | `app/lib/features/connections/connections_page.dart:450` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见删除连接入口；未点击，确认弹窗仍待核 |
+| B043 | `app/lib/features/connections/connections_page.dart:500` | 连接管理：连接行、筛选与操作 | 浅/深列表图显示三条样例连接行及选中态；只核对截图中的实例 |
+| B044 | `app/lib/features/connections/connections_page.dart:724` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见程序路径选择图标；未打开文件面板 |
+| B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见动作清单选择图标；未打开文件面板 |
+| B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见取消按钮并用于退出；未保存 |
+| B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见禁用的添加按钮；未添加连接 |
 | B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色确认图 `45-write-confirm-dialog-light.png` 中可见；用无敏感验收文本打开后取消，未执行；暗色同类确认状态待核 |
 | B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 浅色确认图 `45-write-confirm-dialog-light.png` 中可见；执行按钮未点击；暗色同类确认状态待核 |
 | B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 暗色表单图 `03-run-form-dark.png`；浅色 `40-cli-result-form-light.png` 可见运行按钮并打开确认框；busy/disabled 待核 |
