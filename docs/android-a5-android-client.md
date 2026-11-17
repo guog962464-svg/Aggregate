@@ -44,3 +44,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 配对后及 App 重启重连后，`host.hello` 成功；随后只读 `connection.list` 返回 1 项。为避免 `ConnectionsPage` 初始化时额外调用 `capability.search`，此项使用临时 Android 诊断入口直接调用。诊断代码随后从源码撤回；没有调用 setup、能力搜索、CLI/TUI/MCP、账号、终端或任何写入型 RPC。
 - 清理：隔离 `.integration` 包已卸载，ADB reverse 与本机临时代理已移除，Mac Host 已停止且 `47321` 无监听。Mac 设置 UI 同时显示两条相同“这台手机 · 读取连接”grant 且不显示可区分 ID；为避免撤销原有授权，本次没有盲目删除，测试创建的只读 grant 仍留在 Host 上。
 - 限制：本轮未验证 direct LAN/Bonjour NSD；2026-11-14 的直连 LAN 结果仍保留其原有范围。没有 16 KB 页实体设备；本轮没有进行 16 KB 系统运行验收。
+
+## 2026-11-17 隔离 Android→Host setup WSS 集成验收
+
+- 新增 `app/test/android_host_setup_wss_e2e_test.dart`，使用真实 Dart `AndroidHostPairingClient`、证书 SHA-256 pin、`HostWssTransport`、配对授权和 setup RPC dispatcher，在 loopback 上完成邀请解析、配对申请、最小 `connectionSetup` grant、认证、`setup.adapters`、`setup.detectExecutable`、`setup.test` 与 `setup.save`。
+- 验收夹具仅使用临时目录、临时 operation ledger、固定测试 TLS 证书、测试签名 verifier 和内存 `ConnectionSetupPort`；测试私钥身份由 fake 提供，setup 的 save 仅写内存。测试确认 Host 显示程序位置为 `Mac 主机 · ncm-cli`，不返回 Mac 绝对路径；测试响应不包含夹具 secret 或路径，而 Host runtime 收到独立 secret field。没有启动 production Host，也没有调用任何用户连接或账号。
+- 验证：`flutter test --no-pub test/android_host_setup_wss_e2e_test.dart --reporter expanded` 2 项通过；全量 `flutter test --no-pub --reporter expanded` 291 项通过；`flutter analyze --no-pub` 与 `git diff --check` 无问题。两条 loopback 集成加强了 Android 配对客户端、`AndroidRuntimePort` 与 Host WSS/setup 实现间的联调证据，但不覆盖 Android Keystore 原生实现、Android 真机、Mac 生产 runtime、网易云账号/CLI 登录或其他 CLI/TUI/MCP 调用；A5.3/A5.5 保持未关闭。
