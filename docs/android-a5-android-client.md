@@ -69,3 +69,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 首个隔离身份在 `fixture-terminal-held` PTY 仍运行时关闭 Android Host session；Mac fixture 读取 fake CLI 写入的 PID，并用 `kill -0` 轮询确认终端进程退出。第二身份完成调用后也显式 disconnect，远端连接呈 unavailable；用已保存 Host 记录重连后连接恢复 ready。这证明正常 WSS 会话关闭会清理 PTY，不代表 Wi-Fi/进程骤停等意外 socket 中断后的自动恢复或 LAN/NSD；生产 Host 本轮仍只允许此前批准的只读 RPC，未执行生产 setup、CLI、MCP、账号或终端动作。
 - 验证：隔离 loopback 真机 runner 通过并清理 `.integration`/`.integration.test`、ADB reverse 和临时目录；普通 `io.github.guog962464.aggregate` 包仍安装，反向映射为空，设备 `PAGE_SIZE=4096`。全量 `flutter test --no-pub --reporter expanded` 294 项通过；`flutter analyze --no-pub`、Android arm64 Debug APK 和 macOS Debug app 构建通过；APK `zipalign -c -P 16 4` 与包内 7 个 arm64 `.so` 的 `PT_LOAD p_align >= 0x4000` 静态检查通过，仍不替代 16 KB 系统实机运行。
 - **阶段判定：**A5.5 的普通 CLI 动作、raw-mode/ANSI/窗口尺寸 TUI 协议夹具、HTTP/stdio MCP、隔离 Netease setup/account，以及拒绝/授权/重复保存/丢弃/活跃 PTY 时显式断开并清理进程/显式重连已有真实 Android→MacRuntime WSS 证据。仍未验证真实 Netease 账号或播放、真实产品 TUI、意外网络掉线恢复、production Host 写入业务、Release/signed 权限、日常 App 身份轮换和 16 KB 真机；A5.5、A5.4 与 A8 不因此关闭。
+
+## 2026-11-17 Android Host session stream 结束后的手动重连单元测试
+
+- 在 `app/test/android_host_pairing_client_test.dart` 新增 AndroidHostManager 状态回归用例。模拟已认证 `AndroidHostAuthenticatedSession` 的 fake socket message stream 自行结束，而不是调用 `manager.disconnect()`；断言状态通知转为 offline、`isConnected` 为 false，再通过保存的 Host 元数据显式 `manager.connect()`，确认第二次认证发送 `host.hello` 且状态回到 online。
+- `flutter test --no-pub --reporter expanded test/android_host_pairing_client_test.dart`：9 项通过；`flutter analyze --no-pub test/android_host_pairing_client_test.dart`：无问题；`dart format`：无改动。
+- 范围：这是 fake connector 的本地 Flutter 单元测试，不包含 TCP/TLS/WSS 服务端、Android 系统、Wi-Fi/路由断开、实际 NSD 地址更新或自动重试；只补强“会话流结束后标离线并可手动重连”的状态机证据，不能表述为意外网络掉线的实机验收。A5.5 保持开放。
