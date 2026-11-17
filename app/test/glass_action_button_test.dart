@@ -97,6 +97,7 @@ void main() {
       'lan_outlined',
       'light_mode',
       'link',
+      'link_off',
       'lock_outline',
       'manage_search',
       'manage_search_outlined',
@@ -157,6 +158,13 @@ void main() {
         isTrue,
       );
     }
+  });
+
+  test('Host revoke Material icon resolves to the glass close glyph', () {
+    expect(
+      GlassGlyphCatalog.fromMaterialIcon(Icons.link_off),
+      GlassGlyph.close,
+    );
   });
 
   testWidgets('every glyph paints through the shared mark in both themes', (

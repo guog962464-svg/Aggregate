@@ -114,6 +114,7 @@ abstract final class GlassGlyphCatalog {
     'info_outline' => GlassGlyph.info,
     'key_off_outlined' || 'vpn_key_outlined' => GlassGlyph.key,
     'link' => GlassGlyph.link,
+    'link_off' => GlassGlyph.close,
     'lock_outline' => GlassGlyph.lock,
     'manage_search' ||
     'manage_search_outlined' ||
@@ -211,6 +212,7 @@ final _materialCodePointGlyphs = <int, GlassGlyph>{
   Icons.lan_outlined.codePoint: GlassGlyph.network,
   Icons.light_mode.codePoint: GlassGlyph.appearance,
   Icons.link.codePoint: GlassGlyph.link,
+  Icons.link_off.codePoint: GlassGlyph.close,
   Icons.lock_outline.codePoint: GlassGlyph.lock,
   Icons.manage_search.codePoint: GlassGlyph.search,
   Icons.manage_search_outlined.codePoint: GlassGlyph.search,
