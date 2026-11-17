@@ -166,7 +166,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-17 维护版来源时效复核：fogtape 已发布 Node 24 `24.22.1-0` Android 预发布，README pin 为官方 `v24.22.1`，支持 3 个 ABI/16 KB 对齐但发布验证使用模拟器；Node 官方于 11-11 发布含 HIGH 级安全修复的 `v24.22.3`。公开移动预发布落后两个 patch；不回退替换本地 `24.22.3-0` 候选，A3.6 provenance gate 仍开。详见 [A3.6 维护版来源与安全时效复核](android-a3-runtime-research.md)。
 **交付物：**最小探针、版本/体积/性能表、原生兼容报告。**通过门槛：**目标设备上稳定启动、通信、失败恢复；能取得可维护的原生库且满足分发要求。**停止条件：**维护版本、16 KB、崩溃隔离或生命周期任一关键项无可行方案时，不进入本地 Node 产品化。
 
-  - 2026-11-17 上游 suite/16 KB 证据对照：fogtape Node 24 当前预发布 `24.22.1-0` 按 Android 限制调整 child-Node 测试；Node 官方已发布含安全修复的 `24.22.3`。fork README/TESTING 声称有 BrowserStack 16 KB 真机 smoke，但当前 recipe `build.yml` 明确移除了该作业，成功 prerelease run #78 也未列出真机 smoke。因此此前默认 suite 失败仍需与维护方 mobile harness 区分，且供应包不能据文档宣称视为 16 KB 实机通过。设备当前未连接，本轮未重跑；设备恢复后将把移动测试调整应用到安全匹配的 `v24.22.3` 候选并复验。A3.6 继续开放。详见 [上游移动测试套件与硬件证据对照](android-a3-runtime-research.md#2026-11-17-上游移动测试套件与默认-node-suite-对照)。
+  - 2026-11-17 上游 suite/16 KB 证据对照：fogtape Node 24 当前预发布 `24.22.1-0` 按 Android 限制调整 child-Node 测试；Node 官方已发布含安全修复的 `24.22.3`。移动 full suite 只覆盖 `.status` 未跳过的 `parallel`/`sequential`，且公开 workflow 使用 x86_64 emulator；fork `build.yml` 明确移除 BrowserStack 16 KB 真机作业。成功 prerelease run #78 未列出真机 smoke。因此 4,588 项默认 suite 失败不能直接当作维护方移动 gate 的失败，供应包也不能据 README/TESTING 声称视为 16 KB 实机通过；此前 3,790 项子集的精确 runner 清单未保存，仍需在 `v24.22.3` 候选上重跑并保存逐项 verdict。设备当前未连接，本轮未重跑；A3.6 继续开放。详见 [上游移动测试套件与硬件证据对照](android-a3-runtime-research.md#2026-11-17-上游移动测试套件与默认-node-suite-对照)。
 
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
