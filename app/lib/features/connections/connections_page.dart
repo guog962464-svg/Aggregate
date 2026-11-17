@@ -36,6 +36,8 @@ class ConnectionsPage extends StatefulWidget {
 }
 
 class ConnectionsPageState extends State<ConnectionsPage> {
+  static const _lazyListThreshold = 40;
+
   late Future<List<Connection>> pending;
   List<Capability> catalog = [];
   String? selectedId;
@@ -383,7 +385,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           ),
           const SizedBox(height: 8),
           if (capabilities.isEmpty) const Text('当前没有可用功能。刷新连接后重试。'),
-          if (capabilities.isNotEmpty)
+          if (capabilities.length >= _lazyListThreshold)
             SizedBox(
               key: const Key('managed-capability-list'),
               height: _capabilityListHeight(context),
@@ -403,6 +405,17 @@ class ConnectionsPageState extends State<ConnectionsPage> {
                 separatorBuilder: (context, index) => const Divider(height: 1),
               ),
             ),
+          if (capabilities.isNotEmpty &&
+              capabilities.length < _lazyListThreshold)
+            for (final capability in capabilities) ...[
+              CapabilityRow(
+                key: ValueKey('managed-capability-${capability.id.key}'),
+                capability: capability,
+                source: connection.label,
+                onOpen: () => widget.onOpen(capability),
+              ),
+              const Divider(height: 1),
+            ],
           if (!widget.runtime.isPreview) ...[
             const SizedBox(height: 20),
             Wrap(
@@ -452,66 +465,84 @@ class ConnectionsPageState extends State<ConnectionsPage> {
     BuildContext context,
     List<Connection> connections,
     Connection? selected,
-  ) => SizedBox(
-    key: const Key('managed-connection-list'),
-    height: _connectionListHeight(context),
-    child: ListView.separated(
-      primary: false,
-      padding: EdgeInsets.zero,
-      itemCount: connections.length,
-      itemBuilder: (context, index) {
-        final connection = connections[index];
-        final row = _usesGlassButtons(context)
-            ? AggregateActionButton(
-                label: connection.label,
-                description: _kind(connection.kind),
-                source: widget.runtime.isPreview
-                    ? '预览'
-                    : _status(connection.status),
-                semanticsLabel:
-                    '${connection.label}，${_kind(connection.kind)}，'
-                    '${widget.runtime.isPreview ? '预览' : _status(connection.status)}',
-                icon: switch (connection.kind) {
-                  ConnectionKind.cli => Icons.terminal_outlined,
-                  ConnectionKind.mcpStdio ||
-                  ConnectionKind.mcpHttp => Icons.hub_outlined,
-                },
-                style: AggregateActionStyle.quiet,
-                onPressed: () =>
-                    setState(() => selectedId = connection.id.value),
-                selected: selected?.id.value == connection.id.value,
-                expand: true,
-              )
-            : ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                selected: selected?.id.value == connection.id.value,
-                title: Tooltip(
-                  message: connection.label,
-                  child: Text(
-                    connection.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                subtitle: Text(_kind(connection.kind)),
-                trailing: Text(
-                  widget.runtime.isPreview ? '预览' : _status(connection.status),
-                  style: TextStyle(
-                    color: connection.status == ConnectionStatus.unavailable
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                onTap: () => setState(() => selectedId = connection.id.value),
-              );
-        return KeyedSubtree(
-          key: ValueKey('managed-connection-${connection.id.value}'),
-          child: row,
-        );
-      },
-      separatorBuilder: (context, index) => const Divider(height: 1),
-    ),
-  );
+  ) {
+    if (connections.length < _lazyListThreshold) {
+      return Column(
+        children: [
+          for (final connection in connections) ...[
+            _connectionRow(context, connection, selected),
+            const Divider(height: 1),
+          ],
+        ],
+      );
+    }
+
+    return SizedBox(
+      key: const Key('managed-connection-list'),
+      height: _connectionListHeight(context),
+      child: ListView.separated(
+        primary: false,
+        padding: EdgeInsets.zero,
+        itemCount: connections.length,
+        itemBuilder: (context, index) =>
+            _connectionRow(context, connections[index], selected),
+        separatorBuilder: (context, index) => const Divider(height: 1),
+      ),
+    );
+  }
+
+  Widget _connectionRow(
+    BuildContext context,
+    Connection connection,
+    Connection? selected,
+  ) {
+    final row = _usesGlassButtons(context)
+        ? AggregateActionButton(
+            label: connection.label,
+            description: _kind(connection.kind),
+            source: widget.runtime.isPreview
+                ? '预览'
+                : _status(connection.status),
+            semanticsLabel:
+                '${connection.label}，${_kind(connection.kind)}，'
+                '${widget.runtime.isPreview ? '预览' : _status(connection.status)}',
+            icon: switch (connection.kind) {
+              ConnectionKind.cli => Icons.terminal_outlined,
+              ConnectionKind.mcpStdio ||
+              ConnectionKind.mcpHttp => Icons.hub_outlined,
+            },
+            style: AggregateActionStyle.quiet,
+            onPressed: () => setState(() => selectedId = connection.id.value),
+            selected: selected?.id.value == connection.id.value,
+            expand: true,
+          )
+        : ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            selected: selected?.id.value == connection.id.value,
+            title: Tooltip(
+              message: connection.label,
+              child: Text(
+                connection.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            subtitle: Text(_kind(connection.kind)),
+            trailing: Text(
+              widget.runtime.isPreview ? '预览' : _status(connection.status),
+              style: TextStyle(
+                color: connection.status == ConnectionStatus.unavailable
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            onTap: () => setState(() => selectedId = connection.id.value),
+          );
+    return KeyedSubtree(
+      key: ValueKey('managed-connection-${connection.id.value}'),
+      child: row,
+    );
+  }
 
   double _connectionListHeight(BuildContext context) =>
       math.min(520.0, math.max(240.0, MediaQuery.sizeOf(context).height - 300));

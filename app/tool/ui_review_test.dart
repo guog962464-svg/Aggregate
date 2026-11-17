@@ -1,5 +1,6 @@
 import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/widgets/capability_row.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const boundaryKey = Key('ui-review-boundary');
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(ThemeSwitchArtwork.loadProgram);
 
   Future<void> capture(
     WidgetTester tester,

@@ -65,6 +65,29 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
+  testWidgets('short connection and capability lists keep natural height', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1024, 768);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = _runtime(
+      connections: const [_connection0],
+      capabilities: _capabilities(1),
+    );
+    addTearDown(runtime.dispose);
+
+    await tester.pumpWidget(_page(runtime));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('managed-connection-list')), findsNothing);
+    expect(find.byKey(const Key('managed-capability-list')), findsNothing);
+    expect(find.byKey(_connectionKey(0)), findsOneWidget);
+    expect(find.byKey(_capabilityKey(0)), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
   testWidgets('connection details build long capability lists lazily', (
     tester,
   ) async {
