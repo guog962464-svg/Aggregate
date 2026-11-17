@@ -32,6 +32,8 @@ const _samples = [
   0.505,
   0.51,
   0.515,
+  0.52,
+  0.525,
 ];
 
 void main() {
@@ -85,7 +87,17 @@ Future<void> _verifyScenario(
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
 
-    final subtitleRect = tester.getRect(find.text('主题选择保存在本机。'));
+    final textRegions = <String, Rect>{
+      'page title': tester.getRect(find.text('设置').last),
+      'page subtitle': tester.getRect(find.text('让工作台适应你的使用方式。')),
+      'section title': tester.getRect(find.text('外观')),
+      'body text': tester.getRect(find.text('主题选择保存在本机。')),
+    };
+    for (final label in ['搜索所有功能', '运行当前功能']) {
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
+      textRegions['ListTile: $label'] = tester.getRect(find.text(label));
+    }
     final shaderSeconds = tester
         .widget<GlassSceneScope>(find.byType(GlassSceneScope))
         .frame
@@ -125,22 +137,29 @@ Future<void> _verifyScenario(
     final frame = tester
         .widget<GlassSceneScope>(find.byType(GlassSceneScope))
         .frame;
-    final horizontalSamples = [
-      for (var i = 0; i < 9; i++)
-        ((subtitleRect.left + (i + 0.5) * subtitleRect.width / 9) * pixelRatio)
-            .floor(),
-    ];
-    final verticalSamples = [
-      (subtitleRect.top * pixelRatio).floor(),
-      (subtitleRect.center.dy * pixelRatio).floor(),
-      ((subtitleRect.bottom - 1) * pixelRatio).floor(),
+    final samplePoints = [
+      for (final entry in textRegions.entries)
+        for (var xIndex = 0; xIndex < 9; xIndex++)
+          for (final y in [
+            entry.value.top,
+            entry.value.center.dy,
+            entry.value.bottom - 1,
+          ])
+            (
+              region: entry.key,
+              x:
+                  ((entry.value.left + (xIndex + 0.5) * entry.value.width / 9) *
+                          pixelRatio)
+                      .floor(),
+              y: (y * pixelRatio).floor(),
+            ),
     ];
 
     for (final daylight in _samples) {
       frame.publishThemeSwitch(shaderSeconds, daylight);
       await tester.pump();
       final useDarkForeground = daylight >= 0.5;
-      final needsHalo = daylight >= 0.46 && daylight <= 0.51;
+      final needsHalo = daylight >= 0.46 && daylight <= 0.52;
       final foreground = useDarkForeground ? Colors.black : Colors.white;
       final halo = useDarkForeground ? Colors.white : Colors.black;
       final textTheme = AggregateTheme.withMacOSBackdropTextContrast(
@@ -192,17 +211,19 @@ Future<void> _verifyScenario(
       );
       var minimumTextContrast = double.infinity;
       var minimumHaloContrast = double.infinity;
-      for (final y in verticalSamples) {
-        for (final x in horizontalSamples) {
-          final background = _pixel(pixels, x, y, imageWidth);
-          minimumTextContrast = min(
-            minimumTextContrast,
-            _contrast(foreground, background),
-          );
-          minimumHaloContrast = min(
-            minimumHaloContrast,
-            _contrast(halo, background),
-          );
+      var minimumTextRegion = '';
+      var minimumHaloRegion = '';
+      for (final sample in samplePoints) {
+        final background = _pixel(pixels, sample.x, sample.y, imageWidth);
+        final textContrast = _contrast(foreground, background);
+        if (textContrast < minimumTextContrast) {
+          minimumTextContrast = textContrast;
+          minimumTextRegion = sample.region;
+        }
+        final haloContrast = _contrast(halo, background);
+        if (haloContrast < minimumHaloContrast) {
+          minimumHaloContrast = haloContrast;
+          minimumHaloRegion = sample.region;
         }
       }
 
@@ -212,7 +233,7 @@ Future<void> _verifyScenario(
         expect(
           minimumHaloContrast,
           greaterThanOrEqualTo(3),
-          reason: 'Halo/background contrast at $reason',
+          reason: 'Halo/background contrast at $reason, $minimumHaloRegion',
         );
         expect(
           _contrast(foreground, halo),
@@ -232,7 +253,7 @@ Future<void> _verifyScenario(
         expect(
           minimumTextContrast,
           greaterThanOrEqualTo(4.5),
-          reason: 'Text/background contrast at $reason',
+          reason: 'Text/background contrast at $reason, $minimumTextRegion',
         );
       }
     }

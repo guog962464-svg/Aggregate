@@ -232,8 +232,10 @@ void main() {
     frame.publishThemeSwitch(1.02, 0.475);
     frame.publishThemeSwitch(1.03, 0.5);
     frame.publishThemeSwitch(1.04, 0.51);
-    expect(frame.textContrastNeedsHalo.value, isTrue);
     frame.publishThemeSwitch(1.05, 0.515);
+    frame.publishThemeSwitch(1.06, 0.52);
+    expect(frame.textContrastNeedsHalo.value, isTrue);
+    frame.publishThemeSwitch(1.07, 0.525);
     expect(frame.textContrastNeedsHalo.value, isFalse);
     frame.clearThemeSwitch();
 

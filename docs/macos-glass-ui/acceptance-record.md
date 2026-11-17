@@ -264,6 +264,14 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 结果：`flutter test --no-pub --reporter compact test/macos_dynamic_backdrop_text_contrast_test.dart` 通过；`dart format` 无改写。该测试从十个相位重放 shader 状态，不是原生窗口的实时输入或 display-present 捕获。
 - 结论与边界：关闭了该回归的“仅深色偏好启动”缺口。禁用态、其他页面材质、VoiceOver 与原生显示捕获仍待验收，UI-5.5 继续部分验收。未改主题模拟、按钮交互或生产色彩阈值。
 
+### 2026-11-18 UI-5.5 设置页多区域文字相位补验
+
+- 覆盖：把生产设置页采样区扩为页标题、页副标题、分节标题、正文和两条快捷操作 `ListTile` 标题，共六个实际文字矩形；每个矩形在 3×3 窗口尺寸/DPR 配置及浅/深初始偏好下，按 12 个临界 daylight 相位采样生产 shader 背景。`headlineMedium`、`titleMedium`、`bodyMedium`、`bodySmall`、ListTile 标题/副标题在每相位断言文字前景与 8 向轮廓；`labelLarge/Medium/Small` 断言无轮廓。
+- 新缺口：扩展后的矩阵首次发现 `1440×900@1x`、深色偏好启动时，`ListTile: 运行当前功能` 在 daylight `0.515` 的黑字/背景为 `4.428822:1`，此时旧描边窗口已经关闭，低于项目 4.5:1 门槛。
+- 修正：把 `GlassSceneFrame` 描边结束阈值从 `0.51` 扩至 `0.52`，仅影响正文、标题、列表文字的描边状态；文字颜色仍在 `0.5` 交接，主题模拟、560 ms 时序、任意拖动和按钮回调均未改。加入 `0.52` 描边边界与 `0.525` 无描边边界采样。
+- 验证：浅/深启动各六组窗口/DPR、每组 12 个相位（合计 144 个组合）均通过；轮廓/背景至少 3:1、文字/轮廓至少 7:1，轮廓区外指定文字/背景至少 4.5:1。`flutter test --no-pub --reporter compact test/glass_design_tokens_test.dart test/macos_reduce_motion_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart` 13 项通过；相关四个 Dart 文件的定向 `flutter analyze --no-pub` 无问题，`git diff --check` 通过。
+- 边界：背景数值来自 `GlassScene` 离屏渲染，而不是整页半透明表面合成或 macOS display-present；本轮只扩展设置页六个文字位置，不关闭其他页面材质、禁用态、VoiceOver 或原生显示验收，UI-5.5 保持部分验收。
+
 ### 2026-11-15 浅深主题焦点环合成像素验收
 
 - 构建：隔离 bundle `io.github.guog962464.aggregate.ui6focusafter` 的 macOS Profile；项目 Flutter 3.47.8 / Dart 3.13.7，PreviewRuntime 本地合成数据。窗口 AX bounds 800×632 logical px，DPR 2，导出 PNG 为 1824×1488。通过物理 Tab 到达主题开关焦点，使用左右键切到浅/深端点；焦点状态由实窗完整轨道环可见性与 AX 主题值复核。
