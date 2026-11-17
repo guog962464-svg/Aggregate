@@ -7,6 +7,8 @@ import 'package:flutter/scheduler.dart';
 import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
 
+const _glyphMorphDuration = Duration(milliseconds: 360);
+
 /// A monotonic time source used by [GlassMotionScope].
 ///
 /// Tests can inject [ManualGlassMotionClock] and sample the exact same motion
@@ -312,58 +314,810 @@ class _GlassMotionScopeData extends InheritedWidget {
 enum GlassMotionAction {
   play,
   pause,
+  next,
+  previous,
   add,
-  refresh,
-  copy,
-  save,
-  search,
-  open,
-  logout,
-  more,
   stop,
-  remove,
+  copy,
+  paste,
+  save,
+  logout,
+  terminal,
+  check,
+  close,
+  search,
+  refresh,
+  music,
+  grid,
+  more,
   connect,
+  activity,
+  settings,
+  link,
+  remove,
+  export,
   allowAccess,
+  list,
+  folder,
+  star,
+  arrow,
+  arrowBack,
+  arrowUp,
+  arrowDown,
+  filter,
+  brightness,
+  build,
+  chat,
+  device,
+  phone,
+  lock,
+  document,
+  account,
+  desktop,
+  open,
+  hourglass,
+  inbox,
+  history,
+  info,
+  error,
+  key,
+  qr,
+  code,
+  tune,
+  visibility,
+  flash,
+  chevron,
+  playlist,
+  data,
+  expand,
+  collapse,
+  appearance,
   neutral,
 }
 
+enum _GlassIdlePattern {
+  forwardSweep,
+  reverseSweep,
+  verticalSweep,
+  reverseVerticalSweep,
+  diagonal,
+  reverseDiagonal,
+  radial,
+  ring,
+  rows,
+  columns,
+  sourcePhase,
+  checker,
+  centerPulse,
+  orbit,
+}
+
+enum _GlassLightPattern {
+  none,
+  scanX,
+  reverseScanX,
+  scanY,
+  reverseScanY,
+  scanDiagonal,
+  radialSweep,
+  rows,
+  columns,
+  pointPhase,
+  centerPulse,
+  rimSweep,
+}
+
+@immutable
+class _GlassMotionProfile {
+  const _GlassMotionProfile({
+    required this.duration,
+    required this.idle,
+    required this.light,
+    this.translation = Offset.zero,
+    this.scaleX = 0,
+    this.scaleY = 0,
+    this.rotationRadians = 0,
+    this.rotationFollowsProgress = false,
+    this.separation = 0,
+    this.idleDrift = const Offset(.05, .04),
+    this.idleOpacity = .014,
+    this.lightAmplitude = .08,
+  });
+
+  final Duration duration;
+  final _GlassIdlePattern idle;
+  final _GlassLightPattern light;
+  final Offset translation;
+  final double scaleX;
+  final double scaleY;
+  final double rotationRadians;
+  final bool rotationFollowsProgress;
+  final double separation;
+  final Offset idleDrift;
+  final double idleOpacity;
+  final double lightAmplitude;
+
+  _GlassIdleMotion get idleMotion {
+    final (spatial, radial, angular, point, phaseOffset) = switch (idle) {
+      _GlassIdlePattern.forwardSweep => (
+        const Offset(.14, 0),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      ),
+      _GlassIdlePattern.reverseSweep => (
+        const Offset(-.14, 0),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      ),
+      _GlassIdlePattern.verticalSweep => (
+        const Offset(0, .14),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      ),
+      _GlassIdlePattern.reverseVerticalSweep => (
+        const Offset(0, -.14),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      ),
+      _GlassIdlePattern.diagonal => (
+        const Offset(.10, .10),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      ),
+      _GlassIdlePattern.reverseDiagonal => (
+        const Offset(.10, -.10),
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      ),
+      _GlassIdlePattern.radial => (Offset.zero, .16, 0.0, 0.0, 0.0),
+      _GlassIdlePattern.ring => (Offset.zero, -.22, 0.0, 0.0, 1.98),
+      _GlassIdlePattern.rows => (const Offset(0, .24), 0.0, 0.0, 0.0, 0.0),
+      _GlassIdlePattern.columns => (const Offset(.24, 0), 0.0, 0.0, 0.0, 0.0),
+      _GlassIdlePattern.sourcePhase => (Offset.zero, 0.0, 0.0, 1.0, 0.0),
+      _GlassIdlePattern.checker => (const Offset(.20, .20), 0.0, 0.0, 0.5, 0.0),
+      _GlassIdlePattern.centerPulse => (Offset.zero, -.18, 0.0, 0.0, 0.0),
+      _GlassIdlePattern.orbit => (Offset.zero, 0.0, 1.3, 0.0, 0.0),
+    };
+    return _GlassIdleMotion(
+      spatial: spatial,
+      radial: radial,
+      angular: angular,
+      point: point,
+      phaseOffset: phaseOffset,
+      drift: idleDrift,
+      opacityAmplitude: idleOpacity,
+    );
+  }
+}
+
+@immutable
+class _GlassIdleMotion {
+  const _GlassIdleMotion({
+    this.spatial = Offset.zero,
+    this.radial = 0,
+    this.angular = 0,
+    this.point = 0,
+    this.phaseOffset = 0,
+    this.drift = Offset.zero,
+    this.opacityAmplitude = 0,
+  });
+
+  final Offset spatial;
+  final double radial;
+  final double angular;
+  final double point;
+  final double phaseOffset;
+  final Offset drift;
+  final double opacityAmplitude;
+
+  static _GlassIdleMotion lerp(
+    _GlassIdleMotion from,
+    _GlassIdleMotion to,
+    double t,
+  ) => _GlassIdleMotion(
+    spatial: Offset.lerp(from.spatial, to.spatial, t)!,
+    radial: from.radial + (to.radial - from.radial) * t,
+    angular: from.angular + (to.angular - from.angular) * t,
+    point: from.point + (to.point - from.point) * t,
+    phaseOffset: from.phaseOffset + (to.phaseOffset - from.phaseOffset) * t,
+    drift: Offset.lerp(from.drift, to.drift, t)!,
+    opacityAmplitude:
+        from.opacityAmplitude +
+        (to.opacityAmplitude - from.opacityAmplitude) * t,
+  );
+
+  double signal(Offset position, double wave, double pointPhase) {
+    final relative = position - const Offset(16, 16);
+    var phase =
+        wave +
+        phaseOffset +
+        relative.dx * spatial.dx +
+        relative.dy * spatial.dy;
+    if (radial != 0) phase += relative.distance * radial;
+    if (angular != 0) {
+      phase += math.atan2(relative.dy, relative.dx) * angular;
+    }
+    if (point != 0) phase += pointPhase * point;
+    return math.sin(phase);
+  }
+}
+
+const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
+  GlassMotionAction.play: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.scanX,
+    translation: Offset(.40, 0),
+    scaleX: .02,
+    idleDrift: Offset(.09, 0),
+  ),
+  GlassMotionAction.pause: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.columns,
+    light: _GlassLightPattern.columns,
+    scaleX: -.035,
+    idleDrift: Offset(.04, .07),
+  ),
+  GlassMotionAction.next: _GlassMotionProfile(
+    duration: Duration(milliseconds: 480),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.scanX,
+    translation: Offset(.32, 0),
+    scaleX: .015,
+    idleDrift: Offset(.08, .02),
+  ),
+  GlassMotionAction.previous: _GlassMotionProfile(
+    duration: Duration(milliseconds: 500),
+    idle: _GlassIdlePattern.reverseSweep,
+    light: _GlassLightPattern.reverseScanX,
+    translation: Offset(-.32, 0),
+    scaleX: .012,
+    idleDrift: Offset(-.08, .02),
+  ),
+  GlassMotionAction.add: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.centerPulse,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: -.15,
+    scaleY: -.15,
+    idleDrift: Offset(.03, .03),
+  ),
+  GlassMotionAction.stop: _GlassMotionProfile(
+    duration: Duration(milliseconds: 480),
+    idle: _GlassIdlePattern.sourcePhase,
+    light: _GlassLightPattern.pointPhase,
+    scaleX: -.14,
+    scaleY: -.02,
+    idleDrift: Offset(.02, .07),
+  ),
+  GlassMotionAction.copy: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    separation: .23,
+    idleDrift: Offset(.07, .06),
+  ),
+  GlassMotionAction.paste: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.reverseVerticalSweep,
+    light: _GlassLightPattern.reverseScanY,
+    translation: Offset(.04, .16),
+    scaleX: -.025,
+    scaleY: -.055,
+    idleDrift: Offset(.03, -.07),
+  ),
+  GlassMotionAction.save: _GlassMotionProfile(
+    duration: Duration(milliseconds: 580),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.scanY,
+    translation: Offset(0, .39),
+    idleDrift: Offset(.02, .08),
+  ),
+  GlassMotionAction.logout: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.scanX,
+    translation: Offset(.58, 0),
+    scaleX: .02,
+    idleDrift: Offset(.10, -.02),
+  ),
+  GlassMotionAction.terminal: _GlassMotionProfile(
+    duration: Duration(milliseconds: 500),
+    idle: _GlassIdlePattern.columns,
+    light: _GlassLightPattern.scanX,
+    translation: Offset(.08, 0),
+    scaleX: .025,
+    idleDrift: Offset(.03, .05),
+  ),
+  GlassMotionAction.check: _GlassMotionProfile(
+    duration: Duration(milliseconds: 420),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    translation: Offset(.10, -.04),
+    scaleX: .035,
+    scaleY: .035,
+    idleDrift: Offset(.04, -.04),
+  ),
+  GlassMotionAction.close: _GlassMotionProfile(
+    duration: Duration(milliseconds: 460),
+    idle: _GlassIdlePattern.checker,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: -.11,
+    scaleY: -.06,
+    rotationRadians: .08,
+    idleDrift: Offset(-.05, .04),
+  ),
+  GlassMotionAction.search: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.radial,
+    light: _GlassLightPattern.scanX,
+    scaleX: .045,
+    scaleY: .045,
+    lightAmplitude: .10,
+    idleDrift: Offset(.04, .02),
+  ),
+  GlassMotionAction.refresh: _GlassMotionProfile(
+    duration: Duration(milliseconds: 680),
+    idle: _GlassIdlePattern.orbit,
+    light: _GlassLightPattern.radialSweep,
+    rotationRadians: math.pi * 2,
+    rotationFollowsProgress: true,
+    idleDrift: Offset(.04, -.04),
+  ),
+  GlassMotionAction.music: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.rows,
+    scaleY: .065,
+    rotationRadians: .035,
+    idleDrift: Offset(.06, .08),
+  ),
+  GlassMotionAction.grid: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.checker,
+    light: _GlassLightPattern.rows,
+    scaleX: .035,
+    scaleY: .025,
+    idleDrift: Offset(.06, -.03),
+  ),
+  GlassMotionAction.more: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.columns,
+    light: _GlassLightPattern.pointPhase,
+    scaleX: .12,
+    scaleY: .12,
+    idleDrift: Offset(.04, .06),
+  ),
+  GlassMotionAction.connect: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.sourcePhase,
+    light: _GlassLightPattern.pointPhase,
+    scaleX: -.055,
+    scaleY: -.055,
+    lightAmplitude: .09,
+    idleDrift: Offset(.08, -.04),
+  ),
+  GlassMotionAction.activity: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.rows,
+    light: _GlassLightPattern.rows,
+    scaleY: .075,
+    translation: Offset(.03, 0),
+    idleDrift: Offset(.08, .04),
+  ),
+  GlassMotionAction.settings: _GlassMotionProfile(
+    duration: Duration(milliseconds: 640),
+    idle: _GlassIdlePattern.orbit,
+    light: _GlassLightPattern.rimSweep,
+    rotationRadians: .18,
+    idleDrift: Offset(.05, -.05),
+  ),
+  GlassMotionAction.link: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    scaleX: -.045,
+    scaleY: -.02,
+    translation: Offset(.05, 0),
+    idleDrift: Offset(.06, -.06),
+  ),
+  GlassMotionAction.remove: _GlassMotionProfile(
+    duration: Duration(milliseconds: 640),
+    idle: _GlassIdlePattern.ring,
+    light: _GlassLightPattern.rimSweep,
+    scaleX: -.12,
+    scaleY: -.12,
+    translation: Offset(0, .28),
+    idleDrift: Offset(.03, .07),
+  ),
+  GlassMotionAction.export: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.reverseScanY,
+    translation: Offset(.02, -.36),
+    scaleY: .025,
+    idleDrift: Offset(.02, -.08),
+  ),
+  GlassMotionAction.allowAccess: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.ring,
+    light: _GlassLightPattern.rimSweep,
+    scaleX: .035,
+    scaleY: .035,
+    idleDrift: Offset(.04, .05),
+  ),
+  GlassMotionAction.list: _GlassMotionProfile(
+    duration: Duration(milliseconds: 500),
+    idle: _GlassIdlePattern.rows,
+    light: _GlassLightPattern.rows,
+    translation: Offset(.06, .01),
+    scaleY: .02,
+    idleDrift: Offset(.08, .03),
+  ),
+  GlassMotionAction.folder: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.reverseVerticalSweep,
+    light: _GlassLightPattern.scanY,
+    translation: Offset(.02, -.42),
+    scaleY: .035,
+    idleDrift: Offset(.02, .07),
+  ),
+  GlassMotionAction.star: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.orbit,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: .09,
+    scaleY: .09,
+    rotationRadians: .12,
+    idleDrift: Offset(.07, .05),
+  ),
+  GlassMotionAction.arrow: _GlassMotionProfile(
+    duration: Duration(milliseconds: 460),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.scanX,
+    translation: Offset(.28, 0),
+    idleDrift: Offset(.06, .02),
+  ),
+  GlassMotionAction.arrowBack: _GlassMotionProfile(
+    duration: Duration(milliseconds: 460),
+    idle: _GlassIdlePattern.reverseSweep,
+    light: _GlassLightPattern.reverseScanX,
+    translation: Offset(-.28, 0),
+    idleDrift: Offset(-.06, .02),
+  ),
+  GlassMotionAction.arrowUp: _GlassMotionProfile(
+    duration: Duration(milliseconds: 460),
+    idle: _GlassIdlePattern.reverseVerticalSweep,
+    light: _GlassLightPattern.reverseScanY,
+    translation: Offset(0, -.28),
+    idleDrift: Offset(.02, -.06),
+  ),
+  GlassMotionAction.arrowDown: _GlassMotionProfile(
+    duration: Duration(milliseconds: 460),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.scanY,
+    translation: Offset(0, .28),
+    idleDrift: Offset(.02, .06),
+  ),
+  GlassMotionAction.filter: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.scanY,
+    scaleY: -.035,
+    rotationRadians: .03,
+    idleDrift: Offset(-.04, .07),
+  ),
+  GlassMotionAction.brightness: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.centerPulse,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: .055,
+    scaleY: .055,
+    idleOpacity: .018,
+    idleDrift: Offset(.04, .02),
+  ),
+  GlassMotionAction.build: _GlassMotionProfile(
+    duration: Duration(milliseconds: 600),
+    idle: _GlassIdlePattern.orbit,
+    light: _GlassLightPattern.radialSweep,
+    rotationRadians: .22,
+    scaleX: .018,
+    idleDrift: Offset(-.04, -.04),
+  ),
+  GlassMotionAction.chat: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: .045,
+    scaleY: .06,
+    translation: Offset(0, -.035),
+    idleDrift: Offset(.03, -.06),
+  ),
+  GlassMotionAction.device: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.ring,
+    light: _GlassLightPattern.rimSweep,
+    scaleX: .035,
+    scaleY: .02,
+    rotationRadians: .035,
+    idleDrift: Offset(.07, -.03),
+  ),
+  GlassMotionAction.phone: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.columns,
+    scaleX: -.02,
+    scaleY: .045,
+    rotationRadians: .045,
+    idleDrift: Offset(.03, .08),
+  ),
+  GlassMotionAction.lock: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.ring,
+    light: _GlassLightPattern.rimSweep,
+    rotationRadians: .14,
+    scaleX: .025,
+    idleDrift: Offset(-.04, .05),
+  ),
+  GlassMotionAction.document: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.scanY,
+    translation: Offset(.01, -.26),
+    scaleY: .025,
+    idleDrift: Offset(.04, .08),
+  ),
+  GlassMotionAction.account: _GlassMotionProfile(
+    duration: Duration(milliseconds: 580),
+    idle: _GlassIdlePattern.orbit,
+    light: _GlassLightPattern.radialSweep,
+    rotationRadians: .11,
+    scaleX: .035,
+    scaleY: .035,
+    idleDrift: Offset(.08, .01),
+  ),
+  GlassMotionAction.desktop: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.rows,
+    light: _GlassLightPattern.rows,
+    scaleX: .035,
+    scaleY: .018,
+    translation: Offset(0, -.025),
+    idleDrift: Offset(.07, .03),
+  ),
+  GlassMotionAction.open: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.reverseScanY,
+    translation: Offset(0, -.42),
+    scaleX: .025,
+    idleDrift: Offset(.03, -.07),
+  ),
+  GlassMotionAction.hourglass: _GlassMotionProfile(
+    duration: Duration(milliseconds: 640),
+    idle: _GlassIdlePattern.rows,
+    light: _GlassLightPattern.rows,
+    scaleX: -.025,
+    scaleY: .04,
+    translation: Offset(0, .035),
+    idleDrift: Offset(.02, .06),
+  ),
+  GlassMotionAction.inbox: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.verticalSweep,
+    light: _GlassLightPattern.reverseScanY,
+    translation: Offset(0, .22),
+    scaleY: -.025,
+    idleDrift: Offset(.02, .07),
+  ),
+  GlassMotionAction.history: _GlassMotionProfile(
+    duration: Duration(milliseconds: 620),
+    idle: _GlassIdlePattern.reverseSweep,
+    light: _GlassLightPattern.reverseScanX,
+    rotationRadians: -.18,
+    translation: Offset(-.08, 0),
+    idleDrift: Offset(-.07, .02),
+  ),
+  GlassMotionAction.info: _GlassMotionProfile(
+    duration: Duration(milliseconds: 480),
+    idle: _GlassIdlePattern.centerPulse,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: .065,
+    scaleY: .065,
+    idleDrift: Offset(.03, .03),
+  ),
+  GlassMotionAction.error: _GlassMotionProfile(
+    duration: Duration(milliseconds: 600),
+    idle: _GlassIdlePattern.checker,
+    light: _GlassLightPattern.pointPhase,
+    scaleX: -.03,
+    rotationRadians: .10,
+    translation: Offset(-.035, 0),
+    idleOpacity: .018,
+    idleDrift: Offset(-.05, .02),
+  ),
+  GlassMotionAction.key: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    rotationRadians: .16,
+    translation: Offset(.06, 0),
+    idleDrift: Offset(.06, -.04),
+  ),
+  GlassMotionAction.qr: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.rows,
+    light: _GlassLightPattern.scanX,
+    scaleX: .025,
+    scaleY: .025,
+    idleDrift: Offset(.08, .03),
+  ),
+  GlassMotionAction.code: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    scaleX: .075,
+    scaleY: .015,
+    idleDrift: Offset(.06, -.05),
+  ),
+  GlassMotionAction.tune: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.columns,
+    light: _GlassLightPattern.columns,
+    scaleY: .025,
+    translation: Offset(.03, 0),
+    idleDrift: Offset(-.03, .06),
+  ),
+  GlassMotionAction.visibility: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.scanX,
+    scaleY: -.10,
+    idleDrift: Offset(.05, .01),
+  ),
+  GlassMotionAction.flash: _GlassMotionProfile(
+    duration: Duration(milliseconds: 480),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    translation: Offset(.16, -.05),
+    rotationRadians: .05,
+    idleDrift: Offset(.06, -.06),
+  ),
+  GlassMotionAction.chevron: _GlassMotionProfile(
+    duration: Duration(milliseconds: 460),
+    idle: _GlassIdlePattern.forwardSweep,
+    light: _GlassLightPattern.scanX,
+    translation: Offset(.24, 0),
+    scaleX: .02,
+    idleDrift: Offset(.07, .01),
+  ),
+  GlassMotionAction.playlist: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.rows,
+    light: _GlassLightPattern.rows,
+    scaleX: .045,
+    translation: Offset(.04, 0),
+    idleDrift: Offset(.09, .03),
+  ),
+  GlassMotionAction.data: _GlassMotionProfile(
+    duration: Duration(milliseconds: 540),
+    idle: _GlassIdlePattern.columns,
+    light: _GlassLightPattern.columns,
+    scaleY: .055,
+    rotationRadians: .025,
+    idleDrift: Offset(.06, .06),
+  ),
+  GlassMotionAction.expand: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.rimSweep,
+    scaleX: .08,
+    scaleY: .08,
+    idleDrift: Offset(.05, .05),
+  ),
+  GlassMotionAction.collapse: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.reverseDiagonal,
+    light: _GlassLightPattern.centerPulse,
+    scaleX: -.08,
+    scaleY: -.08,
+    idleDrift: Offset(-.05, -.05),
+  ),
+  GlassMotionAction.appearance: _GlassMotionProfile(
+    duration: Duration(milliseconds: 560),
+    idle: _GlassIdlePattern.diagonal,
+    light: _GlassLightPattern.scanDiagonal,
+    rotationRadians: .06,
+    scaleX: .025,
+    scaleY: -.015,
+    idleDrift: Offset(.06, -.02),
+  ),
+  GlassMotionAction.neutral: _GlassMotionProfile(
+    duration: Duration(milliseconds: 520),
+    idle: _GlassIdlePattern.sourcePhase,
+    light: _GlassLightPattern.pointPhase,
+    idleOpacity: .01,
+  ),
+};
+
 extension GlassMotionActionDetails on GlassMotionAction {
-  Duration get duration => switch (this) {
-    GlassMotionAction.play => const Duration(milliseconds: 520),
-    GlassMotionAction.pause => const Duration(milliseconds: 560),
-    GlassMotionAction.add => const Duration(milliseconds: 540),
-    GlassMotionAction.refresh => const Duration(milliseconds: 680),
-    GlassMotionAction.copy => const Duration(milliseconds: 520),
-    GlassMotionAction.save => const Duration(milliseconds: 580),
-    GlassMotionAction.search => const Duration(milliseconds: 560),
-    GlassMotionAction.open => const Duration(milliseconds: 560),
-    GlassMotionAction.logout => const Duration(milliseconds: 560),
-    GlassMotionAction.more => const Duration(milliseconds: 520),
-    GlassMotionAction.stop => const Duration(milliseconds: 480),
-    GlassMotionAction.remove => const Duration(milliseconds: 640),
-    GlassMotionAction.connect => const Duration(milliseconds: 560),
-    GlassMotionAction.allowAccess => const Duration(milliseconds: 560),
-    GlassMotionAction.neutral => const Duration(milliseconds: 520),
-  };
+  Duration get duration => _glassMotionProfiles[this]!.duration;
+
+  _GlassMotionProfile get _profile => _glassMotionProfiles[this]!;
 
   static GlassMotionAction forGlyph(GlassGlyph glyph) => switch (glyph) {
     GlassGlyph.play => GlassMotionAction.play,
     GlassGlyph.pause => GlassMotionAction.pause,
-    GlassGlyph.plus || GlassGlyph.playlist => GlassMotionAction.add,
-    GlassGlyph.refresh => GlassMotionAction.refresh,
+    GlassGlyph.next => GlassMotionAction.next,
+    GlassGlyph.previous => GlassMotionAction.previous,
+    GlassGlyph.plus => GlassMotionAction.add,
+    GlassGlyph.stop => GlassMotionAction.stop,
     GlassGlyph.copy => GlassMotionAction.copy,
+    GlassGlyph.paste => GlassMotionAction.paste,
     GlassGlyph.save => GlassMotionAction.save,
     GlassGlyph.logout => GlassMotionAction.logout,
-    GlassGlyph.more => GlassMotionAction.more,
+    GlassGlyph.terminal => GlassMotionAction.terminal,
+    GlassGlyph.check => GlassMotionAction.check,
+    GlassGlyph.close => GlassMotionAction.close,
     GlassGlyph.search => GlassMotionAction.search,
-    GlassGlyph.externalLink || GlassGlyph.folder => GlassMotionAction.open,
-    GlassGlyph.stop => GlassMotionAction.stop,
-    GlassGlyph.trash || GlassGlyph.close => GlassMotionAction.remove,
-    GlassGlyph.network || GlassGlyph.link => GlassMotionAction.connect,
-    GlassGlyph.shield ||
-    GlassGlyph.lock ||
-    GlassGlyph.key => GlassMotionAction.allowAccess,
-    _ => GlassMotionAction.neutral,
+    GlassGlyph.refresh => GlassMotionAction.refresh,
+    GlassGlyph.music => GlassMotionAction.music,
+    GlassGlyph.grid => GlassMotionAction.grid,
+    GlassGlyph.more => GlassMotionAction.more,
+    GlassGlyph.network => GlassMotionAction.connect,
+    GlassGlyph.activity => GlassMotionAction.activity,
+    GlassGlyph.settings => GlassMotionAction.settings,
+    GlassGlyph.link => GlassMotionAction.link,
+    GlassGlyph.trash => GlassMotionAction.remove,
+    GlassGlyph.export => GlassMotionAction.export,
+    GlassGlyph.shield => GlassMotionAction.allowAccess,
+    GlassGlyph.list => GlassMotionAction.list,
+    GlassGlyph.folder => GlassMotionAction.folder,
+    GlassGlyph.star => GlassMotionAction.star,
+    GlassGlyph.arrow => GlassMotionAction.arrow,
+    GlassGlyph.arrowBack => GlassMotionAction.arrowBack,
+    GlassGlyph.arrowUp => GlassMotionAction.arrowUp,
+    GlassGlyph.arrowDown => GlassMotionAction.arrowDown,
+    GlassGlyph.filter => GlassMotionAction.filter,
+    GlassGlyph.brightness => GlassMotionAction.brightness,
+    GlassGlyph.build => GlassMotionAction.build,
+    GlassGlyph.chat => GlassMotionAction.chat,
+    GlassGlyph.device => GlassMotionAction.device,
+    GlassGlyph.phone => GlassMotionAction.phone,
+    GlassGlyph.lock => GlassMotionAction.lock,
+    GlassGlyph.document => GlassMotionAction.document,
+    GlassGlyph.account => GlassMotionAction.account,
+    GlassGlyph.desktop => GlassMotionAction.desktop,
+    GlassGlyph.externalLink => GlassMotionAction.open,
+    GlassGlyph.hourglass => GlassMotionAction.hourglass,
+    GlassGlyph.inbox => GlassMotionAction.inbox,
+    GlassGlyph.history => GlassMotionAction.history,
+    GlassGlyph.info => GlassMotionAction.info,
+    GlassGlyph.error => GlassMotionAction.error,
+    GlassGlyph.key => GlassMotionAction.key,
+    GlassGlyph.qr => GlassMotionAction.qr,
+    GlassGlyph.code => GlassMotionAction.code,
+    GlassGlyph.tune => GlassMotionAction.tune,
+    GlassGlyph.visibility => GlassMotionAction.visibility,
+    GlassGlyph.flash => GlassMotionAction.flash,
+    GlassGlyph.chevron => GlassMotionAction.chevron,
+    GlassGlyph.playlist => GlassMotionAction.playlist,
+    GlassGlyph.data => GlassMotionAction.data,
+    GlassGlyph.expand => GlassMotionAction.expand,
+    GlassGlyph.collapse => GlassMotionAction.collapse,
+    GlassGlyph.appearance => GlassMotionAction.appearance,
   };
 }
 
@@ -401,7 +1155,13 @@ class GlassMotionSample {
 class GlassMotionController extends ChangeNotifier {
   GlassMotionController({required GlassGlyph initialGlyph, int? phaseSeed})
     : _glyph = initialGlyph,
-      phaseSeed = phaseSeed ?? _allocatePhaseSeed();
+      phaseSeed = phaseSeed ?? _allocatePhaseSeed() {
+    final idleMotion = GlassMotionActionDetails.forGlyph(initialGlyph)
+        ._profile
+        .idleMotion;
+    _idleMotionFrom = idleMotion;
+    _idleMotionTo = idleMotion;
+  }
 
   static int _nextPhaseSeed = 0;
 
@@ -421,6 +1181,9 @@ class GlassMotionController extends ChangeNotifier {
   Duration _interactionStart = Duration.zero;
   double _interactionFrom = 0;
   double _interactionTo = 0;
+  late _GlassIdleMotion _idleMotionFrom;
+  late _GlassIdleMotion _idleMotionTo;
+  Duration _idleMotionStart = Duration.zero;
 
   GlassGlyph get glyph => _glyph;
   Duration get now => _scope?.now ?? Duration.zero;
@@ -504,6 +1267,11 @@ class GlassMotionController extends ChangeNotifier {
   void setGlyph(GlassGlyph glyph) {
     if (_glyph == glyph) return;
     final time = now;
+    _idleMotionFrom = _idleMotionAt(time);
+    _idleMotionTo = GlassMotionActionDetails.forGlyph(glyph)
+        ._profile
+        .idleMotion;
+    _idleMotionStart = time;
     final pulse = _posePulse;
     final progress = pulse == null
         ? 0.0
@@ -634,6 +1402,16 @@ class GlassMotionController extends ChangeNotifier {
         (_interactionTo - _interactionFrom) * _smootherstep(t);
   }
 
+  _GlassIdleMotion _idleMotionAt(Duration time) {
+    final t = _linearProgress(time, _idleMotionStart, _glyphMorphDuration);
+    if (t >= 1) return _idleMotionTo;
+    return _GlassIdleMotion.lerp(
+      _idleMotionFrom,
+      _idleMotionTo,
+      _smootherstep(t),
+    );
+  }
+
   List<GlassDotPose> _dotsAt(
     Duration time, {
     required GlassMotionAction action,
@@ -644,6 +1422,7 @@ class GlassMotionController extends ChangeNotifier {
     final morphed = _morphAt(time);
     final idlePhase = time.inMicroseconds / 1000000;
     final actionEnergy = applyAction && _posePulse != null ? energy : 0.0;
+    final idleMotion = _idleMotionAt(time);
     return [
       for (var index = 0; index < morphed.length; index++)
         _poseDot(
@@ -653,10 +1432,7 @@ class GlassMotionController extends ChangeNotifier {
           actionEnergy: actionEnergy,
           action: action,
           progress: progress,
-          rotationActive:
-              action == GlassMotionAction.refresh &&
-              _posePulse != null &&
-              applyAction,
+          idleMotion: idleMotion,
         ),
     ];
   }
@@ -685,62 +1461,31 @@ class GlassMotionController extends ChangeNotifier {
     required double actionEnergy,
     required GlassMotionAction action,
     required double progress,
-    required bool rotationActive,
+    required _GlassIdleMotion idleMotion,
   }) {
+    final profile = action._profile;
     final wave = phase * (math.pi * 2 / 5.8) + phaseSeed * .37 + source.phase;
-    final idleAlpha = _motionAllowed ? .90 + .06 * math.sin(wave) : 1.0;
+    final idleSignal = _motionAllowed
+        ? idleMotion.signal(source.position, wave, source.phase)
+        : 0.0;
+    final idleAlpha = _motionAllowed
+        ? .90 + .06 * math.sin(wave) + idleMotion.opacityAmplitude * idleSignal
+        : 1.0;
     final idleOffset = _motionAllowed
         ? Offset(math.sin(wave) * .16, math.cos(wave * .83) * .13)
         : Offset.zero;
     final position =
-        _transformAction(
-          source.position,
-          action,
-          rotationActive ? progress : 0,
-          actionEnergy,
-        ) +
-        idleOffset;
+        _transformAction(source.position, action, progress, actionEnergy) +
+        idleOffset +
+        idleMotion.drift * idleSignal;
 
-    final detailEnergy = switch (action) {
-      GlassMotionAction.pause =>
-        .08 *
-            actionEnergy *
-            math.cos(
-              progress * math.pi * 2 + (source.position.dx < 16 ? math.pi : 0),
-            ),
-      GlassMotionAction.refresh =>
-        .08 *
-            actionEnergy *
-            math.max(
-              0,
-              math.cos(
-                math.atan2(source.position.dy - 16, source.position.dx - 16) -
-                    2 * math.pi * _smootherstep(progress),
-              ),
-            ),
-      GlassMotionAction.search => _scanEnergy(
-        source.position.dx,
-        progress,
-        actionEnergy,
-      ),
-      GlassMotionAction.save => _scanEnergy(
-        source.position.dy,
-        progress,
-        actionEnergy,
-      ),
-      GlassMotionAction.connect =>
-        .09 *
-            actionEnergy *
-            math.max(0, math.cos(source.phase - progress * math.pi * 2)),
-      GlassMotionAction.logout => _scanEnergy(
-        source.position.dx,
-        progress,
-        actionEnergy,
-      ),
-      GlassMotionAction.more =>
-        .08 * actionEnergy * math.cos(progress * math.pi * 2 + source.phase),
-      _ => 0.0,
-    };
+    final detailEnergy = _detailEnergy(
+      profile,
+      source.position,
+      source.phase,
+      progress,
+      actionEnergy,
+    );
     final brightness = 1 + energy * .06 + detailEnergy;
     return GlassDotPose(
       position: position,
@@ -749,68 +1494,121 @@ class GlassMotionController extends ChangeNotifier {
     );
   }
 
+  double _detailEnergy(
+    _GlassMotionProfile profile,
+    Offset position,
+    double pointPhase,
+    double progress,
+    double energy,
+  ) {
+    final amplitude = profile.lightAmplitude * energy;
+    if (amplitude == 0) return 0;
+    final relative = position - const Offset(16, 16);
+    final row = (position.dy / 3).roundToDouble();
+    final column = (position.dx / 3).roundToDouble();
+    return switch (profile.light) {
+      _GlassLightPattern.none => 0,
+      _GlassLightPattern.scanX => _scanEnergy(
+        position.dx,
+        progress,
+        energy,
+        profile.lightAmplitude,
+      ),
+      _GlassLightPattern.reverseScanX => _scanEnergy(
+        position.dx,
+        1 - progress,
+        energy,
+        profile.lightAmplitude,
+      ),
+      _GlassLightPattern.scanY => _scanEnergy(
+        position.dy,
+        progress,
+        energy,
+        profile.lightAmplitude,
+      ),
+      _GlassLightPattern.reverseScanY => _scanEnergy(
+        position.dy,
+        1 - progress,
+        energy,
+        profile.lightAmplitude,
+      ),
+      _GlassLightPattern.scanDiagonal => _scanEnergy(
+        (position.dx + position.dy) * .5,
+        progress,
+        energy,
+        profile.lightAmplitude,
+      ),
+      _GlassLightPattern.radialSweep =>
+        amplitude *
+            math.max(
+              0,
+              math.cos(
+                math.atan2(relative.dy, relative.dx) -
+                    2 * math.pi * _smootherstep(progress),
+              ),
+            ),
+      _GlassLightPattern.rows =>
+        amplitude * math.cos(progress * math.pi * 2 + row * math.pi),
+      _GlassLightPattern.columns =>
+        amplitude * math.cos(progress * math.pi * 2 + column * math.pi),
+      _GlassLightPattern.pointPhase =>
+        amplitude * math.cos(progress * math.pi * 2 + pointPhase),
+      _GlassLightPattern.centerPulse =>
+        amplitude * math.exp(-relative.distanceSquared / 32),
+      _GlassLightPattern.rimSweep =>
+        amplitude *
+            math.exp(-math.pow((relative.distance - 10) / 3.2, 2)) *
+            math.max(
+              0,
+              math.cos(
+                math.atan2(relative.dy, relative.dx) -
+                    2 * math.pi * _smootherstep(progress),
+              ),
+            ),
+    };
+  }
+
   Offset _transformAction(
     Offset source,
     GlassMotionAction action,
     double progress,
     double energy,
   ) {
-    if (action == GlassMotionAction.refresh && progress > 0) {
-      final angle = 2 * math.pi * _smootherstep(progress);
-      final cosine = math.cos(angle);
-      final sine = math.sin(angle);
-      final relative = source - const Offset(16, 16);
-      return const Offset(16, 16) +
-          Offset(
-            relative.dx * cosine - relative.dy * sine,
-            relative.dx * sine + relative.dy * cosine,
-          );
-    }
-    if (energy <= 0) return source;
+    final profile = action._profile;
+    if (energy <= 0 && !profile.rotationFollowsProgress) return source;
     final relative = source - const Offset(16, 16);
-    return switch (action) {
-      GlassMotionAction.play =>
-        source + Offset(.40 * GlassDesignTokens.glyphPitch * energy, 0),
-      GlassMotionAction.pause =>
-        const Offset(16, 16) +
-            Offset(relative.dx * (1 - .035 * energy), relative.dy),
-      GlassMotionAction.add =>
-        const Offset(16, 16) + relative * (1 - .15 * energy),
-      GlassMotionAction.refresh => source,
-      GlassMotionAction.copy =>
-        source +
-            Offset(
-              relative.dx.sign * .23 * GlassDesignTokens.glyphPitch * energy,
-              relative.dy.sign * .23 * GlassDesignTokens.glyphPitch * energy,
-            ),
-      GlassMotionAction.save =>
-        source + Offset(0, .55 * GlassDesignTokens.glyphCellSize * energy),
-      GlassMotionAction.search =>
-        const Offset(16, 16) + relative * (1 + .045 * energy),
-      GlassMotionAction.open =>
-        source + Offset(0, -.42 * GlassDesignTokens.glyphPitch * energy),
-      GlassMotionAction.logout =>
-        source + Offset(.58 * GlassDesignTokens.glyphPitch * energy, 0),
-      GlassMotionAction.more =>
-        const Offset(16, 16) + relative * (1 + .12 * energy),
-      GlassMotionAction.stop =>
-        const Offset(16, 16) + Offset(relative.dx * .86, relative.dy),
-      GlassMotionAction.remove =>
-        const Offset(16, 16) +
-            relative * (1 - .12 * energy) +
-            Offset(0, .28 * GlassDesignTokens.glyphPitch * energy),
-      GlassMotionAction.connect =>
-        const Offset(16, 16) + relative * (1 - .055 * energy),
-      GlassMotionAction.allowAccess =>
-        const Offset(16, 16) + relative * (1 + .035 * energy),
-      GlassMotionAction.neutral => source,
-    };
+    final scale = Offset(
+      relative.dx * (1 + profile.scaleX * energy),
+      relative.dy * (1 + profile.scaleY * energy),
+    );
+    final angle = profile.rotationFollowsProgress
+        ? profile.rotationRadians * _smootherstep(progress)
+        : profile.rotationRadians * energy;
+    final cosine = math.cos(angle);
+    final sine = math.sin(angle);
+    final rotated = Offset(
+      scale.dx * cosine - scale.dy * sine,
+      scale.dx * sine + scale.dy * cosine,
+    );
+    final separation = Offset(
+      relative.dx.sign * profile.separation,
+      relative.dy.sign * profile.separation,
+    );
+    return const Offset(16, 16) +
+        rotated +
+        (profile.translation + separation) *
+            (GlassDesignTokens.glyphPitch * energy);
   }
 
-  double _scanEnergy(double coordinate, double progress, double energy) {
+  double _scanEnergy(
+    double coordinate,
+    double progress,
+    double energy,
+    double amplitude,
+  ) {
     final center = 4 + 24 * _smootherstep(progress);
     final distance = (coordinate - center) / 3.2;
-    return .12 * energy * math.exp(-distance * distance);
+    return amplitude * energy * math.exp(-distance * distance);
   }
 
   void _clearDecorations() {
@@ -925,7 +1723,7 @@ class _GlyphMorph {
     return _GlyphMorph(
       tweens: List.unmodifiable(tweens),
       start: start,
-      duration: const Duration(milliseconds: 360),
+      duration: _glyphMorphDuration,
     );
   }
 }

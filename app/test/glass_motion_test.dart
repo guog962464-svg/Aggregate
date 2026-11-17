@@ -16,61 +16,73 @@ void main() {
       scopeKey = GlobalKey<GlassMotionScopeState>();
     });
 
-    testWidgets(
-      '14 action families use smooth sin-squared energy and exact durations',
-      (tester) async {
-        await _mountMotionScope(tester, scopeKey, clock);
-        addTearDown(() => _cleanup(tester, clock));
-        const cases = <(GlassGlyph, GlassMotionAction)>[
-          (GlassGlyph.play, GlassMotionAction.play),
-          (GlassGlyph.pause, GlassMotionAction.pause),
-          (GlassGlyph.plus, GlassMotionAction.add),
-          (GlassGlyph.refresh, GlassMotionAction.refresh),
-          (GlassGlyph.copy, GlassMotionAction.copy),
-          (GlassGlyph.save, GlassMotionAction.save),
-          (GlassGlyph.logout, GlassMotionAction.logout),
-          (GlassGlyph.more, GlassMotionAction.more),
-          (GlassGlyph.search, GlassMotionAction.search),
-          (GlassGlyph.externalLink, GlassMotionAction.open),
-          (GlassGlyph.stop, GlassMotionAction.stop),
-          (GlassGlyph.trash, GlassMotionAction.remove),
-          (GlassGlyph.network, GlassMotionAction.connect),
-          (GlassGlyph.shield, GlassMotionAction.allowAccess),
-        ];
-        for (final (glyph, action) in cases) {
-          final controller = _controller(scopeKey, glyph);
-          final idleController = _controller(scopeKey, glyph);
-          expect(GlassMotionActionDetails.forGlyph(glyph), action);
-          final beforeClick = controller.sample;
-          controller.trigger();
-          _expectDotPosesClose(controller.sample, beforeClick);
-          expect(controller.sample.energy, 0);
-          final duration = action.duration;
-          for (final (fraction, expectedEnergy) in const <(double, double)>[
-            (0, 0),
-            (.25, .5),
-            (.5, 1),
-            (.75, .5),
-            (1, 0),
-          ]) {
-            final sample = controller.sampleAt(
-              Duration(
-                microseconds: (duration.inMicroseconds * fraction).round(),
-              ),
-            );
-            expect(sample.action, action);
-            expect(sample.energy, closeTo(expectedEnergy, .00001));
-            expect(sample.actionProgress, inInclusiveRange(0, 1));
-          }
-          _expectDotPosesClose(
-            controller.sampleAt(duration),
-            idleController.sampleAt(duration),
+    testWidgets('all glyphs use unique smooth idle and click motion profiles', (
+      tester,
+    ) async {
+      await _mountMotionScope(tester, scopeKey, clock);
+      addTearDown(() => _cleanup(tester, clock));
+      final cases = <(GlassGlyph, GlassMotionAction)>[
+        for (final glyph in GlassGlyph.values)
+          (glyph, GlassMotionActionDetails.forGlyph(glyph)),
+      ];
+      expect(
+        cases.map((entry) => entry.$2).toSet(),
+        hasLength(GlassGlyph.values.length),
+        reason: 'every glyph has a dedicated motion action',
+      );
+      expect(
+        cases.map((entry) => entry.$2),
+        isNot(contains(GlassMotionAction.neutral)),
+      );
+
+      for (final (glyph, action) in cases) {
+        final controller = _controller(scopeKey, glyph);
+        final idleController = _controller(scopeKey, glyph);
+        expect(GlassMotionActionDetails.forGlyph(glyph), action);
+        final beforeClick = controller.sample;
+        controller.trigger();
+        _expectDotPosesClose(controller.sample, beforeClick);
+        expect(controller.sample.energy, 0);
+        final duration = action.duration;
+        for (final (fraction, expectedEnergy) in const <(double, double)>[
+          (0, 0),
+          (.25, .5),
+          (.5, 1),
+          (.75, .5),
+          (1, 0),
+        ]) {
+          final sample = controller.sampleAt(
+            Duration(
+              microseconds: (duration.inMicroseconds * fraction).round(),
+            ),
           );
-          idleController.dispose();
-          controller.dispose();
+          expect(sample.action, action);
+          expect(sample.energy, closeTo(expectedEnergy, .00001));
+          expect(sample.actionProgress, inInclusiveRange(0, 1));
         }
-      },
-    );
+        expect(
+          _dotTuples(
+            controller.sampleAt(
+              Duration(microseconds: duration.inMicroseconds ~/ 2),
+            ),
+          ),
+          isNot(
+            _dotTuples(
+              idleController.sampleAt(
+                Duration(microseconds: duration.inMicroseconds ~/ 2),
+              ),
+            ),
+          ),
+          reason: '$glyph has visible click feedback',
+        );
+        _expectDotPosesClose(
+          controller.sampleAt(duration),
+          idleController.sampleAt(duration),
+        );
+        idleController.dispose();
+        controller.dispose();
+      }
+    });
 
     testWidgets(
       'ten repeated clicks preserve the in-flight glyph pose and energy',

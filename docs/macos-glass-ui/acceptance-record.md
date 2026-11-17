@@ -349,3 +349,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 实现：为退出和更多增加专属动作族：退出 560 ms，图案沿出口方向轻推并进行点阵扫描；更多 520 ms，三列点阵向外舒展回弹。动作枚举共 15 项（含 neutral）；本次手动时钟回归覆盖 14 个带点击动作的族。
 - 验证：`app/` 下 57 个已跟踪 `*_test.dart` 文件合计 293 项通过；完整 golden 测试包含深浅色 1×/2× 四个 glyph 断言并通过。对 4 个改动 Dart 文件执行 `flutter analyze --no-pub` 无问题、`dart format --set-exit-if-changed` 零改动；静态扫描 92 个唯一 Material 图标，缺失映射为 0。测试未包含未跟踪集成文件。
 - 范围边界：本次没有启动或聚焦原生应用窗口，也没有原生 Profile 动效截图；Widget/Golden/模型测试不能替代新动作的原生静置与点击质感签收。UI-5/UI-6 其他未完成项保持开放。
+
+### 2026-11-17 UI-3 全部点阵动效 profile 补齐
+
+- 复查：对 `app/lib` 的生产按钮图标入口重新扫描，发现 90 个可直接识别的按钮调用中有 20 个（涉及 13 种 glyph）使用通用 `neutral` 反馈，缺少各自明确的静置与点击差异。另有 26 个动态 IconData 入口，包含播放、导航、状态及连接图标，不能只按源码中的直接常量判断覆盖完整。
+- 实现：60 个 `GlassGlyph` 现在分别映射到唯一 `GlassMotionAction` 和独立 `_GlassMotionProfile`；profile 为静置图案、点阵光效、时长、位移、缩放、旋转、漂移与亮度幅度提供显式参数。production glyph 的动作映射不再回退到 `neutral`。播放/暂停形态变化时，内部静置 profile 也在 360 ms morph 内平滑插值，避免切换瞬间光效跳变。
+- 逻辑边界：保留共享时钟、点击能量包络、重复触发连续性、`TickerMode`/生命周期/离屏注销及 reduced-motion 路径。没有改太阳/月亮主题控件、拖动积分、主题映射、偏好或业务回调。
+- 验证：`dart format --output=none --set-exit-if-changed lib/widgets/glass/glass_motion.dart test/glass_motion_test.dart` 退出码 0；`flutter analyze --no-pub lib/widgets/glass/glass_motion.dart test/glass_motion_test.dart` 无问题；`flutter test --no-pub` 在 `app/` 下 293 项通过；映射表检查为 61 个 profile（60 个 glyph + `neutral`），action 与完整 profile 配置均无重复；`git diff --check` 通过。
+- 边界：此次没有启动、聚焦或操作原生应用窗口。Widget 测试覆盖 60 个 glyph 的 idle/click/idle 采样与连续性，但不代表 60 个图案均已在 macOS Profile 原生窗口逐项目视通过；这些视觉签收与 UI-5/UI-6 的其余原生缺项仍保持开放。未跟踪的 Android 集成测试和用户自己的原型、锁文件、Android 文档改动均未纳入本项。
