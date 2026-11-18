@@ -24,7 +24,7 @@
 | B009 | `app/lib/features/activity/activity_page.dart:282` | 活动页：记录操作与列表状态 | 深浅失败详情 `58a-activity-failed-detail-dark-scrolled.png`、`59b-activity-failed-detail-light-scrolled.png` 可见“重新打开功能”；未打开功能。现有 widget 测试另覆盖运行中“查看运行”按钮 |
 | B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 深/浅 Profile 的运行中列表及详情均已截图；两种主题滚至操作区后“取消运行”语义点击成功，AX 状态变为“已取消”。浅色按钮与 MiniPlayer 暂停控件 AX 矩形相隔 11 个逻辑像素。仅验证隔离内存 fixture，真实服务响应仍待核 |
 | B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 深浅失败详情图可见“复制诊断”；未点击，系统剪贴板未改动 |
-| B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：搜索框清除按钮 | 浅色 Profile 实窗用键盘输入 Git 后显示 3 项，点击清除恢复 17 项；见截图 82/84。深色与点击动效待核 |
+| B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：搜索框清除按钮 | 浅色 Profile 实窗键盘输入 Git 后显示 3 项、清除恢复 17 项；深色 Profile 默认 PreviewRuntime 输入 Git 后显示 1 项、点击清除恢复 12 项，悬停提示“清除搜索”；截图与 SHA 见验收记录。仅签收深色功能与悬停提示，深色点击动效仍待核 |
 | B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：空连接态添加 CLI | 浅色空态实窗点击后进入本机 Mac（预览）的 CLI 配置，并取消退出；截图 85/86。没有测试或保存，深色与动效待核 |
 | B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：空连接态添加 MCP | 浅色空态实窗点击后进入本机 Mac（预览）的 stdio MCP 配置，并取消退出；截图 85/87。没有测试或保存，深色与动效待核 |
 | B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：空连接态添加 HTTP MCP | HTTP-only 浅色实窗点击后进入本机 Mac（预览）的 HTTP MCP 配置，并取消退出；截图 88/89。未输入凭据、测试或保存，深色与动效待核 |
