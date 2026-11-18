@@ -29,7 +29,7 @@
 | B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：空连接态添加 MCP | 浅色空态实窗点击后进入本机 Mac（预览）的 stdio MCP 配置，并取消退出；截图 85/87。没有测试或保存，深色与动效待核 |
 | B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：空连接态添加 HTTP MCP | HTTP-only 浅色实窗点击后进入本机 Mac（预览）的 HTTP MCP 配置，并取消退出；截图 88/89。未输入凭据、测试或保存，深色与动效待核 |
 | B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：无匹配结果清除筛选 | 浅色 Profile 实窗在资源筛选下输入无匹配文本，点击清除恢复 17 项；深色 UI 检查 Profile 同样在资源筛选下输入无匹配文本，空态 AX 有“清除筛选”，点击后搜索清空、筛选复位并恢复 17 项，截图与 SHA 见验收记录。仅签收深色功能和静态悬停外观，点击动效待核 |
-| B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：类型筛选分段按钮 | 浅色 Profile 实窗逐项选择工具、资源、提示、CLI；AX 结果数依次为 3、1、1、12；恢复“全部”后为 17。截图及 SHA-256 见验收记录。仅签收筛选结果与静态外观，动效逐帧待核 |
+| B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：类型筛选分段按钮 | 浅色 Profile 实窗逐项选择工具、资源、提示、CLI；AX 结果数依次为 3、1、1、12；恢复“全部”后为 17。深色 UI 检查 Profile 复现同样计数；截图与 SHA-256 见验收记录。仅签收筛选结果与静态外观，动效逐帧待核 |
 | B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击新增后 AX 清单出现 `action1`；取消再打开恢复原有单项。截图 `90-action-editor-added.png`；深色仅有静态截图，动效仍待核 |
 | B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗打开原生文件面板，因未选择文件而禁用“打开”；点击“取消”返回编辑器，未读文件。深色仅有静态截图 |
 | B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗打开原生保存面板后点击“取消”；未选保存路径、未写文件。深色仅有静态截图 |

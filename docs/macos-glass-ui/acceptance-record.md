@@ -1156,3 +1156,19 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 所有功能页点选“资源”后，AX 列表只剩“读取预览说明”一项；物理键盘输入 `NEVER_MATCH_4207` 后 AX 读回该值，结果进入无匹配空态。空态的“清除筛选”与搜索框内的“清除搜索”是两个不同按钮；本次按 B016 目标点击空态“清除筛选”。点击后 AX 读回搜索框为空，类型筛选复位为“全部”，页面显示“全部功能 · 17”，与清除前的夹具基数一致。
 - 单窗口 1824×1488 PNG：[无匹配空态](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b016-dark-profile/no-match.png>) SHA-256 `a3b8cd81aff8e39d44951acd1306c81c2f39a99c857fcd6b13bb94d569f17c80`；[清除筛选悬停](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b016-dark-profile/clear-filter-hover.png>) SHA-256 `a4337fa3dda8738d239b75f71a5f112701e7874caa29f25511959165068f8dcb`；[点击后恢复 17 项](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b016-dark-profile/clear-filter-after.png>) SHA-256 `7ddb0f7eb6bde6daeb82df82636a139795c07f87dc4ad79bd44027c9255ac4bd`。
 - 边界：截图记录深色无匹配静态样式、按钮悬停样式和清除后的列表结果；未采集可靠按下/松开时序帧或物理 display-present。Profile 在关闭时已退出；UI-6.7 仍部分验收。
+
+
+### 2026-11-19 UI-6.7 B017 工作台类型筛选深色 Profile 验收
+
+- 使用 `flutter run -d macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart` 启动隔离 `Ui6InspectionRuntime`；macOS 27.2.1、Flutter 3.47.8 stable、窗口 800×632 logical px、DPR 2。使用物理点击逐项切换筛选，并在每次点击后重新读取 AX 树；按功能行的“来源”语义计数。未调用真实服务。
+- 深色状态结果与浅色基线一致：工具 3、资源 1、提示 1、CLI 12；“全部”恢复 17。截图均为 Aggregate 单窗口 1824×1488 PNG：
+
+| 筛选状态 | AX 功能数 | 截图 SHA-256 |
+| --- | ---: | --- |
+| 工具 | 3 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b017-dark-profile/tools.png>) `d74b609ce7531ef14148680b4a87df207db2271acc83397029cb393c8a6257cf` |
+| 资源 | 1 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b017-dark-profile/resources.png>) `ed21660ee6c8b7e060a71d9a391d9fd04b799531ac8b2a12b6b717fdcef12dfe` |
+| 提示 | 1 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b017-dark-profile/prompts.png>) `528008fcb2ef238cafb66c5da9f08d949e8f85e87b5b0744fff450eb1ac08e06` |
+| CLI | 12 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b017-dark-profile/cli.png>) `4201cb432d6cd6646759abfe1e28ee3a0f933fcee5103a0cb62e9a9a9ec4f460` |
+| 全部（恢复） | 17 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b017-dark-profile/all-restored.png>) `48e32321d000cf006b286031219fea0fcccfb03f873adb928c11fd27af803036` |
+
+- 边界：记录深色各筛选下的静态呈现及结果数，不代表分段按钮的点击/悬停动画逐帧验收，也不代表物理 display-present 时序。Profile 已优雅退出；UI-6.7 继续部分验收。
