@@ -36,15 +36,15 @@
 | B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 浅色 Profile 返回 `["仅内存预览", "--help"]`；深色 Profile 对临时 `action1` 输入 `{}` 显示相同数组，页面提示只展开参数、不运行程序。截图与 SHA 见验收记录 |
 | B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击取消后关闭；重开清单确认新增草稿已丢弃。深色 Profile 取消新增后重开 AX 清单仅含 `version`，见验收记录与 `reopened-clean.png`。`action_editor_test.dart` 回归覆盖取消后重开且未调用保存 |
 | B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅色 Profile 保存后重开，AX 下拉项含原动作与 `action1`；深色 Profile 保存后重开，聚焦 JSON AX value 含两个动作，实窗下拉菜单可见 `查看版本 · version` 与 `新动作 · action1`。仅写入进程内 `Ui6InspectionRuntime`，退出即丢弃；截图与 SHA 见验收记录。Widget 回归覆盖新增、参数预览和保存 |
-| B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 的配对 Mac 样例表单输入 `git` 并点击 Host 查找；内存 stub 返回未找到提示，没有运行命令或连接设备。截图 `100-connection-setup-host-detect-miss-light.png`；深色和动态状态待核 |
-| B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 本机 Mac 预览表单打开原生文件面板后取消；未选文件或读取文件。配置静态图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 另见；深色交互待核 |
-| B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 输入虚构路径后点击测试；隔离 stub 显示安全检查通过，未访问本机命令、网络或凭据。截图 `98-connection-setup-test-passed-light.png`；未使用真实连接 |
-| B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 的安全 stub 检查通过后 AX 显示保存按钮已启用；未点击，未新增连接。深色仍为静态配置图 |
-| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 窗口以 540×700pt 进入紧凑分支；点击“关闭添加连接”后表单收起且草稿未保存，截图 `102-connection-setup-compact-light.png`。更正此前“实际宽度停在 768pt”的结论；小屏 Widget 回归也覆盖关闭与丢弃草稿 |
-| B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 表单点击取消后退出，没有保存连接；深色仅静态配置图 |
-| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器见截图 `96-connection-target-light-current.png`；选择本机 Mac（预览）后进入隔离配置表单 `97-connection-setup-local-light-current.png`，没有连接真实设备 |
-| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 选择虚构的配对 Mac（样例），进入只连内存 stub 的配置表单 `99-connection-setup-paired-mac-light.png`；未连接设备 |
-| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器的取消操作关闭弹窗；没有创建连接。截图 `96-connection-target-light-current.png`；深色取消交互待核 |
+| B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 配对 Mac 样例输入 `git` 后 Host stub 返回未找到；深色 Profile 同样显示未找到提示，没有运行命令或连接设备。截图与 SHA 见验收记录 |
+| B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅色和深色 Profile 本机 Mac 预览表单都打开原生文件面板后取消；未选文件或读取文件。深色表单图见验收记录，面板只做 AX 打开/取消核验，没有截取含文件列表的系统面板 |
+| B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅色和深色 Profile 输入虚构路径 `/tmp/ui6-preview-cli` 后运行内存安全 stub；均显示检查通过，没有访问本机命令、网络或凭据。深色截图与 SHA 见验收记录 |
+| B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅色与深色 Profile 的安全 stub 检查通过后 AX 均显示“保存连接”已启用；没有点击保存或新增连接。深色截图与 SHA 见验收记录 |
+| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 540×700pt 与深色 Profile 请求紧凑尺寸后均显示“关闭添加连接”全屏布局；点击后表单收起且草稿未保存。深色截图见验收记录；小屏 Widget 回归也覆盖关闭与丢弃草稿 |
+| B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 表单取消退出，没有保存连接；深色本机 CLI、stdio MCP 和 HTTP MCP 表单也均取消返回，证据见 B013–B015 深色记录 |
+| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅色与深色 Profile 都显示本机 Mac 与虚构配对 Mac 两个选项；深色目标选择器截图与 SHA 见验收记录。选择本机 Mac 后进入隔离配置表单 |
+| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 选择虚构配对 Mac（样例）进入内存 stub 配置表单；深色 Profile 同样读回目标“配对 Mac（样例）”，再完成 Host 查找未命中。没有连接设备；截图见验收记录 |
+| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器取消后关闭；深色 Profile Escape 取消后 AX 确认 picker 消失，管理连接页仍只有 3 个预置样例，没有新增连接。深色返回截图与 SHA 见验收记录 |
 | B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 浅色紧凑删除确认弹窗见 `105-delete-confirm-light-compact.png`；点击取消后弹窗关闭，内存样例仍保留。深色图 `55-delete-confirm-dark.png` 另可见静态样式 |
 | B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 浅色紧凑删除确认弹窗中危险删除按钮可见但未点击；删除操作未确认，内存样例未删除。深色图 `55-delete-confirm-dark.png` 另可见静态样式 |
 | B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅色紧凑连接页点击“添加连接”打开目标选择器；见 `101-connection-target-compact-light.png`。仅后续进入内存预览表单，没有创建连接 |
