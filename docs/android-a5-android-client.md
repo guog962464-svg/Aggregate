@@ -134,3 +134,12 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 版本范围：运行于 HEAD `ba7da5b10afcc3e14241873158a1adf6848168d0`，同时包含当前未提交的 Flutter UI/theme 修改和 `pubspec.lock` mirror 修改；Android host runner/test/bridge 文件没有未提交差异。该结果验证当前工作树整体通过这条隔离真机业务链路，不替代完整 Flutter 全量测试。
 - 清理验证：`.integration` 与 `.integration.test` 均卸载，普通 `io.github.guog962464.aggregate` 仍安装；ADB reverse 列表为空，production 端口 `47321` 无监听。Runner 未针对普通包执行卸载或清数据。
 - **阶段判定：**A5.5 更新后的隔离真机向导/CLI/TUI/MCP 路径有当前工作树证据。直接 LAN/NSD、production Host 业务、真实账号/播放和 16 KB 系统仍未验收，A5.5 保持开放。
+
+## 2026-11-18 A5.5 current checkout runner recheck
+
+- Command: `python3 app/tool/run_android_host_setup_e2e.py --device AEMN022427001360`.
+- Result: Mac loopback Host fixture and Android physical Keystore + WSS setup flow both reported PASS. Device: LGE AN10 / Android 15 / API 35 / arm64 / 4 KB page. Runner does not expose a case count, so no test count is inferred.
+- Scope: temporary loopback WSS/TLS certificate, Android integration Keystore, isolated HOME/MacRuntime data, and fake Node/npm/mpv/CLI/MCP fixtures. Covers the current checkout's setup detect/test/save/discard and the existing CLI/TUI/MCP, permissions, and disconnect/reconnect path; it does not cover a real Netease account, production business RPCs, production TUI or unexpected network loss.
+- Baseline: HEAD `90abf203e2770196fa50e00f59705451aded49b1`; the worktree also had unrelated uncommitted `glass_action_button.dart` and `pubspec.lock` changes. The Android host runner/test/bridge files were unchanged from the prior run.
+- Cleanup readback: `.integration` and `.integration.test` are absent; ordinary `io.github.guog962464.aggregate` remains installed; ADB reverse is empty; production port 47321 has no listener. The runner used no production Host, account, or ordinary-app data.
+- Stage status: this refreshes the isolated 4 KB runner evidence only. Direct LAN/NSD, production Host business, real account/playback, unexpected network recovery, signed Release permissions, and 16 KB hardware remain open; A5.5 is not closed.
