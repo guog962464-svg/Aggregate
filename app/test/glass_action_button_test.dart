@@ -227,9 +227,9 @@ void main() {
       }
 
       final refresh = GlassGlyphFactory.pointsFor(GlassGlyph.refresh);
-      expect(refresh, hasLength(16));
+      expect(refresh, hasLength(17));
       expect(hasPoint(refresh, const Offset(25.6, 14.8)), isTrue);
-      expect(hasPoint(refresh, const Offset(22.9, 14.8)), isFalse);
+      expect(hasPoint(refresh, const Offset(22.9, 14.8)), isTrue);
       expect(hasPoint(refresh, const Offset(6.7, 14.8)), isTrue);
 
       final play = GlassGlyphFactory.pointsFor(GlassGlyph.play);
@@ -242,8 +242,10 @@ void main() {
       final search = GlassGlyphFactory.pointsFor(GlassGlyph.search);
       expect(search, hasLength(18));
       expect(hasPoint(search, const Offset(20.2, 20.2)), isTrue);
-      expect(hasPoint(search, const Offset(22.9, 22.9)), isTrue);
-      expect(hasPoint(search, const Offset(25.6, 25.6)), isTrue);
+      expect(hasPoint(search, const Offset(20.2, 22.9)), isTrue);
+      expect(hasPoint(search, const Offset(22.9, 25.6)), isTrue);
+      expect(hasPoint(search, const Offset(22.9, 22.9)), isFalse);
+      expect(hasPoint(search, const Offset(25.6, 25.6)), isFalse);
     },
   );
 

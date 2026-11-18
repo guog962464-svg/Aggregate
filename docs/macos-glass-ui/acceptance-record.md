@@ -1102,3 +1102,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 将设置页生产 `AggregateApp` 的六类按钮文字（普通、禁用、禁用说明、禁用来源、忙碌、危险）采样扩到 800×600、1024×768、1440×900 三种逻辑窗口，各测 1×/2× DPR；深色、浅色初始偏好都运行。每种组合覆盖 14 个临界主题相位（0.46–0.535），共 12 组窗口/DPR/偏好、168 组相位组合。每类文字在同一按钮面上取三个未覆盖像素，合计 3,024 个文字/背景色对比样本，均不低于 4.5:1。
 - 验证：`flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart` 三项通过；`flutter analyze --no-pub` 无问题；`git diff --check` 通过。仅扩展 `app/test/macos_dynamic_backdrop_text_contrast_test.dart` 与本验收文档，无生产颜色、按钮交互或主题切换状态机改动。
 - 边界：像素来自 `PreviewRuntime` 设置页的 Widget 离屏 shader 合成，在按钮面上采邻近背景色，不是原生 Profile/display-present 捕获，也不能代表所有生产按钮调用点、其他页面材质/状态矩阵或 VoiceOver。UI-5.5 保持部分验收。
+
+
+### 2026-11-19 UI-6.7 刷新箭头与搜索柄接点精修
+
+- 放大复核 96 dp Profile 样本后，刷新符号的箭头尖与圆环难以分辨，搜索柄同镜片的斜接点显得断开。刷新图案补为三点箭头头部；搜索图案重排右下两颗点，使镜片边缘与手柄路径接续。播放轮廓、9×9 网格、圆角点、shader 材质、动作 profile、按钮尺寸和回调保持；没有改动 `GlassThemeSwitch` 的手势、主题提交或状态逻辑。
+- macOS Profile 使用 `glass_buttons_fixture_main.dart`，800×796 logical px 窗口、DPR 2。截图由 agent-desktop 按应用窗口单独捕获，PNG 为 1824×1816。静置浅/深图：[深色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-redrawn-click-samples/native-final-dark-idle.png>)，SHA-256 `ea2fc617fe2699fcd3bd8c60e25129639762dd645e82994d4a3440f584a39381`；[浅色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-redrawn-click-samples/native-final-light-idle.png>)，SHA-256 `61be1a7bf43498a651bf9c94aa6994ccc19660bb2fd771849b230abd7657dc9e`。夹具 AX 分别读回“深色”和“浅色”；三个按钮回调均为空。
+- 自动验收：`flutter test --no-pub --update-goldens test/glass_glyph_golden_test.dart` 6 项通过；随后 `flutter test --no-pub --reporter compact test/glass_glyph_golden_test.dart test/glass_action_button_test.dart test/glass_motion_test.dart test/glass_theme_switch_test.dart` 40 项通过；`flutter analyze --no-pub` 无问题；Dart format、`git diff --check` 通过；macOS Profile fixture 构建成功（62.9 MB）。
+- 边界：本轮签收两个轮廓的静态浅/深实窗可读性、9×9 坐标与回归套件；没有可计时的新版点击关键帧或 display-present FPS，109 个生产调用点和 VoiceOver 仍未全验收。UI-6.7 继续部分验收，网页参考与 macOS 动画也没有被判为逐帧 1:1。
