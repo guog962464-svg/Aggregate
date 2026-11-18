@@ -1190,3 +1190,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 | HTTP MCP 预览配置表单 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-empty-forms-dark-profile/http-mcp-form.png>) | `368c8019cc6cba2eb0f648e03a0b6b273f326e3d65614051aa11919c05e82ca5` |
 
 - 边界：本轮签收深色静态空态、三个入口到对应配置表单的路由以及取消返回；不含连接测试/保存、深色按钮动效时序或物理 display-present。各 Profile 已关闭，B013–B015 继续部分验收。
+
+
+### 2026-11-19 UI-6.7 B018–B021 动作编辑对话框深色 Profile 验收
+
+- 使用 `lib/preview/ui6_inspection_main.dart` 的 `Ui6InspectionRuntime` Profile 打开“UI 检查 · Git CLI”的动作编辑器；macOS 27.2.1、Flutter 3.47.8 stable、窗口 800×632 logical px、DPR 2。连接 executable 为 `仅内存预览`，没有执行外部程序。
+- B018 初次打开的清单只有 `version`。点“新增动作”后 AX 读回清单有 `action1`、预览动作下拉为“新动作 · action1”。随后使用“取消”关闭；重开并聚焦 JSON 文本框后，从 AX value 解析出的动作 ID 只有 `version`，确认草稿已丢弃，没有点击“保存动作”。
+- B019 点“导入”后 macOS `Open` 面板出现；没有选择文件，按 `Cancel` 返回。B020 点“导出”后 macOS `Save` 面板出现，随后按 `Cancel`；没有选保存路径、创建或写出文件。
+- B021 选中临时 `action1`，输入样例默认 `{}` 并点“检查并预览参数”；页面显示参数数组 `["仅内存预览", "--help"]` 与提示“清单有效。下方是最终参数数组；此操作不会运行程序。”源码 `_preview` 只解析 manifest/sample、展开参数并格式化结果，不调用 Runtime 执行端口。
+- 单窗口 1824×1488 PNG：[动作编辑器初始状态](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/open.png>) SHA-256 `053bb7c4482f1ac67e7859c979b3981340cfc3376044840c06fa4ce35c886cdb`；[新增 action1](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/action1-added.png>) SHA-256 `fafe8222eaca1ba3adab59de358610927f18fdaf353888bb504fc26b4cdc9267`；[预览结果](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/preview-scrolled.png>) SHA-256 `48fe41e592067f9de41354f73b009b21d448cf891d564e7d436168df5a67ec29`；[取消后重开](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/reopened-clean.png>) SHA-256 `67cd60b4d43c41b1a3c3f248c0a3eb63f0f5ddfb948a673ce20e849c050f0edd`。Open/Save 面板只做 AX 出现与取消读回，没有保存面板截图。
+- 边界：签收对话框静态深色样式、草稿新增/取消回滚、原生导入/导出面板取消路径及不执行的参数预览；未选文件、未写文件、未运行命令，也没有测按钮逐帧动效或物理 display-present。Profile 已关闭；B018–B021 继续部分验收。
