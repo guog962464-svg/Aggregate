@@ -9,6 +9,7 @@ class MainActivity : FlutterActivity() {
     private var hostDeviceKeyStoreChannel: HostDeviceKeyStoreChannel? = null
     private var hostDiscoveryChannel: HostDiscoveryChannel? = null
     private var documentContentChannel: AndroidDocumentContentChannel? = null
+    private var applicationDirectoryChannel: AndroidApplicationDirectoryChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -19,6 +20,10 @@ class MainActivity : FlutterActivity() {
         )
         hostDiscoveryChannel = HostDiscoveryChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         documentContentChannel = AndroidDocumentContentChannel(
+            this,
+            flutterEngine.dartExecutor.binaryMessenger,
+        )
+        applicationDirectoryChannel = AndroidApplicationDirectoryChannel(
             this,
             flutterEngine.dartExecutor.binaryMessenger,
         )
@@ -41,6 +46,8 @@ class MainActivity : FlutterActivity() {
         hostDiscoveryChannel = null
         documentContentChannel?.close()
         documentContentChannel = null
+        applicationDirectoryChannel?.close()
+        applicationDirectoryChannel = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 }

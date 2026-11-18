@@ -44,8 +44,14 @@ android {
             }
         }
         release {
-            // Release artifacts stay unsigned until a production signing key is
-            // supplied through a separately managed signing configuration.
+            if (providers.gradleProperty("aggregateIsolatedIntegration").orNull == "true") {
+                // Sign only the isolated cold-start acceptance APK with the
+                // local debug key, and keep it separate from the installed app.
+                applicationIdSuffix = ".integration"
+                signingConfig = signingConfigs.getByName("debug")
+            }
+            // Product Release artifacts stay unsigned until a production
+            // signing key is supplied through a separately managed config.
         }
     }
 }

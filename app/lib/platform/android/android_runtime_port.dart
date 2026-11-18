@@ -4,12 +4,12 @@ import 'dart:io';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/widgets.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:mcp_dart/mcp_dart.dart' as mcp;
 // The pinned SDK keeps schema validation internal; isolate this in the adapter.
 // ignore: implementation_imports
 import 'package:mcp_dart/src/shared/json_schema/json_schema_validator.dart';
 
+import 'android_application_directory.dart';
 import 'android_credential_store.dart';
 import 'android_host_manager.dart';
 import 'android_host_pairing_client.dart';
@@ -59,7 +59,8 @@ final class AndroidRuntimePort
     Duration draftTtl = const Duration(minutes: 10),
   }) async {
     WidgetsFlutterBinding.ensureInitialized();
-    final directory = dataDirectory ?? await getApplicationSupportDirectory();
+    final directory =
+        dataDirectory ?? await androidApplicationSupportDirectory();
     final store = AndroidRuntimeStore(directory);
     final manager = hostManager ?? AndroidHostManager(store);
     final runtime = AndroidRuntimePort._(
