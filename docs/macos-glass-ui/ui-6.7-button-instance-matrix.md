@@ -72,26 +72,26 @@
 | B057 | `app/lib/features/invocation/terminal_page.dart:419` | 功能调用：终端输出与输入 | 全内存终端无文本选择时“复制”呈禁用外观；未点击或读取终端剪贴内容。见 `112-terminal-stub-light.png` |
 | B058 | `app/lib/features/invocation/terminal_page.dart:427` | 功能调用：终端输出与输入 | 浅色全内存终端“粘贴”可见但未点击，避免读取系统剪贴板；仅有静态画面证据 `112-terminal-stub-light.png` |
 | B059 | `app/lib/features/invocation/terminal_page.dart:469` | 功能调用：终端输出与输入 | 浅色全内存终端仅验证 Tab 与 ↑ 两个按键控件产生本地交互；未逐项检查其余按键。见 `114-terminal-key-interaction-light.png` |
-| B060 | `app/lib/features/music/music_account_control.dart:105` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B061 | `app/lib/features/music/music_account_control.dart:200` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B062 | `app/lib/features/music/music_account_control.dart:206` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
+| B060 | `app/lib/features/music/music_account_control.dart:105` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证管理账号按钮打开面板；Widget 状态回归通过，未验证原生玻璃外观或动效 |
+| B061 | `app/lib/features/music/music_account_control.dart:200` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证退出确认取消后不调用退出；仅 Widget 行为证据 |
+| B062 | `app/lib/features/music/music_account_control.dart:206` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证确认退出后进入未登录态；仅 Widget 行为证据 |
 | B063 | `app/lib/features/music/music_account_control.dart:394` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B064 | `app/lib/features/music/music_account_control.dart:473` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
+| B064 | `app/lib/features/music/music_account_control.dart:473` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证取消扫码后会话关闭；仅 Widget 行为证据 |
 | B065 | `app/lib/features/music/music_account_control.dart:480` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B066 | `app/lib/features/music/music_account_control.dart:488` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B067 | `app/lib/features/music/music_account_control.dart:497` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
-| B068 | `app/lib/features/music/music_account_control.dart:507` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
+| B066 | `app/lib/features/music/music_account_control.dart:488` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证确认退出并清除音乐会话授权；仅 Widget 行为证据 |
+| B067 | `app/lib/features/music/music_account_control.dart:497` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证切换账号先退出再开始扫码登录；仅 Widget 行为证据 |
+| B068 | `app/lib/features/music/music_account_control.dart:507` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证扫码登录、取消与完成登录；仅使用内存测试 runtime |
 | B069 | `app/lib/features/music/music_mini_player.dart:23` | 音乐控制确认（由全局迷你播放器触发） | 暗色暂停确认图 `27-mini-player-pause-confirm-dark.png`；取消按钮可见并取消，未执行播放控制 |
-| B070 | `app/lib/features/music/music_mini_player.dart:29` | 音乐控制确认（由全局迷你播放器触发） | 暗色暂停确认图 `27-mini-player-pause-confirm-dark.png`；执行按钮可见，未点击 |
-| B071 | `app/lib/features/music/music_mini_player.dart:68` | 全局迷你播放器 | 暗色图 `26-mini-player-dark.png` 与浅色 `38-settings-light.png`、`49-music-light.png` 显示样例播放态；暗色点暂停后打开 `27-mini-player-pause-confirm-dark.png` 并取消；样例状态不是实际播放 |
-| B072 | `app/lib/features/music/music_mini_player.dart:407` | 全局迷你播放器：展开控制区 | 暗色迷你播放器图 `26-mini-player-dark.png` 与浅色 `38-settings-light.png`、`49-music-light.png` 可见上一首、暂停、下一首、停止和刷新等控件；未触发控制 |
-| B073 | `app/lib/features/music/music_player_page.dart:201` | 网易云音乐：搜索授权确认 | 暗色授权图 `23-music-search-confirm-dark.png`；取消按钮可见，之后在内存预览中授权本次搜索 |
-| B074 | `app/lib/features/music/music_player_page.dart:207` | 网易云音乐：搜索授权确认 | 暗色授权图 `23-music-search-confirm-dark.png`；允许按钮可见并用于内存预览搜索，不访问外部服务 |
+| B070 | `app/lib/features/music/music_mini_player.dart:29` | 音乐控制确认（由全局迷你播放器触发） | 暗色暂停确认图 `27-mini-player-pause-confirm-dark.png`；`connection_experience_test.dart` 验证执行后获得会话授权，未验证原生按钮动效 |
+| B071 | `app/lib/features/music/music_mini_player.dart:68` | 全局迷你播放器 | 暗色图 `26-mini-player-dark.png` 与浅色 `38-settings-light.png`、`49-music-light.png` 显示样例播放态；`music_mini_player_test.dart` 的 macOS 变体验证同一玻璃播放按钮在暂停/继续图案间切换；样例状态不是实际播放 |
+| B072 | `app/lib/features/music/music_mini_player.dart:407` | 全局迷你播放器：展开控制区 | 暗色图 `26-mini-player-dark.png` 与浅色 `38-settings-light.png`、`49-music-light.png`；`music_mini_player_test.dart` 验证播放器控件与溢出区、桌面停止/刷新入口；未触发真实播放控制 |
+| B073 | `app/lib/features/music/music_player_page.dart:201` | 网易云音乐：搜索授权确认 | 暗色授权图 `23-music-search-confirm-dark.png`；`music_search_permission_test.dart` 验证取消不授权；当前/Profile 真实画面未重验 |
+| B074 | `app/lib/features/music/music_player_page.dart:207` | 网易云音乐：搜索授权确认 | 暗色授权图 `23-music-search-confirm-dark.png`；`music_search_permission_test.dart` 验证允许后仅用 PreviewRuntime 返回样例结果 |
 | B075 | `app/lib/features/music/music_player_page.dart:236` | 网易云音乐：歌曲播放确认 | 暗色歌曲确认图 `25-music-play-confirm-dark.png`；取消按钮可见并取消，未执行播放命令 |
 | B076 | `app/lib/features/music/music_player_page.dart:242` | 网易云音乐：歌曲播放确认 | 暗色歌曲确认图 `25-music-play-confirm-dark.png`；执行按钮可见，未点击 |
 | B077 | `app/lib/features/music/music_player_page.dart:512` | 网易云音乐：播放器与搜索入口 | 2026-11-18 暗色播放启动图 `06-music-starting-dark.png`；仅见 busy 状态的停止按钮，未测可用点击 |
-| B078 | `app/lib/features/music/music_player_page.dart:603` | 网易云音乐：播放器与搜索入口 | 暗色音乐图 `05-music-search-results-dark.png`、`06-music-starting-dark.png`；浅色 `49-music-light.png` 可见播放器样例态、搜索框和按钮；未核对稳定业务播放或搜索结果 |
-| B079 | `app/lib/features/music/music_search_results.dart:180` | 网易云音乐：搜索结果操作 | 2026-11-18 暗色非空搜索图 `05-music-search-results-dark.png`；可播放/不可播放行的操作差异已目视，点击动画/浅色待核 |
+| B078 | `app/lib/features/music/music_player_page.dart:603` | 网易云音乐：播放器与搜索入口 | 暗色音乐图 `05-music-search-results-dark.png`、`06-music-starting-dark.png`；浅色 `49-music-light.png`；`connection_experience_test.dart` 覆盖 PreviewRuntime 搜索样例并从结果播放，非真实服务 |
+| B079 | `app/lib/features/music/music_search_results.dart:180` | 网易云音乐：搜索结果操作 | 暗色非空搜索图 `05-music-search-results-dark.png`；`music_search_results_lazy_test.dart` 与 `music_queue_controls_test.dart` 覆盖列表播放/加入下一首的 Widget 回调；玻璃动态与浅色原生状态待核 |
 | B080 | `app/lib/features/settings/appearance_selector.dart:48` | 设置：明暗主题选择器 | 既有设置页及焦点截图；浅色 `38-settings-light.png` 可见主题控件；逐帧动态状态待核 |
 | B081 | `app/lib/features/settings/settings_page.dart:37` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
 | B082 | `app/lib/features/settings/settings_page.dart:43` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
@@ -125,4 +125,4 @@
 
 ## 当前结论
 
-这张清单建立了调用点到页面的映射，不关闭 UI-6.7。现已为部分连接/动作对话框、终端、运行表单、音乐账户与搜索/播放确认、全局迷你播放器、Mac Host 邀请/权限/撤销/轮换确认、JSON 展开和本地模拟错误结果增加暗色隔离实窗证据。浅色对应页、逐个按钮的静置/点击动画，以及其余未覆盖的页面实例仍未签收；截图只证明画面中实际出现的实例与状态。
+这张清单建立了调用点到页面的映射，不关闭 UI-6.7。现有证据覆盖部分连接/动作对话框、终端、运行表单、音乐搜索/播放确认、全局迷你播放器、Mac Host 邀请/权限/撤销/轮换确认、JSON 展开和本地模拟错误结果；少量音乐账号与播放器行为另有 Widget 回归，但不能代替原生页面验收。浅色对应页、逐个按钮的静置/点击动画，以及其余未覆盖的页面实例仍未签收；截图只证明画面中实际出现的实例与状态。
