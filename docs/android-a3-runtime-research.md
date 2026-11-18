@@ -408,3 +408,28 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **结论不变：**截至本次核对，未找到与 Node 官方当前安全 LTS tag 匹配、由 Android 移动运行时维护方发布的 SDK。Node 24.22.3 的本地重建仍是项目自行维护候选，不是上游发行包；不因 Node 26 Android fork 存在就自动改用另一移动维护线。A3.6 的 provenance、移动测试、供应包组件/法律审查和 Aggregate 16 KB 实机门槛继续开放，产品 Node/npm/CLI 入口关闭。
 - **verified_scope：**2026-11-18 只读查看 Node 官方 `v24.22.3`/`v26.13.1` 发布说明与 release-status 页面、fogtape Node 24/26 releases、官方 `nodejs-mobile` Releases；未下载、构建、签名或安装第三方包，未运行 Node 测试。
 - **retrieval_feedback：**查询当前 Node LTS security releases 与 fogtape/nodejs-mobile Android release tags。采用 Node 官方 release 页面确认安全版本及 LTS 状态，并从移动项目 Releases 核对对应 tag 和 prerelease 标识；结论仅刷新供应包时效，不将 fork 源码或本地 Node 24.22.3 构建写成维护方已发布 SDK。
+
+## 2026-11-18 Android native Node executable / libnode 子进程路线
+
+**本轮结论：**隔离的 arm64 Bionic PIE wrapper 已在 Android 15 / 4 KB 真机上从 APK 安装后的 nativeLibraryDir 启动，Node 的 process.execPath 自启动也通过。Node 与 npm 的有限命令可以运行；常见 npm 脚本直接执行 node 命令仍失败，故不能据此开放通用 npm/CLI 或更改 ADR 0003。
+
+### 一手资料支持的边界
+
+- Android 官方针对 target API 29+ 的规则明确禁止对应用可写 home 目录中的文件直接 execve，并建议只加载嵌入 APK 的二进制代码。[Android 10 行为变化](https://developer.android.com/about/versions/10/behavior-changes-10) 将“可写 app home”作为规则范围；NDK 文档说明 Package Manager 可从 APK 的 lib/<abi>/lib*.so 安装 native libraries 到应用 nativeLibraryDir。[NDK ABI 与 nativeLibraryDir](https://developer.android.com/ndk/guides/abis)
+- Android 16 QPR2 AOSP SELinux 源码把 /data/app(/.*)? 标为 apk_data_file；基础 appdomain 规则允许读取/执行 apk_data_file，其中 x_file_perms 包含 execute 与 execute_no_trans。[AOSP file contexts](https://android.googlesource.com/platform/system/sepolicy/+/android16-qpr2-release/private/file_contexts)、[AOSP app policy](https://android.googlesource.com/platform/system/sepolicy/+/android16-qpr2-release/private/app.te)、[AOSP permission macros](https://android.googlesource.com/platform/system/sepolicy/+/android16-qpr2-release/public/global_macros)。这说明该路径在 stock Android 16 的 SELinux 规则中没有被一概禁止；SELinux 不是 app API 或 OEM 保证。
+- fogtape Android mobile artifact 提供 libnode.so 和 headers；其 build patch 明确写明 mobile target 不产出 node executable。[fogtape README](https://github.com/fogtape/nodejs-mobile/blob/recipe/README.md)、[mobile target patch](https://github.com/fogtape/nodejs-mobile/blob/recipe/patches/build-mobile-targets-in-node.gyp-node.gypi.patch)。Node Mobile FAQ 仍提示 child_process.spawn()、fork() 等 API 在移动平台会遇到权限问题。[Node Mobile FAQ](https://github.com/nodejs-mobile/nodejs-mobile/blob/main/doc_mobile/FAQ.md) Node 24 官方提供 C++ embedder API，但这些 API 可在 semver major 间变化。[Node 24 embedding API](https://nodejs.org/download/release/latest-v24.x/docs/api/embedding.html)
+
+### 本地编译、临时 APK 与 4 KB 真机结果
+
+- 临时 wrapper 源码为 main 调用 node::Start(argc, argv)，使用 NDK 28.2.13676358 与仓库固定 fogtape 24.22.1-0 headers/libnode.so 交叉编译为 arm64 Android PIE。原型 SHA-256 为 577d26c4d951859a81d736409cfd1f2fe30a2d49ed8c3837afb6ab0de2ab0e3b；ELF 为 ET_DYN，PT_INTERP=/system/bin/linker64，RUNPATH=$ORIGIN，DT_NEEDED 包含 libnode.so 与 Android/C++ runtime 库，全部 PT_LOAD p_align=0x4000。APK 内经过 AGP strip 的 wrapper SHA-256 为 71463623c64a73100a07cd188545b6e4c49bd66d2be4482eb5f98a987ad6688c。
+- 为验证安装和执行，临时构建了独立包名 io.github.guog962464.aggregate.nodeprobe.a3exec、targetSdk 36、arm64、extractNativeLibs=true 的 NodeProbe Debug APK；Gradle 使用 packaging.jniLibs.useLegacyPackaging=true。APK f07c2428a146ca5f37af0e4552676b0ccfe818576adae47838c1450011883753 由 Android Debug key 签名并通过 Build Tools 36.0.0 zipalign -c -P 16 4。APK 包含 libaggregate_node_probe.so、libc++_shared.so、libnode.so 与 libnode_cli.so。它只是临时探针，未改产品 Gradle、Activity 或 NodeBridge 源码。
+- 真机为 LGE-AN10 / Android 15 / API 35 / arm64 / PAGE_SIZE=4096，探针 targetSdk=36。应用 Activity 内 Java ProcessBuilder 执行安装后的 nativeLibraryDir/libnode_cli.so：文件 exists=true、canExecute=true，--version 返回退出码 0 和 v24.22.1。以同一路径作为 process.execPath 调用 child_process.spawnSync(process.execPath, ['-e', ...])，child status=0、signal=null、stdout=SELF_CHILD_OK、stderr 为空。
+- APK 内预置 npm 12.2.2 资源被复制到探针 app-private 目录。通过 wrapper 启动 npm-cli.js --version 返回 12.2.2 / exit 0。固定本地 npm run fixture 中，使用 npm 提供的 npm_node_execpath 执行 Node 脚本返回 exit 0，输出 NPM_RUN_SCRIPT_OK 与 NPM_SCRIPT_NODE_OK。该项只证明此 npm CLI 和该固定脚本路径可运行。
+- 标准脚本 probe-default-node 执行 node --version 返回 exit 127，shell 输出 node: inaccessible or not found。另一次临时 APK 尝试把无扩展名 node PIE 作为 jniLibs 输入；产物 SHA-256 e197d3247053aa4c7ebe792643da64b8ba45cad8c7a1cd17c6faffa79a521d74 的 lib/arm64-v8a 归档不含 node，安装后 nativeLibraryDir/node 也不存在。把 nativeLibraryDir 前置到 PATH 仍未让 npm fixture 成功。APK 仅是 Debug 探针，未用于产品签名或分发。测试包随后从 user 0 卸载，普通 Aggregate 包仍安装。
+- APK 的 zipalign/ELF 静态对齐不代表 16 KB 系统运行。此轮没有 16 KB 设备，没有运行 npm install、registry 网络、安装 lifecycle 脚本、NCM CLI、TTY/raw-mode、完整 Node mobile suite 或正式签名包；Node 24.22.1-0 是落后于当前安全版本的预发布候选。
+
+### 后续门槛与决策
+
+nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 npm_node_execpath 运行固定 npm script 已有一台 4 KB 真机证据。这修正了“wrapper 仅 compile-only、没有进入 APK 或设备运行”的先前结论。它没有解决通用 npm lifecycle 对 node 命令的解析；目前也未证明 npm install、任意 CLI/TUI、稳定性或 16 KB 系统兼容。继续保持 ADR 0003 与产品 npm/CLI 边界不变；A3.6 仍需当前安全版本与来源、可审计构建、完整 mobile suite、完整 SBOM/许可审查及 16 KB 真机。下一步先确定只通过 APK 安装的 node 命令解析方案，再验证本地 npm 安装与受控 lifecycle fixture；不能通过时，保留固定打包 JS/Host 边界。
+
+[Android 16 KB page-size guide](https://developer.android.com/guide/practices/page-sizes) 仍要求正确的共享库 ELF 与 APK zip alignment，并提醒静态对齐不能替代设备运行检查。

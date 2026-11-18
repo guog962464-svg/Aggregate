@@ -172,6 +172,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-17 供应包静态构建基线：使用锁定的 fogtape `24.22.1-0` archive（SHA-256 `d6fd9f610fe5d81fede8f0d400c5a62723247725a19831835f15abf4f0604250`）和 NDK `28.2.13676358` 构建隔离 NodeProbe Release APK/AAB；Bundletool 1.18.3 validate、AAB `PAGE_ALIGNMENT_16K`、APK `zipalign -P 16` 以及 APK/AAB 内全部四个 arm64 `.so`/`.node` ELF 对齐检查通过。CycloneDX 311 项仅是明确不完整的归档级 inventory；APK/AAB 均未签名，本轮无 ADB 设备，未安装运行。该 `24.22.1-0` 仍是较旧预发布包，只证明可构建和静态容器/ELF 基线，不替代 Node 24.22.3 安全候选、完整移动 suite、许可/静态链接闭包审查或 16 KB 实机验收，A3.6 保持开放；详情见 [A3.6 运行时研究记录](android-a3-runtime-research.md#2026-11-17-fogtape-24221-0-release-apkaab-供应包静态基线)。
 
+  - 2026-11-18 Android native Node launcher 4 KB 真机补验：targetSdk 36 的独立 Debug APK 在 LGE-AN10 / Android 15 / API 35 / arm64 / 4 KB 页上，由应用 ProcessBuilder 执行 APK 安装后的 PIE wrapper；Node v24.22.1 的 --version 与 process.execPath self-spawn 均通过，npm 12.2.2 --version 及使用 npm_node_execpath 的固定 npm run 通过。直接写 node --version 的脚本以 127 失败；将无扩展名 node 作为 jniLibs 输入后没有进入 APK。临时包已卸载，产品源未改；npm install/lifecycle、16 KB 实机、供应包安全版本/provenance、完整 suite 与法律审查仍未完成，A3.6 保持开放。详见 [A3.6 native Node launcher 探针](android-a3-runtime-research.md)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
