@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aggregate/widgets/glass/glass_action_button.dart';
+import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_glyph.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 
@@ -82,6 +83,42 @@ void main() {
         idleController.dispose();
         controller.dispose();
       }
+    });
+
+    testWidgets('play and search click poses read clearly at icon scale', (
+      tester,
+    ) async {
+      await _mountMotionScope(tester, scopeKey, clock);
+      addTearDown(() => _cleanup(tester, clock));
+
+      final play = _controller(scopeKey, GlassGlyph.play);
+      final restingPlay = _controller(scopeKey, GlassGlyph.play);
+      play.trigger();
+      final playMidpoint = Duration(
+        microseconds: GlassMotionAction.play.duration.inMicroseconds ~/ 2,
+      );
+      final activePlay = play.sampleAt(playMidpoint);
+      final idlePlay = restingPlay.sampleAt(playMidpoint);
+      final playCenterShift = _meanX(activePlay) - _meanX(idlePlay);
+      expect(playCenterShift, greaterThan(GlassDesignTokens.glyphPitch * .9));
+
+      final search = _controller(scopeKey, GlassGlyph.search);
+      final restingSearch = _controller(scopeKey, GlassGlyph.search);
+      search.trigger();
+      final searchMidpoint = Duration(
+        microseconds: GlassMotionAction.search.duration.inMicroseconds ~/ 2,
+      );
+      final activeSearch = search.sampleAt(searchMidpoint);
+      final idleSearch = restingSearch.sampleAt(searchMidpoint);
+      expect(
+        _meanRadius(activeSearch),
+        greaterThan(_meanRadius(idleSearch) * 1.08),
+      );
+
+      play.dispose();
+      restingPlay.dispose();
+      search.dispose();
+      restingSearch.dispose();
     });
 
     testWidgets(
@@ -508,6 +545,16 @@ List<(double, double, double)> _dotTuples(GlassMotionSample sample) {
   });
   return result;
 }
+
+double _meanX(GlassMotionSample sample) =>
+    sample.dots.map((dot) => dot.position.dx).reduce((a, b) => a + b) /
+    sample.dots.length;
+
+double _meanRadius(GlassMotionSample sample) =>
+    sample.dots
+        .map((dot) => (dot.position - const Offset(16, 16)).distance)
+        .reduce((a, b) => a + b) /
+    sample.dots.length;
 
 double _pulseEnergy(int milliseconds, Duration duration) {
   final phase = milliseconds / duration.inMilliseconds;

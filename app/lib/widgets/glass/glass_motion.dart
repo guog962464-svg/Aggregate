@@ -559,8 +559,9 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     duration: Duration(milliseconds: 520),
     idle: _GlassIdlePattern.forwardSweep,
     light: _GlassLightPattern.scanX,
-    translation: Offset(.40, 0),
-    scaleX: .02,
+    translation: Offset(1.3, 0),
+    scaleX: .08,
+    lightAmplitude: .16,
     idleDrift: Offset(.09, 0),
   ),
   GlassMotionAction.pause: _GlassMotionProfile(
@@ -663,9 +664,9 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     duration: Duration(milliseconds: 560),
     idle: _GlassIdlePattern.radial,
     light: _GlassLightPattern.scanX,
-    scaleX: .045,
-    scaleY: .045,
-    lightAmplitude: .10,
+    scaleX: .11,
+    scaleY: .11,
+    lightAmplitude: .18,
     idleDrift: Offset(.04, .02),
   ),
   GlassMotionAction.refresh: _GlassMotionProfile(
@@ -674,6 +675,7 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     light: _GlassLightPattern.radialSweep,
     rotationRadians: math.pi * 2,
     rotationFollowsProgress: true,
+    lightAmplitude: .14,
     idleDrift: Offset(.04, -.04),
   ),
   GlassMotionAction.music: _GlassMotionProfile(
