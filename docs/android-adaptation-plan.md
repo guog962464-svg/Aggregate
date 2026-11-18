@@ -280,7 +280,9 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-18 当前工作树再构建 arm64 Release APK/AAB：APK 27,779,264 bytes（`3d46271c…c825ec2`），AAB 25,521,790 bytes（`2fe1f90d…e5858f`）；两包各有 7 个 arm64 ELF，`PT_LOAD` 16 KB 对齐、APK zipalign、Bundletool 1.18.3 `validate` 与 `PAGE_ALIGNMENT_16K` 通过。APK/AAB 均未签名且不含 Node/npm；未安装 Release 包。当前工作树全量 Flutter 316 项通过，4 KB 真机隔离 runner 另见 A5.5 记录。详细结果见 [A8 当前工作树 Release 检查](android-a8-acceptance.md#2026-11-18-current-worktree-android-release-rebuild-and-static-checks)。正式签名、16 KB 真机和 production Host/音乐仍是分发门槛。
   - 2026-11-18 在 detached worktree 临时构建 `.integration`、Android Debug 测试签名的 arm64 Release APK；`apksigner` v2、`zipalign -P 16` 通过，并在 LGE AN10 / Android 15 / 4 KB 真机安装、冷启动到 resumed MainActivity 后卸载清理。此项仅补充 test-signed Release 冷启动证据，正式签名、16 KB 真机、Node/npm 资格与 production Host/音乐门槛仍开放；详见 [A8 验收记录](android-a8-acceptance.md#2026-11-18-isolated-test-signed-release-smoke-on-4-kb-hardware)。
 
-**交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
+  - 2026-11-18 最新主线 Release 复验（HEAD `014111d6`，含玻璃图标更新）：arm64 APK/AAB 重建、7 个原生库 ELF 静态 16 KB 检查、zipalign、Bundletool validate 与 `PAGE_ALIGNMENT_16K` 通过，产品包无 Node/npm。独立 test-signed `.integration` Release 安装成功且 `am start -W` 返回 ok，但 2 秒后未发现应用进程，ActivityTaskManager 记录 Activity 已退出；未见 AndroidRuntime fatal。故这次不记为冷启动通过；详见 [当前主线 Release 复验](android-a8-acceptance.md#2026-11-18-current-main-release-static-checks-and-isolated-launch-recheck)。
+
+**交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；最新主线 4 KB 隔离 Release 冷启动未确认通过；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
 
 ## 5. UI 验收矩阵
 
