@@ -19,11 +19,13 @@ class GlassThemeSwitch extends StatefulWidget {
     required this.light,
     required this.onChanged,
     this.calibration = ThemeSwitchCalibration.reference,
+    this.heightFactor = .75,
   });
 
   final bool light;
   final ValueChanged<bool> onChanged;
   final ThemeSwitchCalibration calibration;
+  final double heightFactor;
 
   @override
   State<GlassThemeSwitch> createState() => _GlassThemeSwitchState();
@@ -301,7 +303,10 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
       },
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, constraints.maxWidth * 0.75);
+          final size = Size(
+            constraints.maxWidth,
+            constraints.maxWidth * widget.heightFactor,
+          );
           final theme = Theme.of(context);
           final focusColor =
               theme.extension<GlassDesignTokens>()?.focusRing ??

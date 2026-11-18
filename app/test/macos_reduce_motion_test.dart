@@ -109,7 +109,7 @@ void main() {
       }
 
       final switchFinder = find.bySemanticsLabel('外观主题');
-      final pageTextFinder = find.text('主题选择保存在本机。');
+      final pageTextFinder = find.text('选择浅色、深色，或跟随 macOS。');
       Future<void> verifyFrames() async {
         for (var frame = 0; frame < 40; frame++) {
           await tester.pump(const Duration(milliseconds: 16));

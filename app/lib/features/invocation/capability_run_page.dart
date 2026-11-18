@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/shortcut_scheme.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/result_panel.dart';
 import '../music/music_mini_player.dart';
@@ -572,18 +573,26 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
     ),
   );
 
-  Widget _actionControls(String action, {required bool compact}) {
+  Widget _actionControls(
+    String action, {
+    required bool compact,
+    bool macDesignPrimary = false,
+  }) {
     final kind = widget.capability.id.kind;
+    final primary = AggregateActionButton(
+      style: AggregateActionStyle.primary,
+      onPressed: _isActiveRunState(state) ? null : run,
+      icon: Icons.play_arrow,
+      label: _isActiveRunState(state) ? '运行中…' : action,
+      size: macDesignPrimary
+          ? GlassButtonSize.primary
+          : GlassButtonSize.secondary,
+    );
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        AggregateActionButton(
-          style: AggregateActionStyle.primary,
-          onPressed: _isActiveRunState(state) ? null : run,
-          icon: Icons.play_arrow,
-          label: _isActiveRunState(state) ? '运行中…' : action,
-        ),
+        macDesignPrimary ? SizedBox(width: 130, child: primary) : primary,
         if (kind == CapabilityKind.cliCommand &&
             !widget.runtime.isPreview &&
             widget.runtime.features.terminal)
@@ -623,6 +632,12 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
   @override
   Widget build(BuildContext context) {
     final compactPhone = MediaQuery.sizeOf(context).width < 600;
+    final macEmbedded =
+        widget.embedded && defaultTargetPlatform == TargetPlatform.macOS;
+    final compactReadOnlyTool =
+        macEmbedded &&
+        widget.capability.id.kind == CapabilityKind.mcpTool &&
+        widget.capability.permission == PermissionLevel.read;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final kind = widget.capability.id.kind;
     final action = kind == CapabilityKind.mcpResource
@@ -682,12 +697,20 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
           autofocus: true,
           child: PageFrame(
             title: widget.capability.title,
-            subtitle:
-                '${widget.capability.description} · ${sourceLabel ?? widget.capability.id.connection.value}'
-                '${widget.runtime.isPreview ? ' · 预览数据' : ''}',
+            contentPadding: macEmbedded ? EdgeInsets.zero : null,
+            titleStyle: macEmbedded
+                ? Theme.of(context).textTheme.titleMedium
+                : null,
+            headerSpacing: macEmbedded ? 0 : 24,
+            subtitle: compactReadOnlyTool
+                ? '填写参数，然后运行工具。'
+                : '${widget.capability.description} · ${sourceLabel ?? widget.capability.id.connection.value}'
+                      '${widget.runtime.isPreview ? ' · 预览数据' : ''}',
             children: [
-              _executionContext(),
-              const SizedBox(height: 20),
+              if (!compactReadOnlyTool) ...[
+                _executionContext(),
+                const SizedBox(height: 20),
+              ],
               if (widget.capability.presentation?.startsWith('music.') ==
                       true &&
                   widget.capability.presentation != 'music.search' &&
@@ -699,26 +722,78 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                   final formPane = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '参数',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 16),
+                      if (compactReadOnlyTool)
+                        const SizedBox(height: 40)
+                      else ...[
+                        Text(
+                          '参数',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       AbsorbPointer(
                         absorbing: _isActiveRunState(state),
                         child: SchemaForm(
                           key: form,
                           schema: widget.capability.inputSchema,
+                          columnsWhenWide:
+                              widget.embedded &&
+                              defaultTargetPlatform == TargetPlatform.macOS,
+                          labelsOutside:
+                              widget.embedded &&
+                              defaultTargetPlatform == TargetPlatform.macOS,
+                          markRequired: !compactReadOnlyTool,
                         ),
                       ),
                       if (!compactPhone) ...[
                         const SizedBox(height: 8),
-                        _actionControls(action, compact: false),
-                        const SizedBox(height: 12),
-                        Text(
-                          '运行快捷键  ${ShortcutScheme(defaultTargetPlatform).runLabel}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        if (compactReadOnlyTool)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.runtime.isPreview
+                                      ? '只读 · 预览数据'
+                                      : '只读 · 当前连接',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                              _actionControls(
+                                action,
+                                compact: false,
+                                macDesignPrimary: true,
+                              ),
+                              const SizedBox(width: 13),
+                              Text(
+                                ShortcutScheme(defaultTargetPlatform).runLabel,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          )
+                        else if (macEmbedded)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _actionControls(action, compact: false),
+                                const SizedBox(width: 12),
+                                Text(
+                                  ShortcutScheme(defaultTargetPlatform)
+                                      .runLabel,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          )
+                        else ...[
+                          _actionControls(action, compact: false),
+                          const SizedBox(height: 12),
+                          Text(
+                            '运行快捷键  ${ShortcutScheme(defaultTargetPlatform).runLabel}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ],
                     ],
                   );
@@ -726,94 +801,106 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                       widget.capability.presentation == 'music.search'
                       ? parseMusicSearchResults(blocks)
                       : const <MusicSearchItem>[];
-                  final resultPane = Material(
-                    color: Theme.of(context).colorScheme.surface,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: Theme.of(context).dividerColor),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: musicItems.isEmpty
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (submittedArguments != null)
-                                  _submittedArguments(),
-                                if (handle != null &&
-                                    submittedArguments == null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: Text(
-                                      '已从活动记录恢复运行状态；原始参数不会保存在活动记录中。',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                  ),
-                                ResultPanel(
-                                  state: state,
-                                  blocks: blocks,
-                                  failure: failure,
-                                  runtime: widget.runtime,
-                                  onCheckActivity: _checkActivityStatus,
-                                  activityCheckInProgress: checkingActivity,
+                  final resultContent = musicItems.isEmpty
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (submittedArguments != null && !macEmbedded)
+                              _submittedArguments(),
+                            if (handle != null && submittedArguments == null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  '已从活动记录恢复运行状态；原始参数不会保存在活动记录中。',
+                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (widget.musicSession case final session?)
-                                  AnimatedBuilder(
-                                    animation: session,
-                                    builder: (context, _) => MusicSearchResults(
-                                      items: musicItems,
-                                      onPlay: playSong,
-                                      onQueue:
-                                          session.queueLength > 0 &&
-                                              session.actions.containsKey(
-                                                'music.queueAdd',
-                                              )
-                                          ? queueSong
-                                          : null,
-                                      busy: session.busy,
-                                    ),
-                                  )
-                                else
-                                  MusicSearchResults(
-                                    items: musicItems,
-                                    onPlay: playSong,
-                                    busy: false,
-                                  ),
-                                Material(
-                                  type: MaterialType.transparency,
-                                  child: ExpansionTile(
-                                    title: const Text('原始结果'),
-                                    tilePadding: EdgeInsets.zero,
-                                    children: [
-                                      ResultPanel(
-                                        state: state,
-                                        blocks: blocks,
-                                        failure: failure,
-                                        runtime: widget.runtime,
-                                        onCheckActivity: _checkActivityStatus,
-                                        activityCheckInProgress:
-                                            checkingActivity,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                              ),
+                            ResultPanel(
+                              state: state,
+                              blocks: blocks,
+                              failure: failure,
+                              runtime: widget.runtime,
+                              onCheckActivity: _checkActivityStatus,
+                              activityCheckInProgress: checkingActivity,
+                              compactMacOS: macEmbedded,
                             ),
-                    ),
-                  );
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (widget.musicSession case final session?)
+                              AnimatedBuilder(
+                                animation: session,
+                                builder: (context, _) => MusicSearchResults(
+                                  items: musicItems,
+                                  onPlay: playSong,
+                                  onQueue:
+                                      session.queueLength > 0 &&
+                                          session.actions.containsKey(
+                                            'music.queueAdd',
+                                          )
+                                      ? queueSong
+                                      : null,
+                                  busy: session.busy,
+                                ),
+                              )
+                            else
+                              MusicSearchResults(
+                                items: musicItems,
+                                onPlay: playSong,
+                                busy: false,
+                              ),
+                            Material(
+                              type: MaterialType.transparency,
+                              child: ExpansionTile(
+                                title: const Text('原始结果'),
+                                tilePadding: EdgeInsets.zero,
+                                children: [
+                                  ResultPanel(
+                                    state: state,
+                                    blocks: blocks,
+                                    failure: failure,
+                                    runtime: widget.runtime,
+                                    onCheckActivity: _checkActivityStatus,
+                                    activityCheckInProgress: checkingActivity,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                  final resultPane = macEmbedded
+                      ? Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: Theme.of(context).dividerColor,
+                              ),
+                            ),
+                          ),
+                          padding: const EdgeInsets.only(top: 21),
+                          child: resultContent,
+                        )
+                      : Material(
+                          color: Theme.of(context).colorScheme.surface,
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              color: Theme.of(context).dividerColor,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: resultContent,
+                          ),
+                        );
                   if (widget.embedded || constraints.maxWidth < 760) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         formPane,
-                        const SizedBox(height: 28),
+                        SizedBox(height: macEmbedded ? 34 : 28),
                         resultPane,
                       ],
                     );

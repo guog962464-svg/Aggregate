@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/capability_row.dart';
+import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/page_frame.dart';
 import '../invocation/capability_run_page.dart';
 import '../music/music_player_page.dart';
@@ -20,6 +23,7 @@ class ConnectionHomePage extends StatelessWidget {
     required this.musicSession,
     required this.onOpen,
     this.onAccountChanged,
+    this.onRefresh,
   });
 
   final Connection connection;
@@ -28,6 +32,7 @@ class ConnectionHomePage extends StatelessWidget {
   final MusicSession musicSession;
   final ValueChanged<Capability> onOpen;
   final VoidCallback? onAccountChanged;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +57,7 @@ class ConnectionHomePage extends StatelessWidget {
       runtime: runtime,
       musicSession: musicSession,
       onOpen: onOpen,
+      onRefresh: onRefresh,
     );
   }
 }
@@ -64,6 +70,7 @@ class _GenericConnectionHome extends StatefulWidget {
     required this.runtime,
     required this.musicSession,
     required this.onOpen,
+    required this.onRefresh,
   });
 
   final Connection connection;
@@ -72,6 +79,7 @@ class _GenericConnectionHome extends StatefulWidget {
   final RuntimePort runtime;
   final MusicSession musicSession;
   final ValueChanged<Capability> onOpen;
+  final Future<void> Function()? onRefresh;
 
   @override
   State<_GenericConnectionHome> createState() => _GenericConnectionHomeState();
@@ -79,6 +87,18 @@ class _GenericConnectionHome extends StatefulWidget {
 
 class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
   String? selectedCapabilityKey;
+  bool refreshing = false;
+
+  Future<void> _refreshConnection() async {
+    final refresh = widget.onRefresh;
+    if (refresh == null || refreshing) return;
+    setState(() => refreshing = true);
+    try {
+      await refresh();
+    } finally {
+      if (mounted) setState(() => refreshing = false);
+    }
+  }
 
   bool _wideLayout(double width) =>
       defaultTargetPlatform == TargetPlatform.macOS && width >= 760;
@@ -122,50 +142,77 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
 
   Widget _buildDesktop(BuildContext context, bool isCli, double width) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
     final selected = selectedCapability;
-    final directoryWidth = math.min(300.0, math.max(232.0, width * .32));
+    final directoryWidth = math.min(190.0, math.max(152.0, width * .185));
     return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
+      padding: const EdgeInsets.fromLTRB(30, 6, 30, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.connection.label,
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isCli ? '命令与动作 · 选择一个功能后填写参数并运行。' : '工具、资源与提示 · 选择一项查看参数和结果。',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                isCli ? Icons.terminal_outlined : Icons.hub_outlined,
-                color: scheme.primary,
-                size: 18,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.connection.label,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _connectionTypeLabel(widget.connection.kind, isCli),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 8),
-              Text(switch (widget.connection.status) {
-                ConnectionStatus.ready => '已连接',
-                ConnectionStatus.connecting => '连接中',
-                ConnectionStatus.unavailable => '暂不可用',
-              }),
-              const SizedBox(width: 12),
-              Text(
-                '${widget.capabilities.length} 项功能',
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(width: 16),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ExcludeSemantics(
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: tokens.status,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      _connectionStatusLabel(widget.connection.status),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: tokens.status),
+                    ),
+                    const SizedBox(width: 12),
+                    AggregateActionButton(
+                      label: refreshing ? '刷新中…' : '刷新',
+                      icon: Icons.refresh,
+                      style: AggregateActionStyle.secondary,
+                      busy: refreshing,
+                      enabled: !refreshing && widget.onRefresh != null,
+                      size: GlassButtonSize.compactAction,
+                      onPressed: _refreshConnection,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           if (widget.connection.diagnostic case final diagnostic?) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(diagnostic, style: TextStyle(color: scheme.error)),
           ],
-          const SizedBox(height: 18),
-          const Divider(height: 1),
-          const SizedBox(height: 14),
+          const SizedBox(height: 26),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -211,9 +258,9 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                           ],
                   ),
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 19),
                 const VerticalDivider(width: 1),
-                const SizedBox(width: 20),
+                const SizedBox(width: 28),
                 Expanded(
                   child: selected == null
                       ? Center(
@@ -321,8 +368,14 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
     return [
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
       SliverList(
@@ -335,11 +388,12 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
               CapabilityRow(
                 capability: capability,
                 source: widget.connection.label,
+                compactDirectory: true,
                 selected:
                     embedded && selectedCapabilityKey == capability.id.key,
                 onOpen: () => _openCapability(capability, embedded: embedded),
               ),
-              const Divider(height: 1),
+              const SizedBox(height: 5),
             ],
           );
         }, childCount: items.length),
@@ -348,3 +402,15 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
     ];
   }
 }
+
+String _connectionTypeLabel(ConnectionKind kind, bool isCli) => switch (kind) {
+  ConnectionKind.cli => isCli ? 'CLI 程序' : 'CLI 连接',
+  ConnectionKind.mcpStdio => '本机 MCP',
+  ConnectionKind.mcpHttp => 'HTTP MCP',
+};
+
+String _connectionStatusLabel(ConnectionStatus status) => switch (status) {
+  ConnectionStatus.ready => '已连接',
+  ConnectionStatus.connecting => '连接中',
+  ConnectionStatus.unavailable => '暂不可用',
+};

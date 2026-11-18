@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class PageFrame extends StatelessWidget {
   const PageFrame({
@@ -6,12 +7,18 @@ class PageFrame extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.trailing,
+    this.contentPadding,
+    this.titleStyle,
+    this.headerSpacing = 24,
     required this.children,
     this.lazyChildren = false,
   });
   final String title;
   final String? subtitle;
   final Widget? trailing;
+  final EdgeInsets? contentPadding;
+  final TextStyle? titleStyle;
+  final double headerSpacing;
   final List<Widget> children;
   final bool lazyChildren;
 
@@ -26,7 +33,14 @@ class PageFrame extends StatelessWidget {
       final heading = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.headlineMedium),
+          Text(
+            title,
+            style:
+                titleStyle ??
+                (defaultTargetPlatform == TargetPlatform.macOS
+                    ? Theme.of(context).textTheme.headlineSmall
+                    : Theme.of(context).textTheme.headlineMedium),
+          ),
           if (subtitle != null) ...[
             const SizedBox(height: 8),
             Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
@@ -34,12 +48,23 @@ class PageFrame extends StatelessWidget {
         ],
       );
       final compactHeader = constraints.maxWidth < 560;
-      final padding = EdgeInsets.fromLTRB(
-        constraints.maxWidth < 600 ? 20 : 32,
-        28,
-        constraints.maxWidth < 600 ? 20 : 32,
-        40,
-      );
+      final macOS = defaultTargetPlatform == TargetPlatform.macOS;
+      final padding =
+          contentPadding ??
+          EdgeInsets.fromLTRB(
+            macOS
+                ? 30
+                : constraints.maxWidth < 600
+                ? 20
+                : 32,
+            28,
+            macOS
+                ? 30
+                : constraints.maxWidth < 600
+                ? 20
+                : 32,
+            40,
+          );
       final header = compactHeader
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,7 +99,11 @@ class PageFrame extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 1080),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [header, const SizedBox(height: 24), ...children],
+                children: [
+                  header,
+                  SizedBox(height: headerSpacing),
+                  ...children,
+                ],
               ),
             ),
           ),
@@ -88,7 +117,7 @@ class PageFrame extends StatelessWidget {
               delegate: SliverChildBuilderDelegate((context, index) {
                 final child = switch (index) {
                   0 => header,
-                  1 => const SizedBox(height: 24),
+                  1 => SizedBox(height: headerSpacing),
                   _ => children[index - 2],
                 };
                 return Align(

@@ -348,7 +348,7 @@ class WorkspacePageState extends State<WorkspacePage> {
         onPressed: () => setState(() => filter = kind),
         selected: selected,
         kind: GlassButtonKind.segmented,
-        size: GlassButtonSize.secondary,
+        size: GlassButtonSize.navigation,
       );
     }
     return ChoiceChip(

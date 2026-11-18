@@ -13,6 +13,8 @@ import '../features/settings/settings_page.dart';
 import '../features/music/music_mini_player.dart';
 import '../features/music/music_session.dart';
 import '../widgets/glass/aggregate_buttons.dart';
+import '../widgets/glass/glass_action_button.dart';
+import '../widgets/glass/glass_design_tokens.dart';
 import '../widgets/glass/glass_motion.dart';
 import 'shortcut_scheme.dart';
 
@@ -176,6 +178,10 @@ class AppShellState extends State<AppShell> {
     return null;
   }
 
+  String get _toolbarTitle => selected == Section.home
+      ? activeConnection?.label ?? '我的连接'
+      : selected.label;
+
   void select(Section section) => setState(() => selected = section);
 
   void selectMobileDestination(int index) {
@@ -275,6 +281,7 @@ class AppShellState extends State<AppShell> {
             onAccountChanged: () {
               unawaited(refreshAfterAccountChange(connection.id));
             },
+            onRefresh: () => refreshAfterAccountChange(connection.id),
           ),
         ),
       ),
@@ -304,9 +311,9 @@ class AppShellState extends State<AppShell> {
 
   Widget navigation({required bool compact}) => Column(
     children: [
-      const SizedBox(height: 20),
+      const SizedBox(height: 6),
       Padding(
-        padding: const EdgeInsets.only(left: 22, right: 12, top: 8, bottom: 4),
+        padding: const EdgeInsets.only(left: 22, right: 12, top: 6, bottom: 14),
         child: Row(
           children: [
             Expanded(
@@ -317,6 +324,7 @@ class AppShellState extends State<AppShell> {
               AggregateIconButton(
                 tooltip: '添加连接',
                 icon: Icons.add,
+                size: GlassButtonSize.navigation,
                 onPressed: () => addConnection(
                   ConnectionKind.values.firstWhere(
                     widget.runtime.features.canAdd,
@@ -328,9 +336,9 @@ class AppShellState extends State<AppShell> {
       ),
       for (final connection in connectionHomes)
         _connectionNavigationItem(connection, compact: compact),
-      const SizedBox(height: 20),
+      const SizedBox(height: 52),
       const Divider(height: 1),
-      const SizedBox(height: 8),
+      const SizedBox(height: 27),
       for (final section in Section.values.where(
         (item) => item != Section.home && item != Section.settings,
       ))
@@ -338,7 +346,30 @@ class AppShellState extends State<AppShell> {
       const Spacer(),
       const Divider(height: 1),
       _navigationItem(Section.settings, compact: compact),
-      const SizedBox(height: 12),
+      if (defaultTargetPlatform == TargetPlatform.macOS)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 1, 12, 14),
+          child: Row(
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color:
+                      Theme.of(context)
+                          .extension<GlassDesignTokens>()
+                          ?.status ??
+                      Theme.of(context).colorScheme.tertiary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('本机工作空间', style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        )
+      else
+        const SizedBox(height: 12),
     ],
   );
 
@@ -360,12 +391,14 @@ class AppShellState extends State<AppShell> {
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: AggregateActionButton(
           label: connection.label,
           icon: icon,
           onPressed: activate,
           style: AggregateActionStyle.quiet,
+          size: GlassButtonSize.navigation,
+          expand: true,
           selected: isSelected,
         ),
       );
@@ -395,12 +428,17 @@ class AppShellState extends State<AppShell> {
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        padding: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: section == Section.settings ? 2 : 11,
+        ),
         child: AggregateActionButton(
           label: section.label,
           icon: section.icon,
           onPressed: activate,
           style: AggregateActionStyle.quiet,
+          size: GlassButtonSize.navigation,
+          expand: true,
           selected: selected == section,
         ),
       );
@@ -463,6 +501,7 @@ class AppShellState extends State<AppShell> {
             onAccountChanged: () {
               unawaited(refreshAfterAccountChange(connection.id));
             },
+            onRefresh: () => refreshAfterAccountChange(connection.id),
           ),
         )
       else if (homesLoading)
@@ -548,6 +587,10 @@ class AppShellState extends State<AppShell> {
           final extendedRail = _mobilePlatform && width >= 840;
           final hideBottomChrome =
               _mobilePlatform && MediaQuery.of(context).viewInsets.bottom > 0;
+          final macOS = defaultTargetPlatform == TargetPlatform.macOS;
+          final searchWidth = (width * .24).clamp(184.0, 248.0);
+          final searchShortcut = ShortcutScheme(defaultTargetPlatform)
+              .searchLabel;
           final Widget? bottomNavigationBar;
           if (mobilePhone) {
             bottomNavigationBar = hideBottomChrome
@@ -611,19 +654,57 @@ class AppShellState extends State<AppShell> {
           return Scaffold(
             bottomNavigationBar: bottomNavigationBar,
             appBar: AppBar(
-              toolbarHeight: 64,
-              title: const Text(
-                'Aggregate',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              toolbarHeight: macOS ? 40 : 64,
+              title: Padding(
+                padding: EdgeInsets.only(left: macOS && !compact ? 206 : 0),
+                child: Text(
+                  macOS ? _toolbarTitle : 'Aggregate',
+                  style: macOS
+                      ? Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)
+                      : const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
               actions: [
-                AggregateIconButton(
-                  tooltip: mobileInput
-                      ? '搜索所有功能'
-                      : '搜索所有功能（${ShortcutScheme(defaultTargetPlatform).searchLabel}）',
-                  onPressed: searchAll,
-                  icon: Icons.search,
-                ),
+                if (macOS)
+                  SizedBox(
+                    width: searchWidth,
+                    height: 40,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: AggregateActionButton(
+                            label: '搜索功能…',
+                            icon: Icons.search,
+                            semanticsLabel: '搜索所有功能（$searchShortcut）',
+                            onPressed: searchAll,
+                            style: AggregateActionStyle.secondary,
+                            size: GlassButtonSize.compactAction,
+                            expand: true,
+                          ),
+                        ),
+                        Positioned(
+                          right: 12,
+                          top: 0,
+                          bottom: 0,
+                          child: ExcludeSemantics(
+                            child: Center(
+                              child: Text(
+                                searchShortcut,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  AggregateIconButton(
+                    tooltip: mobileInput ? '搜索所有功能' : '搜索所有功能（$searchShortcut）',
+                    onPressed: searchAll,
+                    icon: Icons.search,
+                  ),
                 const SizedBox(width: 4),
                 if (defaultTargetPlatform != TargetPlatform.macOS &&
                     widget.runtime.features.connectionKinds.isNotEmpty)
@@ -648,7 +729,7 @@ class AppShellState extends State<AppShell> {
                   _mobileNavigationRail(extended: extendedRail)
                 else if (!_mobilePlatform && !compact)
                   SizedBox(
-                    width: 200,
+                    width: macOS ? 192 : 200,
                     child: Material(
                       color: defaultTargetPlatform == TargetPlatform.macOS
                           ? Colors.transparent

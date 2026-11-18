@@ -144,7 +144,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('参数'), findsOneWidget);
-    expect(find.text('本次运行'), findsOneWidget);
+    expect(find.text('结果'), findsOneWidget);
     // The selected capability remains visible in the directory beside the
     // same title in the embedded run pane.
     expect(find.text('查看 Git 状态'), findsNWidgets(2));

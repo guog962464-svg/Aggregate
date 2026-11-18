@@ -742,3 +742,20 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - Mac Host 行为：fake 端回归覆盖启动 Host、生成邀请二维码、批准向导权限、自定义及逐连接权限、修改/保存权限、撤销设备，以及身份轮换确认取消与执行。B085–B090、B095–B098、B100–B101 只标注用例实际触达的行为。本批测试未覆盖直接停止按钮、复制配对信息、刷新配对列表和拒绝请求；B094 批准只读与 B099 权限弹窗取消仍依据原有暗色实窗记录，本批没有复测。原有暗色截图不因 Widget 测试升级为原生动态验收。
 - 设置清理操作：`widget_test.dart` 覆盖设置布局和外观偏好，没有触发或验证“清空记录”确认，因此 B081–B083 状态未提升。
 - 范围：只更新验收文档，未修改产品代码或测试；没有启动桌面应用，用户应用未受影响。UI-6.7 仍部分验收，尚有原生浅色画面、逐按钮光效/动效和未覆盖 Host 操作待核。
+
+### 2026-11-18 UI-6.7 主题开关材质基线按钮光效迭代
+
+- 验收标准更新：用户指出普通按钮应达到“切换明暗模式”控件的材质与光效层次。当前目标是在不改太阳/月亮切换行为的前提下，让共享操作按钮也有玻璃体积、缓慢流动的暖光和协调的按下反馈；此前只要求按钮统一点阵风格的标准继续保留。
+- 实现：`GlassActionButton` 表面加入与浅色主题开关相同的太阳暖金色、高光缓慢移动、柔化边缘发光和按下内陷/增亮。按钮表面动画复用现有 `GlassMotionScope`，静置表面以约 15 Hz 刷新，交互过渡最多约 30 Hz；关闭动态效果时停用。导航/分段按钮仍保留轻量选中材质。`glass_theme_switch.dart` 的指针映射、动画模拟和 `onChanged` 行为未改。
+- 组件画面：[设置页材质对照截图](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/final-settings-capture.png>)，SHA-256 `acb3db14c555e1ee3838648a8a8c807d3264968b0ec64c873ddbc9afdb64f923`。该图来自临时 Flutter Widget 采样，1024×766、DPR 1；测试字体回退，因此只用于比较开关与按钮表面，不用作文字或布局验收。
+- 验证：`flutter test --no-pub --reporter compact` 全部 316 项通过；`flutter analyze --no-pub` 无问题；`flutter build macos --profile --no-pub` 成功。Profile 实际运行约 40 秒后 `ps` 的进程 CPU 样本为 14.9%；这是进程占用观察，不是 FrameTiming/显示 FPS 基准。
+- 原生限制与范围：本轮 Profile 窗口未暴露可用的 Accessibility 树，`agent-desktop` 无法取得可靠窗口图；Flutter Skia 截图接口因 Impeller 不支持而失败，macOS 原生设备截图接口也不支持。故未将 Widget 图升级为原生实窗签收。UI-6.7 继续部分验收；普通按钮的实窗静置/按下画面对照、所有生产实例布局和其他未完成矩阵行仍开放。
+
+### 2026-11-18 UI-6.7 按主题开关材质基线重做按钮光场
+
+- 验收标准纠正：用户指出上一轮只是给按钮加暖色光，主体质感仍不像明暗切换滑块。当前要求改为共享滑块的玻璃面、双层倒角、右上角暖光发射点、面内反射和按下内陷；保持按钮业务回调及主题开关拖动/点击逻辑不变。
+- 实现：所有操作按钮共享同一层叠玻璃面和上右暖光弧，静置光点固定在主题开关光带所在角落并缓慢呼吸，交互时增亮和扩展弧段；独特点阵动画继续由原 glyph 动作描述驱动。浅色暖光取自主题开关太阳色 `0xFFFFA82E`，深色保留月光蓝。导航/分段仍使用较低亮度。面内危险文字提高了计算对比余量以抵消高光区域影响。
+- 动画预算：按钮表面静置更新约 10 Hz，交互过渡最多 30 Hz；减弱动态效果时停止表面动画。按钮表面使用固定上右弧路径，不逐帧计算路径采样，也不增加每按钮的独立 ticker。
+- 对照画面：[主题开关与三类操作按钮同屏 Widget 对照](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/revised-switch-buttons-final.png>)，SHA-256 `9c2a8b6c778b9038f680bfb5ca2d872c83169ec0cb07db64441f099a6b7111f6`。画面由 `ThemeSwitchArtwork` 的片元着色器与普通按钮在同一个 Flutter Widget 测试窗口采样，1024×480、DPR 1；测试字体回退，只作材质/光场相对位置比较，不作文案、产品布局或原生实窗验收。
+- 验证：最终版本 `flutter analyze --no-pub` 无问题；`flutter test --no-pub --reporter json` 全量 377 项通过，`git diff --check` 通过。`flutter run --profile -d macos --no-pub -t lib/glass_buttons_fixture_main.dart` 可构建 Profile 64.5 MB 包，但系统返回 `Failed to foreground app; open returned 1`；5 秒进程采样处于 AppKit 等待状态，后续空闲 CPU 样本为 0%，均未获得有效的前台动画帧率或帧时间证据。
+- 原生限制与范围：当前 Widget 对照比上一版更直接，但不替代前台 Profile 实窗目视。未声称与主题开关着色器达到像素级同材质或帧级签收；UI-6.7 继续部分验收，普通按钮原生静置/按压画面、生产调用点布局和其他未完成矩阵行仍开放。

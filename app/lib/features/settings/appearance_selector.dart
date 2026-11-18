@@ -13,11 +13,15 @@ class AppearanceSelector extends StatelessWidget {
     required this.appearance,
     required this.onChanged,
     required this.systemLabel,
+    this.switchWidth = 360,
+    this.switchHeightFactor = .75,
   });
 
   final AppearancePreference appearance;
   final ValueChanged<AppearancePreference> onChanged;
   final String systemLabel;
+  final double switchWidth;
+  final double switchHeightFactor;
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +37,10 @@ class AppearanceSelector extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: BoxConstraints(maxWidth: switchWidth),
           child: GlassThemeSwitch(
             calibration: videoFittedThemeSwitch,
+            heightFactor: switchHeightFactor,
             light: light,
             onChanged: (value) => onChanged(
               value ? AppearancePreference.light : AppearancePreference.dark,

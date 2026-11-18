@@ -8,8 +8,17 @@ import '../../widgets/glass/aggregate_buttons.dart';
 const _lazySchemaFieldThreshold = 40;
 
 class SchemaForm extends StatefulWidget {
-  const SchemaForm({super.key, required this.schema});
+  const SchemaForm({
+    super.key,
+    required this.schema,
+    this.columnsWhenWide = false,
+    this.labelsOutside = false,
+    this.markRequired = true,
+  });
   final JsonMap schema;
+  final bool columnsWhenWide;
+  final bool labelsOutside;
+  final bool markRequired;
   @override
   State<SchemaForm> createState() => SchemaFormState();
 }
@@ -175,30 +184,16 @@ class SchemaFormState extends State<SchemaForm> {
     final lazyFields = entries.length >= _lazySchemaFieldThreshold;
     return Form(
       key: formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showSummary) ...[
-            Focus(
-              focusNode: summaryFocus,
-              child: Text(
-                '请检查标红字段后重试。',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-            if (validationErrors.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  _validationSummary(),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            const SizedBox(height: 16),
-          ],
-          if (entries.isEmpty) const Text('此功能不需要参数。'),
-          if (lazyFields)
-            SizedBox(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final twoColumns =
+              widget.columnsWhenWide &&
+              constraints.maxWidth >= 560 &&
+              !lazyFields;
+          final columnSpacing = widget.columnsWhenWide ? 18.0 : 16.0;
+          final fieldWidth = (constraints.maxWidth - columnSpacing) / 2;
+          final fields = switch ((lazyFields, twoColumns)) {
+            (true, _) => SizedBox(
               key: const Key('schema-field-list'),
               height: 420,
               child: ListView.builder(
@@ -208,24 +203,83 @@ class SchemaFormState extends State<SchemaForm> {
                 itemBuilder: (context, index) =>
                     _fieldEntry(context, entries[index]),
               ),
-            )
-          else
-            for (final entry in entries) _fieldEntry(context, entry),
-        ],
+            ),
+            (false, true) => Wrap(
+              spacing: columnSpacing,
+              children: [
+                for (final entry in entries)
+                  SizedBox(
+                    width: _usesFullWidth(entry)
+                        ? constraints.maxWidth
+                        : fieldWidth,
+                    child: _fieldEntry(context, entry),
+                  ),
+              ],
+            ),
+            _ => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final entry in entries) _fieldEntry(context, entry),
+              ],
+            ),
+          };
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showSummary) ...[
+                Focus(
+                  focusNode: summaryFocus,
+                  child: Text(
+                    '请检查标红字段后重试。',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+                if (validationErrors.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _validationSummary(),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+              ],
+              if (entries.isEmpty) const Text('此功能不需要参数。'),
+              fields,
+            ],
+          );
+        },
       ),
     );
+  }
+
+  bool _usesFullWidth(MapEntry<String, Object?> entry) {
+    final spec = entry.value is Map ? entry.value as Map : const {};
+    return switch (spec['type']) {
+      'array' || 'object' || 'boolean' => true,
+      _ => false,
+    };
   }
 
   Widget _fieldEntry(BuildContext context, MapEntry<String, Object?> entry) {
     final spec = entry.value is Map ? entry.value as Map : const {};
     final type = spec['type'];
     final required = requiredFields.contains(entry.key);
-    final label = '${spec['title'] ?? entry.key}${required ? ' *' : ''}';
+    final labelBase = '${spec['title'] ?? entry.key}';
+    final displayLabel =
+        '$labelBase${required && widget.markRequired ? ' *' : ''}';
+    final semanticLabel = required && !widget.markRequired
+        ? '$labelBase，必填'
+        : displayLabel;
     final Widget field;
     if (type == 'boolean') {
       field = SwitchListTile(
         contentPadding: EdgeInsets.zero,
-        title: Text(label),
+        title: Text(displayLabel),
         value: booleans[entry.key] ?? false,
         onChanged: (value) => setState(() => booleans[entry.key] = value),
       );
@@ -238,7 +292,9 @@ class SchemaFormState extends State<SchemaForm> {
           key: Key('field-${entry.key}'),
           initialValue: selections[entry.key],
           isExpanded: true,
-          decoration: InputDecoration(labelText: label),
+          decoration: InputDecoration(
+            labelText: widget.labelsOutside ? null : displayLabel,
+          ),
           items: [
             for (final option in options.cast<String>())
               DropdownMenuItem(
@@ -276,7 +332,7 @@ class SchemaFormState extends State<SchemaForm> {
           key: Key('field-${entry.key}'),
           controller: controller,
           decoration: InputDecoration(
-            labelText: label,
+            labelText: widget.labelsOutside ? null : displayLabel,
             helperText: type == 'array' || type == 'object'
                 ? '输入 JSON ${type == 'array' ? '数组' : '对象'}'
                 : spec['enum'] is List
@@ -328,7 +384,13 @@ class SchemaFormState extends State<SchemaForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        field,
+        if (widget.labelsOutside && type != 'boolean') ...[
+          Text(displayLabel, style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 6),
+        ],
+        widget.labelsOutside
+            ? Semantics(label: semanticLabel, child: field)
+            : field,
         if (type == 'array' || type == 'object')
           Align(
             alignment: Alignment.centerRight,

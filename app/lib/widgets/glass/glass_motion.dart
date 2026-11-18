@@ -1171,6 +1171,7 @@ class GlassMotionController extends ChangeNotifier {
   }
 
   final int phaseSeed;
+  final ChangeNotifier surfaceMotion = ChangeNotifier();
   GlassGlyph _glyph;
   GlassMotionScopeState? _scope;
   bool _visible = true;
@@ -1184,9 +1185,11 @@ class GlassMotionController extends ChangeNotifier {
   late _GlassIdleMotion _idleMotionFrom;
   late _GlassIdleMotion _idleMotionTo;
   Duration _idleMotionStart = Duration.zero;
+  Duration _lastSurfaceDelivery = Duration.zero;
 
   GlassGlyph get glyph => _glyph;
   Duration get now => _scope?.now ?? Duration.zero;
+  bool get animationsEnabled => _motionAllowed && _isRegistered;
 
   GlassMotionSample get sample => sampleAt(now);
 
@@ -1233,6 +1236,7 @@ class GlassMotionController extends ChangeNotifier {
     }
     _syncRegistration();
     if (_isRegistered) _scope!._deliverCurrentTime();
+    surfaceMotion.notifyListeners();
   }
 
   void setVisible(bool visible) {
@@ -1240,6 +1244,7 @@ class GlassMotionController extends ChangeNotifier {
     _visible = visible;
     _syncRegistration();
     if (_isRegistered) _scope!._deliverCurrentTime();
+    surfaceMotion.notifyListeners();
   }
 
   void setMotionAllowed(bool allowed) {
@@ -1248,6 +1253,7 @@ class GlassMotionController extends ChangeNotifier {
     if (!allowed) _clearDecorations();
     _syncRegistration();
     if (_isRegistered) _scope!._deliverCurrentTime();
+    surfaceMotion.notifyListeners();
     notifyListeners();
   }
 
@@ -1261,6 +1267,7 @@ class GlassMotionController extends ChangeNotifier {
     _interactionFrom = current;
     _interactionTo = target;
     _syncActivity(time);
+    surfaceMotion.notifyListeners();
     notifyListeners();
   }
 
@@ -1297,6 +1304,7 @@ class GlassMotionController extends ChangeNotifier {
           )
         : null;
     _syncActivity(time);
+    surfaceMotion.notifyListeners();
     notifyListeners();
   }
 
@@ -1317,6 +1325,7 @@ class GlassMotionController extends ChangeNotifier {
       _ActionPulse(action: action, start: time, duration: duration),
     );
     _syncActivity(time);
+    surfaceMotion.notifyListeners();
     notifyListeners();
   }
 
@@ -1335,6 +1344,18 @@ class GlassMotionController extends ChangeNotifier {
     if (!_isRegistered) return;
     _expire(time);
     _syncActivity(time);
+    final interactionAnimating =
+        _energyPulses.any(
+          (pulse) => _linearProgress(time, pulse.start, pulse.duration) < 1,
+        ) ||
+        (_interactionAt(time) - _interactionTo).abs() > .001;
+    final surfaceInterval = interactionAnimating
+        ? const Duration(milliseconds: 33)
+        : const Duration(milliseconds: 100);
+    if (time - _lastSurfaceDelivery >= surfaceInterval) {
+      _lastSurfaceDelivery = time;
+      surfaceMotion.notifyListeners();
+    }
     notifyListeners();
   }
 
@@ -1624,12 +1645,14 @@ class GlassMotionController extends ChangeNotifier {
     if (_scope != scope) return;
     _scope = null;
     _clearDecorations();
+    surfaceMotion.notifyListeners();
     notifyListeners();
   }
 
   @override
   void dispose() {
     _scope?._unregister(this);
+    surfaceMotion.dispose();
     super.dispose();
   }
 }

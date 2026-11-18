@@ -1,9 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
 import 'glass_motion.dart';
+
+const _themeSwitchSunLight = Color(0xFFFFA82E);
 
 enum GlassButtonKind {
   primary,
@@ -15,7 +19,16 @@ enum GlassButtonKind {
   danger,
 }
 
-enum GlassButtonSize { primary, secondary, icon, playback, reference }
+enum GlassButtonSize {
+  primary,
+  secondary,
+  compactAction,
+  directory,
+  navigation,
+  icon,
+  playback,
+  reference,
+}
 
 /// A platform-neutral action control. The caller owns the operation; this
 /// module owns only button semantics, shared glass material, and dot glyphs.
@@ -250,6 +263,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     final name = widget.semanticsLabel ?? widget.label!;
     final height = _heightFor(widget.size);
     final small =
+        widget.size == GlassButtonSize.compactAction ||
+        widget.size == GlassButtonSize.directory ||
+        widget.size == GlassButtonSize.navigation ||
         widget.size == GlassButtonSize.icon ||
         widget.size == GlassButtonSize.playback;
     final padding = widget.iconOnly
@@ -270,12 +286,31 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         return tokens.text;
       }),
       overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-      shadowColor: WidgetStatePropertyAll(tokens.shadow),
+      shadowColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) return tokens.shadow;
+        final accent = widget.kind == GlassButtonKind.danger
+            ? tokens.danger
+            : tokens.daylight > .5
+            ? _themeSwitchSunLight
+            : tokens.glow;
+        final halo = accent.withValues(alpha: tokens.daylight > .5 ? .38 : .42);
+        final blend = states.contains(WidgetState.pressed)
+            ? .32
+            : states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.selected)
+            ? .20
+            : .12;
+        return Color.lerp(tokens.shadow, halo, blend)!;
+      }),
       elevation: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) return 0;
-        if (states.contains(WidgetState.pressed)) return 2.2;
-        if (states.contains(WidgetState.hovered)) return 7;
-        return 5;
+        if (states.contains(WidgetState.pressed)) return 1.8;
+        if (states.contains(WidgetState.hovered)) return 7.5;
+        if (widget.kind == GlassButtonKind.navigation ||
+            widget.kind == GlassButtonKind.segmented) {
+          return states.contains(WidgetState.selected) ? 4.5 : 3.5;
+        }
+        return 5.5;
       }),
       shape: WidgetStatePropertyAll(shape),
       side: const WidgetStatePropertyAll(BorderSide.none),
@@ -360,6 +395,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     final muted = !_enabled || widget.busy;
     // Keep supporting copy subdued while protecting it against intermediate
     // glass tones produced by the live theme transition.
+    final supportingTextBlend = .45 + tokens.daylight * .25;
     final labelAppearance = _readableGlassLabelAppearance(
       tokens.text,
       tokens,
@@ -368,14 +404,14 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       gradientPosition: .5,
     );
     final descriptionAppearance = _readableGlassLabelAppearance(
-      Color.lerp(tokens.muted, tokens.text, .18)!,
+      Color.lerp(tokens.muted, tokens.text, supportingTextBlend)!,
       tokens,
       underlay: underlay,
       translucent: muted,
       gradientPosition: .56,
     );
     final sourceAppearance = _readableGlassLabelAppearance(
-      Color.lerp(tokens.muted, tokens.text, .18)!,
+      Color.lerp(tokens.muted, tokens.text, supportingTextBlend)!,
       tokens,
       underlay: underlay,
       translucent: muted,
@@ -387,11 +423,21 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       underlay: underlay,
       translucent: muted,
       gradientPosition: .5,
+      targetContrast: 6.0,
     );
+    final labelColor = widget.kind == GlassButtonKind.danger
+        ? dangerLabelAppearance.color
+        : labelAppearance.color;
+    final labelShadows = widget.kind == GlassButtonKind.danger
+        ? dangerLabelAppearance.shadows
+        : labelAppearance.shadows;
     final iconSize = switch (widget.size) {
       GlassButtonSize.reference => 32.0,
       GlassButtonSize.primary => 22.0,
+      GlassButtonSize.compactAction => 20.0,
+      GlassButtonSize.navigation => 16.0,
       GlassButtonSize.secondary ||
+      GlassButtonSize.directory ||
       GlassButtonSize.icon ||
       GlassButtonSize.playback => 20.0,
     };
@@ -429,14 +475,15 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: widget.kind == GlassButtonKind.danger
-                          ? dangerLabelAppearance.color
-                          : labelAppearance.color,
-                      shadows: widget.kind == GlassButtonKind.danger
-                          ? dangerLabelAppearance.shadows
-                          : labelAppearance.shadows,
+                      color: labelColor,
+                      shadows: labelShadows,
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize:
+                          widget.size == GlassButtonSize.directory ||
+                              widget.size == GlassButtonSize.navigation ||
+                              widget.size == GlassButtonSize.compactAction
+                          ? 12
+                          : 13,
                     ),
                   ),
                   if (widget.description case final description?)
@@ -447,7 +494,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                       style: TextStyle(
                         color: descriptionAppearance.color,
                         shadows: descriptionAppearance.shadows,
-                        fontSize: 11,
+                        fontSize: widget.size == GlassButtonSize.directory
+                            ? 10
+                            : 11,
                       ),
                     ),
                   if (widget.source case final source?)
@@ -458,7 +507,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                       style: TextStyle(
                         color: sourceAppearance.color,
                         shadows: sourceAppearance.shadows,
-                        fontSize: 10,
+                        fontSize: widget.size == GlassButtonSize.directory
+                            ? 9
+                            : 10,
                       ),
                     ),
                 ],
@@ -480,16 +531,16 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: widget.kind == GlassButtonKind.danger
-                    ? dangerLabelAppearance.color
-                    : labelAppearance.color,
-                shadows: widget.kind == GlassButtonKind.danger
-                    ? dangerLabelAppearance.shadows
-                    : labelAppearance.shadows,
+                color: labelColor,
+                shadows: labelShadows,
                 fontWeight: widget.kind == GlassButtonKind.primary
                     ? FontWeight.w600
                     : FontWeight.w500,
-                fontSize: 13,
+                fontSize:
+                    widget.size == GlassButtonSize.compactAction ||
+                        widget.size == GlassButtonSize.navigation
+                    ? 12
+                    : 13,
               ),
             ),
           ),
@@ -502,6 +553,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
 double _heightFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.primary => GlassDesignTokens.primaryHeight,
   GlassButtonSize.secondary => GlassDesignTokens.secondaryHeight,
+  GlassButtonSize.compactAction => 40,
+  GlassButtonSize.directory => 58,
+  GlassButtonSize.navigation => 36,
   GlassButtonSize.icon => GlassDesignTokens.iconButtonSize,
   GlassButtonSize.playback => GlassDesignTokens.iconButtonSize,
   GlassButtonSize.reference => GlassDesignTokens.referenceHeight,
@@ -511,6 +565,9 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.primary => 16,
   GlassButtonSize.reference => 22,
   GlassButtonSize.secondary => 13,
+  GlassButtonSize.compactAction => 12,
+  GlassButtonSize.directory => 11,
+  GlassButtonSize.navigation => 10,
   GlassButtonSize.icon || GlassButtonSize.playback => 14,
 };
 
@@ -520,6 +577,7 @@ _GlassLabelAppearance _readableGlassLabelAppearance(
   required Color underlay,
   required bool translucent,
   required double gradientPosition,
+  double targetContrast = 5.1,
 }) {
   var opaqueSurface = Color.lerp(
     tokens.glassTop,
@@ -543,7 +601,6 @@ _GlassLabelAppearance _readableGlassLabelAppearance(
           underlay,
         )
       : opaqueSurface;
-  const targetContrast = 5.1;
   if (_buttonContrastRatio(preferred, surface) >= targetContrast) {
     return (color: preferred, shadows: null);
   }
@@ -616,7 +673,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     required this.motion,
     required this.states,
     required this.radius,
-  }) : super(repaint: motion);
+  }) : super(repaint: motion.surfaceMotion);
 
   final GlassDesignTokens tokens;
   final GlassButtonKind kind;
@@ -635,12 +692,42 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isFocused = states.contains(WidgetState.focused);
     final isSelected = states.contains(WidgetState.selected);
     final isReferenceSize = radius >= 22;
-    final accent = kind == GlassButtonKind.danger ? tokens.danger : tokens.glow;
+    final isNavigation =
+        kind == GlassButtonKind.navigation || kind == GlassButtonKind.segmented;
+    final materialWeight = isNavigation ? .74 : 1.0;
+    final accent = kind == GlassButtonKind.danger
+        ? tokens.danger
+        : tokens.daylight > .5
+        ? _themeSwitchSunLight
+        : tokens.glow;
     final opacity = isDisabled
         ? GlassDesignTokens.disabledButtonFaceOpacity
         : 1.0;
     final motionEnergy = motion.energy;
+    final time = motion.now.inMicroseconds / Duration.microsecondsPerSecond;
+    final animated = motion.animationsEnabled && !isDisabled;
+    final phase = animated
+        ? time * (math.pi * 2 / 9.2) + motion.phaseSeed * .37
+        : math.pi * .45;
+    final breath = animated ? .5 + .5 * math.sin(phase) : .5;
+    final lightDrift = animated ? math.sin(phase) * radius * .12 : 0.0;
+    final lightAlignment = Alignment(
+      .82 + lightDrift / math.max(size.width, 1),
+      -.74 + math.cos(phase * .8) * .035,
+    );
+    final lightStrength = isDisabled
+        ? .025
+        : isPressed
+        ? .98
+        : isHovered
+        ? .86
+        : ((isSelected || kind == GlassButtonKind.primary) ? .78 : .64) +
+              breath * .12 +
+              motionEnergy * .28;
 
+    // The switch handle reads as a raised glass lens because its face, bevel,
+    // edge reflection, and cast shadow are separate optical layers. Give every
+    // action button the same construction; only navigation uses a quieter mix.
     canvas.drawRRect(
       rrect,
       Paint()
@@ -648,20 +735,31 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            tokens.glassTop,
-            Color.lerp(tokens.glassTop, tokens.glassBottom, .42)!,
-            tokens.glassBottom,
+            isPressed
+                ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
+                : Color.alphaBlend(
+                    tokens.highlight.withValues(alpha: .14 * materialWeight),
+                    tokens.glassTop,
+                  ),
+            Color.lerp(
+              tokens.glassTop,
+              isPressed ? tokens.inset : tokens.glassBottom,
+              isPressed ? .64 : .34,
+            )!,
+            isPressed
+                ? Color.lerp(tokens.glassBottom, tokens.inset, .30)!
+                : tokens.glassBottom,
           ],
           stops: const [0, .38, 1],
         ).createShader(rect)
         ..color = Color.fromRGBO(255, 255, 255, opacity),
     );
 
-    final inset = rect.deflate(1.0);
+    final inset = rect.deflate(1.35);
     if (inset.width > 0 && inset.height > 0) {
       final inner = RRect.fromRectAndRadius(
         inset,
-        Radius.circular((radius - 1).clamp(0, radius)),
+        Radius.circular((radius - 1.35).clamp(0, radius)),
       );
       canvas.drawRRect(
         inner,
@@ -670,13 +768,18 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              tokens.highlight.withValues(alpha: isDisabled ? .34 : .74),
-              Colors.white.withValues(alpha: isDisabled ? .02 : .07),
+              tokens.highlight.withValues(
+                alpha: (isDisabled ? .34 : .88) * materialWeight,
+              ),
+              Colors.white.withValues(
+                alpha: (isDisabled ? .02 : .10) * materialWeight,
+              ),
               Colors.transparent,
               tokens.inset.withValues(
                 alpha: isPressed
-                    ? .22
-                    : GlassDesignTokens.restingButtonInsetOpacity,
+                    ? .42
+                    : GlassDesignTokens.restingButtonInsetOpacity *
+                          (isNavigation ? .85 : 1.15),
               ),
             ],
             stops: const [0, .12, .72, 1],
@@ -684,87 +787,161 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       );
     }
 
-    final topGlow = kind == GlassButtonKind.primary || isSelected;
-    if (topGlow || isHovered || isPressed || motionEnergy > 0) {
-      final glowAlpha = isPressed
-          ? .18
-          : (isHovered
-                ? .12
-                : (isReferenceSize ? .20 : .11) + motionEnergy * .13);
-      canvas.save();
-      canvas.clipRRect(rrect);
+    final rrectPath = Path()..addRRect(rrect);
+    canvas.save();
+    canvas.clipRRect(rrect);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment(-.72, -.92),
+          radius: 1.35,
+          colors: [
+            tokens.highlight.withValues(
+              alpha: (isDisabled ? .16 : .42) * materialWeight,
+            ),
+            Colors.transparent,
+          ],
+          stops: const [0, 1],
+        ).createShader(rect),
+    );
+    if (!isDisabled &&
+        (animated || isPressed || isHovered || motionEnergy > 0)) {
       canvas.drawRect(
         rect,
         Paint()
           ..shader = RadialGradient(
-            center: Alignment(
-              .82 - motionEnergy * .24,
-              -.78 + motionEnergy * .12,
-            ),
-            radius: 1.08,
+            center: lightAlignment,
+            radius: isReferenceSize ? 1.0 : .82,
             colors: [
-              accent.withValues(alpha: glowAlpha),
+              accent.withValues(
+                alpha:
+                    (isPressed
+                        ? .58
+                        : tokens.daylight > .5
+                        ? .50 + breath * .08
+                        : .36 + breath * .08) *
+                    materialWeight,
+              ),
+              accent.withValues(
+                alpha: (tokens.daylight > .5 ? .24 : .16) * materialWeight,
+              ),
               Colors.transparent,
             ],
+            stops: const [0, .34, 1],
           ).createShader(rect),
       );
-      canvas.restore();
     }
-
-    final arc = Path()
-      ..moveTo(size.width * .54, 1.1)
-      ..cubicTo(
-        size.width * .74,
-        .5,
-        size.width - 1.0,
-        1.2,
-        size.width - 1.0,
-        radius * .82,
+    if (isSelected && !isPressed) {
+      canvas.drawRRect(
+        rrect,
+        Paint()..color = accent.withValues(alpha: .075 * materialWeight),
       );
-    canvas.save();
-    canvas.clipRRect(rrect);
+    }
+    canvas.restore();
+
+    final upperBevel = Path()
+      ..moveTo(
+        math.max(radius * .82, size.width - radius * 3.1 + lightDrift),
+        1.1,
+      )
+      ..cubicTo(
+        size.width - radius * 2.15 + lightDrift,
+        .35,
+        size.width - radius * .35,
+        .75,
+        size.width - 1.0,
+        radius * .86,
+      );
     canvas.drawPath(
-      arc,
+      upperBevel,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isReferenceSize ? 4.2 : 3.0
+        ..strokeWidth = isReferenceSize ? 5.4 : 3.8
         ..strokeCap = StrokeCap.round
-        ..maskFilter = MaskFilter.blur(
-          BlurStyle.normal,
-          isReferenceSize ? 3.6 : 2.3,
-        )
-        ..color = accent.withValues(
-          alpha: isDisabled
-              ? .01
-              : (kind == GlassButtonKind.primary
-                        ? (isReferenceSize ? .62 : .46)
-                        : .28) +
-                    motionEnergy * .12,
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.6)
+        ..color = tokens.highlight.withValues(
+          alpha: (isDisabled ? .08 : .34) * materialWeight,
         ),
     );
     canvas.drawPath(
-      arc,
+      upperBevel,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = .95
+        ..strokeWidth = isPressed ? 1.5 : 1.0
         ..strokeCap = StrokeCap.round
+        ..color = tokens.highlight.withValues(
+          alpha: (isDisabled ? .2 : .80) * materialWeight,
+        ),
+    );
+
+    if (!isDisabled &&
+        (animated || isPressed || isHovered || motionEnergy > 0)) {
+      // A small, warm strip travels around the bevel like the luminous edge on
+      // the switch's glass thumb. It rests on the upper-right corner and sways
+      // gently there; clicks intensify it without repainting a sampled orbit.
+      canvas.drawPath(
+        upperBevel,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isReferenceSize ? 20 : 16
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = MaskFilter.blur(
+            BlurStyle.normal,
+            isReferenceSize ? 8 : 6.2,
+          )
+          ..color = accent.withValues(alpha: lightStrength * .62),
+      );
+      canvas.drawPath(
+        upperBevel,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isReferenceSize ? 4.8 : 3.6
+          ..strokeCap = StrokeCap.round
+          ..color = accent.withValues(alpha: lightStrength),
+      );
+      canvas.drawPath(
+        upperBevel,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isReferenceSize ? 1.25 : .95
+          ..strokeCap = StrokeCap.round
+          ..color = Colors.white.withValues(alpha: lightStrength * .92),
+      );
+    }
+
+    final bevelRect = rect.deflate(.55);
+    final bevel = RRect.fromRectAndRadius(
+      bevelRect,
+      Radius.circular((radius - .55).clamp(0, radius)),
+    );
+    canvas.save();
+    canvas.clipRRect(rrect);
+    canvas.drawPath(
+      rrectPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isFocused ? 1.8 : 1.2
         ..shader = LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Colors.transparent,
-            tokens.highlight.withValues(alpha: isDisabled ? .30 : .82),
-            accent.withValues(
-              alpha: isDisabled
-                  ? .12
-                  : kind == GlassButtonKind.primary
-                  ? (isReferenceSize ? .98 : .92)
-                  : .62,
+            tokens.highlight.withValues(
+              alpha: (isDisabled ? .26 : .92) * materialWeight,
             ),
-            Colors.transparent,
+            tokens.highlight.withValues(alpha: .30 * materialWeight),
+            accent.withValues(alpha: (isDisabled ? .08 : lightStrength * .38)),
+            tokens.inset.withValues(alpha: isPressed ? .66 : .24),
           ],
-          stops: const [0, .34, .82, 1],
+          stops: const [0, .36, .68, 1],
         ).createShader(rect),
+    );
+    canvas.drawRRect(
+      bevel,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = .7
+        ..color = tokens.inset.withValues(alpha: isPressed ? .38 : .12),
     );
     final contact = Path()
       ..moveTo(radius * .72, size.height - 1.1)
@@ -780,57 +957,21 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.1
         ..strokeCap = StrokeCap.round
-        ..color = tokens.inset.withValues(alpha: isDisabled ? .10 : .23),
+        ..color = tokens.inset.withValues(
+          alpha: isDisabled ? .10 : (isPressed ? .38 : .23),
+        ),
     );
     canvas.restore();
 
-    if (!isDisabled && (topGlow || isHovered || isPressed)) {
-      final lowerArc = Path()
-        ..moveTo(radius * .68, size.height - 1.4)
-        ..cubicTo(
-          size.width * .3,
-          size.height - .6,
-          size.width * .7,
-          size.height - .6,
-          size.width - radius * .68,
-          size.height - 1.4,
-        );
-      final dark = tokens.daylight < .5;
-      final glowAlpha = isPressed ? .66 : (isHovered ? .58 : .50);
-      canvas.drawPath(
-        lowerArc,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5.4
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0)
-          ..color = accent.withValues(alpha: glowAlpha * (dark ? 1.0 : .28)),
-      );
-      canvas.drawPath(
-        lowerArc,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.15
-          ..strokeCap = StrokeCap.round
-          ..shader = LinearGradient(
-            colors: [
-              Colors.transparent,
-              accent.withValues(alpha: dark ? .96 : .28),
-              Colors.transparent,
-            ],
-            stops: const [0, .5, 1],
-          ).createShader(rect),
-      );
-    }
-
+    final focusColor = isFocused ? tokens.focusRing : tokens.highlight;
     canvas.drawRRect(
       rrect,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isFocused ? 1.7 : 1.0
-        ..color = isFocused
-            ? tokens.focusRing.withValues(alpha: .94)
-            : tokens.highlight.withValues(alpha: isDisabled ? .36 : .70),
+        ..strokeWidth = isFocused ? 1.8 : .7
+        ..color = focusColor.withValues(
+          alpha: isFocused ? .98 : (isDisabled ? .42 : .76) * materialWeight,
+        ),
     );
 
     if (isFocused) {

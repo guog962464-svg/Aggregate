@@ -350,6 +350,8 @@ Future<void> _verifyGlassButtonContrast(
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Mac Host'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text(disabledLabel));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text(busyLabel));
@@ -497,10 +499,11 @@ Future<void> _verifyScenario(
 
     textRegions.addAll({
       'settings title': tester.getRect(find.text('设置').last),
-      'page subtitle': tester.getRect(find.text('让工作台适应你的使用方式。')),
-      'section title': tester.getRect(find.text('外观')),
-      'body text': tester.getRect(find.text('主题选择保存在本机。')),
+      'section title': tester.getRect(find.text('外观').last),
+      'appearance description': tester.getRect(find.text('选择浅色、深色，或跟随 macOS。')),
     });
+    await tester.tap(find.text('快捷键').first);
+    await tester.pumpAndSettle();
     for (final label in ['搜索所有功能', '运行当前功能']) {
       await tester.ensureVisible(find.text(label));
       await tester.pumpAndSettle();

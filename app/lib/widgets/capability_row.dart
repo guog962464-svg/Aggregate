@@ -16,6 +16,7 @@ class CapabilityRow extends StatelessWidget {
     this.isFavorite = false,
     this.onFavoriteChanged,
     this.selected = false,
+    this.compactDirectory = false,
   });
   final Capability capability;
   final String source;
@@ -23,10 +24,14 @@ class CapabilityRow extends StatelessWidget {
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteChanged;
   final bool selected;
+  final bool compactDirectory;
 
   @override
   Widget build(BuildContext context) {
     final icon = _icon(capability.id.kind);
+    final description = compactDirectory
+        ? _directoryDescription(capability)
+        : capability.description;
     if (defaultTargetPlatform == TargetPlatform.macOS &&
         GlassMotionScope.maybeOf(context) != null) {
       return Row(
@@ -35,13 +40,15 @@ class CapabilityRow extends StatelessWidget {
             child: GlassActionButton(
               glyph: GlassGlyphCatalog.fromMaterialIcon(icon),
               label: capability.title,
-              description: capability.description,
-              source: source,
+              description: description,
+              source: compactDirectory ? null : source,
               semanticsLabel:
                   '${capability.title}；${capability.description}；来源：$source',
               onPressed: onOpen,
               kind: GlassButtonKind.navigation,
-              size: GlassButtonSize.secondary,
+              size: compactDirectory
+                  ? GlassButtonSize.directory
+                  : GlassButtonSize.secondary,
               selected: selected,
               expand: true,
             ),
@@ -53,6 +60,8 @@ class CapabilityRow extends StatelessWidget {
                   : '收藏 ${capability.title}',
               icon: isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
               selected: isFavorite,
+              kind: GlassButtonKind.navigation,
+              size: GlassButtonSize.icon,
               onPressed: () => onFavoriteChanged!(!isFavorite),
             ),
         ],
@@ -71,18 +80,20 @@ class CapabilityRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              capability.description,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(source, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
-        ),
+        subtitle: compactDirectory
+            ? Text(description, maxLines: 1, overflow: TextOverflow.ellipsis)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    capability.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(source, maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
         trailing: onFavoriteChanged == null
             ? const Icon(Icons.chevron_right)
             : Row(
@@ -109,6 +120,20 @@ class CapabilityRow extends StatelessWidget {
     );
   }
 }
+
+String _directoryDescription(Capability capability) =>
+    switch (capability.id.kind) {
+      CapabilityKind.mcpTool => switch (capability.permission) {
+        PermissionLevel.read => '只读工具',
+        PermissionLevel.localControl => '运行端控制',
+        PermissionLevel.externalWrite => '外部写入',
+        PermissionLevel.unknown => '权限待确认',
+      },
+      CapabilityKind.mcpResource => '只读资源',
+      CapabilityKind.mcpPrompt => '内容预览',
+      CapabilityKind.cliCommand => 'CLI 命令',
+      CapabilityKind.cliAction => 'CLI 动作',
+    };
 
 IconData _icon(CapabilityKind kind) => switch (kind) {
   CapabilityKind.cliCommand => Icons.terminal_outlined,

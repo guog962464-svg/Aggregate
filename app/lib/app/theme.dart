@@ -351,7 +351,7 @@ abstract final class AggregateTheme {
       iconTheme: IconThemeData(color: glass.muted),
       inputDecorationTheme: theme.inputDecorationTheme.copyWith(
         filled: true,
-        fillColor: glass.inset.withValues(alpha: 0.62),
+        fillColor: glass.inset,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: glass.line.withValues(alpha: 0.72)),
