@@ -164,3 +164,8 @@ B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读�
 ### UI-6.7 补证：Mac Host 撤销与身份轮换确认 B085/B087（2026-11-18）
 
 Profile fake Host 中确认撤销后配对卡片消失；确认身份轮换后 AX 提示成功、Host 关闭且列表清空。44321 无 listener，未读 Keychain 或连接手机。截图 SHA、状态回读和限制见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-撤销与身份轮换确认-b085b087-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下帧/FrameTiming，不代表真实设备或证书操作；UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：暂停播放权限确认 B048–B050（2026-11-18）
+
+暗色隔离 Profile 验收了无参“暂停播放”动作的权限确认取消与确认执行：取消后状态保持“尚未运行”；确认后 `PreviewRuntime` 返回内存预览结果“暂停播放”。未控制播放器或触碰外部服务。截图哈希和验收边界见[验收记录](acceptance-record.md#2026-11-18-ui-67-暂停播放权限确认暗色-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。未点击复制或访问剪贴板，无按下帧/FrameTiming；UI-6.7 与 UI-6.8 仍部分验收。

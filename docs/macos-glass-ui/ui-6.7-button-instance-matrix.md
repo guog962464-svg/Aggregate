@@ -60,9 +60,9 @@
 | B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：通用创建连接对话框 | macOS 不适用：动作清单选择属于通用 `AddConnectionDialog`；macOS 正式运行端走 `ConnectionSetupDialog`，不呈现此控件 |
 | B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；macOS 配置表单取消已由 B029 覆盖 |
 | B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；不以 PreviewRuntime 绕过“不能添加真实连接”保护来触发此按钮 |
-| B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 对无参外部写入动作“暂停播放”打开确认并点击取消，确认框关闭、未执行；见 `108-write-confirm-light.png`。暗色同类确认状态待核 |
-| B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 同一浅色确认框内可见“执行”按钮，未点击；未执行写入。见 `108-write-confirm-light.png`；暗色待核 |
-| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击“暂停播放”的“运行”打开权限确认；见 `107-write-capability-form-light.png`、`108-write-confirm-light.png`。busy/disabled 状态待核 |
+| B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击取消后确认框关闭、运行状态保持“尚未运行”；暗色同样通过。浅/深证据分别见 `108-write-confirm-light.png` 与 `pause-confirm-dark.png`。仅验证本地预览夹具；真实外部写入未执行 |
+| B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 暗色确认框实际点击“执行”后 AX 显示“运行成功 / 预览结果：暂停播放”；结果由 `PreviewRuntime` 在内存生成，没有控制播放器或外部服务。确认框与结果见 `pause-confirm-dark.png`、`pause-result-dark.png`。不代表真实外部写入 |
+| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 暗色隔离 Profile 点击“运行”打开外部写权限确认；通过 B049 的假执行路径后，AX 回读运行成功。浅色表单/确认见 `107-write-capability-form-light.png`、`108-write-confirm-light.png`，暗色确认/结果见 `pause-confirm-dark.png`、`pause-result-dark.png`。busy/disabled 状态待核 |
 | B051 | `app/lib/features/invocation/capability_run_page.dart:590` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击“在终端运行”并进入 UI 检查全内存终端 stub；界面明确说明不会运行外部命令。见 `111-terminal-action-form-light.png`、`112-terminal-stub-light.png` |
 | B052 | `app/lib/features/invocation/capability_run_page.dart:597` | 功能调用：运行表单与结果页 | 使用 `UI6_SEED_ACTIVITY_RUNNING=true` 呈现内存 fixture 的运行态；点击取消后 AX 确认“运行状态：已取消”。取消前截图 `116-running-cancel-light.png`；不代表真实服务终态 |
 | B053 | `app/lib/features/invocation/schema_form.dart:286` | 功能调用：动态参数表单字段 | 浅色 JSON 表单点击“格式化 JSON 参数”，有效默认 `{}` 未报错但没有可见格式变化；非空 JSON 格式化、字段校验与输入动画未验证。见 `109-json-form-format-light.png` |

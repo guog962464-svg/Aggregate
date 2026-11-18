@@ -898,6 +898,14 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 
 B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际点击；弹窗关闭，新的 AX 树仍显示原假 grant。B100“保存权限”已在同一实窗编辑流程点击，AX 回读范围从读取连接/连接向导更新为再含连接管理。B101 逐连接权限 chip 在 B096/B097 中分别选择 Git CLI 本机控制和外部写入，AX 读回选择态，并确认本机控制/外部写入自动包含读取。截图沿用前一节的 [`custom-permission-dialog-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-permissions/custom-permission-dialog-dark.png>) 与 [`edit-permission-dialog-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-permissions/edit-permission-dialog-dark.png>)。这些回调只读写 `Ui6InspectionHost`；AXPress 回执未证明物理按压，未采按下动画帧。
 
+### 2026-11-18 UI-6.7 暂停播放权限确认暗色 Profile 验收
+
+- 环境与边界：`lib/preview/ui6_inspection_main.dart` 的 macOS Profile 与 `Ui6InspectionRuntime`；所选“暂停播放”标注为“仅更新本地预览状态”，但权限分类仍是外部写入，因此运行前显示确认框。源码确认 fixture 的 `invoke` 委托给进程内 `PreviewRuntime`，不控制音乐播放器、不运行外部命令、不访问服务或网络。
+- B048：在无参表单点击“运行”打开确认框，再点“取消”；新 AX 树确认弹窗关闭、运行状态仍为“尚未运行”。
+- B049/B050：重新打开确认框并点击“执行”；AX 确认“运行成功 / 预览结果：暂停播放”。这只验证隔离 fixture 的按钮与状态呈现，不代表真实音乐暂停或外部写入成功。未点击“复制结果”，未读取或写入系统剪贴板。
+- 暗色确认框截图 [`pause-confirm-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-music-pause-confirmation/pause-confirm-dark.png>)，SHA-256 `db7b76ee1718969b3e5f26527e6045c97388de6fdc2506c8bda13469ab8db45`；完成状态截图 [`pause-result-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-music-pause-confirmation/pause-result-dark.png>)，SHA-256 `cb5d9d7700ceb6be79e13f7f72740eaebc47fd3f5ff7dc682d5b6258fdf2d957`。
+- Profile app 正常关闭；GUI 清单及 `pgrep` 均未发现 Aggregate 或 Flutter runner 残留。没有产品代码或测试变化；AXPress 的 `delivered_unverified` 回执由随后的 AX 状态读取确认。未采物理按下帧、FrameTiming/FPS；UI-6.7 和 UI-6.8 仍有其他未验收项。
+
 
 ### 2026-11-18 UI-6.7 工作台功能行 B102–B103 Profile 验收
 
