@@ -1148,3 +1148,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 所有功能页默认样例中，物理键盘输入 `Git` 后，AX 读回输入值 `Git`，标题显示 1 个功能，结果为“查看 Git 状态”。清除按钮存在且可操作；悬停窗口截图可见“清除搜索”提示。对清除按钮执行一次物理点击后，AX 读回搜索值为空，页面恢复 12 个默认预览功能。清除后图像中列表下半部受窗口可视范围裁切，但 AX 快照确认恢复 12 项。
 - 截图均为 agent-desktop 按 Aggregate 单窗口捕获的 1824×1488 PNG：[输入 Git](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b012-dark-profile/search-git.png>) SHA-256 `8b6c7e32089b96b38607bdc579a8f4930e20ab2ce99dcd913772e1b554b9ccf7`；[清除按钮悬停](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b012-dark-profile/clear-hover.png>) SHA-256 `55068386880a63cb82354fd56b781db6366670c26aa6839d8875edeebf47af4a`；[清除后恢复](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b012-dark-profile/clear-after.png>) SHA-256 `088ec0748e1d7efb3a49219302ebed1c037d1c7d4ee844f6838c15219de7afb0`。
 - 边界：本次深色使用的是默认 `PreviewRuntime` 目录，基数为 12；之前浅色 UI6 检查夹具的 17 项是另一份数据集，因此只比较各自“过滤后清除并恢复”的行为，不比较两夹具计数。截图仅证明静态深色外观和悬停提示，未采到可靠的按下/松开动效帧或物理 display-present。UI-6.7 继续部分验收。
+
+
+### 2026-11-19 UI-6.7 B016 无匹配结果清除筛选深色 Profile 验收
+
+- 使用 `flutter run -d macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart` 启动隔离的 `Ui6InspectionRuntime`；macOS 27.2.1、Flutter 3.47.8 stable、窗口 800×632 logical px、DPR 2。所有状态均为内存预览，没有真实服务。
+- 所有功能页点选“资源”后，AX 列表只剩“读取预览说明”一项；物理键盘输入 `NEVER_MATCH_4207` 后 AX 读回该值，结果进入无匹配空态。空态的“清除筛选”与搜索框内的“清除搜索”是两个不同按钮；本次按 B016 目标点击空态“清除筛选”。点击后 AX 读回搜索框为空，类型筛选复位为“全部”，页面显示“全部功能 · 17”，与清除前的夹具基数一致。
+- 单窗口 1824×1488 PNG：[无匹配空态](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b016-dark-profile/no-match.png>) SHA-256 `a3b8cd81aff8e39d44951acd1306c81c2f39a99c857fcd6b13bb94d569f17c80`；[清除筛选悬停](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b016-dark-profile/clear-filter-hover.png>) SHA-256 `a4337fa3dda8738d239b75f71a5f112701e7874caa29f25511959165068f8dcb`；[点击后恢复 17 项](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b016-dark-profile/clear-filter-after.png>) SHA-256 `7ddb0f7eb6bde6daeb82df82636a139795c07f87dc4ad79bd44027c9255ac4bd`。
+- 边界：截图记录深色无匹配静态样式、按钮悬停样式和清除后的列表结果；未采集可靠按下/松开时序帧或物理 display-present。Profile 在关闭时已退出；UI-6.7 仍部分验收。
