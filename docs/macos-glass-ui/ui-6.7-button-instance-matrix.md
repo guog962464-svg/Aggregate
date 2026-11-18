@@ -36,15 +36,15 @@
 | B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击参数预览；AX 结果为 `["仅内存预览", "--help"]`，提示清单有效且不会运行程序。没有执行外部命令；深色仅有静态截图 |
 | B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击取消后关闭；重开清单确认新增草稿已丢弃。`action_editor_test.dart` 回归覆盖取消后重开且未调用保存；截图 `94-action-editor-cancel-check.png` 为取消后的连接详情 |
 | B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗保存后重开，AX 下拉项包含原动作与 `action1`；仅写入进程内 `Ui6InspectionRuntime`，退出即丢弃，不触碰磁盘或外部服务。Widget 回归覆盖新增、参数预览和保存；深色动态状态仍待核 |
-| B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 自动检测仅在特定类型/适配器出现；本次 CLI 预览未显示该按钮，仍待核 |
-| B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅/深配置图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 可见程序路径选择按钮；未打开文件面板 |
-| B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见测试连接按钮；未点击 |
-| B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见禁用的保存连接按钮；未保存 |
-| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 紧凑全屏路径的关闭按钮未捕获 |
-| B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见取消按钮并用于退出；未保存连接 |
-| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅/深图 `51-connection-target-light.png`、`51-connection-target-dark.png` 可见本机 Mac 目标；仅打开内存预览配置表单 |
-| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅/深目标图可见虚构配对 Mac 选项；未选择或连接设备 |
-| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅/深目标图可见取消按钮；选择目标后在配置表单取消退出 |
+| B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 的配对 Mac 样例表单输入 `git` 并点击 Host 查找；内存 stub 返回未找到提示，没有运行命令或连接设备。截图 `100-connection-setup-host-detect-miss-light.png`；深色和动态状态待核 |
+| B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 本机 Mac 预览表单打开原生文件面板后取消；未选文件或读取文件。配置静态图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 另见；深色交互待核 |
+| B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 输入虚构路径后点击测试；隔离 stub 显示安全检查通过，未访问本机命令、网络或凭据。截图 `98-connection-setup-test-passed-light.png`；未使用真实连接 |
+| B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 的安全 stub 检查通过后 AX 显示保存按钮已启用；未点击，未新增连接。深色仍为静态配置图 |
+| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | Profile 窗口请求缩至 540pt 后实际宽度停在 768pt，无法进入 600pt 以下紧凑分支；小屏 Widget 回归改为点击“关闭添加连接”，断言弹窗关闭且未保存草稿。原生紧凑外观仍未核 |
+| B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 表单点击取消后退出，没有保存连接；深色仅静态配置图 |
+| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器见截图 `96-connection-target-light-current.png`；选择本机 Mac（预览）后进入隔离配置表单 `97-connection-setup-local-light-current.png`，没有连接真实设备 |
+| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 选择虚构的配对 Mac（样例），进入只连内存 stub 的配置表单 `99-connection-setup-paired-mac-light.png`；未连接设备 |
+| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器的取消操作关闭弹窗；没有创建连接。截图 `96-connection-target-light-current.png`；深色取消交互待核 |
 | B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 深色删除确认图 `55-delete-confirm-dark.png` 可见取消按钮；AX 点击未关闭，最终按 Escape 退出；浅色状态仍待核 |
 | B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 深色删除确认图 `55-delete-confirm-dark.png` 可见危险操作；未点击，未删除内存样例；浅色状态仍待核 |
 | B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅/深连接列表图 `50-connections-list-light.png`、`50-connections-list-dark.png` 可见添加连接按钮并打开目标选择器 |

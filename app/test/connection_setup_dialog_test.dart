@@ -507,7 +507,7 @@ void main() {
     expect(setup.latest?.spec.executionTarget.hostId, 'paired-mac-1');
     expect(setup.latest?.spec.executable, isNull);
     expect(setup.latest?.executableReference, 'host-executable-ref');
-    await tester.binding.handlePopRoute();
+    await tester.tap(find.byTooltip('关闭添加连接'));
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsNothing);
     expect(setup.discarded, contains('draft-1'));
