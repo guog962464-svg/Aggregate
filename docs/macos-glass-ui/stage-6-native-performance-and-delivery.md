@@ -201,3 +201,8 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.8 补证：当前网页作为已删除视频的参考（2026-11-19）
 
 用户指定的[Glass Light Toggle 页面](https://experiments.thisiswhitespace.com/glass-light-toggle)作为已删除 MP4 的后续参照。当前 standalone `main.js?v=3` SHA 与旧源码基线一致；隔离 Chromium/SwiftShader 中完成暗态到亮态的真实拖动并采集中段。截图哈希、部署 ID 与适用范围见[验收记录](acceptance-record.md#2026-11-19-ui-68-当前-glass-light-toggle-网页复核-替代已删除视频)。该网页不是原录屏，未同步采集 Flutter/macOS 物理呈现时钟；UI-6.8 仍部分验收。
+
+
+### UI-6.7 补证：B001/B005/B050 暗色按下与释放附近样本（2026-11-19）
+
+新增仅捕获 Aggregate 窗口的 ScreenCaptureKit 样本，覆盖全局搜索、活动刷新、暂停播放运行按钮。B005 的约 +202ms 截图请求可见刷新点阵进入旋转相位；B050 释放后依次出现原表单和执行确认框，确认框取消后状态仍为“尚未运行”。请求和截图返回时间均已记录。ScreenCaptureKit 没有 display-present 时间戳，单次捕获耗时约 28–96ms；该批只补有限时点状态观察，不签收精确动画相位、FPS、VoiceOver 或 109 个调用点全覆盖。详细证据与 SHA 见[验收记录](acceptance-record.md#2026-11-19-ui-67-暗色生产按钮短时序采样)。

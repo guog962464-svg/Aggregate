@@ -1081,6 +1081,15 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 | 浅→深 稳定 | `source-model-light-to-dark-settled.png` | `80064c1bfaa1bff362f2a7146f093ce83a62926e4009c23b8dcc5f83f058ee23` |
 
 
+### 2026-11-19 UI-6.7 暗色生产按钮短时序采样
+
+- 环境沿用隔离 `lib/preview/ui6_inspection_main.dart` macOS Profile fixture（窗口 800×632 logical px、DPR 2）；`Ui6InspectionRuntime` 仅委托给当前进程内 `PreviewRuntime`。通过 `CGEvent` 在生产按钮 AX 矩形中心按住 240ms，再用 ScreenCaptureKit 的 `desktopIndependentWindow` filter 只采 Aggregate 窗口。PNG 为 1600×1264。每张图记录截图请求与返回相对 MouseDown 或计划 MouseUp 时刻的 monotonic 时间；采集调用实际耗时约 28–96ms，故这些是有限时点的窗口内容样本，不是显示器 present 时间戳。
+- B001 搜索：按下样本请求于 MouseDown 后 86.664ms、调用完成于 179.274ms；[截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B001-search-held-80ms.png>) SHA-256 `351b5212db98abe0c85ae241a7c28476de077326f4658450ce35c3d50f1c7191` 可见按钮按下态。释放后应用已进入“所有功能”，其余截图不能继续观察原搜索图案。本按钮路由行为另见上一节。
+- B005 活动刷新：截图 API 请求相对计划释放时刻为 +23.789、+118.026、+202.397、+288.738、+381.620ms，返回时刻为 +63.722、+149.287、+234.365、+321.514、+415.064ms。按住样本[PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B005-refresh-held-80ms.png>) SHA `ef9d086fa71cf81b5c1cd33b8ef504f520c30511fa23465e4bd61664a1b3cc12`；请求约 +202ms 的旋转样本[PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B005-refresh-pulse-160ms.png>) SHA `40f2c614c8e320c5c67dffc9a8b5a6f1f1ef0860f269c6445478829c14871152`，可见回转箭头处于旋转相位。AX 回读仍在活动页。完整六点时序表为[`dark-B005-refresh-timing.tsv`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B005-refresh-timing.tsv>)，SHA `10e751f2a95826907f55074d5e939eceb9900a3a75ba471f76cc4746fe183e41`。
+- B050 暂停播放“运行”：按下样本[PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B050-run-held-80ms.png>) 请求 +85.031ms、完成 +174.904ms，SHA `e3aaaa693e7d7430bf522cf66f425bf9e213a832ad67c4527c9ab717e527f37a`。释放后请求约 +23.749ms、完成 +55.433ms 的样本仍显示运行表单，SHA `3fe385987115f2e32d8996b102f7a3e161aa84dd68eb3e8aea82aca4d3e84555`；约 +160.324ms 请求、+188.934ms 完成的样本已显示权限确认框，SHA `9dc8925d5e067d721c61ace628163a447cf6aa4490f97bd1037c4fced2b93904`。随后点击“取消”，AX 确认返回表单且仍为“尚未运行”；未点“执行”、未调用音乐或外部命令。时序表[`dark-B050-run-timing.tsv`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B050-run-timing.tsv>) SHA `7d236df7595ca2c7646360c7858c4d572b3d7279364854ab18aad1970e6b89d9`。
+- B001/B005/B050 仅补暗色生产实例的有限时点视觉和路径结果；图像捕获可能跨过短动画状态，不能据此推导精确位移曲线、时长、帧率或物理显示 FPS。浅色三实例既有截图与回调证据仍见上一节；UI-6.7 其他生产实例和 VoiceOver 仍未全验收。本批没有代码或测试变更。
+
+
 ### 2026-11-19 UI-5.5 设置页玻璃按钮标签窗口/DPR矩阵扩展
 
 - 将设置页生产 `AggregateApp` 的六类按钮文字（普通、禁用、禁用说明、禁用来源、忙碌、危险）采样扩到 800×600、1024×768、1440×900 三种逻辑窗口，各测 1×/2× DPR；深色、浅色初始偏好都运行。每种组合覆盖 14 个临界主题相位（0.46–0.535），共 12 组窗口/DPR/偏好、168 组相位组合。每类文字在同一按钮面上取三个未覆盖像素，合计 3,024 个文字/背景色对比样本，均不低于 4.5:1。
