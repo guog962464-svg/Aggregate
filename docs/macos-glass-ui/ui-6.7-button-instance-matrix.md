@@ -60,18 +60,18 @@
 | B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：通用创建连接对话框 | macOS 不适用：动作清单选择属于通用 `AddConnectionDialog`；macOS 正式运行端走 `ConnectionSetupDialog`，不呈现此控件 |
 | B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；macOS 配置表单取消已由 B029 覆盖 |
 | B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；不以 PreviewRuntime 绕过“不能添加真实连接”保护来触发此按钮 |
-| B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色确认图 `45-write-confirm-dialog-light.png` 中可见；用无敏感验收文本打开后取消，未执行；暗色同类确认状态待核 |
-| B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 浅色确认图 `45-write-confirm-dialog-light.png` 中可见；执行按钮未点击；暗色同类确认状态待核 |
-| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 暗色表单图 `03-run-form-dark.png`；浅色 `40-cli-result-form-light.png` 可见运行按钮并打开确认框；busy/disabled 待核 |
-| B051 | `app/lib/features/invocation/capability_run_page.dart:590` | 功能调用：运行表单与结果页 | 未捕获：PreviewRuntime 隐藏终端按钮，真实终端路径未启用 |
-| B052 | `app/lib/features/invocation/capability_run_page.dart:597` | 功能调用：运行表单与结果页 | 未捕获：演示调用未停留在活动运行态，取消按钮未呈现 |
-| B053 | `app/lib/features/invocation/schema_form.dart:286` | 功能调用：动态参数表单字段 | 2026-11-18 暗色实窗表单图 `03c-run-form-after-keypress.png`、`03d-run-form-focus-path.png`；只见基础数字字段，复杂字段/浅色/校验状态待核 |
-| B054 | `app/lib/features/invocation/schema_form.dart:335` | 功能调用：动态参数表单字段 | 暗色 JSON 表单图 `33-json-form-dark.png`、`34-json-form-expanded-dark.png`；展开后 AX 名称变为“收起 JSON 编辑器”，未修改内容 |
-| B055 | `app/lib/features/invocation/terminal_page.dart:275` | 功能调用：终端输出与输入 | 无终端页截图 |
-| B056 | `app/lib/features/invocation/terminal_page.dart:388` | 功能调用：终端输出与输入 | 无终端页截图 |
-| B057 | `app/lib/features/invocation/terminal_page.dart:419` | 功能调用：终端输出与输入 | 无终端页截图 |
-| B058 | `app/lib/features/invocation/terminal_page.dart:427` | 功能调用：终端输出与输入 | 无终端页截图 |
-| B059 | `app/lib/features/invocation/terminal_page.dart:469` | 功能调用：终端输出与输入 | 无终端页截图 |
+| B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 对无参外部写入动作“暂停播放”打开确认并点击取消，确认框关闭、未执行；见 `108-write-confirm-light.png`。暗色同类确认状态待核 |
+| B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 同一浅色确认框内可见“执行”按钮，未点击；未执行写入。见 `108-write-confirm-light.png`；暗色待核 |
+| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击“暂停播放”的“运行”打开权限确认；见 `107-write-capability-form-light.png`、`108-write-confirm-light.png`。busy/disabled 状态待核 |
+| B051 | `app/lib/features/invocation/capability_run_page.dart:590` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击“在终端运行”并进入 UI 检查全内存终端 stub；界面明确说明不会运行外部命令。见 `111-terminal-action-form-light.png`、`112-terminal-stub-light.png` |
+| B052 | `app/lib/features/invocation/capability_run_page.dart:597` | 功能调用：运行表单与结果页 | 使用 `UI6_SEED_ACTIVITY_RUNNING=true` 呈现内存 fixture 的运行态；点击取消后 AX 确认“运行状态：已取消”。取消前截图 `116-running-cancel-light.png`；不代表真实服务终态 |
+| B053 | `app/lib/features/invocation/schema_form.dart:286` | 功能调用：动态参数表单字段 | 浅色 JSON 表单点击“格式化 JSON 参数”，有效默认 `{}` 未报错但没有可见格式变化；非空 JSON 格式化、字段校验与输入动画未验证。见 `109-json-form-format-light.png` |
+| B054 | `app/lib/features/invocation/schema_form.dart:335` | 功能调用：动态参数表单字段 | 暗色图 `33-json-form-dark.png`、`34-json-form-expanded-dark.png`；浅色 Profile 验证展开/收起，AX 名称在“展开 JSON 编辑器”与“收起 JSON 编辑器”间切换。见 `110-json-editor-expanded-light.png` |
+| B055 | `app/lib/features/invocation/terminal_page.dart:275` | 功能调用：终端输出与输入 | 浅色全内存终端点击“中断程序”后显示 `^C`；见 `115-terminal-interrupt-light.png`。未中断真实进程 |
+| B056 | `app/lib/features/invocation/terminal_page.dart:388` | 功能调用：终端输出与输入 | 浅色全内存终端点击 Ctrl 后状态提示“Ctrl 已按下”，再发送 Tab 后提示清除；见 `113-terminal-key-input-light.png`、`114-terminal-key-interaction-light.png` |
+| B057 | `app/lib/features/invocation/terminal_page.dart:419` | 功能调用：终端输出与输入 | 全内存终端无文本选择时“复制”呈禁用外观；未点击或读取终端剪贴内容。见 `112-terminal-stub-light.png` |
+| B058 | `app/lib/features/invocation/terminal_page.dart:427` | 功能调用：终端输出与输入 | 浅色全内存终端“粘贴”可见但未点击，避免读取系统剪贴板；仅有静态画面证据 `112-terminal-stub-light.png` |
+| B059 | `app/lib/features/invocation/terminal_page.dart:469` | 功能调用：终端输出与输入 | 浅色全内存终端仅验证 Tab 与 ↑ 两个按键控件产生本地交互；未逐项检查其余按键。见 `114-terminal-key-interaction-light.png` |
 | B060 | `app/lib/features/music/music_account_control.dart:105` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
 | B061 | `app/lib/features/music/music_account_control.dart:200` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
 | B062 | `app/lib/features/music/music_account_control.dart:206` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
