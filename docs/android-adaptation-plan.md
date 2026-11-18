@@ -178,6 +178,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-18 NodeProbe 自动 alias 补验：NDK 脚本现在为三 ABI 构建带 `$ORIGIN`/16 KB 对齐的 PIE launcher；NodeProbe-only APK 自动建立应用私有 symlink 并前置 PATH。LGE AN10 4 KB 真机上固定 npm `script-allowed` 返回 npm exit 0，fixture marker 证明子 `node --version` status 0 / `v24.22.1`；Node `:node` service 随后在 Messenger `kind=3` 前触发 pointer-tag fatal，两次复现，稳定性未通过且根因未定位。验证器拒绝 emulator/预装 NodeProbe，并清理本轮测试包；普通 Aggregate 仍安装。仅证明实验路径可自动执行和问题可重复，不开放产品 npm/CLI，也不关闭 A3.6。见 [NodeProbe 自动 alias 验收](android-a3-runtime-research.md#2026-11-18-nodeprobe-自动-node-别名与-npm-lifecycle-验收)。
   - 2026-11-18 NodeProbe 复验：JNI 连续 argv 缓冲区修正后，`verify_node_alias.py` 与一轮完整 11 项 npm suite 在 LGE AN10 4 KB 真机通过；增加逐项等待 Node `kind=5` 之前一轮 suite 在 `script-allowed` 前超时，加入关闭等待后 lifecycle 转换与完整 suite 通过。错误 SHA-512 5 次隔离安装均被拒绝，但 2/5 在 Node 关闭后仍留部分 `json5/lib` 文件。npm 稳定性仍未通过；Node 24.22.1-0、维护方当前安全版来源、完整 mobile suite、SBOM/许可和 16 KB 实机门槛继续开放，产品 npm/CLI 保持关闭。见 [NodeProbe 后续复验](android-a3-runtime-research.md#2026-11-18-nodeprobe-argv-修正与-npm-稳定性复验)。
 
+  - 2026-11-18 上游安全版时效复核：Node 官方 `v24.22.3` 为 11 月 11 日 LTS security release；fogtape 最新 Node 24 Android prerelease 仍是 10 月 22 日的 `24.22.1-0`（基于官方 `v24.22.1`），原始 nodejs-mobile 最新 Android 库是 Node 18.20.4。仓库 Docker daemon 未运行且临时 24.22.3 构建材料缺失，本轮未下载/重建/安装旧包；A3.6 仍缺安全版本匹配 Android SDK、完整 suite/SBOM/legal 与 16 KB 真机。来源见[上游发行复核](android-a3-runtime-research.md#2026-11-18-上游-android-node-发行时效复核)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。

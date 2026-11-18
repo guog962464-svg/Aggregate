@@ -453,6 +453,14 @@ nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 n
 
 [Android 16 KB page-size guide](https://developer.android.com/guide/practices/page-sizes) 仍要求正确的共享库 ELF 与 APK zip alignment，并提醒静态对齐不能替代设备运行检查。
 
+## 2026-11-18 上游 Android Node 发行时效复核
+
+- Node 官方于 2026-11-11 发布 v24.22.3 LTS 安全版本。[官方 v24.22.3 发布说明](https://nodejs.org/en/blog/release/v24.22.3)
+- fogtape/nodejs-mobile Releases 中最新 Node 24 Android 移动预发布为 `24.22.1-0`，日期 2026-10-22，基于上游 Node `v24.22.1`；它尚未重基到 `v24.22.3`。发行说明也标明 source upgrade 不自动发布 SDK，需要单独经过归档/checksum 和设备验证。[fogtape Android mobile releases](https://github.com/fogtape/nodejs-mobile/releases)
+- 原始 nodejs-mobile Releases 当前标记的 Latest 为 v18.20.4，并列出 Android ABI 成品；该成品不满足 Node 24.22.3 安全基线。[nodejs-mobile releases](https://github.com/nodejs-mobile/nodejs-mobile/releases)
+- 仓库准备脚本仍固定 `24.22.1-0`。本机 `docker info` 无法连接 Docker daemon，未发现 podman/colima；Node 24.22.3 的临时构建源树/产物也不在当前工作区。因此本轮未重建旧候选或安装供应包。
+- **结论：**本次官方来源复核未发现与 v24.22.3 匹配、可直接采用的维护方 Android SDK；旧版移动预发布继续不能替代当前安全版。A3.6 保持开放；不更新 NodeProbe 固定包，不声称 Android 发行已满足维护/安全门槛。
+
 ## 2026-11-18 NodeProbe argv 修正与 npm 稳定性复验
 
 - **JNI fatal 诊断：**此前自动别名 `script-allowed` 已写出成功 marker，却在 Messenger 终态前报告 `Pointer tag for 0x6767612e34363432 was truncated`。仅给 `argv` 追加空指针未修复；将各参数从独立 `std::string` 存储改为单一可写连续缓冲区、逐项 NUL 分隔并以空指针结束后，fatal 不再出现在专用验收中。该证据将问题定位到当前 JNI `node::Start` argv 存储布局，不据此归因于 Node 或 Android 平台整体。
