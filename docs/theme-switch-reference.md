@@ -162,3 +162,13 @@ flutter build macos --debug --no-pub
 继续校准时应保留原始 PTS 和实际误差。固定种子只使回归可重复，不等于找回录屏的随机种子；相同进度值也不唯一决定中途反向后的粒子形态。
 
 验证环境为 Flutter 3.47.8 / Dart 3.13.7。上一轮 22 项相关测试及原生 Metal/Impeller 两端点目视检查通过；实时拟合续做后的 35 项相关测试、静态分析和 macOS Debug 构建通过。未使用模拟器。
+
+## 2026-11-18 网页参考源复核
+
+用户确认原 MP4 已删除，并指定 [Glass Light Toggle](https://experiments.thisiswhitespace.com/glass-light-toggle) 作为当前可访问的参考。页面的制作说明指出，点阵由逐粒子的角度配对、错峰、旋绕和弹簧重组；拖动位置直接控制变形进度；玻璃边缘光带绕行并向玻璃、轨道和背景散射。这里将网页用于后续视觉/交互机制对照，不把它当成已恢复的用户 MP4。
+
+页面加载的作者脚本 [`main.js?v=3`](https://experiments.thisiswhitespace.com/standalone/glass-light-toggle/main.js?v=3) SHA-256 为 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`，与 `app/test/fixtures/theme_switch_model.json` 的独立 oracle 来源哈希一致。核对了 432×224 轨道、99 px 半柄宽、58 px 圆角、17×17 点阵、角度配对规则、逐像素 spring 系数/积分、拖动目标及玻璃折射和光带方程；它们与当前 Flutter 模拟和 runtime shader 的主要机制、基础参数对应。独立模型基准固定随机种子并在中途反向，便于重现比较；网页每次启动使用 `Math.random`，实际中间粒子轨迹并非固定。
+
+本轮只复核和记录基准，没有更改产品代码或主题交互。产品继续使用实时指针输入和连续积分，不播放帧序列；`videoFittedThemeSwitch` 中此前按录屏拟合的参数与网页 source oracle 分开保留。回归覆盖的是网页算法在给定种子/输入下的数值等价与光学探针，不等同对网页任意一次随机运行或已删除 MP4 的原生逐帧画面对齐。
+
+网页使用 Chromium/SwiftShader 捕获的 1440×757 参考状态已归档，包含暗态制作说明、拖动中的 25%/50%/75% 样本和亮态端点。它们是网页实时交互的静态采样，不是预制产品动画帧，也不是 macOS 实窗 display-present 捕获。与既有 macOS Profile 设置页浅/深端点截图对照后，当前轨道、玻璃柄、月/日点阵和冷/暖边缘光方向一致；原生连续相位、随机种子差异及渲染器栅格差异仍待 UI-6.8 实窗复核。
