@@ -979,3 +979,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 使用 `ui6_inspection_main.dart` macOS Profile（窗口 AX bounds 800×632 logical px，DPR 2）；Host 和配对数据均来自进程内 `Ui6InspectionHost` fake。启动 fake Host、生成一次邀请后，将 Mac Host 页面滚动到邀请详情。未启用真实 listener、网络配对或 Keychain。
 - 暗色实窗截图 [`host-invitation-generated-dark-scrolled.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-invitation-scroll/host-invitation-generated-dark-scrolled.png>) 为 1824×1488 PNG，SHA-256 `89e5c2ca7b419b4119a0dbeb9694bc092c9d78820cc88d0c48ed0733f47eedff`。完整二维码、邀请过期时间、一个本机网络地址及“复制配对信息”按钮均在截图中可见；首屏原浅色截图的二维码裁切由滚动后完整截图补足。
 - 在这张截图对应的最终滚动状态下，`agent-desktop get --property bounds` 的 live 读取仍给“复制配对信息” `{x:602,y:749,width:139,height:1}`；AX 节点保留 Click action。故只签收实窗视觉可见性，仍不签收该按钮的 AX 几何。没有捕获原生按下关键帧；B090 保持部分验收，UI-6.7 仍部分验收。Profile app 和 Flutter runner 已退出，无残留；无产品代码或测试变化。
+
+
+### 2026-11-18 UI-6.7 B090 Flutter Semantics 与 macOS AX 边界对照
+
+- 在同一隔离 Debug 夹具中，以 `ext.flutter.debugDumpSemanticsTreeInTraversalOrder` 检查邀请页滚动后的 Flutter 树。`复制配对信息` 对应节点的本地矩形为 `Rect.fromLTRB(24.0, 622.0, 162.6, 662.0)`，高度 40 logical px，带 `tap` action，且未标记 `HIDDEN`。
+- 同状态的 live macOS AX 读取仍为 `{x:602,y:749,width:139,height:1}`；实窗 Profile 视觉证据仍见上方 B090 截图。此差异排除了按钮本地语义框只有 1 px 高的解释，但尚不能区分 Flutter macOS 坐标/裁剪转换与原生 AX 查询路径；不据此归因到某一层或做猜测性 UI 补丁。
+- Debug 树只作语义几何诊断，不作为视觉验收；未记录 Debug 截图。隔离 Debug app 已关闭，fake Host 无 listener、Keychain 或网络配对；无产品代码/测试变化。B090 的 AX 几何仍未通过，UI-6.7 保持部分验收。

@@ -123,7 +123,7 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 
 ### UI-6.7 补证：Mac Host 设置控件（2026-11-18）
 
-隔离 Profile 中对 B088–B090 做了浅/深 Host 启停、轮换确认取消和邀请生成检查。Host 假实现没有开启监听；44321 端口无 listener。B088 两主题启停状态已读回；B089 只验证取消保持状态；B090 后续滚动实窗截图已显示完整二维码和复制按钮，但同一状态下 live AX bounds 仍只有 1 px 高。截图 SHA、配置和进程隔离范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-启停轮换确认与邀请-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。未采按下帧或 FrameTiming；没有触发网络配对，UI-6.7 仍部分验收。
+隔离 Profile 中对 B088–B090 做了浅/深 Host 启停、轮换确认取消和邀请生成检查。Host 假实现没有开启监听；44321 端口无 listener。B088 两主题启停状态已读回；B089 只验证取消保持状态；B090 滚动实窗截图显示完整二维码和复制按钮。后续 Debug 语义树将复制按钮的本地语义矩形读为 40 px，但同状态 live macOS AX 仍只有 1 px 高；这排除了按钮本地语义框尺寸错误，但没有定位坐标/裁剪差异的具体责任层。截图 SHA、配置和隔离范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-启停轮换确认与邀请-profile-验收)、[B090 语义对照](acceptance-record.md#2026-11-18-ui-67-b090-flutter-semantics-与-macos-ax-边界对照)及[逐实例表](ui-6.7-button-instance-matrix.md)。未采按下帧或 FrameTiming；没有触发网络配对，UI-6.7 仍部分验收。
 
 
 ### UI-6.7 补证：Mac Host 配对与设备权限（2026-11-18）
@@ -188,4 +188,4 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 ### UI-6.7 补证：Mac Host 邀请二维码完整可见 B090（2026-11-18）
 
-暗色隔离 Profile 中启动 fake Host 并生成邀请，滚动到详情后实窗截图显示完整二维码、过期时间、地址数量和复制按钮；最终截图同一状态下 live AX 读取仍返回 `x=602,y=749,width=139,height=1`。图像 SHA 与范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-b090-mac-host-邀请二维码完整可见性复核)及[逐实例表](ui-6.7-button-instance-matrix.md)。没有按下动画关键帧，故只通过截图可见性，不提升 B090 总体状态；UI-6.7 仍部分验收。
+暗色隔离 Profile 中启动 fake Host 并生成邀请，滚动到详情后实窗截图显示完整二维码、过期时间、地址数量和复制按钮；最终截图同一状态下 live AX 读取仍返回 `x=602,y=749,width=139,height=1`。Debug Flutter Semantics 本地节点矩形为 40 px，说明按钮本地语义尺寸正常，但原生 AX 几何仍不符；当前证据不能定位坐标/裁剪差异发生在哪一层。图像 SHA 与范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-b090-mac-host-邀请二维码完整可见性复核)、[语义对照](acceptance-record.md#2026-11-18-ui-67-b090-flutter-semantics-与-macos-ax-边界对照)及[逐实例表](ui-6.7-button-instance-matrix.md)。没有按下动画关键帧，故只通过截图可见性，不提升 B090 总体状态；UI-6.7 仍部分验收。
