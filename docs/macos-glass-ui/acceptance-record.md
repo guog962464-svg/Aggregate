@@ -958,3 +958,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 暗色原生 Profile 静置图 [`run-centered-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-run-glyph-centering/run-centered-dark.png>)，SHA-256 `de6e818ef61f49a787fc94fcc94d681c5a2922e024de4e07c524737e3de5e51f`；浅色原生 Profile 静置图 [`run-centered-light.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-run-glyph-centering/run-centered-light.png>)，SHA-256 `db9d67446b6e1508e337f46eb37455e7bf34cc788bf005a38d0b2ca27be499f9`。两图均为 1824×1488 像素、DPR 2；AX 已回读浅色主题。
 - 验证：更新 golden 时 `flutter test --no-pub --update-goldens test/glass_glyph_golden_test.dart test/glass_action_button_test.dart` 共 18 项通过；随后正常模式联合运行 `glass_action_button_test.dart`、`glass_glyph_golden_test.dart`、`glass_motion_test.dart` 共 29 项通过。`flutter analyze --no-pub` 无问题，两个 Dart 文件格式检查通过，Profile 构建成功。更新了全 glyph 浅/深 1×/2× golden 与主 glyph 浅/深 golden。夹具 app 与 Flutter runner 已关闭，无残留。
 - 本轮只调整静态几何位置；未改变太阳/月亮状态机或三个 glyph 的点击动画/业务逻辑，也未采按下帧和 FrameTiming/FPS。此处签收的是组件级居中修正，不替代逐个生产按钮的动效验收；UI-6.7/6.8 仍部分验收。
+
+
+### 2026-11-18 UI-6.7 B105 复制结果 Widget 级拦截验收
+
+- 使用生产 `ResultPanel` 与 macOS `GlassMotionScope` Widget 变体；在 `SystemChannels.platform` 注册测试 messenger，截获 `Clipboard.setData` 到进程内字符串变量。点击语义按钮“复制结果”一次后，记录到一次平台通道调用，内容为 `已完成\n\n{\n  "count": 2,\n  "ok": true\n}`，并显示“已复制结果”。测试没有调用 macOS 剪贴板服务，没有读取或改变系统剪贴板。
+- 新增 `app/test/result_panel_clipboard_test.dart`，定向运行 `flutter test --no-pub --reporter compact test/result_panel_clipboard_test.dart` 通过（1 项）。首次运行发现测试语义句柄的清理顺序错误，改为测试结束前显式 dispose 后通过；Dart 格式通过。
+- 此项证明生产组件的 macOS 分支会把拼接后的结果交给 Clipboard 通道并显示成功提示；不能替代真实原生 Profile 按压或系统剪贴板写入验收，B105 仍为部分证据。未读取用户剪贴板数据。
