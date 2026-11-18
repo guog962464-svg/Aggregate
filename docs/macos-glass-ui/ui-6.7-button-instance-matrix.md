@@ -103,7 +103,7 @@
 | B088 | `app/lib/platform/macos/mac_host_settings_panel.dart:463` | 设置：Mac Host 配对和权限操作 | 2026-11-18 Profile 浅/深主题均点击启动与停止；`host-running-light.png`、`host-running-dark.png`、`host-stopped-after-click-light.png`、`host-stopped-after-click-dark.png`。假 Host 仅改进程内状态；确认无 44321 监听，Profile VM service loopback 仍在；按下动画关键帧待核 |
 | B089 | `app/lib/platform/macos/mac_host_settings_panel.dart:501` | 设置：Mac Host 配对和权限操作 | 2026-11-18 浅色 Profile 打开身份轮换确认并取消；`host-identity-confirm-light.png`；AX 复核运行状态、假配对设备和邀请仍保留。确认轮换路径由 fake Widget 回归覆盖，本次未在实窗确认；按下动画待核 |
 | B090 | `app/lib/platform/macos/mac_host_settings_panel.dart:549` | 设置：Mac Host 配对和权限操作 | 2026-11-18 浅色 Profile 启动假 Host 后点击生成邀请；`host-invitation-generated-light.png`，AX 读到邀请过期信息与 1 个本机网络地址。二维码被当前窗口底部区域部分遮挡，故只部分验收；没有网络配对，按下动画待核 |
-| B091 | `app/lib/platform/macos/mac_host_settings_panel.dart:583` | 设置：Mac Host 配对和权限操作 | 暗色假邀请详情图 `30-host-invitation-dark.png`；复制按钮可见，未点击；二维码和 loopback 地址均为内存 stub 数据 |
+| B091 | `app/lib/platform/macos/mac_host_settings_panel.dart:583` | 设置：Mac Host 配对和权限操作 | 2026-11-18 macOS Widget 测试：启动假 Host 并生成假邀请后点击复制；内存截获的单次 Clipboard payload 与二维码 payload 完全一致，成功提示出现。未写系统剪贴板；邀请及 loopback 地址均为内存 stub |
 | B092 | `app/lib/platform/macos/mac_host_settings_panel.dart:616` | 设置：Mac Host 配对和权限操作 | 2026-11-18 暗色隔离 Profile 待处理设备卡片及拒绝/只读/向导按钮见 `pairing-controls-dark.png`；真实 Host 未启动，内容来自假设备 |
 | B093 | `app/lib/platform/macos/mac_host_settings_panel.dart:662` | 设置：Mac Host 配对和权限操作 | 2026-11-18 暗色隔离 Profile 已配对设备卡片见 `paired-devices-dark.png`，另见撤销取消后的 `revoke-cancelled-paired-remains-dark.png`；设备均为进程内假数据 |
 | B094 | `app/lib/platform/macos/mac_host_settings_panel.dart:669` | 设置：Mac Host 配对和权限操作 | 2026-11-18 在假 Host 中实际点击“批准只读”；待处理项消失，AX 读回一个已配对预览设备且仅“读取连接”范围；结果图 `readonly-approved-dark.png` |

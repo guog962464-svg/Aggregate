@@ -179,3 +179,8 @@ Profile 浅/深静置对照确认，运行三角先前锚在 9×9 网格最左�
 ### UI-6.7 补证：结果复制的隔离 Widget 回调 B105（2026-11-18）
 
 通过 macOS Widget 变体将生产 `Clipboard.setData` 平台调用截获至内存，验证一次点击、文本/JSON 拼接内容和成功提示；系统剪贴板未读取或改写。定向测试 1 项通过，详情见[验收记录](acceptance-record.md#2026-11-18-ui-67-b105-复制结果-widget-级拦截验收)和[逐实例表](ui-6.7-button-instance-matrix.md)。此证据不替代原生 Profile 系统剪贴板动作，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：Mac Host 邀请复制 B091（2026-11-18）
+
+macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截获到内存；复制一次后 payload 与对应二维码 payload 一致，成功提示可见。定向测试 1 项和静态分析通过。没有写入系统剪贴板、启动真实 Host 或进行网络配对；不是原生按下帧验收。详情见[验收记录](acceptance-record.md#2026-11-18-ui-67-b091-mac-host-配对信息复制-widget-验收)和[逐实例表](ui-6.7-button-instance-matrix.md)。UI-6.7 仍部分验收。

@@ -965,3 +965,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 使用生产 `ResultPanel` 与 macOS `GlassMotionScope` Widget 变体；在 `SystemChannels.platform` 注册测试 messenger，截获 `Clipboard.setData` 到进程内字符串变量。点击语义按钮“复制结果”一次后，记录到一次平台通道调用，内容为 `已完成\n\n{\n  "count": 2,\n  "ok": true\n}`，并显示“已复制结果”。测试没有调用 macOS 剪贴板服务，没有读取或改变系统剪贴板。
 - 新增 `app/test/result_panel_clipboard_test.dart`，定向运行 `flutter test --no-pub --reporter compact test/result_panel_clipboard_test.dart` 通过（1 项）。首次运行发现测试语义句柄的清理顺序错误，改为测试结束前显式 dispose 后通过；Dart 格式通过。
 - 此项证明生产组件的 macOS 分支会把拼接后的结果交给 Clipboard 通道并显示成功提示；不能替代真实原生 Profile 按压或系统剪贴板写入验收，B105 仍为部分证据。未读取用户剪贴板数据。
+
+
+### 2026-11-18 UI-6.7 B091 Mac Host 配对信息复制 Widget 验收
+
+- 使用生产 `MacHostSettingsPanel` 与测试 fake Host/PairingControl。启动只改变测试进程内状态，生成的短时邀请及 `127.0.0.1:43123` endpoint 都是 fake。点击“复制配对信息”后，测试 messenger 在 `SystemChannels.platform` 捕获一次 `Clipboard.setData`；写入文本与同一 fake 邀请的完整 `qrPayload` 完全一致，页面显示“配对信息已复制”。
+- 定向执行 `flutter test --no-pub --reporter compact --plain-name 'copies the generated invitation through an intercepted platform channel' test/mac_host_settings_panel_test.dart`（macOS Widget 变体）通过 1 项；`flutter analyze --no-pub` 无问题，`dart format` 和 `git diff --check` 通过。
+- 这是组件回调和 payload 的隔离验收，不是 macOS Profile 系统剪贴板写入、真实 Host、网络配对或原生按下动画验收；测试未读取或改变系统剪贴板，B091 仍部分验收，UI-6.7 继续部分验收。

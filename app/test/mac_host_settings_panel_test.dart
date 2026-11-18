@@ -9,6 +9,7 @@ import 'package:aggregate/platform/macos/host/host_tls_identity.dart';
 import 'package:aggregate/platform/macos/host/host_wss_transport.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -117,6 +118,65 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await host.close();
   });
+
+  testWidgets(
+    'copies the generated invitation through an intercepted platform channel',
+    (tester) async {
+      final host = _FakeHostControl();
+      final pairing = _FakePairingControl();
+      String? clipboardPayload;
+      var clipboardWrites = 0;
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          final arguments = call.arguments as Map<Object?, Object?>;
+          clipboardPayload = arguments['text'] as String?;
+          clipboardWrites++;
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MacHostSettingsPanel(
+                hostControl: host,
+                pairingControl: pairing,
+                loadConnections: () async => const [],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('启动 Host'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('生成新邀请'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('复制配对信息'));
+      await tester.tap(find.text('复制配对信息'));
+      await tester.pump();
+
+      expect(pairing.invitationCalls, 1);
+      expect(clipboardWrites, 1);
+      expect(clipboardPayload, pairing.lastInvitation?.qrPayload);
+      expect(find.text('配对信息已复制'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await host.close();
+    },
+    variant: const TargetPlatformVariant({TargetPlatform.macOS}),
+  );
 
   testWidgets('starts Host, presents invitation, approves and revokes device', (
     tester,
@@ -301,6 +361,7 @@ final class _FakePairingControl implements HostPairingControlPort {
   final List<String>? _events;
   final List<HostPendingPairing> _pending;
   final List<HostDeviceGrant> _grants = [];
+  HostWssPairingInvitation? lastInvitation;
   var invitationCalls = 0;
   var failRevocation = false;
   Set<HostGrantScope> approvedScopes = const {};
@@ -312,7 +373,7 @@ final class _FakePairingControl implements HostPairingControlPort {
   Future<HostWssPairingInvitation> createInvitation() async {
     invitationCalls++;
     final now = DateTime.utc(2026, 11, 13);
-    return HostWssPairingInvitation(
+    return lastInvitation = HostWssPairingInvitation(
       invitation: HostPairingInvitation(
         hostId: 'host-0123456789abcdef0123456789abcdef',
         certificateSha256: List.filled(64, 'a').join(),
