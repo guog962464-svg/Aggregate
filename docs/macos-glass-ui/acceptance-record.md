@@ -1231,3 +1231,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B041：打开 MCP 详情并点击“测试连接”；操作前后 AX 均显示同一 MCP 详情、`preview.invalid`、样例日期 `2026-07-28` 与 5 项能力。`Ui6InspectionRuntime.refreshConnection` 只返回 `_findConnection` 的内存对象，没有执行真实刷新或网络请求。
 - `compact-list.png` 作为初始暗色紧凑列表记录，SHA-256 `8fc9fed84bf04c65233e9c4fec2a434e027f915a0a581476b667e43607a38078`。Profile 已正常退出，退出后没有 Aggregate 或 `ui6_inspection_main` runner 进程。仅更新验收文档，没有产品代码变化或运行测试。
 - 边界：本批补签暗色连接删除取消、重排可逆、动作编辑取消、MCP 内存测试和返回路由；删除没有确认执行。上移按钮的视觉禁用态有截图和源码条件，但 AX disabled 状态未读到。没有捕获按钮按下逐帧动画或物理 display-present，UI-6.7 继续部分验收。
+
+### 2026-11-19 UI-6.7 B002–B003 应用外壳导航浅深 Profile
+
+- 环境：`lib/preview/ui6_inspection_main.dart` 的 `Ui6InspectionRuntime` 隔离夹具，macOS Profile，窗口内容 540×700pt。主题偏好只在进程内切换。没有使用生产账户、Mac Host、网络或外部命令。
+- B002：打开抽屉后，AX 可读到“UI 检查 · Git CLI”按钮；分别在浅色和深色实点后，页面出现“UI 检查 · Git CLI”标题及 3 个本地样例动作。结果截图：[浅色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-sidebar-profile/02-git-cli-light.png>) SHA-256 `c99be8cc3d555871935581c5a81b22454ceab951d5b58678b905c14a74b31a3d`；[深色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-sidebar-profile/06-git-cli-dark.png>) SHA-256 `5739040c38dcde811df166e6df10ce228864f9ca0d8dad07edcd8b6ba59b4fdb`。没有打开终端、查看 Git 状态或触发写权限确认。
+- B003：分别在浅色和深色实点侧栏“活动”，都进入活动页并呈现状态筛选。截图：[浅色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-sidebar-profile/03-activity-light.png>) SHA-256 `f9073fcfd148568aaa8c2e3242acfa794c3620ca04937706b482e6ccaab2e5fa`；[深色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-sidebar-profile/07-activity-dark.png>) SHA-256 `055bc7062b1211a5ff99534a9b506c2be3d322de4adc5dba87ded460fe177196`。在暗色活动页重新打开抽屉后，活动导航按钮仍可见：[抽屉](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-sidebar-profile/08-activity-navigation-dark.png>) SHA-256 `e8a9aba0f82d83284a5255bdad7216d0804ead3921a9bb693ddb7c5c8e97f0a6`。点击后一次 AX 快照短暂保留抽屉旧节点；随后新快照读到活动页刷新和筛选按钮，截图确认活动页。故只以复读快照和最终截图判定路由，不采用旧快照内容。
+- 浅色设置中实点“外观主题”后，AX value 从“浅色”变为“深色”，主题内容随之变化；深色设置图见[截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-sidebar-profile/05-settings-dark.png>) SHA-256 `b9b5b148820b1ee37a656a453865ea6aad5e9b3858f50d4da655cf960ee44753`。此处只确认隔离夹具能切换到深色并用于检查两组导航，不测主题开关动画相位。
+- 结论：B002/B003 的浅深导航路由通过本轮 Profile 实点；没有逐帧采集按钮按下/释放动画，也没有验证物理 display-present、每一处 selected 的视觉区分或其余调用点。UI-6.7 仍部分验收。
