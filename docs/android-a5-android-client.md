@@ -152,3 +152,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - Scope: fake Node/npm/mpv/CLI/MCP, temporary TLS identity, isolated HOME/MacRuntime data and `.integration` package. No production Host, account, ordinary-app data or 16 KB device was used. This is a physical Android client over USB `adb reverse` to a loopback test Host; it does not simulate Wi-Fi/routing/Android OS loss or direct LAN/NSD.
 - Cleanup readback: `.integration` was removed, ordinary `io.github.guog962464.aggregate` remains installed, ADB reverse is empty, device page size is 4096, and production port 47321 has no listener.
 - Stage status: physical abrupt TCP loss and manual reconnect are now covered. Automatic retry, Wi-Fi/route/OS loss, direct LAN/NSD freshness, production business RPC, real Netease login/playback, production TUI, signed Release permissions and 16 KB hardware remain open; A5.5 remains open.
+
+## 2026-11-18 Android-to-Mac LAN reachability preflight
+
+- Read-only interface check found the Android device on `192.168.31.0/24` and the Mac on `192.168.10.0/24`; the Android route to the Mac address went through its `192.168.31.1` gateway. One ICMP probe received no reply.
+- A temporary listener bound only to the Mac's private `en0` address on an ephemeral port received no Android TCP connection; `toybox nc` timed out. The listener was closed immediately. Production Host port 47321 had no listener; no production Host was started and no pairing/RPC was attempted.
+- This records a failed reachability preflight at the observed network state. It does not prove all routed TCP is blocked, and it is not a direct WSS/NSD test. Direct LAN/NSD acceptance remains open until the device can reach the Mac on a shared or routed network.
