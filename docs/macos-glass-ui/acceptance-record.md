@@ -775,3 +775,19 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 一次过渡端点压暗尝试在主题进度 0.36 的文字样本降到 4.44:1；改为高次非线性暗色权重后，最终定向对比测试恢复通过。最终 `flutter test --no-pub --reporter compact test/glass_action_button_test.dart test/glass_motion_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart test/glass_theme_switch_test.dart` 34 项通过；`flutter analyze --no-pub` 无问题；Dart 格式检查、`git diff --check` 通过；macOS Profile fixture 构建成功（62.9 MB）。
 - 结论仍为部分验收：静态两主题图显示按钮表面和局部光带更接近主题开关，但按钮仍由独立 Dart `CustomPainter` 绘制，没有复用开关片元着色器，故不记为同一渲染材质或像素级对齐。原生按压帧、FrameTiming/FPS、生产调用点全量布局仍未验收。Profile 窗口已关闭，应用清单确认无 Aggregate app 残留。
 - retrieval_feedback：采用本记录上一节与当前任务笔记对“主题切换交互冻结、Widget 不替代原生静态证据、未测状态不签收”的边界；以 `glass_theme_switch.dart` 与 `glass_theme_switch.frag` 对照当前按钮 `CustomPainter`，据此只收敛按钮光场，不触碰开关模拟器。仅检索本项目源码和当前任务笔记，未查其他项目或 web。
+
+### 2026-11-18 UI-6.7 按钮与主题开关共用玻璃光学 shader
+
+- 实现：将运行时 shader 程序加载移至平台无关的 `GlassOpticRenderer`。操作按钮现在调用与主题开关相同的 fragment shader 资源，并复用同一套距离场、法线折射、边缘照明、发射弧与颗粒光学函数；按钮独有的圆角尺寸、状态、强调色和面色通过独立 uniform 分支传入。按钮点阵图案仍由原 glyph painter 绘制在玻璃面上，所以它们没有被采样纹理做逐像素折射。
+- 主题切换保护：`GlassThemeSwitch` 的手势映射、模拟器、拖拽/点击判定、释放提交与回调未改。主题开关继续走 shader 原路径（显式 `renderMode=0`）；Profile 实窗由 AX 点击从“深色”切到“浅色”，读回“浅色”且两主题画面正常。
+- 原生 Profile 截图：[深色共享 shader](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-shared-shader-dark.png>)，SHA-256 `8a6959d15e7dc985acf2bf58009ba38f4370883e62100fbbb9ea552859c8714e`；[浅色共享 shader](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-shared-shader-light.png>)，SHA-256 `167129cb1bea41ad13d6d9950cef633b316432f3eba7d1aa2d259f2e2c53ef23`。窗口截图为 1692×1356 像素、DPR 2；仅覆盖 fixture 静置态，不代表生产调用点逐项复核或按压过程验收。
+- 验证：`glass_action_button_test.dart`、`glass_motion_test.dart`、`glass_theme_switch_test.dart`、主题模拟/实时/光学与动态文字对比测试共 45 项通过；`flutter analyze --no-pub` 无问题；`flutter build macos --profile --no-pub -t lib/glass_buttons_fixture_main.dart` 成功；`dart format` 与 `git diff --check` 通过。
+- 限制：未采集按住帧、FrameTiming/FPS 或多实例原生性能数据；静态截图中太阳暖光在大尺寸样例上的扩散仍比主题开关集中。当前只证明按钮与开关共用 shader 资源及光学方程，尚未签收 1:1 同外观。UI-6.7 继续部分验收。
+
+### 2026-11-18 UI-6.7 运行、刷新、搜索点阵图案精修
+
+- 用户指出运行、刷新、搜索三个大尺寸 glyph 显得碎且生硬。调整运行三角形的视觉重心；重画刷新环的对向箭头；加粗搜索柄与镜片的连接。统一点单元从 1.9 调至 2.15，圆角半径从 0.64 调至 1.075，增大柔边与轻晕，并给点阵核心增加很浅的斜向明暗。点阵栅格及按钮业务回调保持不变。
+- 为保持按钮不同尺寸下光带比例与主题开关一致，操作按钮 shader 坐标按 198 单位的参考直径归一化；深色月光留在左下，浅色太阳光留在右上。主题开关仍使用原始 shader 分支与完整状态机。
+- macOS Profile 静置截图：[三图标深色](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-tall-dark.png>)，SHA-256 `72cc815bca09e9d3a3f6ef449ea3c782c53fe082dbd96c30279157b7232677b2`；[三图标浅色](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-tall-light.png>)，SHA-256 `331d87f5d092feb88af194c88e91be88104436fb98d89a71cabbb1f957dd5d96`。PNG 为 1784×1684、DPR 2 的 fixture 实窗；语义开关从“深色”切到“浅色”，AX 读回浅色。截图覆盖运行、刷新、搜索，其他按钮只作材质旁证。
+- 验证：更新后的 `glass_glyph_golden_test.dart` 1×/2×、浅/深四组 golden 通过；按钮、glyph、motion、theme switch、主题模拟/实时/光学与动态文字对比共 49 项通过；`flutter analyze --no-pub` 无问题；macOS Profile fixture 成功构建；Dart 格式检查与 `git diff --check` 通过。
+- 未验收：glyph 点阵仍由 Flutter painter 画在 shader 玻璃面上，没有进入同一纹理做逐点折射；没有记录按住动画帧、FrameTiming/FPS 或所有生产页面调用点。本轮改善形状和点单元质感，不代表用户已签收 1:1。UI-6.7 继续部分验收。

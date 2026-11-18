@@ -96,11 +96,11 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
 
   static const int glyphGridSize = 9;
   static const double glyphPitch = 2.7;
-  static const double glyphCellSize = 1.9;
-  static const double glyphCornerRadius = 0.64;
-  static const double glyphFeather = 0.17;
-  static const double glyphOuterHalo = 0.16;
-  static const double glyphHaloAlpha = 0.075;
+  static const double glyphCellSize = 2.15;
+  static const double glyphCornerRadius = 1.075;
+  static const double glyphFeather = 0.28;
+  static const double glyphOuterHalo = 0.18;
+  static const double glyphHaloAlpha = 0.10;
 
   @override
   GlassDesignTokens copyWith({

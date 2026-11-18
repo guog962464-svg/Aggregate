@@ -330,6 +330,16 @@ class _GlassGlyphPainter extends CustomPainter {
     canvas.save();
     canvas.translate(inset.dx, inset.dy);
     canvas.scale(scale);
+    final cellGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color.lerp(color, Colors.white, tokens.daylight > .5 ? .18 : .12)!,
+        color,
+        Color.lerp(color, Colors.black, tokens.daylight > .5 ? .10 : .06)!,
+      ],
+      stops: const [0, .52, 1],
+    ).createShader(const Rect.fromLTWH(0, 0, 32, 32));
     final motion = motionController;
     if (motion != null) {
       final sample = motion.sample;
@@ -391,9 +401,10 @@ class _GlassGlyphPainter extends CustomPainter {
         canvas.drawPath(
           corePaths[band],
           Paint()
-            ..color = color.withValues(
+            ..color = Colors.white.withValues(
               alpha: .96 * (band + 1) / corePaths.length,
-            ),
+            )
+            ..shader = cellGradient,
         );
       }
       canvas.restore();
@@ -412,7 +423,9 @@ class _GlassGlyphPainter extends CustomPainter {
     );
     canvas.drawPath(
       geometry.core,
-      Paint()..color = color.withValues(alpha: .96),
+      Paint()
+        ..color = Colors.white.withValues(alpha: .96)
+        ..shader = cellGradient,
     );
     canvas.restore();
   }
@@ -555,15 +568,15 @@ List<String> _rowsFor(GlassGlyph glyph) => switch (glyph) {
 
 abstract final class _GlyphRows {
   static const play = [
-    '001000000',
-    '001100000',
-    '001110000',
-    '001111000',
-    '001111100',
-    '001111000',
-    '001110000',
-    '001100000',
-    '001000000',
+    '000100000',
+    '000110000',
+    '000111000',
+    '000111100',
+    '000111110',
+    '000111100',
+    '000111000',
+    '000110000',
+    '000100000',
   ];
   static const pause = [
     '011000110',
@@ -705,19 +718,19 @@ abstract final class _GlyphRows {
     '100000010',
     '010000100',
     '001111100',
-    '000000010',
-    '000000001',
+    '000000110',
+    '000000011',
   ];
   static const refresh = [
-    '001111000',
-    '010000100',
-    '100000010',
-    '100000111',
-    '100000000',
-    '111000001',
-    '010000001',
-    '001000010',
-    '000111100',
+    '000111000',
+    '001000100',
+    '010000010',
+    '110000011',
+    '100000001',
+    '110000011',
+    '010000010',
+    '001000100',
+    '000111000',
   ];
   static const music = [
     '000011110',

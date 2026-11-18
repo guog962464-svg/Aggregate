@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../widgets/glass/glass_design_tokens.dart';
+import '../../widgets/glass/glass_optic_renderer.dart';
 import '../../widgets/glass/glass_scene.dart';
 import 'theme_switch_calibration.dart';
 import 'theme_switch_simulation.dart';
@@ -507,9 +508,8 @@ class ThemeSwitchArtwork extends StatefulWidget {
   final Offset backdropOrigin;
   final Size backdropSize;
 
-  static Future<ui.FragmentProgram>? _program;
-  static Future<ui.FragmentProgram> loadProgram() => _program ??=
-      ui.FragmentProgram.fromAsset('shaders/glass_theme_switch.frag');
+  static Future<ui.FragmentProgram> loadProgram() =>
+      GlassOpticRenderer.loadProgram();
   static double sceneScale(
     Size size, [
     ThemeSwitchScene scene = const ThemeSwitchScene(),
@@ -710,6 +710,22 @@ class _GlassPainter extends CustomPainter {
       backdropOrigin.dy,
       backdropSize.width,
       backdropSize.height,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
     ];
     for (var i = 0; i < uniforms.length; i++) {
       effect.setFloat(i, uniforms[i]);

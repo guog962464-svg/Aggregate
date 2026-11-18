@@ -23,6 +23,16 @@ uniform float pixelGlow;
 uniform float stripHalfAngle;
 uniform vec2 backdropOrigin;
 uniform vec2 backdropSize;
+uniform float renderMode;
+uniform vec3 buttonTop;
+uniform vec3 buttonBottom;
+uniform vec3 buttonInset;
+uniform float buttonOpacity;
+uniform float buttonHovered;
+uniform float buttonDisabled;
+uniform float buttonSelected;
+uniform float buttonNavigation;
+uniform float buttonPrimary;
 uniform sampler2D matrixImage;
 uniform sampler2D diffuseImage;
 out vec4 fragColor;
@@ -96,7 +106,75 @@ float grain(vec2 point) {
   return fract((value.x + value.y) * value.x);
 }
 
+vec3 actionSubstrate(vec2 point) {
+  float vertical = clamp((point.y + extent.y) / (2.0 * extent.y), 0.0, 1.0);
+  float facing = smoothstep(-extent.y, extent.y, point.y);
+  vec3 color = mix(buttonTop, buttonBottom, vertical);
+  color = mix(color, buttonInset, raised * 0.48);
+  float navigationWeight = mix(1.0, 0.78, buttonNavigation);
+  color = mix(color, mix(color, lamp, 0.11), buttonSelected * (1.0 - raised));
+  color += buttonTop * (0.035 + 0.025 * buttonPrimary) * (1.0 - facing);
+  return color * navigationWeight;
+}
+
+void paintActionLens() {
+  vec2 screenPoint = FlutterFragCoord().xy;
+  vec2 point = (screenPoint - origin) / zoom;
+  float distanceToLens = handleDistance(point);
+  float vertical = clamp((point.y - handle.y + extent.y) / (2.0 * extent.y), 0.0, 1.0);
+  float alpha = 1.0 - smoothstep(-0.7, 0.7, distanceToLens);
+  if (alpha <= 0.0) {
+    fragColor = vec4(0.0);
+    return;
+  }
+
+  vec3 color = actionSubstrate(point);
+  if (distanceToLens < 2.0) {
+    vec2 normal = vec2(
+        handleDistance(point + vec2(0.5, 0.0)) - handleDistance(point - vec2(0.5, 0.0)),
+        handleDistance(point + vec2(0.0, 0.5)) - handleDistance(point - vec2(0.0, 0.5)));
+    normal /= max(length(normal), 0.0001);
+    float depth = max(-distanceToLens, 0.0);
+    float bevel = pow(1.0 - clamp(depth / 26.0, 0.0, 1.0), 2.6);
+    vec2 insetPoint = point - normal * bevel * refraction - (point - handle) * 0.055;
+    vec3 content = actionSubstrate(insetPoint);
+    vec3 shadedGlass = content * 0.84 + 0.135 * (1.0 - vertical * 0.55);
+    vec3 paleGlass = mix(content, vec3(0.99), 0.5);
+    vec3 glassColor = mix(shadedGlass, paleGlass, daylight);
+    float glowDistance = max(stripDistance(point), 0.0);
+    float scattering = (exp(-glowDistance / 24.0) * 0.8 + exp(-glowDistance / 64.0) * 0.2) * energy;
+    glassColor = illuminate(glassColor, scattering * 0.8);
+    glassColor = illuminate(glassColor, exp(-depth / 2.2) * exp(-glowDistance / 40.0) * energy * 1.3);
+    float lighting = dot(normal, normalize(vec2(-0.35, -1.0)));
+    glassColor += pow(max(lighting, 0.0), 2.0) * exp(-depth / 1.25) * mix(0.42, 0.7, daylight);
+    glassColor += max(lighting, 0.0) * bevel * mix(0.07, 0.16, daylight);
+    glassColor *= 1.0 - max(-lighting, 0.0) * bevel * mix(0.28, 0.07, daylight);
+    glassColor += exp(-depth / 0.7) * mix(0.07, 0.12, daylight);
+    color = mix(glassColor, color, smoothstep(-0.7, 0.7, distanceToLens));
+  }
+
+  float emitterDistance = stripDistance(point);
+  float emitterMask = 1.0 - smoothstep(-0.6, 0.6, emitterDistance);
+  vec3 hotLamp = mix(lamp * 1.05, mix(lamp, vec3(1.0), 0.65),
+      1.0 - smoothstep(-1.4, -0.2, emitterDistance));
+  color = mix(color, hotLamp * (0.8 + 0.35 * energy), emitterMask);
+  color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * (1.0 - emitterMask));
+  float rim = 1.0 - smoothstep(0.0, 1.3, abs(distanceToLens + 0.75));
+  color += rim * mix(mix(0.035, 0.09, vertical), mix(-0.07, 0.07, vertical), daylight);
+  if (buttonHovered > 0.5 && buttonDisabled < 0.5) {
+    color = illuminate(color, 0.12);
+  }
+
+  vec2 physicalPixel = screenPoint * displayRatio;
+  color += (grain(physicalPixel + fract(seconds) * 91.7) - 0.5) * 0.022;
+  fragColor = vec4(clamp(color, 0.0, 1.0), alpha * buttonOpacity);
+}
+
 void main() {
+  if (renderMode > 0.5) {
+    paintActionLens();
+    return;
+  }
   vec2 screenPoint = FlutterFragCoord().xy;
   vec2 point = (screenPoint - origin) / zoom;
   vec2 backgroundPoint = screenPoint;

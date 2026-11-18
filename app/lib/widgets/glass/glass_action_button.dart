@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
 import 'glass_motion.dart';
+import 'glass_optic_renderer.dart';
 
 const _themeSwitchSunLight = Color(0xFFFFA82E);
 
@@ -80,6 +82,8 @@ class GlassActionButton extends StatefulWidget {
 class _GlassActionButtonState extends State<GlassActionButton> {
   late final WidgetStatesController _statesController;
   late final GlassMotionController _motionController;
+  ui.FragmentShader? _surfaceShader;
+  ui.Image? _shaderSampler;
   final GlobalKey _motionBoxKey = GlobalKey();
   late final void Function(Size previous, Size current)
   _visibilityViewportListener = _handleViewportSizeChanged;
@@ -104,6 +108,22 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       ..update(WidgetState.selected, widget.selected)
       ..update(WidgetState.disabled, !_enabled);
     _statesController.addListener(_handleVisualStateChanged);
+    _loadSurfaceShader();
+  }
+
+  Future<void> _loadSurfaceShader() async {
+    try {
+      final program = await GlassOpticRenderer.loadProgram();
+      if (!mounted) return;
+      final shader = program.fragmentShader();
+      setState(() {
+        _surfaceShader = shader;
+        _shaderSampler = GlassOpticRenderer.transparentSampler;
+      });
+    } on Object {
+      // Keep the painter's complete vector fallback if runtime effects are not
+      // available in the current test or rendering environment.
+    }
   }
 
   @override
@@ -251,6 +271,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     _statesController.removeListener(_handleVisualStateChanged);
     _statesController.dispose();
     _motionController.dispose();
+    _surfaceShader?.dispose();
     super.dispose();
   }
 
@@ -331,6 +352,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
           tokens: tokens,
           kind: widget.kind,
           motion: _motionController,
+          shader: _surfaceShader,
+          sampler: _shaderSampler,
+          displayRatio: MediaQuery.devicePixelRatioOf(context),
           // WidgetStatesController mutates its set in place, so a painter must
           // keep a snapshot for shouldRepaint to observe state transitions.
           states: Set.unmodifiable(states),
@@ -671,6 +695,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     required this.tokens,
     required this.kind,
     required this.motion,
+    required this.shader,
+    required this.sampler,
+    required this.displayRatio,
     required this.states,
     required this.radius,
   }) : super(repaint: motion.surfaceMotion);
@@ -678,6 +705,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
   final GlassDesignTokens tokens;
   final GlassButtonKind kind;
   final GlassMotionController motion;
+  final ui.FragmentShader? shader;
+  final ui.Image? sampler;
+  final double displayRatio;
   final Set<WidgetState> states;
   final double radius;
 
@@ -752,128 +782,170 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       math.max(.8, size.height * .011),
     );
 
-    // The switch keeps its calibrated shader. Action buttons echo its raised
-    // lens cues with a softer opaque surface, subtle rim, and narrow emitter;
-    // only navigation uses a quieter mix.
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            isPressed
-                ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
-                : Color.alphaBlend(
-                    tokens.highlight.withValues(
-                      alpha: .08 * materialWeight * surfaceReflectance,
-                    ),
-                    glassTop,
+    final usesSharedShader = shader != null && sampler != null;
+    if (usesSharedShader) {
+      GlassOpticRenderer.paintActionLens(
+        canvas: canvas,
+        size: size,
+        shader: shader!,
+        sampler: sampler!,
+        frame: GlassActionLensFrame(
+          daylight: tokens.daylight,
+          time: time,
+          displayRatio: displayRatio,
+          zoom: size.height / 198,
+          radius: radius,
+          energy: lightStrength * 1.89,
+          angle: (isDaylight ? -.72 : 2.42) + math.sin(phase) * .045,
+          refraction: 40,
+          frost: .76,
+          pixelGlow: .64,
+          stripHalfAngle: .92,
+          top: isPressed
+              ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
+              : Color.alphaBlend(
+                  tokens.highlight.withValues(
+                    alpha: .08 * materialWeight * surfaceReflectance,
                   ),
-            Color.lerp(
-              glassTop,
-              isPressed ? tokens.inset : glassBottom,
-              isPressed ? .64 : .34,
-            )!,
-            isPressed
-                ? Color.lerp(tokens.glassBottom, tokens.inset, .30)!
-                : glassBottom,
-          ],
-          stops: const [0, .38, 1],
-        ).createShader(rect)
-        ..color = Color.fromRGBO(255, 255, 255, opacity),
-    );
-
-    final inset = rect.deflate(1.35);
-    if (inset.width > 0 && inset.height > 0) {
-      final inner = RRect.fromRectAndRadius(
-        inset,
-        Radius.circular((radius - 1.35).clamp(0, radius)),
+                  glassTop,
+                ),
+          bottom: isPressed
+              ? Color.lerp(tokens.glassBottom, tokens.inset, .30)!
+              : glassBottom,
+          inset: tokens.inset,
+          accent: accent,
+          opacity: opacity,
+          pressed: isPressed,
+          hovered: isHovered,
+          disabled: isDisabled,
+          selected: isSelected,
+          navigation: isNavigation,
+          primary: kind == GlassButtonKind.primary,
+        ),
       );
+    } else {
+      // Keep a complete vector fallback while the shared runtime effect loads
+      // or in renderers that do not support Flutter runtime effects.
       canvas.drawRRect(
-        inner,
+        rrect,
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              tokens.highlight.withValues(
-                alpha:
-                    (isDisabled ? .34 : .68) *
-                    materialWeight *
-                    surfaceReflectance,
-              ),
-              Colors.white.withValues(
-                alpha: (isDisabled ? .02 : .06) * materialWeight,
-              ),
-              Colors.transparent,
-              tokens.inset.withValues(
-                alpha: isPressed
-                    ? .42
-                    : GlassDesignTokens.restingButtonInsetOpacity *
-                          (isNavigation ? .85 : 1.15),
-              ),
+              isPressed
+                  ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
+                  : Color.alphaBlend(
+                      tokens.highlight.withValues(
+                        alpha: .08 * materialWeight * surfaceReflectance,
+                      ),
+                      glassTop,
+                    ),
+              Color.lerp(
+                glassTop,
+                isPressed ? tokens.inset : glassBottom,
+                isPressed ? .64 : .34,
+              )!,
+              isPressed
+                  ? Color.lerp(tokens.glassBottom, tokens.inset, .30)!
+                  : glassBottom,
             ],
-            stops: const [0, .12, .72, 1],
-          ).createShader(inset),
+            stops: const [0, .38, 1],
+          ).createShader(rect)
+          ..color = Color.fromRGBO(255, 255, 255, opacity),
       );
-    }
 
-    final rrectPath = Path()..addRRect(rrect);
-    canvas.save();
-    canvas.clipRRect(rrect);
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: Alignment(-.72, -.92),
-          radius: 1.35,
-          colors: [
-            tokens.highlight.withValues(
-              alpha:
-                  (isDisabled ? .16 : .28) *
-                  materialWeight *
-                  surfaceReflectance,
-            ),
-            Colors.transparent,
-          ],
-          stops: const [0, 1],
-        ).createShader(rect),
-    );
-    if (!isDisabled &&
-        (animated || isPressed || isHovered || motionEnergy > 0)) {
+      final inset = rect.deflate(1.35);
+      if (inset.width > 0 && inset.height > 0) {
+        final inner = RRect.fromRectAndRadius(
+          inset,
+          Radius.circular((radius - 1.35).clamp(0, radius)),
+        );
+        canvas.drawRRect(
+          inner,
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                tokens.highlight.withValues(
+                  alpha:
+                      (isDisabled ? .34 : .68) *
+                      materialWeight *
+                      surfaceReflectance,
+                ),
+                Colors.white.withValues(
+                  alpha: (isDisabled ? .02 : .06) * materialWeight,
+                ),
+                Colors.transparent,
+                tokens.inset.withValues(
+                  alpha: isPressed
+                      ? .42
+                      : GlassDesignTokens.restingButtonInsetOpacity *
+                            (isNavigation ? .85 : 1.15),
+                ),
+              ],
+              stops: const [0, .12, .72, 1],
+            ).createShader(inset),
+        );
+      }
+
+      canvas.save();
       canvas.drawRect(
         rect,
         Paint()
           ..shader = RadialGradient(
-            center: lightAlignment,
-            radius: isReferenceSize ? 1.0 : .82,
+            center: Alignment(-.72, -.92),
+            radius: 1.35,
             colors: [
-              accent.withValues(
+              tokens.highlight.withValues(
                 alpha:
-                    (isPressed
-                        ? .42
-                        : isDaylight
-                        ? .36 + breath * .06
-                        : .22 + breath * .06) *
-                    materialWeight,
-              ),
-              accent.withValues(
-                alpha: (isDaylight ? .17 : .08) * materialWeight,
+                    (isDisabled ? .16 : .28) *
+                    materialWeight *
+                    surfaceReflectance,
               ),
               Colors.transparent,
             ],
-            stops: const [0, .34, 1],
+            stops: const [0, 1],
           ).createShader(rect),
       );
+      if (!isDisabled &&
+          (animated || isPressed || isHovered || motionEnergy > 0)) {
+        canvas.drawRect(
+          rect,
+          Paint()
+            ..shader = RadialGradient(
+              center: lightAlignment,
+              radius: isReferenceSize ? 1.0 : .82,
+              colors: [
+                accent.withValues(
+                  alpha:
+                      (isPressed
+                          ? .42
+                          : isDaylight
+                          ? .36 + breath * .06
+                          : .22 + breath * .06) *
+                      materialWeight,
+                ),
+                accent.withValues(
+                  alpha: (isDaylight ? .17 : .08) * materialWeight,
+                ),
+                Colors.transparent,
+              ],
+              stops: const [0, .34, 1],
+            ).createShader(rect),
+        );
+      }
+      if (isSelected && !isPressed) {
+        canvas.drawRRect(
+          rrect,
+          Paint()..color = accent.withValues(alpha: .075 * materialWeight),
+        );
+      }
+      canvas.restore();
     }
-    if (isSelected && !isPressed) {
-      canvas.drawRRect(
-        rrect,
-        Paint()..color = accent.withValues(alpha: .075 * materialWeight),
-      );
-    }
-    canvas.restore();
+
+    final rrectPath = Path()..addRRect(rrect);
 
     final upperBevel = Path()
       ..moveTo(
@@ -898,59 +970,60 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         1.0,
         size.height * .48,
       );
-    canvas.drawPath(
-      upperBevel,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = isReferenceSize ? 4.2 : 3.2
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0)
-        ..color = tokens.highlight.withValues(
-          alpha: (isDisabled ? .08 : .22) * materialWeight * surfaceReflectance,
-        ),
-    );
-    canvas.drawPath(
-      upperBevel,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = isPressed ? 1.2 : .8
-        ..strokeCap = StrokeCap.round
-        ..color = tokens.highlight.withValues(
-          alpha: (isDisabled ? .2 : .62) * materialWeight * surfaceReflectance,
-        ),
-    );
-
-    if (!isDisabled &&
-        (animated || isPressed || isHovered || motionEnergy > 0)) {
-      // Follow the switch's light source: the sun strip rests on the upper
-      // right, while the moon strip rests on the lower left. Each breath stays
-      // on its theme side and presses brighten it without an orbit sampler.
-      final emitterBevel = isDaylight ? upperBevel : lunarBevel;
+    if (!usesSharedShader) {
       canvas.drawPath(
-        emitterBevel,
+        upperBevel,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = emitterGlowWidth
+          ..strokeWidth = isReferenceSize ? 4.2 : 3.2
           ..strokeCap = StrokeCap.round
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, emitterBlur)
-          ..color = accent.withValues(alpha: lightStrength * .62),
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0)
+          ..color = tokens.highlight.withValues(
+            alpha:
+                (isDisabled ? .08 : .22) * materialWeight * surfaceReflectance,
+          ),
       );
       canvas.drawPath(
-        emitterBevel,
+        upperBevel,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = emitterCoreWidth
+          ..strokeWidth = isPressed ? 1.2 : .8
           ..strokeCap = StrokeCap.round
-          ..color = accent.withValues(alpha: lightStrength),
+          ..color = tokens.highlight.withValues(
+            alpha:
+                (isDisabled ? .2 : .62) * materialWeight * surfaceReflectance,
+          ),
       );
-      canvas.drawPath(
-        emitterBevel,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = emitterHighlightWidth
-          ..strokeCap = StrokeCap.round
-          ..color = Colors.white.withValues(alpha: lightStrength * .92),
-      );
+      if (!isDisabled &&
+          (animated || isPressed || isHovered || motionEnergy > 0)) {
+        // Vector fallback for renderers that do not support runtime effects.
+        final emitterBevel = isDaylight ? upperBevel : lunarBevel;
+        canvas.drawPath(
+          emitterBevel,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = emitterGlowWidth
+            ..strokeCap = StrokeCap.round
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, emitterBlur)
+            ..color = accent.withValues(alpha: lightStrength * .62),
+        );
+        canvas.drawPath(
+          emitterBevel,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = emitterCoreWidth
+            ..strokeCap = StrokeCap.round
+            ..color = accent.withValues(alpha: lightStrength),
+        );
+        canvas.drawPath(
+          emitterBevel,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = emitterHighlightWidth
+            ..strokeCap = StrokeCap.round
+            ..color = Colors.white.withValues(alpha: lightStrength * .92),
+        );
+      }
     }
 
     final bevelRect = rect.deflate(.55);
