@@ -704,12 +704,23 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final opacity = isDisabled
         ? GlassDesignTokens.disabledButtonFaceOpacity
         : 1.0;
-    final glassTop = isDaylight
-        ? tokens.glassTop
-        : Color.lerp(tokens.glassTop, tokens.surface, .18)!;
-    final glassBottom = isDaylight
-        ? tokens.glassBottom
-        : Color.lerp(tokens.glassBottom, tokens.inset, .12)!;
+    final darkAmount = math
+        .pow((1 - tokens.daylight).clamp(0.0, 1.0), 2.5)
+        .toDouble();
+    final darkSurfaceBlend = .80 * darkAmount;
+    final darkInsetBlend = .40 * darkAmount;
+    final surfaceReflectance = .55 + tokens.daylight * .45;
+    final edgeReflectance = .34 + tokens.daylight * .66;
+    final glassTop = Color.lerp(
+      tokens.glassTop,
+      tokens.surface,
+      darkSurfaceBlend,
+    )!;
+    final glassBottom = Color.lerp(
+      tokens.glassBottom,
+      tokens.inset,
+      darkInsetBlend,
+    )!;
     final motionEnergy = motion.energy;
     final time = motion.now.inMicroseconds / Duration.microsecondsPerSecond;
     final animated = motion.animationsEnabled && !isDisabled;
@@ -727,16 +738,23 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final lightStrength = isDisabled
         ? .025
         : isPressed
-        ? .98
+        ? .88
         : isHovered
-        ? .86
-        : ((isSelected || kind == GlassButtonKind.primary) ? .78 : .64) +
-              breath * .12 +
-              motionEnergy * .28;
+        ? .68
+        : ((isSelected || kind == GlassButtonKind.primary) ? .62 : .44) +
+              breath * .08 +
+              motionEnergy * .22;
+    final emitterGlowWidth = math.min(12.0, math.max(6.0, size.height * .12));
+    final emitterBlur = math.min(5.0, math.max(3.0, size.height * .05));
+    final emitterCoreWidth = math.min(2.4, math.max(1.6, size.height * .025));
+    final emitterHighlightWidth = math.min(
+      1.1,
+      math.max(.8, size.height * .011),
+    );
 
-    // The switch handle reads as a raised glass lens because its face, bevel,
-    // edge reflection, and cast shadow are separate optical layers. Give every
-    // action button the same construction; only navigation uses a quieter mix.
+    // The switch keeps its calibrated shader. Action buttons echo its raised
+    // lens cues with a softer opaque surface, subtle rim, and narrow emitter;
+    // only navigation uses a quieter mix.
     canvas.drawRRect(
       rrect,
       Paint()
@@ -747,7 +765,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             isPressed
                 ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
                 : Color.alphaBlend(
-                    tokens.highlight.withValues(alpha: .14 * materialWeight),
+                    tokens.highlight.withValues(
+                      alpha: .08 * materialWeight * surfaceReflectance,
+                    ),
                     glassTop,
                   ),
             Color.lerp(
@@ -778,10 +798,13 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             end: Alignment.bottomCenter,
             colors: [
               tokens.highlight.withValues(
-                alpha: (isDisabled ? .34 : .88) * materialWeight,
+                alpha:
+                    (isDisabled ? .34 : .68) *
+                    materialWeight *
+                    surfaceReflectance,
               ),
               Colors.white.withValues(
-                alpha: (isDisabled ? .02 : .10) * materialWeight,
+                alpha: (isDisabled ? .02 : .06) * materialWeight,
               ),
               Colors.transparent,
               tokens.inset.withValues(
@@ -807,7 +830,10 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           radius: 1.35,
           colors: [
             tokens.highlight.withValues(
-              alpha: (isDisabled ? .16 : .42) * materialWeight,
+              alpha:
+                  (isDisabled ? .16 : .28) *
+                  materialWeight *
+                  surfaceReflectance,
             ),
             Colors.transparent,
           ],
@@ -826,14 +852,14 @@ class _GlassButtonSurfacePainter extends CustomPainter {
               accent.withValues(
                 alpha:
                     (isPressed
-                        ? .58
+                        ? .42
                         : isDaylight
-                        ? .50 + breath * .08
-                        : .30 + breath * .08) *
+                        ? .36 + breath * .06
+                        : .22 + breath * .06) *
                     materialWeight,
               ),
               accent.withValues(
-                alpha: (isDaylight ? .24 : .12) * materialWeight,
+                alpha: (isDaylight ? .17 : .08) * materialWeight,
               ),
               Colors.transparent,
             ],
@@ -876,21 +902,21 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       upperBevel,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isReferenceSize ? 5.4 : 3.8
+        ..strokeWidth = isReferenceSize ? 4.2 : 3.2
         ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.6)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0)
         ..color = tokens.highlight.withValues(
-          alpha: (isDisabled ? .08 : .34) * materialWeight,
+          alpha: (isDisabled ? .08 : .22) * materialWeight * surfaceReflectance,
         ),
     );
     canvas.drawPath(
       upperBevel,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isPressed ? 1.5 : 1.0
+        ..strokeWidth = isPressed ? 1.2 : .8
         ..strokeCap = StrokeCap.round
         ..color = tokens.highlight.withValues(
-          alpha: (isDisabled ? .2 : .80) * materialWeight,
+          alpha: (isDisabled ? .2 : .62) * materialWeight * surfaceReflectance,
         ),
     );
 
@@ -904,19 +930,16 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         emitterBevel,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = isReferenceSize ? 20 : 16
+          ..strokeWidth = emitterGlowWidth
           ..strokeCap = StrokeCap.round
-          ..maskFilter = MaskFilter.blur(
-            BlurStyle.normal,
-            isReferenceSize ? 8 : 6.2,
-          )
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, emitterBlur)
           ..color = accent.withValues(alpha: lightStrength * .62),
       );
       canvas.drawPath(
         emitterBevel,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = isReferenceSize ? 4.8 : 3.6
+          ..strokeWidth = emitterCoreWidth
           ..strokeCap = StrokeCap.round
           ..color = accent.withValues(alpha: lightStrength),
       );
@@ -924,7 +947,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         emitterBevel,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = isReferenceSize ? 1.25 : .95
+          ..strokeWidth = emitterHighlightWidth
           ..strokeCap = StrokeCap.round
           ..color = Colors.white.withValues(alpha: lightStrength * .92),
       );
@@ -947,10 +970,15 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           end: Alignment.bottomRight,
           colors: [
             tokens.highlight.withValues(
-              alpha: (isDisabled ? .26 : .92) * materialWeight,
+              alpha:
+                  (isDisabled ? .26 : .72) * materialWeight * edgeReflectance,
             ),
-            tokens.highlight.withValues(alpha: .30 * materialWeight),
-            accent.withValues(alpha: (isDisabled ? .08 : lightStrength * .38)),
+            tokens.highlight.withValues(
+              alpha: .20 * materialWeight * edgeReflectance,
+            ),
+            accent.withValues(
+              alpha: (isDisabled ? .08 : lightStrength * .24) * edgeReflectance,
+            ),
             tokens.inset.withValues(alpha: isPressed ? .66 : .24),
           ],
           stops: const [0, .36, .68, 1],
@@ -988,9 +1016,11 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       rrect,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isFocused ? 1.8 : .7
+        ..strokeWidth = isFocused ? 1.8 : .55
         ..color = focusColor.withValues(
-          alpha: isFocused ? .98 : (isDisabled ? .42 : .76) * materialWeight,
+          alpha: isFocused
+              ? .98
+              : (isDisabled ? .28 : .42) * materialWeight * edgeReflectance,
         ),
     );
 
