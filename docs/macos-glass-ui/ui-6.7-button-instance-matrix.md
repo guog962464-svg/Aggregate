@@ -93,9 +93,9 @@
 | B078 | `app/lib/features/music/music_player_page.dart:603` | 网易云音乐：播放器与搜索入口 | 暗色音乐图 `05-music-search-results-dark.png`、`06-music-starting-dark.png`；浅色 `49-music-light.png`；`connection_experience_test.dart` 覆盖 PreviewRuntime 搜索样例并从结果播放，非真实服务 |
 | B079 | `app/lib/features/music/music_search_results.dart:180` | 网易云音乐：搜索结果操作 | 暗色非空搜索图 `05-music-search-results-dark.png`；`music_search_results_lazy_test.dart` 与 `music_queue_controls_test.dart` 覆盖列表播放/加入下一首的 Widget 回调；玻璃动态与浅色原生状态待核 |
 | B080 | `app/lib/features/settings/appearance_selector.dart:48` | 设置：明暗主题选择器 | 浅色 `38-settings-light.png` 可见主题控件；`glass_theme_switch_test.dart` 回归覆盖拖动满 450 ms 后仅在释放时提交、取消/隐藏拖动及减少动态效果；原生连续画面仍待核 |
-| B081 | `app/lib/features/settings/settings_page.dart:37` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
-| B082 | `app/lib/features/settings/settings_page.dart:43` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
-| B083 | `app/lib/features/settings/settings_page.dart:130` | 设置：通用操作与本机数据 | 既有设置页截图；逐实例待核 |
+| B081 | `app/lib/features/settings/settings_page.dart:37` | 设置：通用操作与本机数据 | 2026-11-18 深色清理确认图 `clear-dialog-dark-confirm.png`；实际取消后预置的成功/失败/已取消三条内存活动仍存在；浅深确认框见验收记录；按下动画关键帧待核 |
+| B082 | `app/lib/features/settings/settings_page.dart:43` | 设置：通用操作与本机数据 | 2026-11-18 浅色清理确认图 `clear-dialog-light.png`；确认后隔离 `PreviewRuntime` 活动列表为空，见 `activity-empty-after-confirm-light.png`；不触碰持久数据；按下动画关键帧待核 |
+| B083 | `app/lib/features/settings/settings_page.dart:130` | 设置：通用操作与本机数据 | 2026-11-18 设置页清空按钮在浅/深主题均可见并打开确认弹窗；截图 `local-data-light-before.png`、`local-data-dark-before.png`；只测试内存预览回调 |
 | B084 | `app/lib/platform/macos/mac_host_settings_panel.dart:267` | 设置：Mac Host 配对和权限操作 | 暗色撤销确认图 `32-host-revoke-confirm-dark.png`；取消按钮可见并取消，未撤销设备 |
 | B085 | `app/lib/platform/macos/mac_host_settings_panel.dart:273` | 设置：Mac Host 配对和权限操作 | 暗色撤销确认图 `32-host-revoke-confirm-dark.png`；`mac_host_settings_panel_test.dart` 用 fake pairing control 验证确认后撤销设备，不访问真实 Host |
 | B086 | `app/lib/platform/macos/mac_host_settings_panel.dart:307` | 设置：Mac Host 配对和权限操作 | 暗色身份轮换图 `28-host-rotate-confirm-dark.png`；`mac_host_settings_panel_test.dart` 验证取消后不撤销、不停止 Host、不轮换 |
