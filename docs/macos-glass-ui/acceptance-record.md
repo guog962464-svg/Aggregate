@@ -883,6 +883,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：模拟按同一 60 Hz 事件序列完整运行 151 步，每一步将 Dart 端全部 113 颗粒子的 x/y/size/alpha 与源基线逐项比较，容差 `1e-9`；同时校验压缩基线 SHA。`flutter test --no-pub --reporter compact test/theme_switch_simulation_test.dart` 全部 5 项通过。原有六个关键帧标量和可读粒子快照仍保留。
 - 范围：这是固定随机种子下、官方脚本与 Dart 模型在 60 Hz 上的完整粒子轨迹算法回归；没有复原录屏所用随机种子，也没有同步线上网页与 macOS 的时钟、输入、渲染器或实际显示呈现时间。因此不能声称录屏逐帧 1:1；UI-6.8 仍部分验收。
 
+### 2026-11-18 UI-6.8 官方 WebGL 与 Flutter shader 同状态图像对照
+
+- 来源：重新从当前官方 [`main.js?v=3`](https://experiments.thisiswhitespace.com/standalone/glass-light-toggle/main.js?v=3) 下载并核对 SHA-256 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`。新增离线工具 `app/tool/capture_theme_switch_source_frames.cjs`，在独立 Chrome headless + ANGLE SwiftShader 进程中按 oracle 的 LCG seed、事件序列和 720×540 / DPR 1 / scale 0.76 / center (360,267) 捕获第 0、60、70、90、110、150 帧；导出的源状态还逐项核对已有模型 fixture 的九个标量，以及 SHA-256 已校验的完整 151 帧粒子轨迹基线中这六帧的全部 113 颗粒子（容差 `1e-9`），通过后才落盘。
+- 对照：`flutter test --no-pub tool/theme_switch_reference_frames_test.dart` 用相同六组快照绘制 Flutter fragment shader；随后通过 `compare_theme_switch_frames.py` 对原始 720×540 图像直接比较，不注册、不校色、不遮罩。六帧平均 RGB MAE 为 `0.0578675/255`，最大单帧 MAE 为 `0.0745979/255`；各帧完全相同像素占 `98.77%–99.25%`。差异图目视主要显示点阵边缘的跨渲染器采样差异，没有因这组对照改动产品逻辑。
+- 证据：[六帧并排与差分图](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-8-official-webgl-pixel-check/contact-sheet.png>) SHA-256 `ffd97ab6f3d8c695779655aabfc06115fcb25680c21a1ab6c4ea8031836cfdbd`；[metrics.json](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-8-official-webgl-pixel-check/comparison/metrics.json>) SHA-256 `29a25ac09525be42765c40a8491b6f006d7226ddb02fc37e44838463bcf01c9b`；[官方源 manifest](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-8-official-webgl-pixel-check/source/source-manifest.json>) SHA-256 `277096c8f9c37875f29cb2009a7832bfe3a10f1450da4347b5cbaf50f9a23789`。
+- 边界：这组像素结果来自 Chrome SwiftShader 与 Flutter widget-test shader renderer 的静态快照，不是 Aggregate macOS Profile 实窗、Metal/Impeller 或物理 display-present 捕获；也只检查六个图像时刻。即使图像 MAE 很低，也不证明录屏输入、线上随机种子或网页与产品的实时动画时钟已同步，UI-6.8 仍部分验收。
+
 ### 2026-11-18 UI-6.7 三枚主图标点击反馈增强与 Profile 复核
 
 - 根据 96 dp 参考图保留运行、刷新、搜索的 9×9 点阵轮廓，只调整 `GlassMotionAction.play/search/refresh` 的点击幅度：运行增加右向位移、轻微横向扩张与扫光；搜索扩大镜片缩放和扫光；刷新保留整圈旋转并加深点光亮度。未改 glyph 掩码、按钮 hitbox/业务回调或太阳/月亮主题切换状态机。
