@@ -927,3 +927,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 使用临时 `ui6_file_result_fixture_main.dart` 暗色 macOS Profile 入口直接呈现生产 `ResultPanel` 文件结果组件（Flutter 3.47.8 / Dart 3.13.7，800×632 logical px、DPR 2），假路径为 `/tmp/aggregate-preview-report.txt`。点击 B108“预览文件”后 AX 显示“预览文件：/tmp/aggregate-preview-report.txt”；`Ui6InspectionRuntime.previewLocalFile` 仅委托 `PreviewRuntime` 返回该字符串，不读取真实文件。截图 [`local-file-preview-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-file-result/local-file-preview-dark.png>)（SHA `d2160e2705220175101217a876a07af59f22310df6bf52591bf2bbe7d4f12b8d`）。
 - B109“在访达中显示”点击回执为 `delivered_unverified`；前后 Finder 窗口列表均为空，AX 页面无错误或状态变化。该 fixture 的 `revealLocalFile` 是空实现，因此只证明控件可触发且没有启动 Finder，不代表生产文件揭示行为。
 - 临时 fixture 已删除，Aggregate Profile app 与 Flutter runner 均正常关闭且无残留。没有产品代码变化或测试运行；未点击“复制结果”，无按下动画关键帧/FrameTiming。B108–B109 仅暗色组件级 fake 验收，UI-6.7 仍部分验收。
+
+
+### 2026-11-18 UI-6.7 结果待确认恢复 B107 Profile 验收
+
+- 在 `ui6_inspection_main.dart` Profile 入口用 `UI6_SEED_ACTIVITY_FILTER_STATES=true` 注入进程内超时/结果待确认样例。活动页打开假 `status` 记录后点击“查看运行”，CapabilityRunPage 从内存活动恢复 `RunState.outcomeUnknown` 与 RunHandle；没有重新运行能力或访问真实执行端。
+- 页面显示恢复说明和“检查活动状态”。点击后 AX 读回状态仍为“结果待确认”，并出现“结果仍未知；请先在执行端确认，不要直接重跑。”提示。检查动作仅读取此进程内 PreviewRuntime 历史，不重跑操作。截图 [`unknown-outcome-recovery-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-unknown-outcome/unknown-outcome-recovery-dark.png>)（SHA `aca0c4529cc0ae4fd878d0eed835fa75aad83b6e26e91fe0f5a700520b95af51`）。
+- AXPress 回执为 `delivered_unverified`，以操作后的新 AX 树和提示确认结果。关闭 Profile app 后 GUI app 与 Flutter runner 均无残留。没有产品代码修改或测试运行；仅暗色状态，无物理按下关键帧/FrameTiming，B107 仅 fake 组件级验收，UI-6.7 仍部分验收。
