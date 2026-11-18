@@ -321,14 +321,21 @@ final class Ui6InspectionRuntime
       executionTarget: _target,
       defaultLabel: '新建预览 CLI',
       description: '仅保存到当前进程内存，不会探测或运行本机命令。',
-      showGenericCliFields: true,
+    ),
+    ConnectionAdapter(
+      id: 'ui6-inspection-mcp-stdio',
+      label: '预览 stdio MCP',
+      kind: ConnectionKind.mcpStdio,
+      executionTarget: _target,
+      defaultLabel: '新建预览 stdio MCP',
+      description: '仅显示配置，不会启动本机命令。',
     ),
     ConnectionAdapter(
       id: 'ui6-inspection-mcp-http',
       label: '预览 MCP HTTP',
       kind: ConnectionKind.mcpHttp,
       executionTarget: _target,
-      defaultLabel: '新建预览 MCP',
+      defaultLabel: '新建预览 MCP HTTP',
       description: '仅保存到当前进程内存，不会发起网络请求。',
       fields: const [
         SetupField(key: 'url', label: '服务地址', hint: 'https://preview.invalid'),
@@ -341,7 +348,7 @@ final class Ui6InspectionRuntime
       ],
       showGenericCliFields: false,
     ),
-  ];
+  ].where((adapter) => _features.canAdd(adapter.kind)).toList();
 
   @override
   Future<List<ConnectionSetupTargetOption>> listSetupTargets() async => [

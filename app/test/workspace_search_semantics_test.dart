@@ -115,11 +115,17 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     try {
       final addedKinds = <ConnectionKind>[];
+      final localRuntime = Ui6InspectionRuntime(emptyWorkspace: true);
+      expect(
+        localRuntime.connectionAdapters.map((adapter) => adapter.kind),
+        containsAll([
+          ConnectionKind.cli,
+          ConnectionKind.mcpStdio,
+          ConnectionKind.mcpHttp,
+        ]),
+      );
       await tester.pumpWidget(
-        _workspace(
-          Ui6InspectionRuntime(emptyWorkspace: true),
-          onAddConnection: addedKinds.add,
-        ),
+        _workspace(localRuntime, onAddConnection: addedKinds.add),
       );
       await tester.pumpAndSettle();
       expect(find.text('添加 CLI'), findsOneWidget);
@@ -130,14 +136,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(addedKinds, [ConnectionKind.cli, ConnectionKind.mcpStdio]);
 
+      final httpRuntime = Ui6InspectionRuntime(
+        emptyWorkspace: true,
+        features: RuntimeFeatures.httpOnly,
+      );
+      expect(httpRuntime.connectionAdapters.map((adapter) => adapter.kind), [
+        ConnectionKind.mcpHttp,
+      ]);
       await tester.pumpWidget(
-        _workspace(
-          Ui6InspectionRuntime(
-            emptyWorkspace: true,
-            features: RuntimeFeatures.httpOnly,
-          ),
-          onAddConnection: addedKinds.add,
-        ),
+        _workspace(httpRuntime, onAddConnection: addedKinds.add),
       );
       await tester.pumpAndSettle();
       expect(find.text('添加 HTTP MCP'), findsOneWidget);
