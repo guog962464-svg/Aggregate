@@ -695,14 +695,21 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isNavigation =
         kind == GlassButtonKind.navigation || kind == GlassButtonKind.segmented;
     final materialWeight = isNavigation ? .74 : 1.0;
+    final isDaylight = tokens.daylight > .5;
     final accent = kind == GlassButtonKind.danger
         ? tokens.danger
-        : tokens.daylight > .5
+        : isDaylight
         ? _themeSwitchSunLight
         : tokens.glow;
     final opacity = isDisabled
         ? GlassDesignTokens.disabledButtonFaceOpacity
         : 1.0;
+    final glassTop = isDaylight
+        ? tokens.glassTop
+        : Color.lerp(tokens.glassTop, tokens.surface, .18)!;
+    final glassBottom = isDaylight
+        ? tokens.glassBottom
+        : Color.lerp(tokens.glassBottom, tokens.inset, .12)!;
     final motionEnergy = motion.energy;
     final time = motion.now.inMicroseconds / Duration.microsecondsPerSecond;
     final animated = motion.animationsEnabled && !isDisabled;
@@ -712,8 +719,10 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final breath = animated ? .5 + .5 * math.sin(phase) : .5;
     final lightDrift = animated ? math.sin(phase) * radius * .12 : 0.0;
     final lightAlignment = Alignment(
-      .82 + lightDrift / math.max(size.width, 1),
-      -.74 + math.cos(phase * .8) * .035,
+      (isDaylight ? .82 : -.82) +
+          (isDaylight ? lightDrift : -lightDrift) / math.max(size.width, 1),
+      (isDaylight ? -.74 : .74) +
+          math.cos(phase * .8) * (isDaylight ? .035 : -.035),
     );
     final lightStrength = isDisabled
         ? .025
@@ -739,16 +748,16 @@ class _GlassButtonSurfacePainter extends CustomPainter {
                 ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
                 : Color.alphaBlend(
                     tokens.highlight.withValues(alpha: .14 * materialWeight),
-                    tokens.glassTop,
+                    glassTop,
                   ),
             Color.lerp(
-              tokens.glassTop,
-              isPressed ? tokens.inset : tokens.glassBottom,
+              glassTop,
+              isPressed ? tokens.inset : glassBottom,
               isPressed ? .64 : .34,
             )!,
             isPressed
                 ? Color.lerp(tokens.glassBottom, tokens.inset, .30)!
-                : tokens.glassBottom,
+                : glassBottom,
           ],
           stops: const [0, .38, 1],
         ).createShader(rect)
@@ -818,13 +827,13 @@ class _GlassButtonSurfacePainter extends CustomPainter {
                 alpha:
                     (isPressed
                         ? .58
-                        : tokens.daylight > .5
+                        : isDaylight
                         ? .50 + breath * .08
-                        : .36 + breath * .08) *
+                        : .30 + breath * .08) *
                     materialWeight,
               ),
               accent.withValues(
-                alpha: (tokens.daylight > .5 ? .24 : .16) * materialWeight,
+                alpha: (isDaylight ? .24 : .12) * materialWeight,
               ),
               Colors.transparent,
             ],
@@ -853,6 +862,16 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         size.width - 1.0,
         radius * .86,
       );
+    final lunarBevel = Path()
+      ..moveTo(size.width * .58, size.height - 1.0)
+      ..cubicTo(
+        size.width * .30,
+        size.height - .25,
+        .8,
+        size.height * .75,
+        1.0,
+        size.height * .48,
+      );
     canvas.drawPath(
       upperBevel,
       Paint()
@@ -877,11 +896,12 @@ class _GlassButtonSurfacePainter extends CustomPainter {
 
     if (!isDisabled &&
         (animated || isPressed || isHovered || motionEnergy > 0)) {
-      // A small, warm strip travels around the bevel like the luminous edge on
-      // the switch's glass thumb. It rests on the upper-right corner and sways
-      // gently there; clicks intensify it without repainting a sampled orbit.
+      // Follow the switch's light source: the sun strip rests on the upper
+      // right, while the moon strip rests on the lower left. Each breath stays
+      // on its theme side and presses brighten it without an orbit sampler.
+      final emitterBevel = isDaylight ? upperBevel : lunarBevel;
       canvas.drawPath(
-        upperBevel,
+        emitterBevel,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = isReferenceSize ? 20 : 16
@@ -893,7 +913,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           ..color = accent.withValues(alpha: lightStrength * .62),
       );
       canvas.drawPath(
-        upperBevel,
+        emitterBevel,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = isReferenceSize ? 4.8 : 3.6
@@ -901,7 +921,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           ..color = accent.withValues(alpha: lightStrength),
       );
       canvas.drawPath(
-        upperBevel,
+        emitterBevel,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = isReferenceSize ? 1.25 : .95

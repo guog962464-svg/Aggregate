@@ -759,3 +759,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 对照画面：[主题开关与三类操作按钮同屏 Widget 对照](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/revised-switch-buttons-final.png>)，SHA-256 `9c2a8b6c778b9038f680bfb5ca2d872c83169ec0cb07db64441f099a6b7111f6`。画面由 `ThemeSwitchArtwork` 的片元着色器与普通按钮在同一个 Flutter Widget 测试窗口采样，1024×480、DPR 1；测试字体回退，只作材质/光场相对位置比较，不作文案、产品布局或原生实窗验收。
 - 验证：最终版本 `flutter analyze --no-pub` 无问题；`flutter test --no-pub --reporter json` 全量 377 项通过，`git diff --check` 通过。`flutter run --profile -d macos --no-pub -t lib/glass_buttons_fixture_main.dart` 可构建 Profile 64.5 MB 包，但系统返回 `Failed to foreground app; open returned 1`；5 秒进程采样处于 AppKit 等待状态，后续空闲 CPU 样本为 0%，均未获得有效的前台动画帧率或帧时间证据。
 - 原生限制与范围：当前 Widget 对照比上一版更直接，但不替代前台 Profile 实窗目视。未声称与主题开关着色器达到像素级同材质或帧级签收；UI-6.7 继续部分验收，普通按钮原生静置/按压画面、生产调用点布局和其他未完成矩阵行仍开放。
+
+### 2026-11-18 UI-6.7 暗色月光方位 Profile 对照
+
+- 实窗对照：使用明确的 `Profile/Aggregate.app` 路径运行 `glass_buttons_fixture_main.dart`，避开 Launch Services 按 bundle ID 选中 Debug 包的问题。Profile 画面显示主题开关与 12 类按钮样例；逐项对照发现暗色主题开关的月光弧在左下，而操作按钮仍将蓝色发光固定在右上。
+- 修正：按钮表面暗色渐变轻微向页面底色/内凹色收敛；月光柔光中心和弧形发射边移动到左下，随主题呼吸；浅色太阳仍用右上发射边。只改 `GlassActionButton` 绘制，不改 `GlassThemeSwitch` 的拖动、点击、提交时机或回调。尝试把常态表面改为 93% 透明时，动态对比回归在日夜过渡 0.36 低到 4.44:1，已撤回该透明度改动。
+- Profile 图：[开关与 12 类点阵样例](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-lunar-aligned.png>)，SHA-256 `2c560bcba12a9378208fbb5ba665cbc092b75e2b6a04723254ca95462e121fb5`；[动作与状态样例](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-action-samples.png>)，SHA-256 `27e2dd2c6f94c1d1c29e4e6bae189ebc141a461044af142cbc133b15821f6ccc`。均为原生 Profile fixture 窗口截图，不是生产设置页全调用点签收。
+- 验证：`flutter build macos --profile --no-pub -t lib/glass_buttons_fixture_main.dart` 成功，包 62.9 MB；`flutter analyze --no-pub` 无问题；按钮、动画时钟、动态对比及主题开关定向回归 34 项通过；Dart 格式检查与 `git diff --check` 通过。
+- 动态边界：截图足以核对静态材质与月光方位；窗口在连续帧抽样期间失去可枚举 surface，未用该组结果计算空闲 FPS 或帧时间，也未验证按住时画面。profile fixture 正常退出。UI-6.7 仍部分验收，生产按钮逐调用点、按下瞬间及前台帧时证据继续开放。
