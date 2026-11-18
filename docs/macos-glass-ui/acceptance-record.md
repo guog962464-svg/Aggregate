@@ -734,3 +734,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 未覆盖：账号面板关闭与刷新状态按钮没有对应断言；MiniPlayer 控制授权取消、音乐搜索结果里的权限播放确认、MiniPlayer busy 状态也没有由上述用例覆盖。B060–B079 矩阵已只在对应调用点标记 Widget 测试范围；账号面板、非预览歌曲播放授权和原生静置/点击动画仍待验收。
 - 原生画面限制：重新启动 Profile 时 `flutter run` 报告 `Failed to foreground app; open returned 1`。改用 Profile `.app` 完整路径打开后，窗口列表显示 800×632，但 AX 将内容控件全部标为 `offscreen`；截图 API 只返回 170×140 logical 的小预览图，不能用于页面或按钮外观验收，该临时截图已删除。按应用名尝试激活时系统另启动 Debug 构建并返回 `APP_UNRESPONSIVE`；该临时实例已结束。没有对这些画面执行交互，也没有关闭 Charles、GW 或其他用户应用。
 - 收尾：Profile 与本轮 Debug 临时实例均已退出；应用清单没有 Aggregate，关联进程查询也没有 Profile/Debug runner 残留。未修改产品代码或测试代码，UI-6.7 继续部分验收。
+
+### 2026-11-18 UI-6.7 设置、Host 与主题切换 Widget 回归
+
+- 回归结果：`flutter test --no-pub --reporter compact test/mac_host_settings_panel_test.dart test/widget_test.dart test/glass_theme_switch_test.dart` 28 项全部通过。设置页和主题测试使用 PreviewRuntime/手动动画时钟，Mac Host 面板测试使用 `_FakeHostControl`、`_FakePairingControl` 与 `_FakeIdentityRotation`；没有启动真实 Host、网络监听或设备配对。
+- 主题逻辑：`glass_theme_switch_test.dart` 覆盖 450 ms 实时拖动只在释放后提交、指针取消恢复端点、隐藏应用时取消拖动和减少动态效果；`widget_test.dart` 覆盖设置页主题偏好写入 PreviewRuntime。这些是 Widget/模型回归，保持现有拖动和提交契约，不代表原生 Profile 帧或 display-present 验收。B080 矩阵已补充测试范围。
+- Mac Host 行为：fake 端回归覆盖启动 Host、生成邀请二维码、批准向导权限、自定义及逐连接权限、修改/保存权限、撤销设备，以及身份轮换确认取消与执行。B085–B090、B095–B098、B100–B101 只标注用例实际触达的行为。本批测试未覆盖直接停止按钮、复制配对信息、刷新配对列表和拒绝请求；B094 批准只读与 B099 权限弹窗取消仍依据原有暗色实窗记录，本批没有复测。原有暗色截图不因 Widget 测试升级为原生动态验收。
+- 设置清理操作：`widget_test.dart` 覆盖设置布局和外观偏好，没有触发或验证“清空记录”确认，因此 B081–B083 状态未提升。
+- 范围：只更新验收文档，未修改产品代码或测试；没有启动桌面应用，用户应用未受影响。UI-6.7 仍部分验收，尚有原生浅色画面、逐按钮光效/动效和未覆盖 Host 操作待核。
