@@ -129,3 +129,8 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 ### UI-6.7 补证：Mac Host 配对与设备权限（2026-11-18）
 
 B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读审批、连接向导审批、自定义批准、逐连接权限保存和撤销取消。`Ui6InspectionHost` 只改当前进程内 fake grant；Host 端口 44321 无 listener。AX 状态树确认审批、编辑和取消结果；所有 AXPress 回执均未单独验证物理输入。完整环境、截图 SHA 与覆盖限制见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-配对与设备权限-profile-验收)和[逐实例表](ui-6.7-button-instance-matrix.md)。本次只有暗色静态/交互态，没有按下关键帧或帧率数据，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：权限弹窗按钮 B099–B101（2026-11-18）
+
+已在前一节 B096/B097 同一 Profile fixture 中实窗点击 B099 取消、B100 保存和 B101 逐连接权限 chip；取消保持 grant，保存更新假 grant，chip 的 AX 选择态符合读取/控制/外部写入约束。截图复用[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-配对与设备权限-profile-验收)。没有物理按下帧或帧率证据，UI-6.7 仍部分验收。

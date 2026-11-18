@@ -111,9 +111,9 @@
 | B096 | `app/lib/platform/macos/mac_host_settings_panel.dart:695` | 设置：Mac Host 配对和权限操作 | 2026-11-18 打开自定义权限弹窗 `custom-permission-dialog-dark.png`；对 Git CLI 假连接选本机控制（自动包含读取）及连接向导后批准，AX 确认假设备获得连接向导；`paired-devices-dark.png` |
 | B097 | `app/lib/platform/macos/mac_host_settings_panel.dart:720` | 设置：Mac Host 配对和权限操作 | 2026-11-18 打开已配对设备修改弹窗 `edit-permission-dialog-dark.png`；回读此前本机控制选择，另选连接管理及 Git CLI 外部写入后保存；AX 确认范围更新，操作仅写入假 Host 内存 |
 | B098 | `app/lib/platform/macos/mac_host_settings_panel.dart:726` | 设置：Mac Host 配对和权限操作 | 2026-11-18 暗色 Profile 打开 `revoke-confirm-dark.png` 后取消；AX 仍读到已配对预览设备。取消后的设备列表截图 `revoke-cancelled-paired-remains-dark.png`；未撤销任何真实设备 |
-| B099 | `app/lib/platform/macos/mac_host_settings_panel.dart:951` | 设置：Mac Host 配对和权限操作 | 暗色设备权限弹窗图 `31-host-edit-permissions-dark.png`；取消按钮可见并用于退出，未修改权限 |
-| B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 暗色 `31-host-edit-permissions-dark.png`；`mac_host_settings_panel_test.dart` 验证保存权限至 fake pairing control |
-| B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 暗色 `31-host-edit-permissions-dark.png`；`mac_host_settings_panel_test.dart` 验证选中连接与权限 chip 后审批，仅 Widget 语义/回调证据 |
+| B099 | `app/lib/platform/macos/mac_host_settings_panel.dart:951` | 设置：Mac Host 配对和权限操作 | 2026-11-18 在已配对设备的 Profile 权限弹窗中实际点击“取消”；弹窗关闭，原 grant 未改变。静置图 `edit-permission-dialog-dark.png`；无按下关键帧 |
+| B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 2026-11-18 编辑假 grant 后实际点击“保存权限”；AX scope 更新为读取连接、连接向导、连接管理。动作及保存后 AX 证据见 UI-6.7 Host 配对/权限验收；写入仅在 fake control 内存中 |
+| B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 2026-11-18 在自定义批准与已配对编辑弹窗中点选 Git CLI 的本机控制、外部写入；AX 读回对应选择及自动包含的读取权限。静态弹窗图 `custom-permission-dialog-dark.png`、`edit-permission-dialog-dark.png`；实际操作为 fake grant |
 | B102 | `app/lib/widgets/capability_row.dart:35` | 工作台/搜索：功能行 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 2026-11-18 暗色工作台实窗图 `02-workspace-dark.png`；截图中可见实例已目视，浅色/动态状态待核 |
 | B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 无空态/错误态截图 |
