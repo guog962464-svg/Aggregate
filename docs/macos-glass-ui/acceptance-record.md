@@ -1072,3 +1072,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 | 浅→深 50% | `source-model-light-to-dark-p50-pressed.png` | `ddbb6c89a04f11cbef301eb197c692e31bb39831ee4baf589653b5167c54608a` |
 | 浅→深 75% | `source-model-light-to-dark-p75-pressed.png` | `e95f9995b4636d67554e40eac73cbaac4552d0c68f5f4b263693eb3b36eca729` |
 | 浅→深 稳定 | `source-model-light-to-dark-settled.png` | `80064c1bfaa1bff362f2a7146f093ce83a62926e4009c23b8dcc5f83f058ee23` |
+
+
+### 2026-11-19 UI-5.5 设置页玻璃按钮标签窗口/DPR矩阵扩展
+
+- 将设置页生产 `AggregateApp` 的六类按钮文字（普通、禁用、禁用说明、禁用来源、忙碌、危险）采样扩到 800×600、1024×768、1440×900 三种逻辑窗口，各测 1×/2× DPR；深色、浅色初始偏好都运行。每种组合覆盖 14 个临界主题相位（0.46–0.535），共 12 组窗口/DPR/偏好、168 组相位组合。每类文字在同一按钮面上取三个未覆盖像素，合计 3,024 个文字/背景色对比样本，均不低于 4.5:1。
+- 验证：`flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart` 三项通过；`flutter analyze --no-pub` 无问题；`git diff --check` 通过。仅扩展 `app/test/macos_dynamic_backdrop_text_contrast_test.dart` 与本验收文档，无生产颜色、按钮交互或主题切换状态机改动。
+- 边界：像素来自 `PreviewRuntime` 设置页的 Widget 离屏 shader 合成，在按钮面上采邻近背景色，不是原生 Profile/display-present 捕获，也不能代表所有生产按钮调用点、其他页面材质/状态矩阵或 VoiceOver。UI-5.5 保持部分验收。

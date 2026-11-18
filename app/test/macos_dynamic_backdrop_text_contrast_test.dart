@@ -65,11 +65,13 @@ void main() {
   ) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    for (final initialAppearance in [
-      AppearancePreference.dark,
-      AppearancePreference.light,
-    ]) {
-      await _verifyGlassButtonContrast(tester, initialAppearance);
+    for (final scenario in _scenarios) {
+      for (final initialAppearance in [
+        AppearancePreference.dark,
+        AppearancePreference.light,
+      ]) {
+        await _verifyGlassButtonContrast(tester, scenario, initialAppearance);
+      }
     }
   }, variant: _macOS);
 
@@ -276,10 +278,11 @@ void main() {
 
 Future<void> _verifyGlassButtonContrast(
   WidgetTester tester,
+  _Scenario scenario,
   AppearancePreference initialAppearance,
 ) async {
-  const size = Size(1024, 768);
-  const pixelRatio = 1.0;
+  final size = scenario.size;
+  final pixelRatio = scenario.pixelRatio;
   tester.view.physicalSize = Size(
     size.width * pixelRatio,
     size.height * pixelRatio,
