@@ -198,6 +198,34 @@ void main() {
     );
   });
 
+  test('run, refresh, and search use unique cells on the shared dot grid', () {
+    for (final glyph in const [
+      GlassGlyph.play,
+      GlassGlyph.refresh,
+      GlassGlyph.search,
+    ]) {
+      final points = GlassGlyphFactory.pointsFor(glyph);
+      expect(points.toSet(), hasLength(points.length), reason: glyph.name);
+      for (final point in points) {
+        final column = (point.dx - 4) / GlassDesignTokens.glyphPitch;
+        final row = (point.dy - 4) / GlassDesignTokens.glyphPitch;
+        expect(
+          column,
+          closeTo(column.roundToDouble(), 1e-9),
+          reason: glyph.name,
+        );
+        expect(row, closeTo(row.roundToDouble(), 1e-9), reason: glyph.name);
+      }
+    }
+
+    final refresh = GlassGlyphFactory.pointsFor(GlassGlyph.refresh);
+    expect(refresh, contains(const Offset(25.6, 14.8)));
+    expect(refresh, isNot(contains(const Offset(22.9, 14.8))));
+
+    final search = GlassGlyphFactory.pointsFor(GlassGlyph.search);
+    expect(search, contains(const Offset(25.6, 25.6)));
+  });
+
   testWidgets('production action icons build in the macOS glass scope', (
     tester,
   ) async {

@@ -115,6 +115,13 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 | 依赖与用户改动 | 未运行 `pub get`；`pubspec.lock` 仍保留用户原有修改，SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`，未暂存。 |
 | 验证 | `flutter analyze --no-pub`：无问题。`flutter test --no-pub test/glass_action_button_test.dart test/glass_glyph_golden_test.dart test/glass_design_tokens_test.dart test/glass_theme_switch_test.dart test/theme_switch_realtime_test.dart test/theme_switch_optics_test.dart test/theme_switch_calibration_test.dart test/theme_switch_simulation_test.dart test/glass_theme_switch_android_test.dart test/android_theme_transition_test.dart`：47 项通过。覆盖 glyph catalog、1×/2×浅深 golden、名称/键盘/鼠标/忙碌禁用/尺寸语义及主题光学与实时回归。 |
 
+### 2026-11-18：运行、刷新、搜索点阵二次校正
+
+- 用户指出这三个高频图案看起来不协调。复看 96 dp 暗色 Profile 样本后确认，旧的曲线采样会产生半格点位，刷新箭头还会重复落点；三者在同一图案内的点距因此不如其余图案规整。
+- `GlassGlyph.play`、`refresh`、`search` 现在都使用 9×9 显式点阵掩码和同一圆角颗粒/窄羽化。运行三角缩至平衡的 7 行并按视觉重心对中；刷新明确保留圆环开口和箭头端；搜索改为闭合圆环并与斜柄连续衔接。没有改按钮业务回调、动作时长/曲线、主题开关或 Material fallback。
+- [macOS Profile 暗色 96 dp 图案实窗](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/three-icons-after-grid-search.png>)（Retina DPR 2，SHA-256 `e4e334aa10e43d86bcca6689c5fff7299b13fcc6e67f6a4b75c91e31dbb3d565`）中可见三种新轮廓；另有 32 dp 浅/深 golden `app/test/goldens/glass_primary_glyphs_light.png`、`glass_primary_glyphs_dark.png`。三个形状均通过网格对齐、无重复点断言。`flutter test --no-pub test/glass_action_button_test.dart test/glass_motion_test.dart test/glass_glyph_golden_test.dart` 28 项通过；`flutter analyze --no-pub` 无问题；Profile 实窗由本轮源码重新构建。
+- 这次截图用于静态轮廓对照，不单独证明原生点击动画每个时刻，也不关闭 UI-6.7 的逐实例动静态签收。既有动作 profile 和按钮交互代码未改；太阳/月亮切换逻辑没有变化。
+
 ## UI-3：静置、点击与连续操作协调
 
 | 字段 | 记录 |
