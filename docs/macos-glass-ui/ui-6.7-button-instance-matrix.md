@@ -116,7 +116,7 @@
 | B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 2026-11-18 在自定义批准与已配对编辑弹窗中点选 Git CLI 的本机控制、外部写入；AX 读回对应选择及自动包含的读取权限。静态弹窗图 `custom-permission-dialog-dark.png`、`edit-permission-dialog-dark.png`；实际操作为 fake grant |
 | B102 | `app/lib/widgets/capability_row.dart:35` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“两个整数相加”行后打开参数页，结果状态仍为“尚未运行”；`feature-open-form-dark.png`。没有点运行，未调用 Runtime。 |
 | B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“收藏 两个整数相加”，出现收藏分组和“取消收藏”按钮；随后取消并确认空收藏恢复。收藏仅改动 `PreviewRuntime` 内存偏好；截图 `workspace-actions-dark.png`、`workspace-favorite-added-dark.png`。 |
-| B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 无空态/错误态截图 |
+| B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 2026-11-18 临时暗色 Profile 夹具呈现生产 `PageState.error`，点击“重试”后 AX 计数由 0 变为 1；截图 `page-state-error-dark.png`。回调仅递增夹具计数，不代表真实数据重试；无按下关键帧、浅色图或帧率数据 |
 | B105 | `app/lib/widgets/result_panel.dart:74` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色成功结果图 `04-run-result-dark.png`；仅复制按钮静态外观已目视，复制动作未验证 |
 | B106 | `app/lib/widgets/result_panel.dart:238` | 调用结果：复制、展开与结果操作 | 暗色本地模拟失败结果图 `35-simulated-error-result-dark.png`、`36-simulated-error-result-scrolled-dark.png`、`37-simulated-error-detail-dark.png`；浅色中间滚动图 `48-error-result-light-scrolled.png` 本身不能证明最终位置；浅色原生 Profile 末尾图 `61-error-result-light-scroll-end.png` 显示恢复按钮及错误详情行完整位于 MiniPlayer 上方，再滚 12 个滚轮单位 AX 位置不变；`capability_run_page_test.dart` 同样验证最大滚动范围。“检查活动状态”按钮只查看未点击 |
 | B107 | `app/lib/widgets/result_panel.dart:288` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |

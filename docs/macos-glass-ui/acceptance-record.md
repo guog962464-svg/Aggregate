@@ -905,3 +905,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B102 点击工作台“两个整数相加”功能行，只进入参数页；AX 显示来源 UI 检查 · MCP、只读权限和“运行状态：尚未运行”。没有触发“运行”或快捷键，故没有执行工具。工作台浅深截图 [`workspace-actions-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-workspace-actions/workspace-actions-dark.png>)（SHA `ad1153ef4ef4458db22ed6686d587329c87524a4689b40d28831269590e7ab8c`）；行打开后的参数页 [`feature-open-form-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-workspace-actions/feature-open-form-dark.png>)（SHA `f73c58c6bde5c86322ca57bd734b93ed050ef5e9aef1f3493d538c1937c1a849`）。
 - B103 点击同一条目的收藏按钮，AX 显示“收藏的功能”分组和“取消收藏”；截图 [`workspace-favorite-added-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-workspace-actions/workspace-favorite-added-dark.png>)（SHA `071f7885d1ba84b7410ccce267af5d44b6fa95eca4cca5ec21fc565f352c9053`）。随后点击取消收藏，AX 显示恢复“收藏 两个整数相加”，没有收藏分组；退出 fixture 前 PreviewRuntime 偏好恢复空集合。
 - AXPress 回执仍为 `delivered_unverified`，以新的 AX 树确认页面/收藏状态；没有物理按下关键帧。应用关闭且无 Aggregate runner 残留。无产品代码变化或测试运行，`git diff --check` 通过。B102–B103 仅暗色交互覆盖，UI-6.7 其余状态和生产调用点仍未全部验收。
+
+
+### 2026-11-18 UI-6.7 通用页面错误态 B104 临时夹具验收
+
+- 使用临时 `ui6_page_state_fixture_main.dart` macOS Profile 入口直接呈现生产 `PageState.error` 组件（Flutter 3.47.8 / Dart 3.13.7，深色主题）。静置错误态截图 [`page-state-error-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-page-state/page-state-error-dark.png>)（SHA `16fba4f31f8cb82d33789095582b2b40384a6425e158cf88d5e1d52608aa3629`）。
+- 点击“重试”后，AX Press 回执为 `delivered_unverified`；新的 AX 树从“重试计数：0”更新为“重试计数：1”。此回调只递增夹具本地计数，证明按钮可操作及回调连接，不代表真实数据加载、网络请求或错误恢复已验证。
+- 夹具源文件已移除；`agent-desktop close-app` 确认 Aggregate 窗口进程退出，随后确认 GUI 应用与 Flutter runner 均无残留。无产品代码变化、未运行测试；没有按下关键帧或 FrameTiming/FPS，B104 仅验证暗色组件实例，UI-6.7 仍部分验收。

@@ -139,3 +139,8 @@ B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读�
 ### UI-6.7 补证：工作台功能行 B102–B103（2026-11-18）
 
 暗色 Profile fixture 中点击能力行只进入未运行的参数页；收藏按钮在 PreviewRuntime 内增加收藏，再取消并复核恢复为空集合。没有执行 MCP/CLI 操作或写持久偏好。截图及 SHA、AX 回读和覆盖边界见[验收记录](acceptance-record.md#2026-11-18-ui-67-工作台功能行-b102b103-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下帧或帧率数据，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：通用页面错误态 B104（2026-11-18）
+
+临时暗色 Profile 夹具直接呈现生产 `PageState.error`，点击“重试”后 AX 计数从 0 变为 1；夹具回调只计数，没有触发数据加载或网络请求。静置截图 SHA、AX 回读、清理结果和验收限制见[验收记录](acceptance-record.md#2026-11-18-ui-67-通用页面错误态-b104-临时夹具验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下关键帧、浅色状态或 FrameTiming，UI-6.7 仍部分验收。
