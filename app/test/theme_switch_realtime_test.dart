@@ -57,17 +57,19 @@ void main() {
   );
 
   test(
-    'long hidden intervals settle unheld motion and retain the real clock',
+    'long intervals use one capped frame and resume from current dynamics',
     () {
       final model = ThemeSwitchSimulation()..setLight(true);
+      final oneCappedFrame = ThemeSwitchSimulation()..setLight(true);
       model.advanceRealtime(8, 8);
-      final settled = model.snapshot;
-      expect(settled.position, 1);
-      expect(settled.velocity, 0);
-      expect(settled.theme, 1);
-      final sameClock = ThemeSwitchSimulation()..snapTo(true);
-      sameClock.advance(0, 8);
-      _samePresentation(settled, sameClock.snapshot);
+      oneCappedFrame.advanceRealtime(1 / 30, 8);
+      _samePresentation(model.snapshot, oneCappedFrame.snapshot);
+      expect(model.position, greaterThan(0));
+      expect(model.position, lessThan(1));
+
+      final beforeResumeFrame = model.position;
+      model.advanceRealtime(1 / 60, 8 + 1 / 60);
+      expect(model.position, greaterThan(beforeResumeFrame));
 
       model.beginDrag();
       model.dragTo(0.4, 0);

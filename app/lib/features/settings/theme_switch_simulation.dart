@@ -42,9 +42,6 @@ class ThemeSwitchSimulation {
   List<ThemeSwitchParticleParameters> get particleParameters =>
       _particleParameters;
 
-  /// Hidden gaps beyond this limit settle an unheld handle immediately instead
-  /// of integrating stale motion after the app becomes visible again.
-  static const maximumRealtimeCatchUpSeconds = 2.0;
   static const _maximumInputMagnitude = 1000000.0;
 
   static const trackWidth = 432.0;
@@ -242,19 +239,11 @@ class ThemeSwitchSimulation {
   /// not add [ThemeSwitchCalibration.timeOriginSeconds] a second time. Unlike
   /// a fixed-rate accumulator, this follows the reference's actual
   /// requestAnimationFrame delta at 60 Hz, 120 Hz, and variable refresh rates.
-  /// Each visible frame is capped at 1/30 second. A gap longer than
-  /// [maximumRealtimeCatchUpSeconds] settles an unheld handle; a held or measured
-  /// presentation retains its position and integrates at most 1/30 second.
+  /// Each animation callback integrates at most 1/30 second. A long pause is
+  /// one capped update, with no accumulated catch-up and no endpoint snap.
   void advanceRealtime(double dt, double time) {
     if (!dt.isFinite || dt < 0 || !time.isFinite) {
       throw ArgumentError('Frame time must be finite with nonnegative dt.');
-    }
-    if (dt > maximumRealtimeCatchUpSeconds &&
-        !_dragging &&
-        !_presentationControlled) {
-      _time = time;
-      snapTo(light);
-      return;
     }
     advance(dt, time);
   }

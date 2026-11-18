@@ -857,6 +857,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - macOS 端：使用隔离 Profile fixture，将生产 `GlassThemeSwitch` 按生产的 `videoFittedThemeSwitch` 校准参数放入 `GlassScene` 和 `GlassMotionScope`，在 320×240 logical 控件样本上用 headed 鼠标分别真实拖动 3 秒正向与反向；每次手势期间按五个时点捕获应用窗口，AX 在终点读回浅色/深色。暗态及两向中段窗口裁图分别为 [`dark`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-fitted-switch-dark.png>)（SHA `639d8b7c20a0f0fc8c12b32be7a11981b8f8ea83b6c31d8c45377d71a3a7eb09`）、[`forward sample`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-fitted-forward-2-switch-crop.png>)（SHA `88a432cb45408025bcdc01266474a51d3a550c923c1ae877fb0d2cbf6f04f963`）和 [`reverse sample`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-fitted-reverse-2-switch-crop.png>)（SHA `b84d2fd4b29ff9e47dc2d10f06efa7da27285fdf5e7884434dcceecbd657c162`）。截图可见两向拖动时内部粒子、太阳/月亮形态与边缘光持续变化。夹具随后正常退出；没有改产品代码、切换参数或状态逻辑。
 - 验收边界：网页与 macOS 分别执行实时输入，并未共享输入时钟、帧时间戳或随机粒子种子；两侧分别使用 Chromium/SwiftShader 与 Flutter/macOS renderer，截图也不是物理 display-present 记录。因此本次只证明网页参考和原生拟合组件都响应任意方向的真实拖动，并提供内部粒子及光效变化的动态采样证据；它不证明网页与应用逐帧同步，也不消除原视频轨迹先前测得的约 `42–60 ms` 相位差。UI-6.8 仍部分验收，不能据此宣称 1:1 逐帧还原。
 
+### 2026-11-18 UI-6.8 长间隔恢复遵循网页单帧上限
+
+- 来源：用户指定的[当前实验页面](https://experiments.thisiswhitespace.com/glass-light-toggle)加载官方 [`main.js?v=3`](https://experiments.thisiswhitespace.com/standalone/glass-light-toggle/main.js?v=3)，本地取得脚本 SHA-256 为 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`。网页在每个 `requestAnimationFrame` 以 `min(1/30, delta)` 积分一次，并以 `performance.now()` 驱动绝对时钟；没有因暂停超过两秒而把未完成的滑块/粒子动画吸附至终点。
+- 修正：删除 `ThemeSwitchSimulation.advanceRealtime` 超过两秒时对未拖动模型调用 `snapTo` 的额外分支。恢复后首帧只走一次 1/30 秒上限，接下来的帧从此前位置继续；没有固定帧序列，也没有改变指针拖动、释放投影、端点提交、取消或主题偏好逻辑。
+- 验证：`dart format` 检查 `theme_switch_simulation.dart` 和 `theme_switch_realtime_test.dart`，无格式改动。于 `app/` 执行 `flutter test --no-pub --reporter compact test/theme_switch_realtime_test.dart test/theme_switch_simulation_test.dart test/theme_switch_calibration_test.dart`，15 项全部通过；新增回归确认 8 秒间隔与一次 1/30 秒更新完全一致，并从保留的中间状态继续运动。
+- 范围：这是长间隔积分策略与线上模型的一致性修正，不验证网页和 macOS 的同步逐帧相位、随机粒子对应或 display-present 时间；UI-6.8 的动态相位及整体 1:1 签收仍未完成。
+
 ### 2026-11-18 UI-6.7 三枚主图标点击反馈增强与 Profile 复核
 
 - 根据 96 dp 参考图保留运行、刷新、搜索的 9×9 点阵轮廓，只调整 `GlassMotionAction.play/search/refresh` 的点击幅度：运行增加右向位移、轻微横向扩张与扫光；搜索扩大镜片缩放和扫光；刷新保留整圈旋转并加深点光亮度。未改 glyph 掩码、按钮 hitbox/业务回调或太阳/月亮主题切换状态机。
