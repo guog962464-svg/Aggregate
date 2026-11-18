@@ -100,9 +100,9 @@
 | B085 | `app/lib/platform/macos/mac_host_settings_panel.dart:273` | 设置：Mac Host 配对和权限操作 | 暗色撤销确认图 `32-host-revoke-confirm-dark.png`；`mac_host_settings_panel_test.dart` 用 fake pairing control 验证确认后撤销设备，不访问真实 Host |
 | B086 | `app/lib/platform/macos/mac_host_settings_panel.dart:307` | 设置：Mac Host 配对和权限操作 | 暗色身份轮换图 `28-host-rotate-confirm-dark.png`；`mac_host_settings_panel_test.dart` 验证取消后不撤销、不停止 Host、不轮换 |
 | B087 | `app/lib/platform/macos/mac_host_settings_panel.dart:313` | 设置：Mac Host 配对和权限操作 | 暗色身份轮换图 `28-host-rotate-confirm-dark.png`；`mac_host_settings_panel_test.dart` 验证确认后撤销、停止并轮换 fake Host 身份 |
-| B088 | `app/lib/platform/macos/mac_host_settings_panel.dart:463` | 设置：Mac Host 配对和权限操作 | 暗色 Host 停止/运行图 `17-settings-host-stopped-dark.png`、`18-settings-host-running-dark.png`；Widget 回归验证启动按钮与运行态，直接点击停止按钮、浅色与动效待核 |
-| B089 | `app/lib/platform/macos/mac_host_settings_panel.dart:501` | 设置：Mac Host 配对和权限操作 | 暗色运行态图 `18-settings-host-running-dark.png`；`mac_host_settings_panel_test.dart` 验证轮换入口的取消和确认流程，使用 fake Host |
-| B090 | `app/lib/platform/macos/mac_host_settings_panel.dart:549` | 设置：Mac Host 配对和权限操作 | 暗色 `20-settings-host-pairing-dark.png`；`mac_host_settings_panel_test.dart` 验证生成邀请与二维码 Widget，未连接真实设备 |
+| B088 | `app/lib/platform/macos/mac_host_settings_panel.dart:463` | 设置：Mac Host 配对和权限操作 | 2026-11-18 Profile 浅/深主题均点击启动与停止；`host-running-light.png`、`host-running-dark.png`、`host-stopped-after-click-light.png`、`host-stopped-after-click-dark.png`。假 Host 仅改进程内状态；确认无 44321 监听，Profile VM service loopback 仍在；按下动画关键帧待核 |
+| B089 | `app/lib/platform/macos/mac_host_settings_panel.dart:501` | 设置：Mac Host 配对和权限操作 | 2026-11-18 浅色 Profile 打开身份轮换确认并取消；`host-identity-confirm-light.png`；AX 复核运行状态、假配对设备和邀请仍保留。确认轮换路径由 fake Widget 回归覆盖，本次未在实窗确认；按下动画待核 |
+| B090 | `app/lib/platform/macos/mac_host_settings_panel.dart:549` | 设置：Mac Host 配对和权限操作 | 2026-11-18 浅色 Profile 启动假 Host 后点击生成邀请；`host-invitation-generated-light.png`，AX 读到邀请过期信息与 1 个本机网络地址。二维码被当前窗口底部区域部分遮挡，故只部分验收；没有网络配对，按下动画待核 |
 | B091 | `app/lib/platform/macos/mac_host_settings_panel.dart:583` | 设置：Mac Host 配对和权限操作 | 暗色假邀请详情图 `30-host-invitation-dark.png`；复制按钮可见，未点击；二维码和 loopback 地址均为内存 stub 数据 |
 | B092 | `app/lib/platform/macos/mac_host_settings_panel.dart:616` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |
 | B093 | `app/lib/platform/macos/mac_host_settings_panel.dart:662` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |

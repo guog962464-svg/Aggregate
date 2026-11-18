@@ -119,3 +119,8 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 ### UI-6.7 补证：运行、刷新、搜索点击态（2026-11-18）
 
 共享 `GlassActionButton` 的 96 dp Profile fixture 已在浅色、深色中对三枚主图标分别完成合成指针点击；本地回调计数逐个增加，截图显示运行右移、刷新旋转、搜索镜片扩张。`glass_motion_test.dart` 新增位移/缩放阈值回归，与按钮、glyph golden 定向套件共 29 项通过；Flutter 3.47.8 Profile 构建成功、清理临时入口后的 `flutter analyze --no-pub` 无问题。截图与哈希、指针投递边界及实际覆盖范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-三枚主图标点击反馈增强与-profile-复核)。这只证明共享组件在参考尺寸上的动作模型和隔离实窗反馈，不签收全部 109 个生产调用点；UI-6.7 保持部分验收。
+
+
+### UI-6.7 补证：Mac Host 设置控件（2026-11-18）
+
+隔离 Profile 中对 B088–B090 做了浅/深 Host 启停、轮换确认取消和邀请生成检查。Host 假实现没有开启监听；44321 端口无 listener。B088 两主题启停状态已读回；B089 只验证取消保持状态；B090 AX 已读到邀请元数据，但二维码受窗口底部遮挡，只部分验收。截图 SHA、配置和进程隔离范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-启停轮换确认与邀请-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。未采按下帧或 FrameTiming；没有触发网络配对，UI-6.7 仍部分验收。
