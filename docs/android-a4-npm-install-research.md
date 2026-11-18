@@ -119,3 +119,19 @@ NodeProbe Debug 专用实现现会在固定 `a4-npm` action 中将 APK `nativeLi
 - 核对本地准备出的固定 npm 12.2.2 `pacote/lib/fetcher.js`：`extract()` 先对目标目录执行 `#mkdir()`，再启动 tarball stream 和 tar extractor；stream/extractor 出错时 rejection handler 记录并拒绝 Promise，没有清理目标目录的分支。这个源码路径与真机在 `beforeExit` 看到的部分解包吻合。该判断针对本地固定 npm 资产，不外推其他版本。
 - **处理结论：**这是被测 npm tarball 解包失败留下部分文件的行为，不是 NodeProbe Messenger 终态或设备文件权限故障。保留 `verify_a4_npm.py` 的失败断言，不通过改写预期将套件置绿；NodeProbe/产品 NodeBridge 未增加安装回滚代码，ADR 0003 的“Android 用户 npm 安装不开放”决定不变。A4.4 仍仅表示受限 Debug 可行性样本已运行，不能宣称 integrity 失败保证无半成品。
 - 清理回读：NodeProbe 独立包已卸载，普通 Aggregate 仍安装，ADB reverse 为空；没有启动生产 Mac Host。只跑上述固定 integrity action，没有重跑完整 11 项 npm suite。
+
+## 2026-11-18 Google Play 动态代码政策复核
+
+本次只核对 Google Play 与 Android 官方公开政策文本，不构成 Google 对 Aggregate 的个案审批、法律意见或 Play Console 审核结果。
+
+### 官方政策事实
+
+- Google Play 当前 [Device and Network Abuse policy](https://support.google.com/googleplay/android-developer/answer/16559646) 规定：Play 分发应用不得绕过 Play 更新机制自行修改/替换/更新；一般也不得从 Play 以外下载 dex、JAR、`.so` 等可执行代码。文本明确为“运行在 VM 或 interpreter 中的代码”列出例外，同时要求运行时加载、未随应用打包的 JavaScript、Python、Lua 等解释型代码不得允许潜在 Play 政策违规。政策示例还禁止下载/分发恶意软件以及未获授权访问设备、网络、API 或服务。政策页说明摘要不替代完整政策；本记录按同页完整条款复核。
+- Android 官方 [Dynamic Code Loading 安全指引](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading) 建议没有业务必要时避免动态代码加载；需要加载时使用可信来源和应用内部/Scoped Storage，并在加载前校验完整性。官方 [Security checklist](https://developer.android.com/privacy-and-security/security-tips) 明确动态代码与 APK 享有相同的应用权限，解释器本身不是 Android 应用沙箱边界。
+
+### 对 Aggregate 的结论
+
+- 官方条文没有把“npm”作为名称整体列为禁止项；解释型代码条款也不等于对任意 npm 包的预先许可。是否合规取决于具体代码、下载内容、执行能力、面向用户的用途，以及其是否可能违反其他 Play 政策。
+- Aggregate 当前 NodeProbe 的 npm 流程是隔离探针；Gradle 仅在显式 `a3Probe=true` 时将 `:nodebridge` 加入 `debugImplementation`，Flutter/Dart 产品代码没有 `aggregate/node_probe` 调用路径，主 App 产品 Release 验收记录确认 APK/AAB 不含 NodeProbe、NodeBridge、`libnode.so` 或 npm assets。NodeProbe 的 npm action 仍为固定 allowlist；Android 产品决定仍按 [ADR 0003](decisions/0003-android-local-execution.md) 保持关闭。
+- 若未来提交 Play 版本，当前证据支持继续不提供用户任意安装包、任意生命周期脚本或从 registry 下载并加载 native `.so`。如果以后评估受控 JS，应先限定随 APK 打包或可审计的固定包清单、来源与摘要，在加载前验证，限制可调用能力并说明用途；这些是工程风险控制建议，不代表 Google 已批准。
+- **门槛状态：**官方文档级预审已完成；Play Console 个案审查/实际上架结果未知。任意 npm 仍不进入 Android 首版；此复核不关闭 A3.6 的 Node 来源、SBOM/许可、正式签名和 16 KB 真机门槛。
