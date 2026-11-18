@@ -843,3 +843,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 以隔离的 macOS Profile 夹具重建并打开 96 dp 图案样本。AX 树列出“运行”“刷新”“搜索”等按钮；刷新语义 `AXPress` 返回 `delivered_unverified`，无法从延迟静帧确认瞬时状态，因此没有重试。随后基于已验证前台的独立夹具窗口尝试运行按钮的物理坐标点击并录制该窗口 4 秒；事件也返回 `delivered_unverified`，采样帧未出现可归因于运行按钮的清晰点击态，指针位置与预期无障碍框不一致，不能据此签收。
 - 刷新按钮的 headed 元素点击另因命中测试判断按钮被滚动区域遮挡而返回 `not_delivered`；未对该次动作重试。没有尝试搜索按钮，也没有证据证明这三枚图案的原生点击态已逐帧通过。
 - 夹具由 `agent-desktop close-app` 正常退出并确认进程结束；未触发任何业务回调或外部服务。没有产品代码改动，UI-6.7 保持部分验收；当前提交只更正图案静态形状，动效模型单元测试通过不等于原生按压视觉通过。
+
+### 2026-11-18 UI-6.7 依据目标图重绘运行、刷新和搜索
+
+- 用户提供 96 dp 图案参考图，并指定 [Glass Light Toggle](https://experiments.thisiswhitespace.com/glass-light-toggle) 作为缺失视频的材质/光效参考。以附件的三个图案为轮廓依据，按 9×9 单元重新映射：运行是窄高右指三角，刷新是右侧带箭头缺口的环，搜索是闭合镜片加右下两点斜柄。共享圆点、玻璃绘制、动效 profile、按钮尺寸/命中区和回调均保持原样；没有触碰主题开关状态机。
+- macOS Profile 原生夹具浅色和深色静态截图：[`浅色`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-grid-ref-light.png>)，SHA-256 `a5149f47bb5fdb8bad6e1b61eba12c3299aea5a753aa7184f929a42da1b1b34d`；[`深色`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-grid-ref-dark.png>)，SHA-256 `da2d8dcaf9cfef9e624baf69e7fb3e4c9e2286bc0d93134d3eff4db43058622b`。两张均为 1824×1488、DPR 2；实窗中同屏看到 96 dp 按钮及运行、刷新、搜索图案。主题状态由 AX 从深色读回浅色；夹具进程随后正常退出。
+- `glass_action_button_test.dart` 的 9×9 网格、三图案点位和单元数量断言通过；浅/深三图案 golden 与全字典 golden 已更新。`glass_glyph_golden_test.dart`、`glass_action_button_test.dart`、`glass_motion_test.dart`、`glass_theme_switch_test.dart` 共 38 项通过，`flutter analyze --no-pub` 无问题，macOS Profile 夹具构建成功（62.9 MB）。构建只有 `mobile_scanner` 依赖的既有弃用警告。
+- 限制：本次签收静置轮廓及玻璃实窗浅深外观，不代表三个原生按下瞬间已逐帧采集；先前点击态复验仍为未验证。UI-6.7 继续部分验收。

@@ -199,6 +199,12 @@ void main() {
   });
 
   test('run, refresh, and search use unique cells on the shared dot grid', () {
+    bool hasPoint(List<Offset> points, Offset target) => points.any(
+      (point) =>
+          (point.dx - target.dx).abs() < 1e-6 &&
+          (point.dy - target.dy).abs() < 1e-6,
+    );
+
     for (final glyph in const [
       GlassGlyph.play,
       GlassGlyph.refresh,
@@ -219,11 +225,21 @@ void main() {
     }
 
     final refresh = GlassGlyphFactory.pointsFor(GlassGlyph.refresh);
-    expect(refresh, contains(const Offset(25.6, 14.8)));
-    expect(refresh, isNot(contains(const Offset(22.9, 14.8))));
+    expect(refresh, hasLength(25));
+    expect(hasPoint(refresh, const Offset(25.6, 12.1)), isTrue);
+    expect(hasPoint(refresh, const Offset(25.6, 14.8)), isFalse);
+    expect(hasPoint(refresh, const Offset(4, 14.8)), isTrue);
+
+    final play = GlassGlyphFactory.pointsFor(GlassGlyph.play);
+    expect(play, hasLength(25));
+    expect(hasPoint(play, const Offset(4, 4)), isTrue);
+    expect(hasPoint(play, const Offset(14.8, 14.8)), isTrue);
+    expect(hasPoint(play, const Offset(25.6, 14.8)), isFalse);
 
     final search = GlassGlyphFactory.pointsFor(GlassGlyph.search);
-    expect(search, contains(const Offset(25.6, 25.6)));
+    expect(search, hasLength(21));
+    expect(hasPoint(search, const Offset(20.2, 20.2)), isTrue);
+    expect(hasPoint(search, const Offset(25.6, 25.6)), isTrue);
   });
 
   testWidgets('production action icons build in the macOS glass scope', (
