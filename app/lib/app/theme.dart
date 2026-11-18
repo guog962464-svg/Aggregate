@@ -110,9 +110,9 @@ abstract final class AggregateTheme {
     );
   }
 
-  /// Aligns page foregrounds with the current luminance side of the moving
-  /// macOS glass backdrop while preserving the control material palette. The
-  /// caller updates this only when that side changes.
+  /// Aligns text painted directly over the moving macOS glass backdrop with its
+  /// current luminance side while preserving surface-safe ColorScheme values.
+  /// The caller updates this only when that side changes.
   static ThemeData withMacOSBackdropTextContrast(
     ThemeData theme, {
     required bool usesDarkForeground,
@@ -130,10 +130,9 @@ abstract final class AggregateTheme {
     final safeGlass = glass;
 
     return theme.copyWith(
-      colorScheme: theme.colorScheme.copyWith(
-        onSurface: foreground,
-        onSurfaceVariant: foreground,
-      ),
+      // Keep onSurface/onSurfaceVariant from the surface-contrast pass. These
+      // semantic colors are also used on Material surfaces, whose brightness
+      // can lag the moving backdrop while ThemeData itself is interpolating.
       textTheme: safeTextTheme,
       appBarTheme: theme.appBarTheme.copyWith(
         foregroundColor: foreground,

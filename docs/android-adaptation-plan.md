@@ -247,6 +247,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - [x] A8.5 新增 [Android 内部测试指南](android-user-guide.md)，并更新[故障排查](troubleshooting.md#android-内部测试)；记录 Android 手机能力、Mac Host 配对、Debug 安装、各能力执行位置、网易云 Mac 音频输出和 A8 实测/未测边界。当前无正式 Android 发布包，文档不能视为发布声明。
 
   - 2026-11-17 当前主线 Release 构建复验：在 `ea23879034fa8c7bd2a81ff45a98c966f818f152` 重建 arm64 APK/AAB；Bundletool 1.18.3 `validate`、AAB `PAGE_ALIGNMENT_16K`、APK `zipalign -P 16` 与两种产物内 7 个原生 ELF 的 16 KB `PT_LOAD` 对齐均通过。APK/AAB 未签名且不含 Node/npm；未安装运行。尺寸、哈希与签名结果见 [A8 验收记录](android-a8-acceptance.md#2026-11-17-当前主线-release-构建复验)。
+  - 2026-11-18 基于 `34d9c9e` 及本轮共享主题修复重新构建 arm64 Release APK/AAB。APK 27,708,052 bytes、AAB 25,481,449 bytes；7 个 arm64 ELF 的 16 KB `PT_LOAD` 对齐、APK zipalign、Bundletool validate 与 `PAGE_ALIGNMENT_16K` 均通过，产物未签名且不含 Node/npm。全量 Flutter 316 项通过、analyze 无问题。ADB 列表为空，未运行新包；缺少 16 KB 真机与正式签名仍是 A8 发布门槛。详细哈希和主题对比度修复见 [A8 验收记录](android-a8-acceptance.md#2026-11-18-当前主线-release-与主题对比回归)。
 
 **交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
 

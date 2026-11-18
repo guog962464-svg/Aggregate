@@ -108,3 +108,12 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - Bundletool 1.18.3 `validate` 通过，`dump config` 报告 `PAGE_ALIGNMENT_16K`。`apksigner` 与 `jarsigner` 均确认产物未签名；APK/AAB 均不含 NodeProbe、NodeBridge、`libnode.so` 或 npm `node_modules`。
 - 本次只构建并静态检查，没有安装或运行产物。当前 ADB 设备列表为空；这不替代 16 KB 系统实机、正式签名或生产 Host/音乐链路验收。
 - 4 KB 真机覆盖新鲜度：`aecbd0c` 是 A5.5 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 业务集成验收对应代码提交。核对 `aecbd0c..HEAD` 的 `app/android` 与 `app/lib` 差异，Android 原生平台目录没有变化；Dart 侧唯一差异是 `glass_buttons_fixture.dart` 独立 UI 演示夹具。故此前 4 KB 真机证据仍覆盖当前 Android 运行时/平台桥接源码；本次新 Release 工件本身未安装，当前亦无设备可补跑安装验收。
+
+## 2026-11-18 当前主线 Release 与主题对比回归
+
+在 `34d9c9ebc6be2d269e6bd271de4d8b93597161ab` 基础上，修复 macOS 玻璃背景文本对比调整覆盖 `ColorScheme.onSurface/onSurfaceVariant` 的问题。移动背景采样可把颜色设为黑或白，而 Material surface 仍可能处于主题插值的中间值；实测 `onSurface` 与当前 surface 对比度降到 `3.289:1`。现在背景上的动态正文、AppBar、图标和列表文本仍按背景更新，surface 语义色则保留经 surface 对比修正的值。设计令牌测试分别验证背景文本随动以及三个 Material surfaces 上语义色达到 4.5:1。此变更修复共享 Flutter/macOS 主题层，不改 Android Runtime 或原生桥接。
+
+- 全量 `flutter test --no-pub --reporter compact`：316 项通过；`flutter analyze --no-pub`：无问题。主题切换、surface 对比和动态玻璃文字专项测试通过。
+- `flutter build apk --release --no-pub --target-platform android-arm64` 与 `flutter build appbundle --release --no-pub --target-platform android-arm64` 均通过。APK 为 27,708,052 bytes，SHA-256 `7ec10656e50f27869dcbd5f384015aa4296d16cd0cea9db7631a3e82b7193273`；AAB 为 25,481,449 bytes，SHA-256 `3b8769328aac58e3563c45fac2d852885f1219b4a098fddaa8952668cc712aae`。`aapt dump badging` 确认 versionCode 8、versionName 0.3.7、仅 `arm64-v8a`。
+- Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；APK 与 AAB 各含 7 个 arm64 ELF，每个 `PT_LOAD p_align >= 0x4000` 且 offset/virtual-address congruence 通过。Bundletool 1.18.3 `validate` 与 `PAGE_ALIGNMENT_16K` 配置通过。两种产物均未签名，且 archive entry 中未发现 NodeProbe、NodeBridge、`libnode.so`、nodejs-mobile 或 npm `node_modules`。
+- 当前 ADB 设备列表为空；本轮只构建与静态检查，没有安装或运行新工件。静态对齐结果不替代 16 KB Android 系统实机验证；正式签名、16 KB 真机及 production Host/音乐链路仍未完成。

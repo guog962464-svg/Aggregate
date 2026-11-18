@@ -214,7 +214,7 @@ void main() {
   );
 
   test(
-    'page text follows the backdrop while button tokens follow the theme',
+    'backdrop text follows the scene while surface colors stay readable',
     () {
       final baseTheme = AggregateTheme.withMacOSSurfaceTextContrast(
         AggregateTheme.forPlatform(AggregateTheme.dark, TargetPlatform.macOS),
@@ -231,8 +231,25 @@ void main() {
         );
         final tokens = theme.extension<GlassDesignTokens>()!;
 
-        expect(theme.colorScheme.onSurface, expected);
-        expect(theme.colorScheme.onSurfaceVariant, expected);
+        expect(theme.colorScheme.onSurface, baseTheme.colorScheme.onSurface);
+        expect(
+          theme.colorScheme.onSurfaceVariant,
+          baseTheme.colorScheme.onSurfaceVariant,
+        );
+        for (final surface in [
+          theme.colorScheme.surface,
+          theme.colorScheme.surfaceContainerLow,
+          theme.colorScheme.surfaceContainer,
+        ]) {
+          expect(
+            _contrast(theme.colorScheme.onSurface, surface),
+            greaterThanOrEqualTo(4.5),
+          );
+          expect(
+            _contrast(theme.colorScheme.onSurfaceVariant, surface),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
         expect(theme.textTheme.bodyMedium?.color, expected);
         expect(theme.textTheme.bodySmall?.color, expected);
         expect(theme.appBarTheme.foregroundColor, expected);
