@@ -192,49 +192,86 @@ void main() {
     },
   );
 
-  test(
-    'marks a Host offline after session stream termination and reconnects',
-    () async {
-      final directory = await Directory.systemTemp.createTemp(
-        'aggregate-android-host-drop-',
-      );
-      addTearDown(() => directory.delete(recursive: true));
-      final connector = _FakeConnector();
-      final manager = AndroidHostManager(
-        AndroidRuntimeStore(directory),
-        pairingClient: AndroidHostPairingClient(
-          identity: _FakeIdentity(),
-          connector: connector,
-          now: () => _now,
-        ),
-        discovery: const _NoopHostDiscovery(),
+  test('automatically reconnects after session stream termination', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'aggregate-android-host-drop-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final connector = _FakeConnector();
+    final manager = AndroidHostManager(
+      AndroidRuntimeStore(directory),
+      pairingClient: AndroidHostPairingClient(
+        identity: _FakeIdentity(),
+        connector: connector,
         now: () => _now,
-      );
-      await manager.load();
-      await manager.completePairing(
-        invitation: _invitation(),
-        displayName: '家庭 Mac',
-      );
-      expect(manager.statusFor(_hostId), AndroidHostStatus.online);
+      ),
+      discovery: const _NoopHostDiscovery(),
+      now: () => _now,
+      reconnectDelays: const [Duration.zero],
+    );
+    await manager.load();
+    await manager.completePairing(
+      invitation: _invitation(),
+      displayName: '家庭 Mac',
+    );
+    expect(manager.statusFor(_hostId), AndroidHostStatus.online);
 
-      final offlineChange = manager.statusChanges.firstWhere(
-        (change) =>
-            change.hostId == _hostId &&
-            change.status == AndroidHostStatus.offline,
-      );
-      await connector.sockets.single.close();
-      await offlineChange.timeout(const Duration(seconds: 1));
-      expect(manager.isConnected(_hostId), isFalse);
-      expect(manager.statusFor(_hostId), AndroidHostStatus.offline);
+    final offlineChange = manager.statusChanges.firstWhere(
+      (change) =>
+          change.hostId == _hostId &&
+          change.status == AndroidHostStatus.offline,
+    );
+    final reconnected = manager.statusChanges.firstWhere(
+      (change) =>
+          change.hostId == _hostId && change.status == AndroidHostStatus.online,
+    );
+    await connector.sockets.single.close();
+    await offlineChange.timeout(const Duration(seconds: 1));
+    await reconnected.timeout(const Duration(seconds: 2));
+    expect(connector.sockets, hasLength(2));
+    expect(connector.sockets.last.methods, contains('host.hello'));
+    expect(manager.isConnected(_hostId), isTrue);
+    expect(manager.statusFor(_hostId), AndroidHostStatus.online);
+    await manager.dispose();
+  });
 
-      await manager.connect(_hostId);
-      expect(connector.sockets, hasLength(2));
-      expect(connector.sockets.last.methods, contains('host.hello'));
-      expect(manager.isConnected(_hostId), isTrue);
-      expect(manager.statusFor(_hostId), AndroidHostStatus.online);
-      await manager.dispose();
-    },
-  );
+  test('explicit disconnect cancels a scheduled automatic reconnect', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'aggregate-android-host-disconnect-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final connector = _FakeConnector();
+    final manager = AndroidHostManager(
+      AndroidRuntimeStore(directory),
+      pairingClient: AndroidHostPairingClient(
+        identity: _FakeIdentity(),
+        connector: connector,
+        now: () => _now,
+      ),
+      discovery: const _NoopHostDiscovery(),
+      now: () => _now,
+      reconnectDelays: const [Duration(seconds: 1)],
+    );
+    await manager.load();
+    await manager.completePairing(
+      invitation: _invitation(),
+      displayName: '家庭 Mac',
+    );
+    final offlineChange = manager.statusChanges.firstWhere(
+      (change) =>
+          change.hostId == _hostId &&
+          change.status == AndroidHostStatus.offline,
+    );
+    await connector.sockets.single.close();
+    await offlineChange.timeout(const Duration(seconds: 1));
+
+    await manager.disconnect(_hostId);
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+
+    expect(connector.sockets, hasLength(1));
+    expect(manager.statusFor(_hostId), AndroidHostStatus.offline);
+    await manager.dispose();
+  });
 
   test(
     'identity rotation clears saved hosts and closes their sessions',

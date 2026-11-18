@@ -204,69 +204,73 @@ void main() {
     },
   );
 
-  test(
-    'reports an abrupt TCP tunnel drop as offline and reconnects manually',
-    () async {
-      final androidDirectory = Directory('${directory.path}/android-app')
-        ..createSync();
-      manager = AndroidHostManager(
-        AndroidRuntimeStore(androidDirectory),
-        pairingClient: client,
-        discovery: const _NoopHostDiscovery(),
-      );
-      await manager!.load();
+  test('automatically reconnects after an abrupt TCP tunnel drop', () async {
+    final androidDirectory = Directory('${directory.path}/android-app')
+      ..createSync();
+    manager = AndroidHostManager(
+      AndroidRuntimeStore(androidDirectory),
+      pairingClient: client,
+      discovery: const _NoopHostDiscovery(),
+    );
+    await manager!.load();
 
-      final issued = await transport.createInvitation();
-      final parsed = AndroidHostInvitation.fromQrPayload(issued.qrPayload);
-      proxy = await _TcpTunnelProxy.start(
-        targetPort: parsed.endpoints.single.uri.port,
-      );
-      final invitation = AndroidHostInvitation(
-        hostId: parsed.hostId,
-        certificateSha256: parsed.certificateSha256,
-        nonce: parsed.nonce,
-        expiresAt: parsed.expiresAt,
-        endpoints: [
-          AndroidHostEndpoint(
-            Uri(
-              scheme: 'wss',
-              host: InternetAddress.loopbackIPv4.address,
-              port: proxy!.port,
-              path: '/host',
-            ),
+    final issued = await transport.createInvitation();
+    final parsed = AndroidHostInvitation.fromQrPayload(issued.qrPayload);
+    proxy = await _TcpTunnelProxy.start(
+      targetPort: parsed.endpoints.single.uri.port,
+    );
+    final invitation = AndroidHostInvitation(
+      hostId: parsed.hostId,
+      certificateSha256: parsed.certificateSha256,
+      nonce: parsed.nonce,
+      expiresAt: parsed.expiresAt,
+      endpoints: [
+        AndroidHostEndpoint(
+          Uri(
+            scheme: 'wss',
+            host: InternetAddress.loopbackIPv4.address,
+            port: proxy!.port,
+            path: '/host',
           ),
-        ],
-      );
-      await manager!.requestPairing(
-        invitation: invitation,
-        displayName: 'Android abrupt disconnect fixture',
-      );
-      await transport.approvePending(
-        deviceId,
-        scopes: const {HostGrantScope.readConnections},
-      );
-      await manager!.completePairing(
-        invitation: invitation,
-        displayName: 'Android abrupt disconnect fixture',
-      );
-      expect(manager!.statusFor(hostId), AndroidHostStatus.online);
+        ),
+      ],
+    );
+    await manager!.requestPairing(
+      invitation: invitation,
+      displayName: 'Android abrupt disconnect fixture',
+    );
+    await transport.approvePending(
+      deviceId,
+      scopes: const {HostGrantScope.readConnections},
+    );
+    await manager!.completePairing(
+      invitation: invitation,
+      displayName: 'Android abrupt disconnect fixture',
+    );
+    expect(manager!.statusFor(hostId), AndroidHostStatus.online);
 
-      final offlineChange = manager!.statusChanges.firstWhere(
-        (change) =>
-            change.hostId == hostId &&
-            change.status == AndroidHostStatus.offline,
-      );
-      await proxy!.dropActiveTunnels();
-      await offlineChange.timeout(const Duration(seconds: 2));
-      expect(manager!.isConnected(hostId), isFalse);
-      expect(manager!.statusFor(hostId), AndroidHostStatus.offline);
+    final offlineChange = manager!.statusChanges.firstWhere(
+      (change) =>
+          change.hostId == hostId && change.status == AndroidHostStatus.offline,
+    );
+    final reconnected = manager!.statusChanges.firstWhere(
+      (change) =>
+          change.hostId == hostId && change.status == AndroidHostStatus.online,
+    );
+    await proxy!.dropActiveTunnels();
+    await offlineChange.timeout(const Duration(seconds: 2));
+    expect(manager!.isConnected(hostId), isFalse);
+    expect(manager!.statusFor(hostId), AndroidHostStatus.offline);
 
-      await manager!.connect(hostId);
-      expect(manager!.statusFor(hostId), AndroidHostStatus.online);
-      expect(manager!.isConnected(hostId), isTrue);
-      expect(manager!.hosts.single.endpoints.single.uri.port, proxy!.port);
-    },
-  );
+    await reconnected.timeout(const Duration(seconds: 30));
+    expect(manager!.statusFor(hostId), AndroidHostStatus.online);
+    expect(manager!.isConnected(hostId), isTrue);
+    expect(manager!.hosts.single.endpoints.single.uri.port, proxy!.port);
+    final hello = await manager!.call(hostId, 'host.hello', const {
+      'protocolVersion': 1,
+    });
+    expect(hello['hostId'], hostId);
+  });
 
   test(
     'Android RuntimePort routes setup drafts through the paired Host',

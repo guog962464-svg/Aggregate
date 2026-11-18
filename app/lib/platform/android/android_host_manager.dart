@@ -16,6 +16,14 @@ enum AndroidHostStatus {
   outcomeUnknown,
 }
 
+const _defaultReconnectDelays = [
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 4),
+  Duration(seconds: 8),
+  Duration(seconds: 16),
+];
+
 final class AndroidHostStatusChange {
   const AndroidHostStatusChange(this.hostId, this.status);
 
@@ -182,28 +190,45 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     AndroidHostPairingClient? pairingClient,
     AndroidHostDiscoveryPort? discovery,
     DateTime Function()? now,
+    List<Duration> reconnectDelays = _defaultReconnectDelays,
   }) : pairingClient =
            pairingClient ??
            AndroidHostPairingClient(
              identity: const AndroidHostDeviceIdentity(),
            ),
        discovery = discovery ?? const MethodChannelAndroidHostDiscovery(),
-       now = now ?? DateTime.now;
+       now = now ?? DateTime.now,
+       reconnectDelays = List.unmodifiable(reconnectDelays) {
+    if (this.reconnectDelays.length > 8 ||
+        this.reconnectDelays.any((delay) => delay.isNegative)) {
+      throw ArgumentError.value(
+        reconnectDelays,
+        'reconnectDelays',
+        'must contain at most eight nonnegative delays',
+      );
+    }
+  }
 
   final AndroidRuntimeStore _store;
   final AndroidHostPairingClient pairingClient;
   final AndroidHostDiscoveryPort discovery;
   final DateTime Function() now;
+  final List<Duration> reconnectDelays;
   final Map<String, AndroidPairedHost> _hosts = {};
   final Map<String, AndroidHostAuthenticatedSession> _sessions = {};
   final Map<String, StreamSubscription<Map<String, Object?>>> _sessionWatches =
       {};
+  final Map<String, Timer> _reconnectTimers = {};
+  final Map<String, Timer> _stableSessionTimers = {};
+  final Map<String, int> _reconnectAttempts = {};
+  final Map<String, int> _connectionGenerations = {};
   final Map<String, AndroidHostStatus> _statuses = {};
   final _statusChanges = StreamController<AndroidHostStatusChange>.broadcast(
     sync: true,
   );
   final List<String> notices = [];
   Future<void> _tail = Future<void>.value();
+  var _disposed = false;
 
   Future<T> _mutate<T>(Future<T> Function() action) async {
     final previous = _tail;
@@ -291,6 +316,8 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     required String displayName,
   }) async {
     _validateDisplayName(displayName);
+    _cancelReconnect(hostId: invitation.hostId, resetAttempts: true);
+    final generation = _advanceConnectionGeneration(invitation.hostId);
     _setStatus(invitation.hostId, AndroidHostStatus.connecting);
     try {
       final session = await pairingClient.authenticate(
@@ -305,20 +332,44 @@ final class AndroidHostManager implements AndroidHostManagerPort {
         pairedAt: previous?.pairedAt ?? now().toUtc(),
         lastConnectedAt: now().toUtc(),
       );
-      await _installSession(host, session);
+      await _installSession(host, session, generation: generation);
       return host;
     } on Object catch (error) {
-      _setStatus(invitation.hostId, _statusForFailure(error));
+      if (_isGenerationCurrent(invitation.hostId, generation)) {
+        _setStatus(invitation.hostId, _statusForFailure(error));
+      }
       rethrow;
     }
   }
 
   @override
   Future<AndroidPairedHost> connect(String hostId) async {
+    _cancelReconnect(hostId: hostId, resetAttempts: true);
+    final generation = _advanceConnectionGeneration(hostId);
+    try {
+      return await _connectHost(hostId, generation: generation);
+    } on Object catch (error) {
+      if (_isGenerationCurrent(hostId, generation) &&
+          _isTransientReconnectFailure(error)) {
+        _scheduleReconnect(hostId);
+      }
+      rethrow;
+    }
+  }
+
+  Future<AndroidPairedHost> _connectHost(
+    String hostId, {
+    required int generation,
+  }) async {
     final host = _hosts[hostId];
     if (host == null) {
       throw const AndroidHostPairingException(
         AndroidHostPairingFailure.invalidInvitation,
+      );
+    }
+    if (!_isGenerationCurrent(hostId, generation)) {
+      throw const AndroidHostPairingException(
+        AndroidHostPairingFailure.transportClosed,
       );
     }
     _setStatus(hostId, AndroidHostStatus.connecting);
@@ -336,18 +387,27 @@ final class AndroidHostManager implements AndroidHostManagerPort {
         endpoints: target.endpoints,
         lastConnectedAt: now().toUtc(),
       );
-      await _installSession(connected, session);
+      await _installSession(connected, session, generation: generation);
       return connected;
     } on Object catch (error) {
-      _setStatus(hostId, _statusForFailure(error));
+      if (_isGenerationCurrent(hostId, generation)) {
+        _setStatus(hostId, _statusForFailure(error));
+      }
       rethrow;
     }
   }
 
   Future<void> _installSession(
     AndroidPairedHost host,
-    AndroidHostAuthenticatedSession session,
-  ) => _mutate(() async {
+    AndroidHostAuthenticatedSession session, {
+    required int generation,
+  }) => _mutate(() async {
+    if (!_isGenerationCurrent(host.hostId, generation)) {
+      await session.close();
+      throw const AndroidHostPairingException(
+        AndroidHostPairingFailure.transportClosed,
+      );
+    }
     if (!_hosts.containsKey(host.hostId) && _hosts.length >= 128) {
       await session.close();
       throw const AndroidHostPairingException(
@@ -369,15 +429,27 @@ final class AndroidHostManager implements AndroidHostManagerPort {
         AndroidHostPairingFailure.storageFailure,
       );
     }
+    if (!_isGenerationCurrent(host.hostId, generation)) {
+      await session.close();
+      throw const AndroidHostPairingException(
+        AndroidHostPairingFailure.transportClosed,
+      );
+    }
     final previousSession = _sessions[host.hostId];
     await _sessionWatches.remove(host.hostId)?.cancel();
+    _reconnectTimers.remove(host.hostId)?.cancel();
     _sessions[host.hostId] = session;
     _setStatus(host.hostId, AndroidHostStatus.online);
+    _scheduleStableRetryReset(host.hostId, session);
     _sessionWatches[host.hostId] = session.notifications.listen(
       (_) {},
       onDone: () {
         if (identical(_sessions[host.hostId], session)) {
+          _sessions.remove(host.hostId);
+          _sessionWatches.remove(host.hostId);
+          _stableSessionTimers.remove(host.hostId)?.cancel();
           _setStatus(host.hostId, AndroidHostStatus.offline);
+          _scheduleReconnect(host.hostId);
         }
       },
     );
@@ -431,6 +503,88 @@ final class AndroidHostManager implements AndroidHostManagerPort {
     }
     return session.notifications;
   }
+
+  int _advanceConnectionGeneration(String hostId) {
+    final generation = (_connectionGenerations[hostId] ?? 0) + 1;
+    _connectionGenerations[hostId] = generation;
+    return generation;
+  }
+
+  bool _isGenerationCurrent(String hostId, int generation) =>
+      !_disposed && _connectionGenerations[hostId] == generation;
+
+  void _cancelReconnect({required String hostId, bool resetAttempts = false}) {
+    _reconnectTimers.remove(hostId)?.cancel();
+    _stableSessionTimers.remove(hostId)?.cancel();
+    if (resetAttempts) _reconnectAttempts.remove(hostId);
+  }
+
+  void _scheduleStableRetryReset(
+    String hostId,
+    AndroidHostAuthenticatedSession session,
+  ) {
+    _stableSessionTimers.remove(hostId)?.cancel();
+    late final Timer timer;
+    timer = Timer(const Duration(seconds: 30), () {
+      if (identical(_stableSessionTimers[hostId], timer)) {
+        _stableSessionTimers.remove(hostId);
+      }
+      if (identical(_sessions[hostId], session) && session.isOpen) {
+        _reconnectAttempts.remove(hostId);
+      }
+    });
+    _stableSessionTimers[hostId] = timer;
+  }
+
+  void _scheduleReconnect(String hostId) {
+    if (_disposed ||
+        !_hosts.containsKey(hostId) ||
+        _sessions[hostId]?.isOpen == true ||
+        _reconnectTimers.containsKey(hostId)) {
+      return;
+    }
+    final attempt = _reconnectAttempts[hostId] ?? 0;
+    if (attempt >= reconnectDelays.length) return;
+    final generation = _connectionGenerations[hostId] ?? 0;
+    _reconnectAttempts[hostId] = attempt + 1;
+    late final Timer timer;
+    timer = Timer(reconnectDelays[attempt], () {
+      if (identical(_reconnectTimers[hostId], timer)) {
+        _reconnectTimers.remove(hostId);
+      }
+      if (!_isGenerationCurrent(hostId, generation) ||
+          !_hosts.containsKey(hostId) ||
+          _sessions[hostId]?.isOpen == true) {
+        return;
+      }
+      unawaited(_retryReconnect(hostId, generation));
+    });
+    _reconnectTimers[hostId] = timer;
+  }
+
+  Future<void> _retryReconnect(String hostId, int generation) async {
+    try {
+      await _connectHost(hostId, generation: generation);
+    } on Object catch (error) {
+      if (!_isGenerationCurrent(hostId, generation) ||
+          !_hosts.containsKey(hostId)) {
+        return;
+      }
+      if (_isTransientReconnectFailure(error)) {
+        _scheduleReconnect(hostId);
+      } else {
+        _cancelReconnect(hostId: hostId, resetAttempts: true);
+      }
+    }
+  }
+
+  bool _isTransientReconnectFailure(Object error) =>
+      error is AndroidHostPairingException &&
+      {
+        AndroidHostPairingFailure.hostUnavailable,
+        AndroidHostPairingFailure.requestTimedOut,
+        AndroidHostPairingFailure.transportClosed,
+      }.contains(error.failure);
 
   void _setStatus(String hostId, AndroidHostStatus status) {
     if (_statuses[hostId] == status) return;
@@ -486,6 +640,8 @@ final class AndroidHostManager implements AndroidHostManagerPort {
 
   @override
   Future<void> disconnect(String hostId) async {
+    _cancelReconnect(hostId: hostId, resetAttempts: true);
+    _advanceConnectionGeneration(hostId);
     await _sessionWatches.remove(hostId)?.cancel();
     final session = _sessions.remove(hostId);
     await session?.close();
@@ -493,22 +649,26 @@ final class AndroidHostManager implements AndroidHostManagerPort {
   }
 
   @override
-  Future<void> remove(String hostId) => _mutate(() async {
-    final existing = _hosts.remove(hostId);
-    if (existing == null) return;
-    try {
-      await _persist();
-    } on Object {
-      _hosts[hostId] = existing;
-      throw const AndroidHostPairingException(
-        AndroidHostPairingFailure.storageFailure,
-      );
-    }
-    await _sessionWatches.remove(hostId)?.cancel();
-    final session = _sessions.remove(hostId);
-    await session?.close();
-    _setStatus(hostId, AndroidHostStatus.offline);
-  });
+  Future<void> remove(String hostId) async {
+    _cancelReconnect(hostId: hostId, resetAttempts: true);
+    _advanceConnectionGeneration(hostId);
+    await _mutate(() async {
+      final existing = _hosts.remove(hostId);
+      if (existing == null) return;
+      try {
+        await _persist();
+      } on Object {
+        _hosts[hostId] = existing;
+        throw const AndroidHostPairingException(
+          AndroidHostPairingFailure.storageFailure,
+        );
+      }
+      await _sessionWatches.remove(hostId)?.cancel();
+      final session = _sessions.remove(hostId);
+      await session?.close();
+      _setStatus(hostId, AndroidHostStatus.offline);
+    });
+  }
 
   @override
   Future<AndroidHostIdentityRotationResult> rotateDeviceIdentity() =>
@@ -525,6 +685,10 @@ final class AndroidHostManager implements AndroidHostManagerPort {
         }
 
         final hostIds = _hosts.keys.toList();
+        for (final hostId in hostIds) {
+          _cancelReconnect(hostId: hostId, resetAttempts: true);
+          _advanceConnectionGeneration(hostId);
+        }
         for (final watch in _sessionWatches.values.toList()) {
           try {
             await watch.cancel();
@@ -569,6 +733,14 @@ final class AndroidHostManager implements AndroidHostManagerPort {
 
   @override
   Future<void> dispose() async {
+    _disposed = true;
+    for (final hostId in _reconnectTimers.keys.toList()) {
+      _cancelReconnect(hostId: hostId, resetAttempts: true);
+    }
+    for (final timer in _stableSessionTimers.values) {
+      timer.cancel();
+    }
+    _stableSessionTimers.clear();
     await _tail;
     await Future.wait(_sessionWatches.values.map((watch) => watch.cancel()));
     _sessionWatches.clear();

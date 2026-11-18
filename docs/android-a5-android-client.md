@@ -153,6 +153,15 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - Cleanup readback: `.integration` was removed, ordinary `io.github.guog962464.aggregate` remains installed, ADB reverse is empty, device page size is 4096, and production port 47321 has no listener.
 - Stage status: physical abrupt TCP loss and manual reconnect are now covered. Automatic retry, Wi-Fi/route/OS loss, direct LAN/NSD freshness, production business RPC, real Netease login/playback, production TUI, signed Release permissions and 16 KB hardware remain open; A5.5 remains open.
 
+## 2026-11-18 A5.5 physical automatic reconnect
+
+- supersedes the previous section's “No automatic retry is claimed” and “Automatic retry remains open” statements for this isolated abrupt-TCP-drop scenario; those statements correctly described the earlier manual-only implementation and evidence.
+- `AndroidHostManager` now retries saved-endpoint session authentication with bounded delays of 1, 2, 4, 8 and 16 seconds. It retries only transient transport/availability failures, does not replay RPC calls, and cancels pending retries on explicit disconnect, removal, pairing replacement, identity rotation or disposal. A session stable for 30 seconds resets the retry count.
+- Verification: the focused Flutter unit/WSS suite passed (14 tests), `flutter analyze --no-pub` found no issues, and `python3 app/tool/run_android_host_setup_e2e.py --device AEMN022427001360` reported both the Mac loopback Host fixture and Android physical Keystore + WSS setup flow PASS. The physical integration test destroys both TCP tunnel sockets without a WebSocket close frame, observes offline/unavailable state, waits for automatic reauthentication, then verifies the Host connections return to ready. A later explicit disconnect/manual reconnect assertion remains in the same runner.
+- Device/scope: LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages; actual Android physical Keystore; isolated loopback WSS test Host via USB `adb reverse`; fake CLI/Node/npm/MCP and temporary HOME/Host data. This does not cover Wi-Fi or route changes, Android process death/background suspension, direct LAN/NSD, production business RPC, real account/playback, signed Release, other ABIs or 16 KB hardware.
+- Cleanup readback: runner reported isolated package/reverse cleanup; `adb reverse --list` was empty, ordinary `io.github.guog962464.aggregate` remained installed, and port 47321 had no listener. `pubspec.lock` remains an unrelated user modification and is excluded from the task commit.
+- Stage status: automatic reconnect after abrupt WSS/TCP loss is now verified on the connected 4 KB device. A5.5 remains open for direct LAN/NSD and remaining production/real-account acceptance; A5.4/A8 signed Release and 16 KB gates also remain open.
+
 ## 2026-11-18 Android-to-Mac LAN reachability preflight
 
 - Read-only interface check found the Android device on `192.168.31.0/24` and the Mac on `192.168.10.0/24`; the Android route to the Mac address went through its `192.168.31.1` gateway. One ICMP probe received no reply.

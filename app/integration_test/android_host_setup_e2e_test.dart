@@ -519,6 +519,11 @@ void main() {
             change.hostId == pairedMcpHost.hostId &&
             change.status == AndroidHostStatus.offline,
       );
+      final abruptReconnect = manager.statusChanges.firstWhere(
+        (change) =>
+            change.hostId == pairedMcpHost.hostId &&
+            change.status == AndroidHostStatus.online,
+      );
       final controlClient = HttpClient();
       try {
         final request = await controlClient
@@ -556,8 +561,8 @@ void main() {
         isTrue,
       );
 
-      final manuallyReconnected = await manager.connect(pairedMcpHost.hostId);
-      expect(manuallyReconnected.hostId, pairedMcpHost.hostId);
+      await abruptReconnect.timeout(const Duration(seconds: 30));
+      expect(manager.statusFor(pairedMcpHost.hostId), AndroidHostStatus.online);
       expect(manager.isConnected(pairedMcpHost.hostId), isTrue);
       final afterAbruptReconnect = (await runtime.listConnections())
           .where((item) => item.executionTarget == target)
