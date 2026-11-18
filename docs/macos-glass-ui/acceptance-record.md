@@ -934,3 +934,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 在 `ui6_inspection_main.dart` Profile 入口用 `UI6_SEED_ACTIVITY_FILTER_STATES=true` 注入进程内超时/结果待确认样例。活动页打开假 `status` 记录后点击“查看运行”，CapabilityRunPage 从内存活动恢复 `RunState.outcomeUnknown` 与 RunHandle；没有重新运行能力或访问真实执行端。
 - 页面显示恢复说明和“检查活动状态”。点击后 AX 读回状态仍为“结果待确认”，并出现“结果仍未知；请先在执行端确认，不要直接重跑。”提示。检查动作仅读取此进程内 PreviewRuntime 历史，不重跑操作。截图 [`unknown-outcome-recovery-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-unknown-outcome/unknown-outcome-recovery-dark.png>)（SHA `aca0c4529cc0ae4fd878d0eed835fa75aad83b6e26e91fe0f5a700520b95af51`）。
 - AXPress 回执为 `delivered_unverified`，以操作后的新 AX 树和提示确认结果。关闭 Profile app 后 GUI app 与 Flutter runner 均无残留。没有产品代码修改或测试运行；仅暗色状态，无物理按下关键帧/FrameTiming，B107 仅 fake 组件级验收，UI-6.7 仍部分验收。
+
+
+### 2026-11-18 UI-6.7 Mac Host 撤销与身份轮换确认 B085/B087 Profile 验收
+
+- 在 `ui6_inspection_main.dart` 暗色 macOS Profile（Flutter 3.47.8 / Dart 3.13.7，macOS 27.2.1 arm64，800×632 logical px、DPR 2）启动 `Ui6InspectionHost`。源码确认该 Host 只改进程内配对/状态；启动不开放 listener、不读 Keychain，`rotate()` 返回预置 `PREVIEW ONLY` 身份。
+- B085 打开“撤销设备配对？”确认框后点击“撤销设备”；新 AX 树中“已配对设备”及配对卡片消失，待处理假设备仍在。对话框截图 [`revoke-confirm-profile-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-confirm-actions/revoke-confirm-profile-dark.png>)（SHA `4838b2e5569c8f8d246185db71c0fb7377a2c21d4c0deec21228814abc0537d5`）。
+- B087 再打开“轮换 Mac Host 身份？”确认框并确认“撤销授权并轮换”；AX 出现“Mac Host 身份已轮换。请启动 Host，并让手机重新配对。”，Host 状态回到已关闭，待处理/配对设备列表被清空。确认框截图 [`identity-rotation-confirm-profile-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-confirm-actions/identity-rotation-confirm-profile-dark.png>)（SHA `36538f3cab681bb4193e83a9198938f2c73a67ae84d215a7cd70a1da35a00298`）；结果截图 [`host-rotated-profile-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-confirm-actions/host-rotated-profile-dark.png>)（SHA `b6be363dfc71e0f88eb92d63c1518fbe63ea74712d16f6d6892bfac38601ff64`）。目标端口 44321 无 listener。
+- 两个确认操作均只变更隔离 fake；AXPress 回执 `delivered_unverified`，使用新 AX 树确认结果。Profile app 与 Flutter runner 正常退出，无残留。没有产品代码变化或测试运行；仅暗色静态/语义结果，无按下关键帧/FrameTiming，B085/B087 不代表真实配对设备撤销或 TLS 身份轮换，UI-6.7 仍部分验收。

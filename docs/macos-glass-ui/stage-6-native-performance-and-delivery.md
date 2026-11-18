@@ -159,3 +159,8 @@ B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读�
 ### UI-6.7 补证：结果待确认恢复 B107（2026-11-18）
 
 隔离 Profile 只读恢复内存中的 `outcomeUnknown` 样例；点“检查活动状态”后状态仍待确认，并出现不自动重跑的提示。没有访问真实执行端或重放操作。截图与范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-结果待确认恢复-b107-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。没有按下帧/FrameTiming；UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：Mac Host 撤销与身份轮换确认 B085/B087（2026-11-18）
+
+Profile fake Host 中确认撤销后配对卡片消失；确认身份轮换后 AX 提示成功、Host 关闭且列表清空。44321 无 listener，未读 Keychain 或连接手机。截图 SHA、状态回读和限制见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-撤销与身份轮换确认-b085b087-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下帧/FrameTiming，不代表真实设备或证书操作；UI-6.7 仍部分验收。
