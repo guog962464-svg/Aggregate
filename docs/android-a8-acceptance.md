@@ -117,3 +117,14 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - `flutter build apk --release --no-pub --target-platform android-arm64` 与 `flutter build appbundle --release --no-pub --target-platform android-arm64` 均通过。APK 为 27,708,052 bytes，SHA-256 `7ec10656e50f27869dcbd5f384015aa4296d16cd0cea9db7631a3e82b7193273`；AAB 为 25,481,449 bytes，SHA-256 `3b8769328aac58e3563c45fac2d852885f1219b4a098fddaa8952668cc712aae`。`aapt dump badging` 确认 versionCode 8、versionName 0.3.7、仅 `arm64-v8a`。
 - Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；APK 与 AAB 各含 7 个 arm64 ELF，每个 `PT_LOAD p_align >= 0x4000` 且 offset/virtual-address congruence 通过。Bundletool 1.18.3 `validate` 与 `PAGE_ALIGNMENT_16K` 配置通过。两种产物均未签名，且 archive entry 中未发现 NodeProbe、NodeBridge、`libnode.so`、nodejs-mobile 或 npm `node_modules`。
 - 当前 ADB 设备列表为空；本轮只构建与静态检查，没有安装或运行新工件。静态对齐结果不替代 16 KB Android 系统实机验证；正式签名、16 KB 真机及 production Host/音乐链路仍未完成。
+
+## 2026-11-18 Current-worktree Android Release rebuild and static checks
+
+The build ran from HEAD `125161e6e649301cfb8a8b6dfb0ed5748dd7e7f3` plus the then-current uncommitted shared Flutter glass UI changes. Those UI and golden files were later committed as `d029ef3b99f052534dbca8720d4b22a0126422a9`; the root `pubspec.lock` change remains uncommitted. The build used `--no-pub`, and neither the lockfile nor UI files were staged in the Android acceptance commit below.
+
+- `flutter test --no-pub --reporter compact`: all 316 tests passed. `flutter analyze --no-pub`: no issues.
+- `flutter build apk --release --no-pub --target-platform android-arm64`: passed. APK: 27,779,264 bytes, SHA-256 `3d46271c2c32db9f52fadd22b33cd6737cddef95efc326ee6a341da65c825ec2`.
+- `flutter build appbundle --release --no-pub`: passed. AAB: 25,521,790 bytes, SHA-256 `2fe1f90d5175730a1005e80c177be5754764d5db9db957d035437b2816e5858f`.
+- Build Tools 36.0.0 `aapt dump badging` reports `io.github.guog962464.aggregate`, versionCode 8/versionName 0.3.7, arm64 only. APK `zipalign -c -P 16 4` passed. Bundletool 1.18.3 `validate` passed and `dump config` reports `PAGE_ALIGNMENT_16K`.
+- Both APK and AAB contain the same seven arm64 native libraries. NDK 28.2.13676358 `llvm-readelf` verified every `PT_LOAD` has at least 16 KB alignment and congruent file/virtual offsets. APK/AAB signature entries are absent; `apksigner` reports the APK does not verify, and `jarsigner` reports the AAB is unsigned. Neither archive contains NodeBridge, `libnode.so`, NodeProbe or npm assets.
+- The artifacts were not installed or run. The separate A5.5 runner installed only its isolated Debug package on the 4 KB device; this does not establish Release runtime or 16 KB runtime behavior. Formal signing, 16 KB hardware and production Host/music acceptance remain open.

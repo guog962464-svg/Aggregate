@@ -337,6 +337,9 @@ void main() {
         await httpMcpServer.stop();
       }
     },
+    // This test hosts services for Android and does not build or inspect a
+    // widget tree; enabling semantics only creates an unused live-test handle.
+    semanticsEnabled: false,
     timeout: const Timeout(Duration(minutes: 15)),
   );
 }
