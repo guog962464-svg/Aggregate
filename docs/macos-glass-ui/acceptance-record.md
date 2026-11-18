@@ -870,6 +870,13 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：扩充 `theme_switch_model.json` 的独立 oracle；`theme_switch_simulation_test.dart` 逐项将 Dart 生成的 delay、curl、lift、stiffness、drag、phase、twinkle 与官方脚本的 791 个值按 `1e-12` 容差比较，随后继续检查 151 个 60 Hz 时间步中的轨迹样本。与 `theme_switch_realtime_test.dart` 联合定向运行共 10 项通过，Dart 格式检查和 `git diff --check` 通过。
 - 范围：这验证选定 LCG 种子下 113 组粒子的初始化算法和模型轨迹，不等同于线上随机种子已找回，也不证明使用录屏拟合系数的生产控件与网页当前随机会话同步逐帧；粒子随机对应、时钟同步和 macOS display-present 仍未通过。
 
+### 2026-11-18 UI-6.8 官方脚本 113 组粒子动态状态回归扩展
+
+- 对照：在上一项相同源码 SHA `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`、LCG 种子 `1831565813` 和事件序列下，再次直接执行官方 JavaScript；先核对已存四颗代表粒子与滑块、主题、光带、光强等标量，导出值全部一致后才更新 fixture。
+- 覆盖：将官方动态样本扩展到第 0、60、70、90、110、150 帧的全部 113 颗粒子，每个粒子比较 x/y/size/alpha，共 678 个粒子状态与 2712 个数值；模拟仍按事件推进完整 151 个 60 Hz 步，不使用帧序列驱动产品。
+- 验证：`flutter test --no-pub --reporter compact test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart` 共 10 项通过；`flutter analyze --no-pub` 无问题，`git diff --check` 通过。主题切换产品代码及拟合参数没有修改。
+- 边界：这补齐选定随机种子下六个检查点的内部粒子动态模型对照，不覆盖全部 151 帧、未知录屏随机种子或 macOS 实际展示时刻；网页与产品仍没有共享时钟/随机种子，逐帧 1:1 仍未签收。
+
 ### 2026-11-18 UI-6.7 三枚主图标点击反馈增强与 Profile 复核
 
 - 根据 96 dp 参考图保留运行、刷新、搜索的 9×9 点阵轮廓，只调整 `GlassMotionAction.play/search/refresh` 的点击幅度：运行增加右向位移、轻微横向扩张与扫光；搜索扩大镜片缩放和扫光；刷新保留整圈旋转并加深点光亮度。未改 glyph 掩码、按钮 hitbox/业务回调或太阳/月亮主题切换状态机。
