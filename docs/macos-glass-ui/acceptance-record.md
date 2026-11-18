@@ -837,3 +837,9 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 继续追踪当前 Next.js 路由包中的实验入口后，确认 `glass-light-toggle` 页面通过 iframe 加载 `/standalone/glass-light-toggle/index.html`。该 iframe HTML 返回 200，含一个 canvas，并加载 `/standalone/glass-light-toggle/main.js?v=3`；本轮取得脚本 26,498 字节，SHA-256 为 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`，与此前记录和独立 source oracle 一致。
 - 更正：上一节测试的 `/glass-light-toggle/main.js?v=3` 与 `/main.js?v=3` 是错误猜测的路径，404 不代表 iframe 中的实现不可用。当前在线实验脚本与此前快照相同，既有源码对照可用于当前实验实现。
 - 边界：脚本身份相同不等于新 Next.js 外层布局、实际 macOS/Flutter 动画相位或 display-present 已逐帧对齐。本轮没有同步录制当前 iframe 与 Aggregate；UI-6.8 继续部分验收，不调整产品模拟或主题切换逻辑。
+
+### 2026-11-18 UI-6.7 三枚图案点击态原生复验
+
+- 以隔离的 macOS Profile 夹具重建并打开 96 dp 图案样本。AX 树列出“运行”“刷新”“搜索”等按钮；刷新语义 `AXPress` 返回 `delivered_unverified`，无法从延迟静帧确认瞬时状态，因此没有重试。随后基于已验证前台的独立夹具窗口尝试运行按钮的物理坐标点击并录制该窗口 4 秒；事件也返回 `delivered_unverified`，采样帧未出现可归因于运行按钮的清晰点击态，指针位置与预期无障碍框不一致，不能据此签收。
+- 刷新按钮的 headed 元素点击另因命中测试判断按钮被滚动区域遮挡而返回 `not_delivered`；未对该次动作重试。没有尝试搜索按钮，也没有证据证明这三枚图案的原生点击态已逐帧通过。
+- 夹具由 `agent-desktop close-app` 正常退出并确认进程结束；未触发任何业务回调或外部服务。没有产品代码改动，UI-6.7 保持部分验收；当前提交只更正图案静态形状，动效模型单元测试通过不等于原生按压视觉通过。
