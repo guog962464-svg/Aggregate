@@ -93,3 +93,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 对比 `aecbd0c..c2bb4b0`：`app/android` 与 `app/lib/platform/android` 没有变化；共享 Flutter App shell、主题、玻璃控件和页面框架有改动，Android Host WSS 测试及 `run_android_host_setup_e2e.py` runner 也有更新。
 - 当前 `flutter test --no-pub --reporter compact` 316 项通过、`flutter analyze --no-pub` 无问题，arm64 Release APK/AAB 重建和静态对齐检查通过。此为本机自动化/构建证据，不是当前代码在手机上的业务验收。
 - `adb devices -l` 为空，无法在本轮重跑 LGE AN10 4 KB 真机 setup/CLI/MCP/TUI/Host 断连场景。2026-11-17 真机结果继续按当时的代码版本保留；当前 UI 与 E2E runner 的 4 KB 覆盖待设备恢复后补验。此前通过的是隔离 MacRuntime 和合成账号/CLI/MCP/TUI，不是 production Host 或真实音乐账号；A5.5 保持开放。
+
+## 2026-11-18 Android Release 权限静态核验
+
+- 检查当前 arm64 Release APK `app/build/app/outputs/flutter-apk/app-release.apk`（SHA-256 `7ec10656e50f27869dcbd5f384015aa4296d16cd0cea9db7631a3e82b7193273`）和 AAB（SHA-256 `3b8769328aac58e3563c45fac2d852885f1219b4a098fddaa8952668cc712aae`）。Build Tools 36.0.0 `aapt dump permissions` 与 Release manifest-merger blame 一致：`INTERNET` 来自主清单；`CAMERA` 来自 `mobile_scanner 7.5.0`，摄像头硬件 feature 标记为 optional；`ACCESS_NETWORK_STATE` 来自 `transport-backend-cct 2.3.3`。包中另有 AndroidX 定义的 signature 级动态接收器权限，不是运行时危险权限。
+- 主清单网络安全配置禁止通用明文流量，只对 `localhost` 和 `127.0.0.1` 配置例外。Release APK/AAB 均未签名：`apksigner verify` 报缺少签名，`jarsigner -verify` 确认为 unsigned；因此本项只核对生成工件的权限声明与依赖来源，不代表签名后包的安装、运行时权限提示或 Play 分发行为。
+- `flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart`：11 项通过，包含身份轮换授权流程的 fake/Widget 覆盖；没有 Android 设备，未对日常 App 的 AndroidKeyStore 身份执行轮换。`adb devices -l` 为空。
+- **范围结论：**Release 权限声明静态审阅已补齐。A5.4 仍开放日常 App 身份轮换实测、签名 Release 的设备权限行为以及 16 KB 设备加载/运行；不把隔离 `.integration` 包的 Keystore 轮换结果外推到日常包。
