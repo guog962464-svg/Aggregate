@@ -113,7 +113,7 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 
 - 在干净 detached worktree `519d99a20964307b79777ca2a09949f6f94ad3cd` 构建并启动 production macOS Release Host。验证走真实 `LocalRuntimePort`、`MacHostModule`、生产 WSS 和 Host runtime dispatcher；Host 监听 `192.168.8.4:47321`。
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机仍处于 `192.168.31.0/24`，与 Mac 所在网段不通。本轮通过 USB `adb reverse` 将本机回环 WSS 桥接到 Host；仅把邀请 endpoint 改为 `wss://127.0.0.1:50433/host`，邀请中的 Host ID、证书 SHA-256 pin、nonce 和有效期保持不变。
-- 使用临时 `.integration` Android 包及独立 Keystore 身份。Mac 审批的 grant 精确限定为 `readConnections`，没有任何逐连接权限；Mac 侧匹配了 Android 返回的确认码。Android `AndroidHostPairingClient.authenticate()` 完成 challenge 认证并验证 `host.hello`，随后只调用只读 `connection.list`，返回 1 项。未调用连接向导、能力搜索、CLI/TUI/MCP、账号、终端或写操作。
+- 使用临时 `.integration` Android 包及独立 Keystore 身份。配对审批由临时验收钩子自动执行，且只接受指定测试设备名、`android` 平台和精确的 `readConnections` scope；没有任何逐连接权限。独立回环控制通道核对 Android 回传确认码与 Host pending code 一致后才继续认证。Android `AndroidHostPairingClient.authenticate()` 完成 challenge 认证并验证 `host.hello`，随后只调用只读 `connection.list`，返回 1 项。未调用连接向导、能力搜索、CLI/TUI/MCP、账号、终端或写操作。
 - 临时集成测试通过：`A5_LIVE_READONLY_RPC hostHello=passed connectionListCount=1`；Flutter analyze 无问题，integration test 全部通过。该测试 harness 和入口只存在于临时 worktree，验收后已清除。
 - 清理确认：Mac grant 已撤销、Host 已停止、临时 `.integration` 包已卸载、ADB reverse 已移除，端口 `47321` 无监听；日常 Android 包、其 Keystore 身份和既有授权均未触碰。临时邀请、审批码、截图和包含邀请信息的构建产物已删除。
 - **阶段判定：**这补足了 production Host 上真实 Keystore→CryptoKit 配对、`host.hello` 和只读连接列表 RPC。此前无法直连 LAN 的结论仍成立；USB 隧道不等于 NSD/LAN 直连。日常包身份轮换、签名 Release 权限、16 KB 实机以及 production Host 上的向导和真实业务仍未验收，A5.4 / A5.5 保持开放。
