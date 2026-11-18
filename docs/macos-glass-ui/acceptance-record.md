@@ -791,3 +791,10 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - macOS Profile 静置截图：[三图标深色](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-tall-dark.png>)，SHA-256 `72cc815bca09e9d3a3f6ef449ea3c782c53fe082dbd96c30279157b7232677b2`；[三图标浅色](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-tall-light.png>)，SHA-256 `331d87f5d092feb88af194c88e91be88104436fb98d89a71cabbb1f957dd5d96`。PNG 为 1784×1684、DPR 2 的 fixture 实窗；语义开关从“深色”切到“浅色”，AX 读回浅色。截图覆盖运行、刷新、搜索，其他按钮只作材质旁证。
 - 验证：更新后的 `glass_glyph_golden_test.dart` 1×/2×、浅/深四组 golden 通过；按钮、glyph、motion、theme switch、主题模拟/实时/光学与动态文字对比共 49 项通过；`flutter analyze --no-pub` 无问题；macOS Profile fixture 成功构建；Dart 格式检查与 `git diff --check` 通过。
 - 未验收：glyph 点阵仍由 Flutter painter 画在 shader 玻璃面上，没有进入同一纹理做逐点折射；没有记录按住动画帧、FrameTiming/FPS 或所有生产页面调用点。本轮改善形状和点单元质感，不代表用户已签收 1:1。UI-6.7 继续部分验收。
+
+### 2026-11-18 UI-6.7 运行、刷新、搜索轮廓二次重绘
+
+- 用户再次指出这三个大图标最突兀。本次更新前一条记录中的轮廓选择：播放三角改用更宽、重心居中的实心点阵；刷新改为单条近圆回转弧加明确箭头头部，替换先前容易读成加载环的双弧方案；搜索镜片闭合为圆环，手柄从右下切点连续接出，替换先前开口过大的镜片。三者仍使用同一圆润点单元、光晕与缓存绘制流程，其他 glyph、按钮业务回调和太阳/月亮交互逻辑未改。
+- 新轮廓控制在 glyph 画布既有 `4..25.6` 点中心范围内，点序直接供原有 `GlassMotionController` 使用。新增 32 dp、DPR 2 的浅/深视觉 golden：[`浅色`](../../app/test/goldens/glass_primary_glyphs_light.png)、[`深色`](../../app/test/goldens/glass_primary_glyphs_dark.png)；同时更新 1×/2× 的全字典 golden。聚焦图只展示点阵与主题底色，不模拟按钮玻璃 shader。
+- 一次初始重绘将点中心放到既有画布范围之外，`glass_action_button_test.dart` 的点阵坐标约束检出；将三种几何收回原范围后，glyph 映射、坐标、按钮、动画、主题切换、模拟/实时/光学和文字对比定向套件共 51 项通过。`flutter analyze --no-pub` 无问题；macOS Profile fixture 构建成功（62.9 MB）。构建输出包含依赖 `mobile_scanner` 的既有 macOS API 弃用警告。
+- 当前证据为静态点阵预览、Widget 动画/业务回归和 Profile 构建；没有重新采集玻璃按钮实窗按压帧、FrameTiming/FPS 或所有生产调用点。此轮只完成三个轮廓修订，UI-6.7 仍部分验收。

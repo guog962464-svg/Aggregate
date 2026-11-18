@@ -459,52 +459,178 @@ abstract final class _GlyphGeometryCache {
       _entries.putIfAbsent(glyph, () => _create(glyph));
 
   static _GlyphGeometry _create(GlassGlyph glyph) {
-    final rows = _rowsFor(glyph);
     final core = Path();
     final halo = Path();
-    final points = <Offset>[];
-    for (var row = 0; row < rows.length; row++) {
-      final pattern = rows[row];
-      for (var column = 0; column < pattern.length; column++) {
-        if (pattern.codeUnitAt(column) != 49) continue;
-        final centerX = 4 + column * GlassDesignTokens.glyphPitch;
-        final centerY = 4 + row * GlassDesignTokens.glyphPitch;
-        points.add(Offset(centerX, centerY));
-        final coreHalf = GlassDesignTokens.glyphCellSize / 2;
-        final coreRect = Rect.fromCenter(
-          center: Offset(centerX, centerY),
-          width: GlassDesignTokens.glyphCellSize,
-          height: GlassDesignTokens.glyphCellSize,
-        );
-        core.addRRect(
-          RRect.fromRectAndRadius(
-            coreRect,
-            const Radius.circular(GlassDesignTokens.glyphCornerRadius),
-          ),
-        );
-        final haloRect = coreRect.inflate(
-          GlassDesignTokens.glyphFeather + GlassDesignTokens.glyphOuterHalo,
-        );
-        halo.addRRect(
-          RRect.fromRectAndRadius(
-            haloRect,
-            Radius.circular(
-              math.min(
-                coreHalf,
-                GlassDesignTokens.glyphCornerRadius +
-                    GlassDesignTokens.glyphFeather +
-                    GlassDesignTokens.glyphOuterHalo,
-              ),
+    final points = _customPointsFor(glyph) ?? _gridPointsFor(_rowsFor(glyph));
+    for (final point in points) {
+      final coreHalf = GlassDesignTokens.glyphCellSize / 2;
+      final coreRect = Rect.fromCenter(
+        center: point,
+        width: GlassDesignTokens.glyphCellSize,
+        height: GlassDesignTokens.glyphCellSize,
+      );
+      core.addRRect(
+        RRect.fromRectAndRadius(
+          coreRect,
+          const Radius.circular(GlassDesignTokens.glyphCornerRadius),
+        ),
+      );
+      final haloRect = coreRect.inflate(
+        GlassDesignTokens.glyphFeather + GlassDesignTokens.glyphOuterHalo,
+      );
+      halo.addRRect(
+        RRect.fromRectAndRadius(
+          haloRect,
+          Radius.circular(
+            math.min(
+              coreHalf,
+              GlassDesignTokens.glyphCornerRadius +
+                  GlassDesignTokens.glyphFeather +
+                  GlassDesignTokens.glyphOuterHalo,
             ),
           ),
-        );
-      }
+        ),
+      );
     }
     return _GlyphGeometry(
       core: core,
       halo: halo,
       points: List.unmodifiable(points),
     );
+  }
+}
+
+// Keep the three highest-visibility action shapes smooth while reusing the
+// shared dot cells, halo, cache, and motion controller.
+List<Offset>? _customPointsFor(GlassGlyph glyph) => switch (glyph) {
+  GlassGlyph.play => _playGlyphPoints(),
+  GlassGlyph.refresh => _refreshGlyphPoints(),
+  GlassGlyph.search => _searchGlyphPoints(),
+  _ => null,
+};
+
+List<Offset> _gridPointsFor(List<String> rows) {
+  final points = <Offset>[];
+  for (var row = 0; row < rows.length; row++) {
+    final pattern = rows[row];
+    for (var column = 0; column < pattern.length; column++) {
+      if (pattern.codeUnitAt(column) == 49) {
+        points.add(
+          Offset(
+            4 + column * GlassDesignTokens.glyphPitch,
+            4 + row * GlassDesignTokens.glyphPitch,
+          ),
+        );
+      }
+    }
+  }
+  return List.unmodifiable(points);
+}
+
+List<Offset> _playGlyphPoints() {
+  const baseX = 11.6;
+  const tipX = 25.6;
+  const centerY = 16.0;
+  const halfHeight = 8.7;
+  final points = <Offset>[];
+  for (var row = 0; row <= 6; row++) {
+    final y = 8.0 + row * GlassDesignTokens.glyphPitch;
+    final fullness = 1 - ((y - centerY).abs() / (halfHeight + 0.7));
+    final rightEdge = baseX + (tipX - baseX) * fullness;
+    for (
+      var x = baseX;
+      x <= rightEdge + 0.01;
+      x += GlassDesignTokens.glyphPitch
+    ) {
+      points.add(Offset(x, y));
+    }
+  }
+  return List.unmodifiable(points);
+}
+
+List<Offset> _refreshGlyphPoints() {
+  const center = Offset(16, 16);
+  const radius = 7.2;
+  final arc = _sampleArc(
+    center: center,
+    radius: radius,
+    startDegrees: 45,
+    sweepDegrees: 270,
+  );
+  final points = arc.toList();
+  _appendArrowHead(points, arc.last, 45);
+  return List.unmodifiable(points);
+}
+
+List<Offset> _searchGlyphPoints() {
+  const center = Offset(13.5, 13.5);
+  const radius = 7.5;
+  const handleLength = 9.3;
+  const handleAngle = math.pi / 4;
+  final points = _sampleArc(
+    center: center,
+    radius: radius,
+    startDegrees: 45,
+    sweepDegrees: 360,
+  ).toList();
+  points.removeLast();
+  final handleStart = points.first;
+  final handleEnd = Offset(
+    handleStart.dx + math.cos(handleAngle) * handleLength,
+    handleStart.dy + math.sin(handleAngle) * handleLength,
+  );
+  _appendLine(points, handleStart, handleEnd, skipStart: true);
+  return List.unmodifiable(points);
+}
+
+List<Offset> _sampleArc({
+  required Offset center,
+  required double radius,
+  required double startDegrees,
+  required double sweepDegrees,
+}) {
+  final arcLength = radius * sweepDegrees.abs() * math.pi / 180;
+  final segments = math
+      .max(1, (arcLength / GlassDesignTokens.glyphPitch).ceil())
+      .toInt();
+  return List<Offset>.generate(segments + 1, (index) {
+    final degrees = startDegrees + sweepDegrees * index / segments;
+    final radians = degrees * math.pi / 180;
+    return Offset(
+      center.dx + math.cos(radians) * radius,
+      center.dy + math.sin(radians) * radius,
+    );
+  }, growable: false);
+}
+
+void _appendArrowHead(
+  List<Offset> points,
+  Offset tip,
+  double directionDegrees,
+) {
+  final radians = directionDegrees * math.pi / 180;
+  final direction = Offset(math.cos(radians), math.sin(radians));
+  final normal = Offset(-direction.dy, direction.dx);
+  final base = tip - direction * 5.5;
+  for (final side in [-1.0, 1.0]) {
+    final wing = base + normal * (3.5 * side);
+    _appendLine(points, wing, tip, skipStart: true);
+  }
+}
+
+void _appendLine(
+  List<Offset> points,
+  Offset start,
+  Offset end, {
+  bool skipStart = false,
+}) {
+  final delta = end - start;
+  final distance = math.sqrt(delta.dx * delta.dx + delta.dy * delta.dy);
+  final segments = math
+      .max(1, (distance / GlassDesignTokens.glyphPitch).ceil())
+      .toInt();
+  for (var index = skipStart ? 1 : 0; index <= segments; index++) {
+    points.add(start + delta * (index / segments));
   }
 }
 
