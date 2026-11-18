@@ -104,13 +104,13 @@
 | B089 | `app/lib/platform/macos/mac_host_settings_panel.dart:501` | 设置：Mac Host 配对和权限操作 | 2026-11-18 浅色 Profile 打开身份轮换确认并取消；`host-identity-confirm-light.png`；AX 复核运行状态、假配对设备和邀请仍保留。确认轮换路径由 fake Widget 回归覆盖，本次未在实窗确认；按下动画待核 |
 | B090 | `app/lib/platform/macos/mac_host_settings_panel.dart:549` | 设置：Mac Host 配对和权限操作 | 2026-11-18 浅色 Profile 启动假 Host 后点击生成邀请；`host-invitation-generated-light.png`，AX 读到邀请过期信息与 1 个本机网络地址。二维码被当前窗口底部区域部分遮挡，故只部分验收；没有网络配对，按下动画待核 |
 | B091 | `app/lib/platform/macos/mac_host_settings_panel.dart:583` | 设置：Mac Host 配对和权限操作 | 暗色假邀请详情图 `30-host-invitation-dark.png`；复制按钮可见，未点击；二维码和 loopback 地址均为内存 stub 数据 |
-| B092 | `app/lib/platform/macos/mac_host_settings_panel.dart:616` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |
-| B093 | `app/lib/platform/macos/mac_host_settings_panel.dart:662` | 设置：Mac Host 配对和权限操作 | 暗色待处理/已配对图 `20-settings-host-pairing-dark.png`；仅静态外观已目视 |
-| B094 | `app/lib/platform/macos/mac_host_settings_panel.dart:669` | 设置：Mac Host 配对和权限操作 | 暗色图 `20-settings-host-pairing-dark.png` 可见按钮；点击后 `22-host-approved-dark.png` 显示待处理项消失、已配对数变为 2；操作为内存 stub |
-| B095 | `app/lib/platform/macos/mac_host_settings_panel.dart:680` | 设置：Mac Host 配对和权限操作 | 暗色 `20-settings-host-pairing-dark.png`；`mac_host_settings_panel_test.dart` 通过 fake pairing control 验证批准连接向导权限 |
-| B096 | `app/lib/platform/macos/mac_host_settings_panel.dart:695` | 设置：Mac Host 配对和权限操作 | 暗色 `20-settings-host-pairing-dark.png`；`mac_host_settings_panel_test.dart` 打开自定义权限并以 fake pairing control 完成审批 |
-| B097 | `app/lib/platform/macos/mac_host_settings_panel.dart:720` | 设置：Mac Host 配对和权限操作 | 暗色 `20-settings-host-pairing-dark.png`；`mac_host_settings_panel_test.dart` 修改逐连接权限并保存到 fake pairing control |
-| B098 | `app/lib/platform/macos/mac_host_settings_panel.dart:726` | 设置：Mac Host 配对和权限操作 | 暗色 `20-settings-host-pairing-dark.png`；`mac_host_settings_panel_test.dart` 打开撤销确认并验证确认后撤销 fake grant |
+| B092 | `app/lib/platform/macos/mac_host_settings_panel.dart:616` | 设置：Mac Host 配对和权限操作 | 2026-11-18 暗色隔离 Profile 待处理设备卡片及拒绝/只读/向导按钮见 `pairing-controls-dark.png`；真实 Host 未启动，内容来自假设备 |
+| B093 | `app/lib/platform/macos/mac_host_settings_panel.dart:662` | 设置：Mac Host 配对和权限操作 | 2026-11-18 暗色隔离 Profile 已配对设备卡片见 `paired-devices-dark.png`，另见撤销取消后的 `revoke-cancelled-paired-remains-dark.png`；设备均为进程内假数据 |
+| B094 | `app/lib/platform/macos/mac_host_settings_panel.dart:669` | 设置：Mac Host 配对和权限操作 | 2026-11-18 在假 Host 中实际点击“批准只读”；待处理项消失，AX 读回一个已配对预览设备且仅“读取连接”范围；结果图 `readonly-approved-dark.png` |
+| B095 | `app/lib/platform/macos/mac_host_settings_panel.dart:680` | 设置：Mac Host 配对和权限操作 | 2026-11-18 通过假 Host 停止/启动重新注入待处理样例后点击“允许连接向导”；待处理项消失，AX 读回“读取连接 · 连接向导”；操作没有网络请求，结果状态见 `revoke-cancelled-paired-remains-dark.png` |
+| B096 | `app/lib/platform/macos/mac_host_settings_panel.dart:695` | 设置：Mac Host 配对和权限操作 | 2026-11-18 打开自定义权限弹窗 `custom-permission-dialog-dark.png`；对 Git CLI 假连接选本机控制（自动包含读取）及连接向导后批准，AX 确认假设备获得连接向导；`paired-devices-dark.png` |
+| B097 | `app/lib/platform/macos/mac_host_settings_panel.dart:720` | 设置：Mac Host 配对和权限操作 | 2026-11-18 打开已配对设备修改弹窗 `edit-permission-dialog-dark.png`；回读此前本机控制选择，另选连接管理及 Git CLI 外部写入后保存；AX 确认范围更新，操作仅写入假 Host 内存 |
+| B098 | `app/lib/platform/macos/mac_host_settings_panel.dart:726` | 设置：Mac Host 配对和权限操作 | 2026-11-18 暗色 Profile 打开 `revoke-confirm-dark.png` 后取消；AX 仍读到已配对预览设备。取消后的设备列表截图 `revoke-cancelled-paired-remains-dark.png`；未撤销任何真实设备 |
 | B099 | `app/lib/platform/macos/mac_host_settings_panel.dart:951` | 设置：Mac Host 配对和权限操作 | 暗色设备权限弹窗图 `31-host-edit-permissions-dark.png`；取消按钮可见并用于退出，未修改权限 |
 | B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 暗色 `31-host-edit-permissions-dark.png`；`mac_host_settings_panel_test.dart` 验证保存权限至 fake pairing control |
 | B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 暗色 `31-host-edit-permissions-dark.png`；`mac_host_settings_panel_test.dart` 验证选中连接与权限 chip 后审批，仅 Widget 语义/回调证据 |

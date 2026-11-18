@@ -124,3 +124,8 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 ### UI-6.7 补证：Mac Host 设置控件（2026-11-18）
 
 隔离 Profile 中对 B088–B090 做了浅/深 Host 启停、轮换确认取消和邀请生成检查。Host 假实现没有开启监听；44321 端口无 listener。B088 两主题启停状态已读回；B089 只验证取消保持状态；B090 AX 已读到邀请元数据，但二维码受窗口底部遮挡，只部分验收。截图 SHA、配置和进程隔离范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-启停轮换确认与邀请-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。未采按下帧或 FrameTiming；没有触发网络配对，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：Mac Host 配对与设备权限（2026-11-18）
+
+B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读审批、连接向导审批、自定义批准、逐连接权限保存和撤销取消。`Ui6InspectionHost` 只改当前进程内 fake grant；Host 端口 44321 无 listener。AX 状态树确认审批、编辑和取消结果；所有 AXPress 回执均未单独验证物理输入。完整环境、截图 SHA 与覆盖限制见[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-配对与设备权限-profile-验收)和[逐实例表](ui-6.7-button-instance-matrix.md)。本次只有暗色静态/交互态，没有按下关键帧或帧率数据，UI-6.7 仍部分验收。
