@@ -831,3 +831,9 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 再次读取用户指定的 [Glass Light Toggle 页面](https://experiments.thisiswhitespace.com/glass-light-toggle)。当前页面返回 Next.js 部署 `dpl_HTAd9EyjDwpmH9jaAFGH52jqjsbf`，页面标题与说明仍描述玻璃明暗开关及月亮到太阳的点阵变化。
 - 当前 HTML 未加载此前记录的 `main.js?v=3`；直接请求 `/glass-light-toggle/main.js?v=3` 与 `/main.js?v=3` 均返回 404。因此 `7f7b5d15…` 是此前部署快照的源码摘要，不作为当前线上部署源码已核实的证据。此次只核实页面元数据和加载入口，没有从新部署取得可比的开关实现，也没有采集新部署的连续动作画面。
 - 处理：保留既有源码快照、独立 oracle 和静态截图作为此前参考版本的证据；不据此推断当前线上实现完全相同，不改产品参数或主题切换逻辑。UI-6.8 仍部分验收，当前部署的实时动作对照和 Flutter/macOS 同步连续捕获仍待完成。
+
+### 2026-11-18 UI-6.8 当前实验 iframe 源码确认
+
+- 继续追踪当前 Next.js 路由包中的实验入口后，确认 `glass-light-toggle` 页面通过 iframe 加载 `/standalone/glass-light-toggle/index.html`。该 iframe HTML 返回 200，含一个 canvas，并加载 `/standalone/glass-light-toggle/main.js?v=3`；本轮取得脚本 26,498 字节，SHA-256 为 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`，与此前记录和独立 source oracle 一致。
+- 更正：上一节测试的 `/glass-light-toggle/main.js?v=3` 与 `/main.js?v=3` 是错误猜测的路径，404 不代表 iframe 中的实现不可用。当前在线实验脚本与此前快照相同，既有源码对照可用于当前实验实现。
+- 边界：脚本身份相同不等于新 Next.js 外层布局、实际 macOS/Flutter 动画相位或 display-present 已逐帧对齐。本轮没有同步录制当前 iframe 与 Aggregate；UI-6.8 继续部分验收，不调整产品模拟或主题切换逻辑。
