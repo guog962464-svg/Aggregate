@@ -471,6 +471,14 @@ nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 n
 - **verified_scope：**当前 NodeProbe Debug APK、固定 npm 12.2.2/Node v24.22.1、一个本地授权 lifecycle fixture、LGE AN10 4 KB arm64。构建和静态 APK 检查通过；专用 alias 与一轮完整 suite 通过；多轮 integrity 结果不一致，另一次 suite 未完成。
 - **retrieval_feedback：**部分采用本文件先前的 nativeLibraryDir PIE/手工 alias 记录，以及 A4.4 无 alias 127 历史；复核当前 JNI 参数实现、NodeProbe Service、验证器、APK 与设备结果。初始 fatal 的“未定位”状态由 argv 存储对照和通过复验取代；npm integrity 残留是新发现，保留为未解决，不以单轮通过外推稳定性。
 
+## 2026-11-18 NodeProbe argv 修正后的重复 lifecycle 回归
+
+- **复验对象：**NodeProbe Debug APK SHA-256 `6f508baeb617840dc645bb2056113942fe5854ee376e39bf18d1a172bba2635e`，`node::Start` 已使用连续可写 argv 缓冲区。以 `python3 app/android/nodeprobe/verify_node_alias.py` 连续运行三次。
+- **结果：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页的三轮均通过。每轮验证 npm 12.2.2 lifecycle exit 0、子 `node --version` 为 `v24.22.1` 且 status 0、成功 marker，并由脚本断言 Node Service 的 Messenger `kind=3` 终态已送达。末轮后 crash buffer 未见此前 pointer-tag fatal。
+- **结论边界：**这更新固定 argv 修正版和固定 fixture 的终态稳定性证据；没有重跑完整 npm suite，也不覆盖部分 integrity 解包、当前安全版 Node、其他 ABI、完整 mobile suite、产品 NodeBridge 或 16 KB 真机。产品 npm/CLI 入口仍按 ADR 0003 关闭。
+- **verified_scope：**APK SHA-256、三次脚本退出码 0、LGE AN10 4 KB 真机、固定 local lifecycle tarball 与 `kind=3` 断言。NodeProbe 已卸载，普通 Aggregate 仍安装，ADB reverse 为空；未连接生产 Host 或外部 registry。
+- **retrieval_feedback：**对照本节之前记录的两次 pointer-tag fatal、后续 argv 存储修正及实际验证器断言。结论只 supersede 修正版/固定 fixture 下的 fatal 状态，保留 npm integrity 与发行资格限制。
+
 ## 2026-11-18 当前 NodeProbe Release AAB split 与 npm lifecycle 验收
 
 - **重建与产物身份：**从当前跟踪源码及已锁定的 fogtape Node `24.22.1-0` 输入，运行 `./gradlew --no-daemon --no-build-cache --rerun-tasks -Pa3Probe=true :nodeprobe:assembleRelease :nodeprobe:bundleRelease`，构建成功。新 unsigned APK 为 38,710,091 bytes，SHA-256 `a7305a5afa6c9134b984274b4e8279d54d9289c4a93f76bd4f3d4e95e3325779`；AAB 为 76,771,430 bytes，SHA-256 `07c50a1bd5ada56b411baf8b3b0a71867142a727c078b920115ae5cd8b22e940`。两种产物各含 5 个 arm64 ELF 候选；APK/AAB 中 4 个 `.so`（包含 `libnode_cli.so`）逐字节一致，AAB 还包含 A4 边界测试 addon。此构建只更新忽略的 build 输出，没有改跟踪源码。

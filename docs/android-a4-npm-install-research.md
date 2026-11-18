@@ -128,6 +128,14 @@ NodeProbe Debug 专用实现现会在固定 `a4-npm` action 中将 APK `nativeLi
 - **结论与限制：**该原型证明固定失败场景下，隔离暂存清理可以清除实际观测到的部分解包并保留既有目录。它没有验证成功安装后的 promotion/原子切换，也不改变 npm 自身的行为；不支持任意用户 npm 包、生命周期脚本或产品 Node 入口。只覆盖这一台 4 KB arm64 真机；16 KB、其他 ABI、产品 Release 与正式发布资格仍未验证。
 - **清理回读：**独立 NodeProbe 测试包已卸载，`adb reverse --list` 为空；未启动 Mac Host、未连接外网 registry，用户 `pubspec.lock` 修改未纳入任务变更。原始完整 npm suite 未重跑。
 
+## 2026-11-18 NodeProbe argv 修正后的重复 lifecycle 回归
+
+- **目的与输入：**复核此前两次出现的 `Pointer tag for 0x6767612e34363432 was truncated` 是否仍会阻断固定 npm lifecycle Service 终态。使用 APK SHA-256 `6f508baeb617840dc645bb2056113942fe5854ee376e39bf18d1a172bba2635e`，运行 `python3 app/android/nodeprobe/verify_node_alias.py` 三次。该 APK 的 `node::Start` 参数已改为单块可写连续 argv 缓冲区并以空指针结束。
+- **结果：**三次均在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机通过。每轮断言固定 npm 12.2.2 `script-allowed` 返回 0、marker 存在、child `node --version` 返回 `v24.22.1` 且 status 0，并要求对应 Node Service Messenger `kind=3` 终态送达；三轮均以退出码 0 完成。末轮后 crash buffer 未见上述 pointer-tag fatal。
+- **清理与边界：**验证器每轮安装并卸载隔离 NodeProbe；普通 Aggregate 包仍安装，ADB reverse 为空，production Host 端口未监听。本结果更新的是 argv 连续缓冲区修正后的固定 lifecycle 路径，不能外推到其他 Node 版本、ABI、任意 child process 或产品 NodeBridge。npm integrity 拒绝后的部分解包、验证器历史超时、完整 mobile suite 未通过项、16 KB 真机和 A3.6 发行门槛仍独立开放，产品 npm/CLI 保持关闭。
+- **verified_scope：**精确 APK 哈希、`verify_node_alias.py` 三次运行、LGE AN10 4 KB 页、固定本地授权 lifecycle fixture 与 Service `kind=3` 断言。未重跑完整 npm suite 或 Node mobile suite；未访问账号、生产 Host 或外部 registry。
+- **retrieval_feedback：**复核同文件此前“自动别名两次 pointer-tag fatal”及“连续 argv 缓冲区修正后专项通过”的记录，并核对当前验证器断言、NodeProbe 源码和实际 APK SHA-256。三次绿测只 supersede 固定 argv 修正版/固定 fixture 的 fatal 状态，保留 integrity 残留和发行门槛结论。
+
 ## 2026-11-18 Google Play 动态代码政策复核
 
 本次只核对 Google Play 与 Android 官方公开政策文本，不构成 Google 对 Aggregate 的个案审批、法律意见或 Play Console 审核结果。
