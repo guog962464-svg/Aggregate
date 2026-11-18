@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/widgets/glass/glass_action_button.dart';
+import 'package:aggregate/widgets/glass/glass_buttons_fixture.dart';
 import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_glyph.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
@@ -119,6 +121,76 @@ void main() {
       restingPlay.dispose();
       search.dispose();
       restingSearch.dispose();
+    });
+
+    testWidgets('button tap starts the registered glyph pulse', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassMotionScope(
+            key: scopeKey,
+            clock: clock,
+            child: Center(
+              child: GlassActionButton(
+                label: '刷新',
+                glyph: GlassGlyph.refresh,
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(scopeKey.currentState!.registeredClientCountForTesting, 1);
+      final motion = tester
+          .widget<GlassGlyphMark>(find.byType(GlassGlyphMark))
+          .motionController!;
+      expect(motion.sample.actionProgress, 0);
+
+      await tester.tap(find.bySemanticsLabel('刷新'));
+      clock.advanceBy(const Duration(milliseconds: 170));
+      await tester.pump();
+
+      expect(motion.sample.action, GlassMotionAction.refresh);
+      expect(motion.sample.actionProgress, greaterThan(0));
+      expect(motion.sample.energy, closeTo(.5, .00001));
+    });
+
+    testWidgets('visible reference samples stay registered after layout', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 720);
+      addTearDown(() {
+        tester.view.resetDevicePixelRatio();
+        tester.view.resetPhysicalSize();
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.dark,
+            TargetPlatform.macOS,
+          ),
+          home: GlassMotionScope(
+            key: scopeKey,
+            clock: clock,
+            child: GlassButtonsFixturePage(
+              light: false,
+              onLightChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final firstGlyph = tester
+          .widget<GlassGlyphMark>(find.byType(GlassGlyphMark).first)
+          .motionController!;
+      expect(
+        scopeKey.currentState!.registeredClientCountForTesting,
+        greaterThan(0),
+      );
+      expect(firstGlyph.animationsEnabled, isTrue);
     });
 
     testWidgets(

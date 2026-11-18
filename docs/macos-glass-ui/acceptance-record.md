@@ -1110,3 +1110,19 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - macOS Profile 使用 `glass_buttons_fixture_main.dart`，800×796 logical px 窗口、DPR 2。截图由 agent-desktop 按应用窗口单独捕获，PNG 为 1824×1816。静置浅/深图：[深色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-redrawn-click-samples/native-final-dark-idle.png>)，SHA-256 `ea2fc617fe2699fcd3bd8c60e25129639762dd645e82994d4a3440f584a39381`；[浅色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-redrawn-click-samples/native-final-light-idle.png>)，SHA-256 `61be1a7bf43498a651bf9c94aa6994ccc19660bb2fd771849b230abd7657dc9e`。夹具 AX 分别读回“深色”和“浅色”；三个按钮回调均为空。
 - 自动验收：`flutter test --no-pub --update-goldens test/glass_glyph_golden_test.dart` 6 项通过；随后 `flutter test --no-pub --reporter compact test/glass_glyph_golden_test.dart test/glass_action_button_test.dart test/glass_motion_test.dart test/glass_theme_switch_test.dart` 40 项通过；`flutter analyze --no-pub` 无问题；Dart format、`git diff --check` 通过；macOS Profile fixture 构建成功（62.9 MB）。
 - 边界：本轮签收两个轮廓的静态浅/深实窗可读性、9×9 坐标与回归套件；没有可计时的新版点击关键帧或 display-present FPS，109 个生产调用点和 VoiceOver 仍未全验收。UI-6.7 继续部分验收，网页参考与 macOS 动画也没有被判为逐帧 1:1。
+
+
+### 2026-11-19 UI-6.7 运行、刷新、搜索点击呈现时序补验
+
+- 使用隔离 macOS Profile 的 96 dp `GlassActionButton` fixture，800×720 logical px 窗口、DPR 2；每个按钮在 AX 中心以 CGEvent 物理点击，按住约 81–85 ms 后释放。点击回调均为空。鼠标释放作为时序零点；ScreenCaptureKit 仅采 Aggregate 窗口，输出 1600×1440。帧附件的 display-time 是 WindowServer 对该帧的显示时间（mach absolute time），见[Apple 的 `SCStreamFrameInfo.displayTime` 文档](https://developer.apple.com/documentation/screencapturekit/scstreamframeinfo/displaytime)；它不是面板像素响应时间。
+- 按释放后 0、16.7、33.3、50、66.7、83.3、100、133、167、200、250、333、450、550、650 ms 请求对照帧；表内使用实际 WindowServer 时间戳。窗口采样流在约 +5 至 +649 ms 观察到的相邻样本中位间隔约 17.0–17.3 ms，最大约 19.5–19.9 ms。缺帧已单列，不用插值填补：
+
+| 图案 | 实际选中帧 | 未采到的目标时点 | 实际时间范围 | 相邻样本间隔（中位数 / 最大值） |
+| --- | ---: | --- | --- | --- |
+| 运行 | 15/15 | 无 | +4.95 至 +643.18 ms | 17.03 / 19.51 ms |
+| 刷新 | 14/15 | 0 ms | +14.06 至 +644.48 ms | 17.22 / 19.92 ms |
+| 搜索 | 14/15 | 83.3 ms | +5.38 至 +648.71 ms | 17.29 / 19.68 ms |
+
+- 暗色实窗序列中，运行三角的点位轮廓轻微伸缩/偏移，刷新箭头绕环转动，搜索镜片大小有细微变化。合成对照图 [final-contact.png](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-stream-current/final-contact.png>) SHA-256 `e264e4ca99b102ca68f430c48117201c2741b70c5e82748a10bd2bd85333516d`；时序数据：[运行 JSON](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-stream-current/play-final-timing.json>) SHA `0060474b8abc36608afc3692141a187c6350fc55b7bee18ff5f240aa78183f15`、[刷新 JSON](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-stream-current/refresh-final-timing.json>) SHA `68cd5d846aa8e6aa9b45069146fe0a52c7ea9a4e677aaf8af472c17eb13d5a59`、[搜索 JSON](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-stream-current/search-final-timing.json>) SHA `8826480e13ef1f5f61aa3585a2d2e040be05391327e4bb80a514f45f7445e7f9`。
+- `app/test/glass_motion_test.dart` 新增点击触发注册 glyph pulse、布局后可见 glyph 仍注册两项回归。`flutter test --no-pub --reporter compact test/glass_motion_test.dart` 13 项通过；`flutter analyze --no-pub` 无问题；Dart 格式和 `git diff --check` 通过。没有改产品代码或切换状态逻辑。
+- 结论边界：这是暗色 96 dp fixture 对共享动作模型的呈现证据，不覆盖所有生产调用点、浅色、VoiceOver 或物理面板 FPS；ScreenCaptureKit 时间戳不等于面板刷新/光子时刻。原 MP4 已删除，当前网页参考不构成原视频逐帧对照。UI-6.7 仍部分验收。

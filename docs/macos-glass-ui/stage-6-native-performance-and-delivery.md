@@ -206,3 +206,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B001/B005/B050 暗色按下与释放附近样本（2026-11-19）
 
 新增仅捕获 Aggregate 窗口的 ScreenCaptureKit 样本，覆盖全局搜索、活动刷新、暂停播放运行按钮。B005 的约 +202ms 截图请求可见刷新点阵进入旋转相位；B050 释放后依次出现原表单和执行确认框，确认框取消后状态仍为“尚未运行”。请求和截图返回时间均已记录。ScreenCaptureKit 没有 display-present 时间戳，单次捕获耗时约 28–96ms；该批只补有限时点状态观察，不签收精确动画相位、FPS、VoiceOver 或 109 个调用点全覆盖。详细证据与 SHA 见[验收记录](acceptance-record.md#2026-11-19-ui-67-暗色生产按钮短时序采样)。
+
+### UI-6.7 补证：运行、刷新、搜索图案点击时序（2026-11-19）
+
+96 dp 共享 `GlassActionButton` Profile fixture 的暗色点击样本现在用 ScreenCaptureKit 的 WindowServer display-time 对齐释放时点；运行、刷新和搜索在 0–650 ms 目标时序中分别采到 15、14、14 个选中帧，刷新漏 0 ms、搜索漏 83.3 ms。样本显示三种图案有对应的轻微位移/伸缩、旋转和大小变化。Widget 触发/注册回归 13 项、`flutter analyze --no-pub`、格式与 diff 检查通过；夹具回调为空，没有产品代码改动。截图与间隔统计见[验收记录](acceptance-record.md#2026-11-19-ui-67-运行刷新搜索点击呈现时序补验)。该证据不代表 109 个生产实例、浅色、VoiceOver、面板 FPS 或原视频逐帧通过；UI-6.7 继续部分验收。
