@@ -156,7 +156,7 @@ def main() -> int:
     fixture_secret_file = fixture_dir / "setup-private-key.pem"
     fixture_secret = ""
     mac_process: subprocess.Popen | None = None
-    reverse_port: int | None = None
+    reverse_ports: list[int] = []
     reverse_added = False
     android_result_written = False
     success = False
@@ -220,6 +220,7 @@ def main() -> int:
                 and invitation_file.stat().st_size
                 and mcp_invitation_file.exists()
                 and mcp_invitation_file.stat().st_size
+                and (fixture_dir / "drop-control-port.txt").exists()
             ):
                 break
             if mac_process.poll() is not None:
@@ -262,26 +263,39 @@ def main() -> int:
         ):
             raise RuntimeError("MCP fixture invitation does not match the Host")
         reverse_port = parsed.port
+        try:
+            drop_control_port = int(
+                (fixture_dir / "drop-control-port.txt").read_text().strip()
+            )
+        except ValueError as error:
+            raise RuntimeError("invalid loopback drop-control port") from error
+        if not 1 <= drop_control_port <= 65535 or drop_control_port == reverse_port:
+            raise RuntimeError("drop-control port is outside the fixture range")
         existing_reverse = run(
             ["adb", "-s", device, "reverse", "--list"],
             capture_output=True,
             text=True,
         ).stdout
-        if re.search(rf"(?:^|\s)tcp:{reverse_port}(?:\s|$)", existing_reverse):
-            raise RuntimeError("ADB already has a reverse mapping on the fixture port")
-        run(
-            [
-                "adb",
-                "-s",
-                device,
-                "reverse",
-                f"tcp:{reverse_port}",
-                f"tcp:{reverse_port}",
-            ],
-            capture_output=True,
-            text=True,
-        )
-        reverse_added = True
+        reverse_ports = [reverse_port, drop_control_port]
+        if any(
+            re.search(rf"(?:^|\s)tcp:{port}(?:\s|$)", existing_reverse)
+            for port in reverse_ports
+        ):
+            raise RuntimeError("ADB already has a reverse mapping on a fixture port")
+        for port in reverse_ports:
+            run(
+                [
+                    "adb",
+                    "-s",
+                    device,
+                    "reverse",
+                    f"tcp:{port}",
+                    f"tcp:{port}",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            reverse_added = True
 
         environment = os.environ.copy()
         environment["ORG_GRADLE_PROJECT_aggregateIsolatedIntegration"] = "true"
@@ -301,6 +315,7 @@ def main() -> int:
             + base64.b64encode(fixture_secret.encode()).decode(),
             "--dart-define=aggregateHostMcpFixtureInvitationBase64="
             + base64.b64encode(mcp_payload.encode()).decode(),
+            f"--dart-define=aggregateHostSetupFixtureDropControlPort={drop_control_port}",
         ]
         try:
             with android_log.open("w") as output:
@@ -349,12 +364,13 @@ def main() -> int:
             except subprocess.TimeoutExpired:
                 mac_process.kill()
                 mac_process.wait()
-        if reverse_added and reverse_port is not None:
-            subprocess.run(
-                ["adb", "-s", device, "reverse", "--remove", f"tcp:{reverse_port}"],
-                capture_output=True,
-                text=True,
-            )
+        if reverse_added:
+            for port in reversed(reverse_ports):
+                subprocess.run(
+                    ["adb", "-s", device, "reverse", "--remove", f"tcp:{port}"],
+                    capture_output=True,
+                    text=True,
+                )
         for package in package_ids:
             if package_is_installed(device, package):
                 subprocess.run(

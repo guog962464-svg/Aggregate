@@ -143,3 +143,12 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - Baseline: HEAD `90abf203e2770196fa50e00f59705451aded49b1`; the worktree also had unrelated uncommitted `glass_action_button.dart` and `pubspec.lock` changes. The Android host runner/test/bridge files were unchanged from the prior run.
 - Cleanup readback: `.integration` and `.integration.test` are absent; ordinary `io.github.guog962464.aggregate` remains installed; ADB reverse is empty; production port 47321 has no listener. The runner used no production Host, account, or ordinary-app data.
 - Stage status: this refreshes the isolated 4 KB runner evidence only. Direct LAN/NSD, production Host business, real account/playback, unexpected network recovery, signed Release permissions, and 16 KB hardware remain open; A5.5 is not closed.
+
+## 2026-11-18 A5.5 physical abrupt TCP drop and reconnect
+
+- Command: `python3 app/tool/run_android_host_setup_e2e.py --device AEMN022427001360`.
+- Result: the Mac loopback Host fixture and Android physical Keystore + WSS setup flow both reported PASS. Device: LGE AN10 / Android 15 / API 35 / arm64 / 4 KB page. The runner does not expose a case count.
+- The fixture routes WSS through a loopback TCP tunnel and exposes a temporary loopback-only drop control on a separate port. The Android integration test pairs with a fresh isolated Keystore identity, establishes the WSS session, asks the fixture to destroy the active TCP sockets without a WebSocket close frame, observes `AndroidHostStatus.offline` and four Host connections as unavailable, then manually reconnects through the saved endpoint and observes the connections return to ready. No automatic retry is claimed.
+- Scope: fake Node/npm/mpv/CLI/MCP, temporary TLS identity, isolated HOME/MacRuntime data and `.integration` package. No production Host, account, ordinary-app data or 16 KB device was used. This is a physical Android client over USB `adb reverse` to a loopback test Host; it does not simulate Wi-Fi/routing/Android OS loss or direct LAN/NSD.
+- Cleanup readback: `.integration` was removed, ordinary `io.github.guog962464.aggregate` remains installed, ADB reverse is empty, device page size is 4096, and production port 47321 has no listener.
+- Stage status: physical abrupt TCP loss and manual reconnect are now covered. Automatic retry, Wi-Fi/route/OS loss, direct LAN/NSD freshness, production business RPC, real Netease login/playback, production TUI, signed Release permissions and 16 KB hardware remain open; A5.5 remains open.

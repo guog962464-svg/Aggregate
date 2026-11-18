@@ -95,3 +95,5 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 连续 argv 缓冲区修正后，`verify_node_alias.py` 在 LGE AN10 4 KB 真机通过，固定生命周期 child `node --version` 返回 status 0 / `v24.22.1`，Messenger `kind=3` 和 Node 关闭 `kind=5` 均收到。增加逐项等待 Node `kind=5` 之前一轮完整 suite 在 `script-allowed` 前未收到事件并超时；加入关闭等待后，lifecycle 转换专项与一轮完整 11 项 suite 通过，终态 11/11。
 
 错误 integrity 检查的 5 次全新安装均由 npm 拒绝并返回终态，但 2 次在 Node worker 关闭后仍留下部分 `json5/lib` 文件，3 次没有残留。该结果说明错误包内容不会被 npm 接受，但清理不稳定；A4.4 不据此宣称失败安装具有无半成品保证。NodeProbe 与产品 NodeBridge/ADR 0003 边界不变。命令、APK hash 和范围见 [A4.4 npm 研究记录](android-a4-npm-install-research.md#2026-11-18-nodeprobe-argv-修正与-npm-复验结论)。
+
+2026-11-18 后续最小复现各 8 轮，逐轮清除 workspace/cache：两组分别出现 1/8 和 2/8 次相同的 `json5/lib` 部分文件。残留在 Probe finalize 时已存在，3 秒后仍在，同 UID 可以删除；固定 npm 12.2.2 `pacote` 解包失败路径没有回滚目标目录。验证器继续把残留判失败，未修改 npm 资产或产品入口；完整记录见 [integrity 部分解包诊断](android-a4-npm-install-research.md#2026-11-18-npm-integrity-部分解包诊断)。

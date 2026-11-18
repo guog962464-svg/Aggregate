@@ -18,6 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:mcp_dart/mcp_dart.dart' as mcp;
 
 import 'fixtures/android_host_mcp_fixture.dart';
+import 'fixtures/android_host_tcp_tunnel.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -133,6 +134,8 @@ void main() {
       var approving = false;
       Object? approvalError;
       Timer? approvalTimer;
+      AndroidHostTcpTunnelProxy? tcpTunnelProxy;
+      HttpServer? dropControlServer;
       late Connection ncmFixtureConnection;
       late Connection cliFixtureConnection;
       late Connection httpMcpConnection;
@@ -234,12 +237,54 @@ void main() {
             approving = false;
           }
         });
-        final invitation = await transport.createInvitation();
-        final mcpInvitation = await transport.createInvitation();
+        final issuedInvitation = await transport.createInvitation();
+        final issuedMcpInvitation = await transport.createInvitation();
+        final issuedPayload =
+            jsonDecode(issuedInvitation.qrPayload) as Map<String, Object?>;
+        final issuedEndpoints = issuedPayload['endpoints']! as List<Object?>;
+        final hostPort = Uri.parse(
+          (issuedEndpoints.single! as Map<String, Object?>)['uri']! as String,
+        ).port;
+        final proxy = await AndroidHostTcpTunnelProxy.start(
+          targetPort: hostPort,
+        );
+        tcpTunnelProxy = proxy;
+        final controlServer = await HttpServer.bind(
+          InternetAddress.loopbackIPv4,
+          0,
+        );
+        dropControlServer = controlServer;
+        controlServer.listen((request) async {
+          if (request.method != 'POST' ||
+              request.uri.path != '/drop-active-tunnels') {
+            request.response.statusCode = HttpStatus.notFound;
+            await request.response.close();
+            return;
+          }
+          try {
+            await proxy.dropActiveTunnels();
+            request.response.statusCode = HttpStatus.noContent;
+          } on Object catch (error) {
+            request.response
+              ..statusCode = HttpStatus.internalServerError
+              ..write(error.runtimeType);
+          }
+          await request.response.close();
+        });
+        await File('${fixtureDirectory.path}/drop-control-port.txt')
+            .writeAsString('${controlServer.port}', flush: true);
+        final invitationPayload = _routeInvitationThroughProxy(
+          issuedInvitation.qrPayload,
+          proxy.port,
+        );
+        final mcpInvitationPayload = _routeInvitationThroughProxy(
+          issuedMcpInvitation.qrPayload,
+          proxy.port,
+        );
         await File('${fixtureDirectory.path}/invitation.json')
-            .writeAsString(invitation.qrPayload, flush: true);
+            .writeAsString(invitationPayload, flush: true);
         await File('${fixtureDirectory.path}/mcp-invitation.json')
-            .writeAsString(mcpInvitation.qrPayload, flush: true);
+            .writeAsString(mcpInvitationPayload, flush: true);
         final androidResult = await _waitForAndroidResult(androidResultFile);
         expect(androidResult, 'passed', reason: 'Android setup flow failed');
         expect(approvalError, isNull);
@@ -285,6 +330,8 @@ void main() {
         expect((await storedKey.stat()).mode & 0x3f, 0);
       } finally {
         approvalTimer?.cancel();
+        await dropControlServer?.close(force: true);
+        await tcpTunnelProxy?.close();
         await transport.stop();
         await runtime.dispose();
         await httpMcpServer.stop();
@@ -292,6 +339,24 @@ void main() {
     },
     timeout: const Timeout(Duration(minutes: 15)),
   );
+}
+
+String _routeInvitationThroughProxy(String payload, int port) {
+  final invitation = jsonDecode(payload) as Map<String, Object?>;
+  final endpoints = invitation['endpoints']! as List<Object?>;
+  for (var index = 0; index < endpoints.length; index++) {
+    final endpoint = Map<String, Object?>.from(
+      endpoints[index]! as Map<String, Object?>,
+    );
+    endpoint['uri'] = Uri(
+      scheme: 'wss',
+      host: InternetAddress.loopbackIPv4.address,
+      port: port,
+      path: '/host',
+    ).toString();
+    endpoints[index] = endpoint;
+  }
+  return jsonEncode(invitation);
 }
 
 Future<String> _waitForAndroidResult(File resultFile) async {

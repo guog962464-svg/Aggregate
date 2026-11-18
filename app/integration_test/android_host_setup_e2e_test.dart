@@ -404,7 +404,8 @@ void main() {
         isNull,
         reason: 'Host fixture did not approve the isolated MCP identity',
       );
-      expect(mcpHost!.hostId, mcpInvitation.hostId);
+      final pairedMcpHost = mcpHost!;
+      expect(pairedMcpHost.hostId, mcpInvitation.hostId);
 
       final mcpConnections = (await runtime.listConnections())
           .where((item) => item.executionTarget == target)
@@ -509,8 +510,71 @@ void main() {
         );
       }
 
-      await manager.disconnect(mcpHost.hostId);
-      expect(manager.statusFor(mcpHost.hostId), AndroidHostStatus.offline);
+      const dropControlPort = int.fromEnvironment(
+        'aggregateHostSetupFixtureDropControlPort',
+      );
+      expect(dropControlPort, inInclusiveRange(1, 65535));
+      final abruptDrop = manager.statusChanges.firstWhere(
+        (change) =>
+            change.hostId == pairedMcpHost.hostId &&
+            change.status == AndroidHostStatus.offline,
+      );
+      final controlClient = HttpClient();
+      try {
+        final request = await controlClient
+            .postUrl(
+              Uri(
+                scheme: 'http',
+                host: '127.0.0.1',
+                port: dropControlPort,
+                path: '/drop-active-tunnels',
+              ),
+            )
+            .timeout(const Duration(seconds: 5));
+        final response = await request.close().timeout(
+          const Duration(seconds: 5),
+        );
+        expect(response.statusCode, HttpStatus.noContent);
+        await response.drain<void>();
+      } finally {
+        controlClient.close(force: true);
+      }
+      await abruptDrop.timeout(const Duration(seconds: 10));
+      expect(
+        manager.statusFor(pairedMcpHost.hostId),
+        AndroidHostStatus.offline,
+      );
+      expect(manager.isConnected(pairedMcpHost.hostId), isFalse);
+      final unexpectedlyOfflineConnections = (await runtime.listConnections())
+          .where((item) => item.executionTarget == target)
+          .toList(growable: false);
+      expect(unexpectedlyOfflineConnections, hasLength(4));
+      expect(
+        unexpectedlyOfflineConnections.every(
+          (item) => item.status == ConnectionStatus.unavailable,
+        ),
+        isTrue,
+      );
+
+      final manuallyReconnected = await manager.connect(pairedMcpHost.hostId);
+      expect(manuallyReconnected.hostId, pairedMcpHost.hostId);
+      expect(manager.isConnected(pairedMcpHost.hostId), isTrue);
+      final afterAbruptReconnect = (await runtime.listConnections())
+          .where((item) => item.executionTarget == target)
+          .toList(growable: false);
+      expect(afterAbruptReconnect, hasLength(4));
+      expect(
+        afterAbruptReconnect.every(
+          (item) => item.status == ConnectionStatus.ready,
+        ),
+        isTrue,
+      );
+
+      await manager.disconnect(pairedMcpHost.hostId);
+      expect(
+        manager.statusFor(pairedMcpHost.hostId),
+        AndroidHostStatus.offline,
+      );
       final offlineConnections = (await runtime.listConnections())
           .where((item) => item.executionTarget == target)
           .toList(growable: false);
@@ -521,9 +585,9 @@ void main() {
         ),
         isTrue,
       );
-      final reconnectedHost = await manager.connect(mcpHost.hostId);
-      expect(reconnectedHost.hostId, mcpHost.hostId);
-      expect(manager.isConnected(mcpHost.hostId), isTrue);
+      final reconnectedHost = await manager.connect(pairedMcpHost.hostId);
+      expect(reconnectedHost.hostId, pairedMcpHost.hostId);
+      expect(manager.isConnected(pairedMcpHost.hostId), isTrue);
       final reconnectedConnections = (await runtime.listConnections())
           .where((item) => item.executionTarget == target)
           .toList(growable: false);
