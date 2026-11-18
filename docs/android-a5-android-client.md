@@ -117,3 +117,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 临时集成测试通过：`A5_LIVE_READONLY_RPC hostHello=passed connectionListCount=1`；Flutter analyze 无问题，integration test 全部通过。该测试 harness 和入口只存在于临时 worktree，验收后已清除。
 - 清理确认：Mac grant 已撤销、Host 已停止、临时 `.integration` 包已卸载、ADB reverse 已移除，端口 `47321` 无监听；日常 Android 包、其 Keystore 身份和既有授权均未触碰。临时邀请、审批码、截图和包含邀请信息的构建产物已删除。
 - **阶段判定：**这补足了 production Host 上真实 Keystore→CryptoKit 配对、`host.hello` 和只读连接列表 RPC。此前无法直连 LAN 的结论仍成立；USB 隧道不等于 NSD/LAN 直连。日常包身份轮换、签名 Release 权限、16 KB 实机以及 production Host 上的向导和真实业务仍未验收，A5.4 / A5.5 保持开放。
+
+## 2026-11-18 隔离 test-signed Android Release 相机权限补验
+
+- 从 detached worktree `897c2268d6325a4f9b615cc3bd60c80f7e70cc7f` 构建 arm64 Release APK，`versionCode=8`、`targetSdk=36`。因仓库只给 Debug 配置 `.integration` 后缀，验收期间仅在临时 worktree 的 Release variant 增加相同隔离后缀；使用一次性 RSA-2048 测试证书签名。`apksigner verify` 确认 APK v2/v3 签名有效，测试签名不代表正式签名或发布资格；APK SHA-256 为 `fa8579fc3b41df9fa4d33f12d8754e5035ae5817577da88cb7badd4b48b2feaa`。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机安装包名 `io.github.guog962464.aggregate.integration`。首次点“扫描二维码”触发 Android 系统相机权限弹窗；选“仅使用期间允许”后 `CAMERA` 变为 granted、app-op 为 foreground，扫码页面正常显示，最近 logcat 未见 `SecurityException`、`CameraAccessException` 或崩溃。
+- 为验证拒绝路径，通过 ADB 撤销临时包权限并重启后再次打开扫码页；Android 系统重新显示权限弹窗，选择“禁止后不再提示”后，应用显示“无法打开相机。请允许相机访问，或返回后粘贴二维码内容。”及 `permissionDenied` 状态，没有崩溃。Package Manager 显示 `CAMERA granted=false` 且拒绝标志为 `USER_FIXED`。
+- 清理：临时 `.integration` Release 包已卸载，一次性测试密钥和 APK 已删除；普通 `io.github.guog962464.aggregate` 包仍安装，ADB reverse 为空，Host 端口无监听。未请求真实连接、账号或网络数据。
+- **范围判定：**这证明当前 Android 15 上 test-signed、targetSdk 36 隔离 Release 包的相机运行时允许/永久拒绝与恢复提示路径可用。正式签名 Release、日常包身份及权限、16 KB 系统加载/运行仍未验证；Release 只读 Host RPC 结果也不等于普通配对界面验收。A5.4 保持开放。
