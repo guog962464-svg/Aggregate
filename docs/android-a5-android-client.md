@@ -100,3 +100,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 主清单网络安全配置禁止通用明文流量，只对 `localhost` 和 `127.0.0.1` 配置例外。Release APK/AAB 均未签名：`apksigner verify` 报缺少签名，`jarsigner -verify` 确认为 unsigned；因此本项只核对生成工件的权限声明与依赖来源，不代表签名后包的安装、运行时权限提示或 Play 分发行为。
 - `flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart`：11 项通过，包含身份轮换授权流程的 fake/Widget 覆盖；没有 Android 设备，未对日常 App 的 AndroidKeyStore 身份执行轮换。`adb devices -l` 为空。
 - **范围结论：**Release 权限声明静态审阅已补齐。A5.4 仍开放日常 App 身份轮换实测、签名 Release 的设备权限行为以及 16 KB 设备加载/运行；不把隔离 `.integration` 包的 Keystore 轮换结果外推到日常包。
+
+## 2026-11-18 production Mac Host 只读可达性复核
+
+- 使用干净 detached worktree（提交 `519d99a20964307b79777ca2a09949f6f94ad3cd`）构建并启动 macOS Release Host，避免包含主工作区未提交的 UI 文件。`flutter build macos --no-pub` 成功；Host 设置页显示“运行中”，进程监听 `192.168.8.4:47321`。构建依赖解析只改动了临时 worktree 的 `pubspec.lock`，随后恢复；未更改主工作区文件。
+- LGE AN10 / Android 15 / API 35 / arm64 真机恢复 USB ADB 后，实测 `PAGE_SIZE=4096`、`wlan0=192.168.31.135/24`，路由表只有本地 `/24` 路由，没有默认网关；Mac Host 位于 `192.168.8.4/24`。手机到 Host 的 ICMP 探测失败，两个网段之间无可用 LAN 路径。本次没有建立 ADB reverse 或代理。
+- 日常包 `io.github.guog962464.aggregate` 已安装，但 app-private `files/` 中没有 `hosts.json`。Mac Host 页面列出两条不可区分的“这台手机 · 读取连接”既有授权，且没有待批准设备。为避免误用或撤销现存授权，没有轮换 Android 身份、修改/撤销授权或尝试用身份不明的 grant 认证；没有完成配对，也没有调用 `host.hello` / `connection.list`。新邀请按钮未产生可确认的二维码/复制控件。
+- 清理：没有创建或删除配对授权；关闭本次验证启动的 Host 进程后，`47321` 不再监听。未触碰真实账号、连接、CLI、终端或播放。
+- **阶段判定：**本轮确认当前主线版本的 macOS Host 可构建、可启动并绑定预期私有网卡；Android→Host 只读 RPC 因手机与 Mac 网段隔离、日常包缺少已保存 Host 元数据而未验收。A5.4 / A5.5 保持开放；此前隔离身份的 USB loopback 只读验收和 2026-11-14 direct LAN 结果仍按各自环境与代码版本记录，不作本轮替代。

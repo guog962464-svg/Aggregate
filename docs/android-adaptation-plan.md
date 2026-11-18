@@ -210,6 +210,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-18 4 KB 实机证据新鲜度复核：从 `aecbd0c` 到当前 `c2bb4b0`，Android 原生项目与 `app/lib/platform/android` 未改；共享 Flutter App shell、主题、玻璃控件/页面框架，以及 `android_host_setup_wss_e2e_test.dart` 和 E2E runner 有改动。316 项 Flutter 全量测试和 analyze 通过，但当前 ADB 设备列表为空，不能重跑更新后的 4 KB 实机流程。此前真机结果按原代码版本保留，不外推至当前全部 UI/runner；A5.5 继续开放。详见 [A8 当前代码新鲜度复核](android-a8-acceptance.md#2026-11-17-当前主线-release-构建复验)。
 
+  - 2026-11-18 production Mac Host 可达性复核：从干净 detached `519d99a` 构建的 Release Host 成功启动并监听 `192.168.8.4:47321`。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机恢复 ADB 后，`wlan0=192.168.31.135/24` 且没有默认路由，手机无法到达 Mac 所在的 `192.168.8.0/24`；日常包也没有 `hosts.json`。Mac 页面已有两条无法区分的只读 grant，没有 pending pairing；本轮未碰身份或授权，未调用 `host.hello`/`connection.list`。Host 已停止且端口无监听。A5.4/A5.5 不因此关闭；详见 [production Host 只读可达性记录](android-a5-android-client.md#2026-11-18-production-mac-host-只读可达性复核)。
+
 **交付物：**可由测试客户端连接的 Mac Host、协议文档及配对/草稿失败样本。**通过门槛：**已授权手机能对 Mac 已登记适配器完成向导与调用；Mac 路径只由 Mac 使用；未授权设备和越权命令被拒绝；断线后的草稿/进程可清理，外部写入显示“结果待确认”。
 
   - 2026-11-17 Android Host 掉线状态单测：新增 `android_host_pairing_client_test.dart` 用例，令已认证会话的 fake socket message stream 在未调用 `manager.disconnect()` 时结束；验证 Host 状态转 offline、会话不可用，并经显式 `connect()` 重新认证恢复 online。该文件 9 项 Flutter 测试通过；随后全量 Flutter suite 295 项通过，全量 `flutter analyze --no-pub` 无问题。它只覆盖 fake connector 的状态机，不覆盖实际 TCP/WSS、Android 真机或 Wi‑Fi 中断，A5.5 意外网络掉线验收仍开放。详情见 [A5.5 真机与重连验收记录](android-a5-android-client.md#2026-11-17-android-host-session-stream-结束后的手动重连单元测试)。
