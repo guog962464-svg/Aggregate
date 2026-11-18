@@ -7,6 +7,7 @@ import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/page_frame.dart';
 import 'appearance_selector.dart';
+import 'theme_switch_calibration.dart';
 
 const _appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '开发版');
 
@@ -145,6 +146,7 @@ class SettingsPage extends StatelessWidget {
           child: AppearanceSelector(
             switchWidth: 440,
             switchHeightFactor: .46,
+            calibration: ThemeSwitchCalibration.reference,
             appearance: preferences.appearance,
             systemLabel: '跟随 macOS 系统',
             onChanged: (appearance) => onPreferencesChanged(

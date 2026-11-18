@@ -2,6 +2,7 @@ import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/features/settings/settings_page.dart';
+import 'package:aggregate/features/settings/theme_switch_calibration.dart';
 import 'package:aggregate/features/settings/theme_switch_fitted_calibration.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
@@ -26,6 +27,13 @@ void main() {
       await tester.pumpWidget(AggregateApp(runtime: runtime));
       await tester.pumpAndSettle();
       await _openSettings(tester);
+
+      expect(
+        tester
+            .widget<GlassThemeSwitch>(find.byType(GlassThemeSwitch))
+            .calibration,
+        same(videoFittedThemeSwitch),
+      );
 
       expect(_pageTheme(tester).brightness, Brightness.dark);
       expect(_artwork(tester).frame.position, closeTo(0, 0.002));
@@ -85,8 +93,8 @@ void main() {
     final liveSwitch = tester.widget<GlassThemeSwitch>(
       find.byType(GlassThemeSwitch),
     );
-    expect(liveSwitch.calibration, same(videoFittedThemeSwitch));
-    expect(liveSwitch.calibration.particleParameters, hasLength(113));
+    expect(liveSwitch.calibration, same(ThemeSwitchCalibration.reference));
+    expect(liveSwitch.calibration.particleParameters, isNull);
 
     await tester.tap(find.bySemanticsLabel('外观主题'));
     await tester.pump();

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_motion.dart';
 import 'glass_theme_switch.dart';
+import 'theme_switch_calibration.dart';
 import 'theme_switch_fitted_calibration.dart';
 
 class AppearanceSelector extends StatelessWidget {
@@ -13,6 +14,7 @@ class AppearanceSelector extends StatelessWidget {
     required this.appearance,
     required this.onChanged,
     required this.systemLabel,
+    this.calibration = videoFittedThemeSwitch,
     this.switchWidth = 360,
     this.switchHeightFactor = .75,
   });
@@ -20,6 +22,7 @@ class AppearanceSelector extends StatelessWidget {
   final AppearancePreference appearance;
   final ValueChanged<AppearancePreference> onChanged;
   final String systemLabel;
+  final ThemeSwitchCalibration calibration;
   final double switchWidth;
   final double switchHeightFactor;
 
@@ -39,7 +42,7 @@ class AppearanceSelector extends StatelessWidget {
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: switchWidth),
           child: GlassThemeSwitch(
-            calibration: videoFittedThemeSwitch,
+            calibration: calibration,
             heightFactor: switchHeightFactor,
             light: light,
             onChanged: (value) => onChanged(

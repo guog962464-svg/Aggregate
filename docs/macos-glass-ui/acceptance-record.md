@@ -1043,3 +1043,24 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B005 活动刷新：标题右侧 AX bounds 46×46。点击前截图[`activity-dark-before.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-production-run-refresh-search/activity-dark-before.png>)（SHA `0677cb4b5253237c5eff7b625df6467fbec34fffce8a8ac66052b11004d10458`）显示 3 条；点击后新 AX 树和截图[`activity-dark-after.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-production-run-refresh-search/activity-dark-after.png>)（SHA `50f4a93f42dc4e27f9b237d43c6feb6d81dd3f4d5e4c2f4f65dc612aa9ebd76b`）显示 6 条。本轮核对源码确认按钮只调用 `reload()`，重新读取 `listRecentRuns()`；前后新增的状态记录属于进程内 fixture，未把记录变化归因给按钮，也未触发外部服务。
 - B050 暂停播放运行表单：短窗口首屏滚动位置下按钮只有部分区域可见；向下滚动后完整按钮 AX bounds 为 87×40，见[`表单滚动前`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-production-run-refresh-search/pause-run-form-dark.png>)（SHA `a555177a845ee81638a535be353e45f44c3c1886a7fe8594010ba78aafdd3ef4`）及[`表单滚动后`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-production-run-refresh-search/pause-run-form-dark-visible.png>)（SHA `d23a16194ac657ffa7c538fb90dee5c251b8f306f538cfa4c536974a5c54c202`）。点击“运行”后 AX 确认弹窗显示功能、执行端和外部写入权限；弹窗图[`pause-run-confirm-dark.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-production-run-refresh-search/pause-run-confirm-dark.png>)（SHA `8d20c1f42ad7812463929c888d5bbbc795720a70384c761bdc8f35892a45e6d3`）。本轮未确认执行：AX 点击回执因被 `Dismiss` 静态文本遮挡而为 `not_delivered`，未重试；此前 B049 的 PreviewRuntime 执行结果记录仍是既有证据。源码核对 `Ui6InspectionRuntime.invoke` 委托到 `PreviewRuntime.invoke`，不会调用真实音乐服务。
 - 临时 Profile 窗口正常退出，Flutter runner 与 Chromium 均无残留。没有产品代码或测试变化；静置/页面反馈已核，三枚生产按钮的按下动画关键帧、FrameTiming/FPS、浅色对应实例及全量调用点仍未签收。UI-6.7 继续部分验收。
+
+
+### 2026-11-19 UI-6.8 网页与 macOS Profile 同屏双向对照
+
+- 参考：原 MP4 已删除；按用户指示，以当前 [Glass Light Toggle 页面](https://experiments.thisiswhitespace.com/glass-light-toggle)为对照。网页实际脚本副本 `main.js?v=3` SHA-256 为 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`，与前述官方源 oracle 基线一致。源页面自身每次加载仍随机初始化；本地临时夹具在该脚本前固定 LCG seed `1831565813`，状态消费 113×7 个值后为 `700164006`，对应 `ThemeSwitchCalibration.reference` 的种子。
+- 产品调整：macOS `SettingsPage` 将 `ThemeSwitchCalibration.reference` 显式传给 `AppearanceSelector`；`AppearanceSelector` 默认值继续为 `videoFittedThemeSwitch`，故 Android 标准设置页没有切换参数。改变范围只限 macOS 视觉模型的 calibration 选择；`GlassThemeSwitch` 的拖动/点击状态机、偏好提交回调、取消/反向处理及运行端协议没有改。`flutter test --no-pub test/android_theme_transition_test.dart` 两平台变体 2 项通过，覆盖 Android 保留 fitted、macOS 使用 source reference；`flutter analyze --no-pub` 无问题；macOS Profile 构建成功并实窗确认设置 AX 端点可双向切换。
+- 对照环境：Apple M5 Pro 内屏，显示器 3024×1964 Retina、缩放 2×（1512×982 logical）；Flutter 3.47.8 stable、Dart 3.13.7、macOS Profile / Impeller `MetalSDF`。应用是 `Ui6InspectionRuntime` 与 `PreviewRuntime` 的隔离数据，无真实服务/Host。应用窗口 800×632 logical，控件布局宽 440、高约 203；轨道几何按 `432×(440×0.76/720)` 得约 200.64 logical px。Chromium 主视口 700×545 CSS、DPR 2；iframe 内源码使用 `zoom=0.464444`，轨道同为约 200.64 px，中心纵向偏差约 1.8 logical px。
+- 输入与采样：每个方向从端点开始，将 30 个线性移动点在 500 ms 内依次发送给 CDP 与 macOS CGEvent；全屏 PNG 在进度 0%、25%、50%、75%、100% 按下态采集，随后释放并延时 650 ms 捕获稳定态。每张 3024×1964 PNG 同时包含网页和 Aggregate。脚本在网页与原生调用返回后记录 monotonic 时间：中途 move 对的调用返回差为 0.025–0.035 ms；两向 down 调用返回差为 27.6/29.9 ms。该值不是系统事件 tap 的接收时间，也不是显示器呈现时间。正向结束网页 `body.light=true` / macOS AX “浅色”；反向结束 `false` / “深色”。
+- 逐帧目视结论：source-reference 参数下两向拖动中的月亮/太阳粒子、点阵重组、玻璃边缘暖/冷光持续变化，运动方向与端点均吻合。当前同屏样本仍可见原生开关外围焦点环，而网页无此层；WebGL 与 MetalSDF 光栅也不能视作同一像素输出。这里没有共享页面时钟，截图同刻不等于两套动画内部相位同刻；本次不签收 1:1、原视频复原或 display-present FPS，UI-6.8 继续部分验收。
+- 截图位于 `/Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-8-web-native-sync/`。所选双向相位与稳定帧 SHA-256：
+
+| 方向/进度 | PNG | SHA-256 |
+| --- | --- | --- |
+| 深→浅 25% | `source-model-dark-to-light-p25-pressed.png` | `b3df6c9cb5e75cf65eec0ecfbc479d6d80e731f79316329c583621a3f65d55fd` |
+| 深→浅 50% | `source-model-dark-to-light-p50-pressed.png` | `5949d4890d6abf37bc638235f39b7c0c428ee95d07249d987f549b4ea05c9bc6` |
+| 深→浅 75% | `source-model-dark-to-light-p75-pressed.png` | `5091ce20408c2fac36d153ebb0af332d4535ba8d0a7e05fc30a83d39a545a0e3` |
+| 深→浅 稳定 | `source-model-dark-to-light-settled.png` | `0a29acc95d07a5a3c631ce0fb7ab1868ef9044fdca45bca7d74329ce8ef256ea` |
+| 浅→深 25% | `source-model-light-to-dark-p25-pressed.png` | `124233842936e978004ca3dda57a18409032da0646a381c88b852df3e51650fb` |
+| 浅→深 50% | `source-model-light-to-dark-p50-pressed.png` | `ddbb6c89a04f11cbef301eb197c692e31bb39831ee4baf589653b5167c54608a` |
+| 浅→深 75% | `source-model-light-to-dark-p75-pressed.png` | `e95f9995b4636d67554e40eac73cbaac4552d0c68f5f4b263693eb3b36eca729` |
+| 浅→深 稳定 | `source-model-light-to-dark-settled.png` | `80064c1bfaa1bff362f2a7146f093ce83a62926e4009c23b8dcc5f83f058ee23` |

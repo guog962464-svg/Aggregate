@@ -198,3 +198,11 @@ flutter build macos --debug --no-pub
 本轮只复核和记录基准，没有更改产品代码或主题交互。产品继续使用实时指针输入和连续积分，不播放帧序列；`videoFittedThemeSwitch` 中此前按录屏拟合的参数与网页 source oracle 分开保留。回归覆盖的是网页算法在给定种子/输入下的数值等价与光学探针，不等同对网页任意一次随机运行或已删除 MP4 的原生逐帧画面对齐。
 
 网页使用 Chromium/SwiftShader 捕获的 1440×757 参考状态已归档，包含暗态制作说明、拖动中的 25%/50%/75% 样本和亮态端点。它们是网页实时交互的静态采样，不是预制产品动画帧，也不是 macOS 实窗 display-present 捕获。与既有 macOS Profile 设置页浅/深端点截图对照后，当前轨道、玻璃柄、月/日点阵和冷/暖边缘光方向一致；原生连续相位、随机种子差异及渲染器栅格差异仍待 UI-6.8 实窗复核。
+
+## 2026-11-19 macOS 设置页切换到当前网页基准
+
+原 MP4 已删除后，用户指定当前 Glass Light Toggle 网页为后续参考。macOS 设置页现在使用 `ThemeSwitchCalibration.reference`，其连续弹簧、光学参数和 LCG 粒子种子对应网页基础模型；`AppearanceSelector` 未传入 calibration 时仍默认 `videoFittedThemeSwitch`，因此 Android 路由保持原拟合参数。本次只调整 macOS 路由的 calibration 选择，没有改变控件状态机、任意拖动、反向、取消、松手提交、回弹或主题回调。
+
+用本机 Profile 窗口和当前网页源码做同屏双向实拖。确定性网页夹具固定 seed `1831565813`，与 macOS `ThemeSwitchCalibration.reference.seed` 相同；轨道以 `zoom=0.464444` 缩放到约 `200.64` logical px，与 440 px 设置控件在默认 scene scale 下的轨道宽度一致。采样可见两端与中间点阵/光带持续变化，双向结束后的 DOM 主题类和应用 AX 主题端点相符。完整窗口截图显示原生焦点环是网页参考中没有的额外可见层。
+
+同屏 PNG 采样能在一个桌面捕获时刻比较两扇窗口，但网页和 Flutter 没有共享运行时钟；视图也分别由 Chromium/WebGL/SwiftShader 与 Flutter/macOS/MetalSDF 渲染。该结果适合作为同一输入路径下的方向性目视对照，不能证明原录屏逐帧一致、两侧动画相位相同或真实显示器的呈现时序。
