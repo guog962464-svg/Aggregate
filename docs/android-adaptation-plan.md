@@ -183,6 +183,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-18 NodeProbe Release AAB split 补验：从当前锁定输入重建 APK/AAB，修正旧 AAB 缺少 `libnode_cli.so` 的产物错配；5 个 ELF 的 16 KB 静态布局、APK zipalign、Bundletool `PAGE_ALIGNMENT_16K` 及 AAB connected split 均通过。测试签名 split 在 LGE AN10 4 KB 真机执行固定 npm `script-allowed`，Node child 与 Messenger 终态均为 exit 0；测试包已卸载。结果只覆盖 Node `24.22.1-0` 的单 ABI/单设备/本地 fixture，不改变完整 npm integrity 不稳定结论。A3.6/A4.4 继续开放，产品 npm/CLI 仍关闭；详见 [Release AAB split 与 npm lifecycle 验收](android-a3-runtime-research.md#2026-11-18-当前-nodeprobe-release-aab-split-与-npm-lifecycle-验收)。
 
+  - 2026-11-18 当前 NodeProbe Release 供应包更新了 APK/AAB CycloneDX 归档清单（各 312 个组件、152 个依赖节点、362 条边），npm 必需依赖声明边全部解析且引用闭合；两份 BOM 明确为 incomplete。当前 archive 是 Node 24.22.1-0；24.22.3 静态链接清单哈希不匹配，故未复用。Node source/static link 闭包、schema-validator、平台库版本、法律审查和 16 KB 真机仍未完成，A3.6 保持开放。详情见[当前 Release BOM 记录](android-a3-runtime-research.md#2026-11-18-当前-nodeprobe-release-apkaab-cyclonedx-归档清单)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
