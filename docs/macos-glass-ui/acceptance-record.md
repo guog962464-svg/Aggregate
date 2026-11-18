@@ -1200,3 +1200,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B021 选中临时 `action1`，输入样例默认 `{}` 并点“检查并预览参数”；页面显示参数数组 `["仅内存预览", "--help"]` 与提示“清单有效。下方是最终参数数组；此操作不会运行程序。”源码 `_preview` 只解析 manifest/sample、展开参数并格式化结果，不调用 Runtime 执行端口。
 - 单窗口 1824×1488 PNG：[动作编辑器初始状态](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/open.png>) SHA-256 `053bb7c4482f1ac67e7859c979b3981340cfc3376044840c06fa4ce35c886cdb`；[新增 action1](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/action1-added.png>) SHA-256 `fafe8222eaca1ba3adab59de358610927f18fdaf353888bb504fc26b4cdc9267`；[预览结果](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/preview-scrolled.png>) SHA-256 `48fe41e592067f9de41354f73b009b21d448cf891d564e7d436168df5a67ec29`；[取消后重开](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/reopened-clean.png>) SHA-256 `67cd60b4d43c41b1a3c3f248c0a3eb63f0f5ddfb948a673ce20e849c050f0edd`。Open/Save 面板只做 AX 出现与取消读回，没有保存面板截图。
 - 边界：签收对话框静态深色样式、草稿新增/取消回滚、原生导入/导出面板取消路径及不执行的参数预览；未选文件、未写文件、未运行命令，也没有测按钮逐帧动效或物理 display-present。Profile 已关闭；B018–B021 继续部分验收。
+
+
+### 2026-11-19 UI-6.7 B022–B023 动作编辑取消与保存深色 Profile 补验
+
+- 环境沿用 `lib/preview/ui6_inspection_main.dart` 隔离 Profile、暗色主题、800×632 logical px、DPR 2。B022 取消后重开并读回动作 ID 仅 `version` 的证据为同日 B018–B021 节记录中的 `reopened-clean.png`，SHA-256 `67cd60b4d43c41b1a3c3f248c0a3eb63f0f5ddfb948a673ce20e849c050f0edd`。
+- B023 新增 `action1` 后点击“保存动作”，编辑器关闭；重开并聚焦 JSON 文本框，AX value 含 `version` 与 `action1` 两项。打开“预览动作”下拉，菜单可见“查看版本 · version”与“新动作 · action1”。单窗口图 [`保存后重开的动作菜单`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/saved-action-menu.png>) 1824×1488 PNG，SHA-256 `1fca1129d4e6ad2fb77546d4d67d2cfe69d6787f576609694fa653203b667006`。
+- 保存实现调用 `Ui6InspectionRuntime.saveActionManifest`，只将 JSON 暂存到进程内 `_actionManifests`；Profile 已关闭，暂存数据随进程退出销毁。未选文件、未导出、未运行外部命令或访问真实服务。
+- 范围：签收 B022 深色取消回滚的既有实窗证据，以及 B023 深色保存后重开可见两项动作；未采集取消/保存按钮动效关键帧或物理 display-present，UI-6.7 继续部分验收。

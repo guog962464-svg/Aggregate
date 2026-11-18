@@ -34,8 +34,8 @@
 | B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 浅色与深色 Profile 均打开系统文件面板后取消；未选择或读取文件。深色入口/状态见验收记录；面板按钮动效未测 |
 | B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 浅色与深色 Profile 均打开系统保存面板后取消；未选路径或写文件。深色入口/状态见验收记录；面板按钮动效未测 |
 | B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 浅色 Profile 返回 `["仅内存预览", "--help"]`；深色 Profile 对临时 `action1` 输入 `{}` 显示相同数组，页面提示只展开参数、不运行程序。截图与 SHA 见验收记录 |
-| B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击取消后关闭；重开清单确认新增草稿已丢弃。`action_editor_test.dart` 回归覆盖取消后重开且未调用保存；截图 `94-action-editor-cancel-check.png` 为取消后的连接详情 |
-| B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗保存后重开，AX 下拉项包含原动作与 `action1`；仅写入进程内 `Ui6InspectionRuntime`，退出即丢弃，不触碰磁盘或外部服务。Widget 回归覆盖新增、参数预览和保存；深色动态状态仍待核 |
+| B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击取消后关闭；重开清单确认新增草稿已丢弃。深色 Profile 取消新增后重开 AX 清单仅含 `version`，见验收记录与 `reopened-clean.png`。`action_editor_test.dart` 回归覆盖取消后重开且未调用保存 |
+| B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅色 Profile 保存后重开，AX 下拉项含原动作与 `action1`；深色 Profile 保存后重开，聚焦 JSON AX value 含两个动作，实窗下拉菜单可见 `查看版本 · version` 与 `新动作 · action1`。仅写入进程内 `Ui6InspectionRuntime`，退出即丢弃；截图与 SHA 见验收记录。Widget 回归覆盖新增、参数预览和保存 |
 | B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 的配对 Mac 样例表单输入 `git` 并点击 Host 查找；内存 stub 返回未找到提示，没有运行命令或连接设备。截图 `100-connection-setup-host-detect-miss-light.png`；深色和动态状态待核 |
 | B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 本机 Mac 预览表单打开原生文件面板后取消；未选文件或读取文件。配置静态图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 另见；深色交互待核 |
 | B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 输入虚构路径后点击测试；隔离 stub 显示安全检查通过，未访问本机命令、网络或凭据。截图 `98-connection-setup-test-passed-light.png`；未使用真实连接 |
