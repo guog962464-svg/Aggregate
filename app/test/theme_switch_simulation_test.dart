@@ -17,6 +17,34 @@ void main() {
       ) as Map<String, dynamic>;
       final provenance = fixture['provenance'] as Map<String, dynamic>;
       final simulation = ThemeSwitchSimulation(seed: provenance['seed'] as int);
+      final expectedParameters = (fixture['particle_parameters'] as List)
+          .cast<List<dynamic>>();
+      expect(expectedParameters, hasLength(provenance['particle_count']));
+      expect(
+        simulation.particleParameters,
+        hasLength(expectedParameters.length),
+      );
+      for (var index = 0; index < expectedParameters.length; index++) {
+        final actual = simulation.particleParameters[index];
+        final actualValues = [
+          actual.delay,
+          actual.curl,
+          actual.lift,
+          actual.stiffness,
+          actual.drag,
+          actual.phase,
+          actual.twinkle,
+        ];
+        final expectedValues = expectedParameters[index].cast<num>();
+        for (var field = 0; field < actualValues.length; field++) {
+          expect(
+            actualValues[field],
+            closeTo(expectedValues[field].toDouble(), 1e-12),
+            reason:
+                'source particle $index, ${provenance['particle_parameter_fields'][field]}',
+          );
+        }
+      }
       final fps = (provenance['frames_per_second'] as num).toDouble();
       final expected = <int, Map<String, dynamic>>{
         for (final row in fixture['frames'] as List)

@@ -864,6 +864,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：`dart format` 检查 `theme_switch_simulation.dart` 和 `theme_switch_realtime_test.dart`，无格式改动。于 `app/` 执行 `flutter test --no-pub --reporter compact test/theme_switch_realtime_test.dart test/theme_switch_simulation_test.dart test/theme_switch_calibration_test.dart`，15 项全部通过；新增回归确认 8 秒间隔与一次 1/30 秒更新完全一致，并从保留的中间状态继续运动。
 - 范围：这是长间隔积分策略与线上模型的一致性修正，不验证网页和 macOS 的同步逐帧相位、随机粒子对应或 display-present 时间；UI-6.8 的动态相位及整体 1:1 签收仍未完成。
 
+### 2026-11-18 UI-6.8 官方脚本 113 组粒子初始化参数对照
+
+- 来源：以当前参考页实际加载的官方 [`main.js?v=3`](https://experiments.thisiswhitespace.com/standalone/glass-light-toggle/main.js?v=3) 为源，SHA-256 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`。在独立 Node VM 中使用 fixture 记录的 LCG 种子 `1831565813` 替换 `Math.random`，从网页源码执行月亮/太阳配对和 `PIX` 初始化，导出 113 行、每行 7 个参数。
+- 验证：扩充 `theme_switch_model.json` 的独立 oracle；`theme_switch_simulation_test.dart` 逐项将 Dart 生成的 delay、curl、lift、stiffness、drag、phase、twinkle 与官方脚本的 791 个值按 `1e-12` 容差比较，随后继续检查 151 个 60 Hz 时间步中的轨迹样本。与 `theme_switch_realtime_test.dart` 联合定向运行共 10 项通过，Dart 格式检查和 `git diff --check` 通过。
+- 范围：这验证选定 LCG 种子下 113 组粒子的初始化算法和模型轨迹，不等同于线上随机种子已找回，也不证明使用录屏拟合系数的生产控件与网页当前随机会话同步逐帧；粒子随机对应、时钟同步和 macOS display-present 仍未通过。
+
 ### 2026-11-18 UI-6.7 三枚主图标点击反馈增强与 Profile 复核
 
 - 根据 96 dp 参考图保留运行、刷新、搜索的 9×9 点阵轮廓，只调整 `GlassMotionAction.play/search/refresh` 的点击幅度：运行增加右向位移、轻微横向扩张与扫光；搜索扩大镜片缩放和扫光；刷新保留整圈旋转并加深点光亮度。未改 glyph 掩码、按钮 hitbox/业务回调或太阳/月亮主题切换状态机。
