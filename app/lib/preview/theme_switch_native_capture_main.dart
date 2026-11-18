@@ -72,7 +72,7 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
                     time: _time,
                     program: _program,
                     scale: .76,
-                    center: const Offset(360, 270),
+                    center: const Offset(360, 267),
                     optics: const ThemeSwitchOptics(),
                   ),
                 ),
@@ -196,7 +196,7 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
           'devicePixelRatio': 1,
           'scale': .76,
           'centerX': 360,
-          'centerY': 270,
+          'centerY': 267,
         },
         'limitations': [
           'This is an offline same-state Profile renderer capture.',

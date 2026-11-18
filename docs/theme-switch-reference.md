@@ -124,7 +124,7 @@ uv run --python 3.13 --with pillow==13.0.0 --with numpy==2.5.4 \
   python tool/compare_theme_switch_frames.py /tmp/theme-profile-frames/manifest.json /tmp/theme-profile-comparison
 ```
 
-2026-11-18 全 151 帧的 SwiftShader 与 Flutter widget-test renderer 比较平均 RGB MAE 为 `0.0631750/255`，最大 `0.0747111/255`，完全相同像素比例 `98.73%–99.42%`。macOS 27.2.1 / Flutter 3.47.8 Profile 使用 Impeller `MetalSDF` 的同状态输出平均 MAE 为 `1.4713605/255`，最大 `1.8209174/255`，完全相同像素比例 `29.20%–46.05%`。Profile 证据是引擎栅格图像捕获，不是物理 display-present；这些同状态对照也不验证未知录屏种子或网页与产品实时相位。逐项证据见 [widget-test 图像对照记录](macos-glass-ui/acceptance-record.md#2026-11-18-ui-68-官方-webgl-与-flutter-shader-同状态图像对照)及 [macOS Profile 图像对照记录](macos-glass-ui/acceptance-record.md#2026-11-18-ui-68-macos-profile-impeller-全-151-帧同状态图像对照)。
+2026-11-18 全 151 帧的 SwiftShader 与 Flutter widget-test renderer 比较平均 RGB MAE 为 `0.0631750/255`，最大 `0.0747111/255`，完全相同像素比例 `98.73%–99.42%`。macOS 27.2.1 / Flutter 3.47.8 Profile 使用 Impeller `MetalSDF`，对齐 center `(360,267)` 后的同状态输出平均 MAE 为 `0.3868485/255`，最大 `0.4163683/255`；完全相同像素比例 `38.64%–48.07%`。Profile 证据是引擎栅格图像捕获，不是物理 display-present；这些同状态对照也不验证未知录屏种子或网页与产品实时相位。逐项证据见 [widget-test 图像对照记录](macos-glass-ui/acceptance-record.md#2026-11-18-ui-68-官方-webgl-与-flutter-shader-同状态图像对照)及 [macOS Profile 图像对照记录](macos-glass-ui/acceptance-record.md#2026-11-18-ui-68-macos-profile-impeller-全-151-帧同状态图像对照)。
 
 `theme_switch_optics.json` 的颜色探针来自原 WebGL 输出。另导出了 6 个相同状态的完整图像作 RGB 差分；线性采样修正后的平均 MAE 约 `0.0066/255`。剩余差异集中在点阵纹理边缘的光栅化/采样。这个数据不代表与用户录屏的直接差分。
 
