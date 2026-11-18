@@ -912,3 +912,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 使用临时 `ui6_page_state_fixture_main.dart` macOS Profile 入口直接呈现生产 `PageState.error` 组件（Flutter 3.47.8 / Dart 3.13.7，深色主题）。静置错误态截图 [`page-state-error-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-page-state/page-state-error-dark.png>)（SHA `16fba4f31f8cb82d33789095582b2b40384a6425e158cf88d5e1d52608aa3629`）。
 - 点击“重试”后，AX Press 回执为 `delivered_unverified`；新的 AX 树从“重试计数：0”更新为“重试计数：1”。此回调只递增夹具本地计数，证明按钮可操作及回调连接，不代表真实数据加载、网络请求或错误恢复已验证。
 - 夹具源文件已移除；`agent-desktop close-app` 确认 Aggregate 窗口进程退出，随后确认 GUI 应用与 Flutter runner 均无残留。无产品代码变化、未运行测试；没有按下关键帧或 FrameTiming/FPS，B104 仅验证暗色组件实例，UI-6.7 仍部分验收。
+
+
+### 2026-11-18 UI-6.7 错误结果恢复操作 B106 Profile 补证
+
+- 使用 `lib/preview/ui6_inspection_main.dart` 暗色 macOS Profile fixture（Flutter 3.47.8 / Dart 3.13.7，800×632 logical px、DPR 2）。点击本地 MCP 假能力“演示恢复状态”并运行后，AX 读回“运行失败”和错误处理卡片；`Ui6InspectionRuntime.invoke` 在该假能力分支抛出本地 `StateError`，没有启动外部执行或网络请求。
+- 向下滚动 8 个滚轮单位后，恢复卡片、“检查活动状态”及“查看错误详情”均完整显示在固定 MiniPlayer 上方。截图 [`failure-recovery-scrolled-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-failure-recovery/failure-recovery-scrolled-dark.png>)（SHA `59e9a7cf04f3423f975519bf163744d19a55fd6f4ad954607a54f4d008ba1490`）。
+- 点击“检查活动状态”后，新的 AX 树仍为“运行失败”，没有恢复结果或状态变化；AXPress 回执 `delivered_unverified`。源码显示 `CapabilityRunPage._checkActivityStatus` 在 `handle == null` 时直接返回，而此假错误在产生 RunHandle 前抛出，因此该按钮在此 fixture 路径不能验证真实活动查询。此边界只说明本地模拟错误的交互限制，不外推为所有生产 Runtime 的故障。
+- fixture 正常关闭，GUI app 和 Flutter runner 无残留。没有产品代码变化或测试运行；无物理按下关键帧/FrameTiming，B106 仅暗色 Profile 视觉与受限交互验收，UI-6.7 仍部分验收。此结果覆盖先前“检查活动状态未点击”的范围描述；早前截图、布局滚动位置与真实 Runtime 行为限制仍保留。

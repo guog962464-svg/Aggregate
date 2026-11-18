@@ -144,3 +144,8 @@ B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读�
 ### UI-6.7 补证：通用页面错误态 B104（2026-11-18）
 
 临时暗色 Profile 夹具直接呈现生产 `PageState.error`，点击“重试”后 AX 计数从 0 变为 1；夹具回调只计数，没有触发数据加载或网络请求。静置截图 SHA、AX 回读、清理结果和验收限制见[验收记录](acceptance-record.md#2026-11-18-ui-67-通用页面错误态-b104-临时夹具验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下关键帧、浅色状态或 FrameTiming，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：错误结果恢复操作 B106（2026-11-18）
+
+暗色 Profile 中本地模拟失败结果可滚动到 MiniPlayer 上方并完整显示“检查活动状态”入口。点击后 AX 状态不变：假 Runtime 在返回 RunHandle 前抛错，恢复回调因没有 handle 直接返回；这只限定本地模拟路径，不能代表真实 Runtime 活动查询。截图、SHA 与覆盖边界见[验收记录](acceptance-record.md#2026-11-18-ui-67-错误结果恢复操作-b106-profile-补证)和[逐实例表](ui-6.7-button-instance-matrix.md)。无按下帧或 FrameTiming，UI-6.7 仍部分验收。
