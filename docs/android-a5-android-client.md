@@ -125,3 +125,12 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 为验证拒绝路径，通过 ADB 撤销临时包权限并重启后再次打开扫码页；Android 系统重新显示权限弹窗，选择“禁止后不再提示”后，应用显示“无法打开相机。请允许相机访问，或返回后粘贴二维码内容。”及 `permissionDenied` 状态，没有崩溃。Package Manager 显示 `CAMERA granted=false` 且拒绝标志为 `USER_FIXED`。
 - 清理：临时 `.integration` Release 包已卸载，一次性测试密钥和 APK 已删除；普通 `io.github.guog962464.aggregate` 包仍安装，ADB reverse 为空，Host 端口无监听。未请求真实连接、账号或网络数据。
 - **范围判定：**这证明当前 Android 15 上 test-signed、targetSdk 36 隔离 Release 包的相机运行时允许/永久拒绝与恢复提示路径可用。正式签名 Release、日常包身份及权限、16 KB 系统加载/运行仍未验证；Release 只读 Host RPC 结果也不等于普通配对界面验收。A5.4 保持开放。
+
+## 2026-11-18 A5.5 当前 checkout 隔离业务链路实机复验
+
+- supersedes（仅当前证据新鲜度）：本文件“A5.5 4 KB 实机证据新鲜度复核”中“ADB 列表为空，当前 runner 无法复验”的当时状态；此前那次无设备观察仍然准确。
+- 在当前工作区运行 `python3 app/tool/run_android_host_setup_e2e.py --device AEMN022427001360`，runner 输出 Mac loopback Host fixture、Android physical Keystore + WSS setup flow 均 PASS，并确认清理完成。LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。
+- 该 runner 用临时 loopback WSS Host、测试 TLS/Keystore、fake Node/npm/mpv/ncm-cli/MCP、临时 HOME 与 Host 数据；当前 `android_host_setup_e2e_test.dart` 对 setup 检测/测试/保存/丢弃、普通 CLI、TUI PTY 输入与 96×32 resize、HTTP/stdio MCP、权限边界及断连重连作断言。未连接 production Host 或真实网易云账号，不是产品 TUI/播放验收。Runner 不输出用例计数，且结束时删除日志；这里只记录其退出成功，不补写无法复核的数量。
+- 版本范围：运行于 HEAD `ba7da5b10afcc3e14241873158a1adf6848168d0`，同时包含当前未提交的 Flutter UI/theme 修改和 `pubspec.lock` mirror 修改；Android host runner/test/bridge 文件没有未提交差异。该结果验证当前工作树整体通过这条隔离真机业务链路，不替代完整 Flutter 全量测试。
+- 清理验证：`.integration` 与 `.integration.test` 均卸载，普通 `io.github.guog962464.aggregate` 仍安装；ADB reverse 列表为空，production 端口 `47321` 无监听。Runner 未针对普通包执行卸载或清数据。
+- **阶段判定：**A5.5 更新后的隔离真机向导/CLI/TUI/MCP 路径有当前工作树证据。直接 LAN/NSD、production Host 业务、真实账号/播放和 16 KB 系统仍未验收，A5.5 保持开放。
