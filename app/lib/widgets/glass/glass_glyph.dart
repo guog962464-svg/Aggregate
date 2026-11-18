@@ -577,17 +577,17 @@ List<String> _rowsFor(GlassGlyph glyph) => switch (glyph) {
 };
 
 abstract final class _GlyphRows {
-  // Keep the play silhouette close to an equilateral wedge in the shared
-  // 9x9 field. The former 9-row needle read as a barcode at button scale.
+  // Match the narrow, 9-row play mark used by the reference sample: its
+  // vertical spine stays quiet while the triangular fill grows to the right.
   static const play = [
-    '000000000',
-    '000000000',
     '001000000',
+    '001100000',
     '001110000',
+    '001111000',
     '001111100',
-    '001111111',
-    '001111100',
+    '001111000',
     '001110000',
+    '001100000',
     '001000000',
   ];
   static const pause = [
@@ -723,26 +723,26 @@ abstract final class _GlyphRows {
     '100000001',
   ];
   static const search = [
-    '000000000',
-    '000111000',
-    '001000100',
-    '010000010',
-    '010000010',
-    '010000010',
-    '001000100',
-    '000111100',
+    '001111000',
+    '010000100',
+    '100000010',
+    '100000010',
+    '100000010',
+    '010000100',
+    '001111100',
     '000000010',
+    '000000001',
   ];
   static const refresh = [
-    '000000000',
-    '000111000',
-    '001000100',
-    '010000010',
-    '010000011',
-    '010000010',
-    '001000100',
-    '000111000',
-    '000000000',
+    '001111000',
+    '010000100',
+    '100000010',
+    '100000111',
+    '100000000',
+    '111000001',
+    '010000001',
+    '001000010',
+    '000111100',
   ];
   static const music = [
     '000011110',
