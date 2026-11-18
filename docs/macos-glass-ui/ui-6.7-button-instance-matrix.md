@@ -13,11 +13,11 @@
 
 | 编号 | 当前源码位置 | 页面/控件上下文 | 当前证据状态 |
 | --- | --- | --- | --- |
-| B001 | `app/lib/app/app_shell.dart:317` | 应用外壳：顶部操作、全局导航 | 暗色首页 `01-home-dark.png`；浅色设置页 `38-settings-light.png` 可见全局搜索入口及侧栏；仅截图中可见实例，动态状态待核 |
+| B001 | `app/lib/app/app_shell.dart:676` | 应用外壳：顶部操作、全局导航 | 2026-11-19 暗色 Profile：顶部全局搜索入口 AX 192×40；点击后 AX 确认进入“所有功能”并显示搜索字段。静态/路由证据及点击未采到按下帧的限制见验收记录。浅色实例仍需核 |
 | B002 | `app/lib/app/app_shell.dart:364` | 应用外壳：顶部操作、全局导航 | 暗色首页 `01-home-dark.png`；浅色设置页 `38-settings-light.png` 可见全局搜索入口及侧栏；仅截图中可见实例，动态状态待核 |
 | B003 | `app/lib/app/app_shell.dart:399` | 应用外壳：顶部操作、全局导航 | 暗色首页 `01-home-dark.png`；浅色设置页 `38-settings-light.png` 可见全局搜索入口及侧栏；仅截图中可见实例，动态状态待核 |
 | B004 | `app/lib/app/app_shell.dart:620` | 应用外壳：顶部操作、全局导航 | 暗色首页 `01-home-dark.png`；浅色设置页 `38-settings-light.png` 可见全局搜索入口及侧栏；仅截图中可见实例，动态状态待核 |
-| B005 | `app/lib/features/activity/activity_page.dart:116` | 活动页：记录操作与列表状态 | 深色 `57-activity-dark.png`、浅色 `60b-activity-all-light-current.png` 可见刷新按钮；浅色失败筛选后触发刷新，样例仍在；局部实例已目视 |
+| B005 | `app/lib/features/activity/activity_page.dart:116` | 活动页：记录操作与列表状态 | 2026-11-19 暗色 Profile：标题右侧刷新按钮 AX 46×46；点击后重新读取进程内记录，AX 列表显示 6 条。刷新只重设 `listRecentRuns()` future；期间新增状态行不归因于该按钮。截图、哈希和夹具范围见验收记录。浅色当前实例与按下帧仍待核 |
 | B006 | `app/lib/features/activity/activity_page.dart:172` | 活动页：记录操作与列表状态 | 深色活动图可见成功/失败/取消行；浅色失败行 `59c-activity-failed-list-light.png` 被选中并打开详情；全量列表含本地样例记录 |
 | B007 | `app/lib/features/activity/activity_page.dart:229` | 活动页：记录操作与列表状态 | 深/浅截图可见七个筛选；浅色 Profile 实窗逐个选择成功、失败、取消、超时、运行中、结果待确认，列表各仅显示对应状态；点“全部”后恢复六类样例。仅本地 fixture，动态动效逐项和真实服务记录仍待核 |
 | B008 | `app/lib/features/activity/activity_page.dart:263` | 活动页：记录操作与列表状态 | 浅深紧凑详情可见返回记录；浅色 `59c-activity-failed-list-light.png` 为点击后回到失败列表的状态 |
@@ -62,7 +62,7 @@
 | B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；不以 PreviewRuntime 绕过“不能添加真实连接”保护来触发此按钮 |
 | B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击取消后确认框关闭、运行状态保持“尚未运行”；暗色同样通过。浅/深证据分别见 `108-write-confirm-light.png` 与 `pause-confirm-dark.png`。仅验证本地预览夹具；真实外部写入未执行 |
 | B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 暗色确认框实际点击“执行”后 AX 显示“运行成功 / 预览结果：暂停播放”；结果由 `PreviewRuntime` 在内存生成，没有控制播放器或外部服务。确认框与结果见 `pause-confirm-dark.png`、`pause-result-dark.png`。不代表真实外部写入 |
-| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 暗色隔离 Profile 点击“运行”打开外部写权限确认；通过 B049 的假执行路径后，AX 回读运行成功。浅色表单/确认见 `107-write-capability-form-light.png`、`108-write-confirm-light.png`，暗色确认/结果见 `pause-confirm-dark.png`、`pause-result-dark.png`。busy/disabled 状态待核 |
+| B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 2026-11-19 暗色 Profile：暂停播放表单向下滚动后，“运行”按钮完整显示，AX 87×40；点击打开执行确认。此次未确认执行；此前 B049 的内存预览结果继续有效。新增截图、AX 交互限制和夹具范围见验收记录。浅色实例见 `107-write-capability-form-light.png`、`108-write-confirm-light.png`；busy/disabled 状态待核 |
 | B051 | `app/lib/features/invocation/capability_run_page.dart:590` | 功能调用：运行表单与结果页 | 浅色隔离 Profile 点击“在终端运行”并进入 UI 检查全内存终端 stub；界面明确说明不会运行外部命令。见 `111-terminal-action-form-light.png`、`112-terminal-stub-light.png` |
 | B052 | `app/lib/features/invocation/capability_run_page.dart:597` | 功能调用：运行表单与结果页 | 使用 `UI6_SEED_ACTIVITY_RUNNING=true` 呈现内存 fixture 的运行态；点击取消后 AX 确认“运行状态：已取消”。取消前截图 `116-running-cancel-light.png`；不代表真实服务终态 |
 | B053 | `app/lib/features/invocation/schema_form.dart:286` | 功能调用：动态参数表单字段 | 浅色 JSON 表单点击“格式化 JSON 参数”，有效默认 `{}` 未报错但没有可见格式变化；非空 JSON 格式化、字段校验与输入动画未验证。见 `109-json-form-format-light.png` |

@@ -190,3 +190,13 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：Mac Host 邀请二维码完整可见 B090（2026-11-18）
 
 暗色隔离 Profile 中启动 fake Host 并生成邀请，滚动到详情后实窗截图显示完整二维码、过期时间、地址数量和复制按钮；最终截图同一状态下 live AX 读取仍返回 `x=602,y=749,width=139,height=1`。Debug Flutter Semantics 本地节点矩形为 40 px，说明按钮本地语义尺寸正常，但原生 AX 几何仍不符；当前证据不能定位坐标/裁剪差异发生在哪一层。图像 SHA 与范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-b090-mac-host-邀请二维码完整可见性复核)、[语义对照](acceptance-record.md#2026-11-18-ui-67-b090-flutter-semantics-与-macos-ax-边界对照)及[逐实例表](ui-6.7-button-instance-matrix.md)。没有按下动画关键帧，故只通过截图可见性，不提升 B090 总体状态；UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：高优先级生产按钮 B001/B005/B050（2026-11-19）
+
+在暗色 Profile 中核对了全局搜索、活动刷新与暂停播放运行表单的实际上下文。B001 点击后 AX 确认进入“所有功能”；B005 实测 46×46，刷新逻辑只重新读取内存运行记录；B050 滚动后完整显示 87×40 运行按钮并打开权限确认。本轮没有确认执行，既有 B049 内存预览结果保持独立记录。截图、SHA、AX 回执和 fixture 边界见[验收记录](acceptance-record.md#2026-11-19-ui-67-高优先级生产按钮-b001b005b050-profile-核对)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下关键帧或 FrameTiming/FPS，浅色实例和全量 109 个生产调用点仍待验；UI-6.7 保持部分验收。
+
+
+### UI-6.8 补证：当前网页作为已删除视频的参考（2026-11-19）
+
+用户指定的[Glass Light Toggle 页面](https://experiments.thisiswhitespace.com/glass-light-toggle)作为已删除 MP4 的后续参照。当前 standalone `main.js?v=3` SHA 与旧源码基线一致；隔离 Chromium/SwiftShader 中完成暗态到亮态的真实拖动并采集中段。截图哈希、部署 ID 与适用范围见[验收记录](acceptance-record.md#2026-11-19-ui-68-当前-glass-light-toggle-网页复核-替代已删除视频)。该网页不是原录屏，未同步采集 Flutter/macOS 物理呈现时钟；UI-6.8 仍部分验收。
