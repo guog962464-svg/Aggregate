@@ -90,3 +90,24 @@ Release 测试只证明表列固定动作。`script-default` 与 `script-allowed
 - **范围：**别名目录、PATH 前置和带 `spawnSync` 的 fixture 均只在一次性 APK/测试输入中修改；NodeBridge 未自动生成别名。本次不证明任意 npm 安装脚本、registry 安装、通用 CLI/TUI、当前安全版 Node、正式签名或 16 KB 兼容。测试包卸载、临时 APK 与文件删除；普通 Aggregate 包未触碰。A4.4 的产品边界不变。
 - **verified_scope：**固定 Debug npm 12.2.2、本地授权 tarball、手动 nativeLibraryDir 符号链接、Android 15 4 KB arm64 实机；实际 result JSON 的 `npmExitCode=0`、`scriptAllowedMarker=true` 和安装标记的 child status/stdout。未运行完整 npm suite 或生产业务。
 - **retrieval_feedback：**沿用本文件 2026-11-12 npm Debug 无别名 127 与 A3.6 2026-11-18 native executable 记录；对照 Android 包路径、npm global prefix 实际安装目录及当前探针结果字段。新证据带有手动 PATH/别名前提，不替换无别名历史记录，也不将其上推为产品支持。
+
+## 2026-11-18 NodeProbe 自动别名补验
+
+NodeProbe Debug 专用实现现会在固定 `a4-npm` action 中将 APK `nativeLibraryDir/libnode_cli.so`、`libnode.so` 和 `libc++_shared.so` 映射到应用私有 `files/node-bin/`，并在 npm 进程启动脚本中把该目录前置到 PATH。NodeProbe 的 `prepare.sh` 使用 NDK C++20 为三种 ABI 构建 PIE launcher；默认 APK 仍只含 arm64。固定本地授权 fixture 调用 `spawnSync('node', ['--version'])`，将 child 退出状态和版本写进安装 marker。生产 NodeBridge 与 ADR 0003 未变。
+
+- 构建命令：`nodeprobe/prepare.sh "" "$ANDROID_NDK_HOME" ""`、`nodeprobe/prepare_a4_npm.sh`、`./gradlew :nodeprobe:assembleDebug --offline -Pa3Probe=true`。
+- arm64 Debug APK SHA-256：`7073f75cddc263127fd319a08f8f8f2314adee353aa87c794a7dbdce0b56d9f5`。包内含 `libnode_cli.so`；manifest `extractNativeLibs=true`；`zipalign -c -P 16 4` 与 `apksigner verify` 通过。三个 ABI launcher 的静态检查均确认 Android linker、`RUNPATH=$ORIGIN`、Node/C++ 依赖及全部 `PT_LOAD` 为 16 KB 对齐。
+- LGE AN10 / Android 15/API 35 / arm64 / 4 KB 页真机上，本地授权 `script-allowed` 的 npm result 文件记录 `npmExitCode=0`、`scriptAllowedMarker=true`；marker 显示 `node --version` 子进程 status 0、版本 `v24.22.1`。但 Node `:node` service 随后在 Messenger `kind=3` 前断开。crash buffer 只有 `Pointer tag for 0x6767612e34363432 was truncated`，无可定位堆栈。两次复验一致，故生命周期命令已实际执行，但 service 稳定性未通过；不能把安装 marker 或 npm 事件单独记为完整验收通过。
+- `verify_node_alias.py` 要求单台实体 arm64/4 KB 设备，拒绝模拟器和已安装 NodeProbe 包，并在自身安装后清理隔离包。验收后 NodeProbe 已卸载，普通 Aggregate 仍安装。无 16 KB 真机、其他 ABI 运行、Node 安全版本/provenance 或正式发布验收。
+
+该结果把“PATH 找到 `node` 并实际执行”与“Node Service 正常完成并返回 Messenger 终态”拆分记录。A4.4 仍只代表受限 npm Debug 可行性实验；生命周期稳定性继续开放，任意 npm/CLI 和产品 Node 入口仍关闭。
+
+## 2026-11-18 NodeProbe argv 修正与 npm 复验结论
+
+初始 `script-allowed` marker 已写出后，Node `:node` service 在 JNI 返回阶段触发 pointer-tag fatal。对比仅增加 argv 空指针与改用单块可写连续 argv 缓冲区的真机结果后，后者消除了该 fatal；`verify_node_alias.py` 及 `script-default → script-allowed` 转换收到 Messenger `kind=3` 并等到 Node 关闭 `kind=5`。这修复的是 NodeProbe 的 `node::Start` 参数存储方式，不代表产品 NodeBridge 或任意 Node embedder。
+
+当前 NodeProbe APK SHA-256 为 `fe9dc80087c113e9967374b06428422464cd117fc4efe8e2a4981c04aded87fc`；`zipalign -c -P 16 4`、`apksigner verify` 通过。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机上，固定 npm 12.2.2 / Node v24.22.1 的自动 `node` alias lifecycle 专项通过。一轮完整 11 项 suite 也通过，终态 11/11；在验证器逐项等待 Node `kind=5` 之前，一次完整重跑在 `script-allowed` 前没有新 Service 事件并于 120 秒超时；加入关闭等待后，lifecycle 转换专项和一轮完整 11 项 suite 通过。
+
+错误 SHA-512 场景在 5 次全新隔离安装中均被 npm 拒绝并返回 integrity failure，Service 终态均到达。关闭 Node worker 后 2/5 次仍留有 `json5/lib` 部分文件，3/5 次目录没有残留。验证器现在等待每个 action 的 Messenger 终态与匹配 Node 关闭事件，并在 worker 关闭后查验包树；只要残留仍出现就令套件失败，不跳过后续升级、卸载和缓存检查。完整结果与 JNI 对照见 [A3.6 NodeProbe 后续记录](android-a3-runtime-research.md#2026-11-18-nodeprobe-argv-修正与-npm-稳定性复验)。
+
+结论：该探针证明设备端 Node 命令 alias 与一个固定本地 lifecycle child 可工作；npm integrity 拒绝后的清理及完整动作序列仍不稳定。A4.4 只保留 Debug 可行性实验结论，不开放通用 npm/CLI 或产品 Node 入口；没有 16 KB 真机、其他 ABI 实机、正式产品签名或当前安全版 Node 证据。

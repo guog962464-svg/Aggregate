@@ -2,6 +2,10 @@ package io.github.guog962464.aggregate.nodeprobe;
 
 import android.app.Service;
 import android.content.Intent;
+import android.system.ErrnoException;
+import android.system.Os;
+import android.system.OsConstants;
+import android.system.StructStat;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -175,6 +179,7 @@ public final class NodeProbeService extends Service {
                     }
                 }
             } else if (npmProbe) {
+                ensureNodeCommandAliases();
                 File npmCliDirectory = new File(getFilesDir(), "a4-npm-cli");
                 File npmCliEntry = new File(npmCliDirectory, "bin/npm-cli.js");
                 File npmManifestFile = new File(getFilesDir(), "a4-npm-manifest.json");
@@ -311,6 +316,46 @@ public final class NodeProbeService extends Service {
                 || "integrity-bad".equals(action)
                 || "upgrade-old".equals(action)
                 || "upgrade-new".equals(action) || "uninstall".equals(action);
+    }
+
+    private void ensureNodeCommandAliases() throws Exception {
+        File nativeDirectory = new File(getApplicationInfo().nativeLibraryDir);
+        File nodeLauncher = new File(nativeDirectory, "libnode_cli.so");
+        File nodeLibrary = new File(nativeDirectory, "libnode.so");
+        File cppRuntime = new File(nativeDirectory, "libc++_shared.so");
+        if (!nodeLauncher.isFile() || !nodeLauncher.canExecute()
+                || !nodeLibrary.isFile() || !cppRuntime.isFile()) {
+            throw new IllegalStateException("NodeProbe executable or sibling libraries are unavailable");
+        }
+
+        File aliasDirectory = new File(getFilesDir(), "node-bin");
+        if (!aliasDirectory.exists() && !aliasDirectory.mkdirs()) {
+            throw new IllegalStateException("Cannot create Node command alias directory");
+        }
+        StructStat directoryStat = Os.lstat(aliasDirectory.getAbsolutePath());
+        if ((directoryStat.st_mode & OsConstants.S_IFMT) != OsConstants.S_IFDIR) {
+            throw new IllegalStateException("Node command alias path is not a private directory");
+        }
+
+        ensureSymbolicLink(new File(aliasDirectory, "node"), nodeLauncher);
+        ensureSymbolicLink(new File(aliasDirectory, "libnode.so"), nodeLibrary);
+        ensureSymbolicLink(new File(aliasDirectory, "libc++_shared.so"), cppRuntime);
+    }
+
+    private void ensureSymbolicLink(File link, File target) throws Exception {
+        String linkPath = link.getAbsolutePath();
+        String targetPath = target.getCanonicalPath();
+        try {
+            StructStat stat = Os.lstat(linkPath);
+            if ((stat.st_mode & OsConstants.S_IFMT) != OsConstants.S_IFLNK) {
+                throw new IllegalStateException("Unexpected non-symlink at Node alias path: " + link.getName());
+            }
+            if (targetPath.equals(Os.readlink(linkPath))) return;
+            Os.remove(linkPath);
+        } catch (ErrnoException failure) {
+            if (failure.errno != OsConstants.ENOENT) throw failure;
+        }
+        Os.symlink(targetPath, linkPath);
     }
 
     private boolean isBoundaryActionAllowed(String action) {

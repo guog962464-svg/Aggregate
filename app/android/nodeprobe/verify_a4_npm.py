@@ -14,6 +14,9 @@ from verify_device import APK, PACKAGE, adb
 ACTIVITY = PACKAGE + "/.ProbeActivity"
 EVENT = re.compile(r"kind=7 requestId=\d+ generation=([\w-]+).*?detail=(\{[^\n]+\})$")
 RESULT_GENERATION = re.compile(r"kind=3 requestId=\d+ generation=([\w-]+)")
+NODE_CLOSING_GENERATION = re.compile(
+    r"kind=5 requestId=\d+ generation=([\w-]+).*?detail=Node process closing"
+)
 REGISTRY = "https://registry.npmjs.org/"
 
 
@@ -57,12 +60,39 @@ def run_action(action: str, count: int, log_path: Path, seconds: float = 120) ->
     assert result["action"] == action, result
     assert result["npmVersion"] == "12.2.2", result
     assert result["nodeVersion"] == "v24.22.1", result
+    assert result["serviceResultDelivered"] is True, result
+    generations = RESULT_GENERATION.findall(log_path.read_text())
+    assert generations, "Node service terminal result is missing from Logcat"
+    wait_node_close(log_path, generations[-1])
     print(
         f"{action}: npmExitCode={result['npmExitCode']}, "
         f"Messenger kind=3={result['serviceResultDelivered']}",
         flush=True,
     )
     return result
+
+
+def wait_node_close(log_path: Path, generation: str, seconds: float = 15) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if generation in NODE_CLOSING_GENERATION.findall(log_path.read_text()):
+            return
+        time.sleep(0.05)
+    raise RuntimeError(f"Node worker did not close for generation {generation}; see {log_path}")
+
+
+def integrity_package_entries() -> list[str]:
+    relative = "files/a4-npm-workspace/integrity-bad/node_modules/json5"
+    result = subprocess.run(
+        ["adb", "shell", "run-as", PACKAGE, "find", relative, "-mindepth", "1", "-print"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 1 and "No such file or directory" in result.stderr:
+        return []
+    if result.returncode != 0:
+        raise RuntimeError(f"Could not inspect integrity install tree: {result.stderr or result.stdout}")
+    return [entry for entry in result.stdout.splitlines() if entry]
 
 
 def npm_packages(result: dict, field: str) -> dict[str, dict]:
@@ -82,6 +112,7 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="aggregate-a4-npm-") as temporary:
         log_path = Path(temporary) / "logcat.txt"
+        integrity_residue: list[str] = []
         with log_path.open("w") as log:
             monitor = subprocess.Popen(
                 ["adb", "logcat", "-s", "A3NodeProbe:I", "*:S"],
@@ -147,8 +178,12 @@ def main() -> None:
                 integrity_output = "\n".join((integrity["stdout"], integrity["stderr"], integrity["error"] or ""))
                 assert integrity["npmExitCode"] != 0, integrity
                 assert re.search(r"integrity", integrity_output, re.IGNORECASE), integrity
-                assert integrity["integrityPackageExists"] is False, integrity
-                print("A deliberately incorrect lockfile SHA-512 was rejected before package installation.")
+                package_entries = integrity_package_entries()
+                integrity_residue = package_entries
+                if integrity_residue:
+                    print("FAIL: integrity was rejected, but npm left package entries:", integrity_residue)
+                else:
+                    print("A deliberately incorrect lockfile SHA-512 was rejected; no package files remained after Node closed.")
 
                 old = run_action("upgrade-old", 8, log_path)
                 assert old["npmExitCode"] == 0, old
@@ -170,8 +205,12 @@ def main() -> None:
                 else:
                     print("The explicitly allowed lifecycle fixture did not complete:")
                     print(allowed["error"] or allowed["stderr"])
-                delivered = [event.get("serviceResultDelivered") for _, event in npm_events(log_path)]
-                print(f"Messenger terminal result delivered for {sum(value is True for value in delivered)}/{len(delivered)} npm actions.")
+                delivered_generations = set(RESULT_GENERATION.findall(log_path.read_text()))
+                observed_actions = npm_events(log_path)
+                delivered_count = sum(generation in delivered_generations for generation, _ in observed_actions)
+                print(f"Messenger terminal result delivered for {delivered_count}/{len(observed_actions)} npm actions.")
+                if integrity_residue:
+                    raise AssertionError(f"npm left files after rejecting the integrity mismatch: {integrity_residue}")
             except Exception:
                 print(log_path.read_text()[-5000:])
                 raise

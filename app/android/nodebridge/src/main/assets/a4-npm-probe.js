@@ -56,6 +56,9 @@ const npmArgs = (() => {
   }
 })();
 
+const nodeBin = path.join(filesRoot, 'node-bin');
+process.env.PATH = `${nodeBin}:${process.env.PATH || ''}`;
+
 const stdout = [];
 const stderr = [];
 let outputBytes = 0;
@@ -104,6 +107,14 @@ function packageLoad(root) {
     return {loaded: true, exportType: typeof loaded};
   } catch (error) {
     return {loaded: false, error: String(error).slice(0, 500)};
+  }
+}
+
+function markerData(markerPath) {
+  try {
+    return JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+  } catch (_) {
+    return null;
   }
 }
 
@@ -162,13 +173,15 @@ function finalize() {
     offlinePackageLoad: packageLoad(roots.offline),
     upgradeLockPackages: packageState(roots.upgrade),
     integrityLockPackages: packageState(roots.integrityBad),
-    integrityPackageExists: fs.existsSync(path.join(roots.integrityBad, 'node_modules', 'json5')),
+    integrityPackageExistsAtFinalize: fs.existsSync(path.join(roots.integrityBad, 'node_modules', 'json5')),
     scriptIgnoredMarker: fs.existsSync(path.join(roots.scriptIgnored,
       'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
     scriptDefaultMarker: fs.existsSync(path.join(roots.scriptDefault,
       'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
     scriptAllowedMarker: fs.existsSync(path.join(roots.scriptAllowed,
       'lib', 'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
+    scriptAllowedMarkerData: markerData(path.join(roots.scriptAllowed, 'lib', 'node_modules',
+      'aggregate-a4-install-script-fixture', 'install-marker.json')),
     cacheBytes: directoryBytes(cacheRoot),
   };
   fs.writeFileSync(outputPath, JSON.stringify(result));

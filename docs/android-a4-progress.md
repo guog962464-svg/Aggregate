@@ -67,6 +67,7 @@
 - 复现入口为 `nodeprobe/prepare_a4_npm.sh`、`nodeprobe/verify_a4_npm.py`；固定 npm 12.2.2 tarball SHA-512，并在 LGE AN10 Android 15/API 35、arm64、4 KB 页运行 Node v24.22.1。Debug APK 约 102 MB；不代表 16 KB 页、其他 ABI 或发布包。
 - `npm --version`、Registry 安装 `supports-color@7.2.0`（含 `has-flag@4.0.0`）、lockfile SHA-512/registry URL、包加载、离线缓存重装、错误 integrity 拒绝、`json5` 2.2.2→2.2.3 升级/卸载和 `npm cache verify` 均有真机通过结果。
 - `--ignore-scripts` 安装完成但不产生 fixture marker；默认 npm 12.2.2 也把脚本列为未授权并阻止执行。对固定本地 tarball 按精确 `file:` 来源授权后，npm 确实尝试 `sh -c node install.js`，返回 127，marker 未生成。该失败与 nodejs-mobile 不支持 `child_process` 的文档限制一致；实际 127 的底层子进程路径仍未隔离确认。
+- 2026-11-18 为隔离 NodeProbe 固化 PATH 别名：NDK launcher 经 APK `nativeLibraryDir/libnode_cli.so` symlink 到 app-private `files/node-bin/node`，同目录加入 `libnode.so`/`libc++_shared.so`，npm probe 前置该目录到 PATH。授权本地 fixture 调用 `spawnSync('node', ['--version'])`；LGE AN10 4 KB 真机上 npm exit 0、marker 存在，child status 0 / `v24.22.1`。脚本完成后 Node `:node` service 仍在 Messenger `kind=3` 前因 Android pointer-tag fatal 断开（两次复验），因此 child 路径可执行但 service 稳定性未通过，A4.4 不升级为通用 npm/CLI 支持。复现入口 `nodeprobe/prepare_node_launcher.sh`、`nodeprobe/verify_node_alias.py`；细节见 [A4.4 自动 alias 补验](android-a4-npm-install-research.md#2026-11-18-nodeprobe-自动别名补验)。
 - 整轮 11 个 npm 操作均能写出 app-private JSON 结果。首轮验证器把 `npmResult` 到达后立即读取 Logcat，`0/11` 终态统计有时序竞争，不计为有效结果；修正为等待最多 3 秒后，下一轮日志确认普通 registry 安装和离线安装都收到 Messenger `kind=3`。清除 app-private npm CLI 目录后再次运行 `npm --version`，资源重拷贝与终态 Messenger 结果也通过。另一轮在本地 tarball 的 `script-ignored` 阶段 Service 断开，单独运行精确授权的 `script-allowed` 也写出 npm 127 结果后触发 Android tagged-pointer fatal；根因未确认。当前证据指向本地生命周期脚本样本附近的不稳定，不能泛化为全部 npm 操作都没有 Messenger 终态。
 - **验收结论：**A4.4 的 Debug 可行性样本完成，证明受限纯 JS 安装路径在单台 4 KB arm64 设备可工作，也明确暴露脚本执行和本地 tarball 样本附近的 Service 稳定性缺口。手机端 npm 与任意 CLI 不进入产品能力；后续产品白名单/Host/不支持决策留在 A4.7。未覆盖 Play 预审、16 KB 真机、其他 ABI、缓存配额/清理策略或长期稳定性。
 
@@ -88,3 +89,9 @@ CLI runner 的手动入口为 `adb shell am start -n io.github.guog962464.aggreg
 
 1. A4.3 的 profile 契约和隔离 Debug 生命周期验收已通过；结果与限制记录在 [A4.3 内置包入口契约](android-a4-bundled-package-contract.md)。产品连接器仍不开放此探针。
 2. A4.4 受限 Debug npm 实验、A4.5 固定 API 边界样本已完成；A4.6 已在 LGE AN10 Android 15/API 35、arm64、4 KB 页运行固定包和 CLI 样本，但配置 TTY、Android 平台依赖、README 搜索命令差异和 mpv 阻断了业务链路，真实账号/搜索/播放/声音未验证。A4.7 的本地/Host/不支持决策已记录于 [ADR 0003](decisions/0003-android-local-execution.md)。A4.4/A4.5/A4.6 的失败、设备范围和文档差异不得反向打开用户可见适配器。后续产品门槛为 A3.6 维护版运行时与真实 16 KB 页设备，以及 A5/A6 Host 交付。
+
+## 2026-11-18 NodeProbe npm 后续复验
+
+连续 argv 缓冲区修正后，`verify_node_alias.py` 在 LGE AN10 4 KB 真机通过，固定生命周期 child `node --version` 返回 status 0 / `v24.22.1`，Messenger `kind=3` 和 Node 关闭 `kind=5` 均收到。增加逐项等待 Node `kind=5` 之前一轮完整 suite 在 `script-allowed` 前未收到事件并超时；加入关闭等待后，lifecycle 转换专项与一轮完整 11 项 suite 通过，终态 11/11。
+
+错误 integrity 检查的 5 次全新安装均由 npm 拒绝并返回终态，但 2 次在 Node worker 关闭后仍留下部分 `json5/lib` 文件，3 次没有残留。该结果说明错误包内容不会被 npm 接受，但清理不稳定；A4.4 不据此宣称失败安装具有无半成品保证。NodeProbe 与产品 NodeBridge/ADR 0003 边界不变。命令、APK hash 和范围见 [A4.4 npm 研究记录](android-a4-npm-install-research.md#2026-11-18-nodeprobe-argv-修正与-npm-复验结论)。

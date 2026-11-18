@@ -19,6 +19,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    packaging {
+        jniLibs {
+            // The experimental CLI alias executes the packaged PIE from nativeLibraryDir.
+            useLegacyPackaging = true
+        }
+    }
+
 }
 
 dependencies {

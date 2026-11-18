@@ -82,6 +82,8 @@ unzip -oq "$archive" 'include/node/*' -d "$bridge_root/vendor"
 cp "$license_file" "$bridge_root/src/main/assets/nodejs-mobile-LICENSE.txt"
 cp "$llvm_notice_file" "$bridge_root/src/main/assets/android-ndk-llvm-NOTICE.txt"
 cp "$ndk_notice_file" "$bridge_root/src/main/assets/android-ndk-NOTICE.txt"
+# Build the test-only executable used by npm lifecycle scripts to resolve `node`.
+"$probe_root/prepare_node_launcher.sh" "$ndk_root"
 # AGP may reuse the JNI object after ignored vendor headers change.
 touch "$bridge_root/src/main/cpp/node_probe.cpp"
 echo "Prepared experimental three-ABI Node 24.22.1 prerelease probe and verified Node/NDK license notices."
