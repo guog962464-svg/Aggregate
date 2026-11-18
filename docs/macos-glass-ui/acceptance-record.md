@@ -1089,6 +1089,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B050 暂停播放“运行”：按下样本[PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B050-run-held-80ms.png>) 请求 +85.031ms、完成 +174.904ms，SHA `e3aaaa693e7d7430bf522cf66f425bf9e213a832ad67c4527c9ab717e527f37a`。释放后请求约 +23.749ms、完成 +55.433ms 的样本仍显示运行表单，SHA `3fe385987115f2e32d8996b102f7a3e161aa84dd68eb3e8aea82aca4d3e84555`；约 +160.324ms 请求、+188.934ms 完成的样本已显示权限确认框，SHA `9dc8925d5e067d721c61ace628163a447cf6aa4490f97bd1037c4fced2b93904`。随后点击“取消”，AX 确认返回表单且仍为“尚未运行”；未点“执行”、未调用音乐或外部命令。时序表[`dark-B050-run-timing.tsv`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-click-pulse/dark-B050-run-timing.tsv>) SHA `7d236df7595ca2c7646360c7858c4d572b3d7279364854ab18aad1970e6b89d9`。
 - B001/B005/B050 仅补暗色生产实例的有限时点视觉和路径结果；图像捕获可能跨过短动画状态，不能据此推导精确位移曲线、时长、帧率或物理显示 FPS。浅色三实例既有截图与回调证据仍见上一节；UI-6.7 其他生产实例和 VoiceOver 仍未全验收。本批没有代码或测试变更。
 
+### 2026-11-19 UI-6.7 运行、刷新、搜索轮廓比例再设计
+
+- 用户指出 96 dp 样本中的运行、刷新和搜索图案仍显得别扭。将运行从高窄轮廓改为 7×7 横向更均衡的实心播放三角；刷新改为圆环加一个右侧箭头尖；搜索改为近圆镜片并让右下斜柄从镜片边缘连续伸出。核心点数分别为 25、16、18，仍用同一 9×9 网格、圆角点颗粒、材质和动效 profile。未改按钮尺寸、命中区、业务回调或太阳/月亮状态机。
+- macOS Profile `glass_buttons_fixture_main.dart` 在 DPR 2 的 96 dp 按钮实窗中核对浅/深主题。截图为 1824×1488：[深色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-icons-soft-redesign/native-profile-three-glyphs-dark.png>)，SHA-256 `e92ebf25836c827f685e86a4871d5685ccc556b34e51fe8413fe573fc93d797f`；[浅色](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-icons-soft-redesign/native-profile-three-glyphs-light.png>)，SHA-256 `64c44eb8b13d515f801c6279d4fd0ad12bb28ffbefa1401a9577f31ba9a749a3`。夹具主题按钮由 AX 从“深色”读回“浅色”，夹具随后正常退出；样例回调为空，没有触发产品服务。
+- 验证：`flutter test --no-pub --reporter compact test/glass_glyph_golden_test.dart test/glass_action_button_test.dart test/glass_motion_test.dart test/glass_theme_switch_test.dart` 40 项通过；`flutter analyze --no-pub` 无问题；Dart 格式检查和 `git diff --check` 通过；`flutter build macos --profile --no-pub -t lib/glass_buttons_fixture_main.dart` 成功（62.9 MB）。四组点阵 golden 已更新。
+- 限制：本轮签收静置轮廓浅/深实窗外观、网格断言与既有动效/主题状态机回归；没有采集三个图案的原生点击关键帧、精确动效相位或 display-present FPS，也没有覆盖全部生产调用点。UI-6.7 继续部分验收。
+
 
 ### 2026-11-19 UI-5.5 设置页玻璃按钮标签窗口/DPR矩阵扩展
 
