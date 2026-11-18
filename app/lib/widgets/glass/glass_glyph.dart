@@ -577,16 +577,18 @@ List<String> _rowsFor(GlassGlyph glyph) => switch (glyph) {
 };
 
 abstract final class _GlyphRows {
+  // Keep the wedge optically centered in the shared 9x9 field. Starting at
+  // column zero made the compact play shape sit visibly left of its button.
   static const play = [
-    '100000000',
-    '110000000',
-    '111000000',
-    '111100000',
-    '111110000',
-    '111100000',
-    '111000000',
-    '110000000',
-    '100000000',
+    '001000000',
+    '001100000',
+    '001110000',
+    '001111000',
+    '001111100',
+    '001111000',
+    '001110000',
+    '001100000',
+    '001000000',
   ];
   static const pause = [
     '011000110',

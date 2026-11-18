@@ -232,7 +232,8 @@ void main() {
 
     final play = GlassGlyphFactory.pointsFor(GlassGlyph.play);
     expect(play, hasLength(25));
-    expect(hasPoint(play, const Offset(4, 4)), isTrue);
+    expect(hasPoint(play, const Offset(9.4, 4)), isTrue);
+    expect(hasPoint(play, const Offset(4, 4)), isFalse);
     expect(hasPoint(play, const Offset(14.8, 14.8)), isTrue);
     expect(hasPoint(play, const Offset(25.6, 14.8)), isFalse);
 

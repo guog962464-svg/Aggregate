@@ -950,3 +950,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B085 打开“撤销设备配对？”确认框后点击“撤销设备”；新 AX 树中“已配对设备”及配对卡片消失，待处理假设备仍在。对话框截图 [`revoke-confirm-profile-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-confirm-actions/revoke-confirm-profile-dark.png>)（SHA `4838b2e5569c8f8d246185db71c0fb7377a2c21d4c0deec21228814abc0537d5`）。
 - B087 再打开“轮换 Mac Host 身份？”确认框并确认“撤销授权并轮换”；AX 出现“Mac Host 身份已轮换。请启动 Host，并让手机重新配对。”，Host 状态回到已关闭，待处理/配对设备列表被清空。确认框截图 [`identity-rotation-confirm-profile-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-confirm-actions/identity-rotation-confirm-profile-dark.png>)（SHA `36538f3cab681bb4193e83a9198938f2c73a67ae84d215a7cd70a1da35a00298`）；结果截图 [`host-rotated-profile-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-confirm-actions/host-rotated-profile-dark.png>)（SHA `b6be363dfc71e0f88eb92d63c1518fbe63ea74712d16f6d6892bfac38601ff64`）。目标端口 44321 无 listener。
 - 两个确认操作均只变更隔离 fake；AXPress 回执 `delivered_unverified`，使用新 AX 树确认结果。Profile app 与 Flutter runner 正常退出，无残留。没有产品代码变化或测试运行；仅暗色静态/语义结果，无按下关键帧/FrameTiming，B085/B087 不代表真实配对设备撤销或 TLS 身份轮换，UI-6.7 仍部分验收。
+
+
+### 2026-11-18 UI-6.7 运行、刷新、搜索图案居中微调
+
+- 根据用户指出的三枚点阵图案，对照 96 dp 参考图和 Profile 实窗，发现运行三角在 9×9 字形画布中从最左列起画，导致整枚图案明显偏左。将三角整体右移两格，让轮廓重心靠近按钮中心；点数仍为 25，格距、点径、圆角、光晕、刷新/搜索形状和按钮回调均未改。
+- 暗色原生 Profile 静置图 [`run-centered-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-run-glyph-centering/run-centered-dark.png>)，SHA-256 `de6e818ef61f49a787fc94fcc94d681c5a2922e024de4e07c524737e3de5e51f`；浅色原生 Profile 静置图 [`run-centered-light.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-run-glyph-centering/run-centered-light.png>)，SHA-256 `db9d67446b6e1508e337f46eb37455e7bf34cc788bf005a38d0b2ca27be499f9`。两图均为 1824×1488 像素、DPR 2；AX 已回读浅色主题。
+- 验证：更新 golden 时 `flutter test --no-pub --update-goldens test/glass_glyph_golden_test.dart test/glass_action_button_test.dart` 共 18 项通过；随后正常模式联合运行 `glass_action_button_test.dart`、`glass_glyph_golden_test.dart`、`glass_motion_test.dart` 共 29 项通过。`flutter analyze --no-pub` 无问题，两个 Dart 文件格式检查通过，Profile 构建成功。更新了全 glyph 浅/深 1×/2× golden 与主 glyph 浅/深 golden。夹具 app 与 Flutter runner 已关闭，无残留。
+- 本轮只调整静态几何位置；未改变太阳/月亮状态机或三个 glyph 的点击动画/业务逻辑，也未采按下帧和 FrameTiming/FPS。此处签收的是组件级居中修正，不替代逐个生产按钮的动效验收；UI-6.7/6.8 仍部分验收。
