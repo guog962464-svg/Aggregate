@@ -35,7 +35,7 @@
 - 三个模拟/校准文件 `theme_switch_simulation.dart`、`theme_switch_fitted_calibration.dart`、`theme_switch_calibration.dart` 保持不变。
 - `glass_theme_switch.dart` 的手势、坐标到状态映射、模拟调度、提交时机、光学状态与语义不变。尺寸优先在父层调整；若消除背景接缝确需渲染接线，仅可增加 UI-1 规定的可选背景场景参数。
 - `glass_theme_switch.frag` 的玻璃几何、折射/散射、内部点阵、光弧公式及参数不变。仅允许原背景/颗粒的场景坐标与合成适配，保留默认参考路径；不能以改亮度或光效来掩盖接缝。
-- `appearance_selector.dart` 可调整布局及“跟随系统”按钮的材质/图案，继续复用 `GlassThemeSwitch(calibration: videoFittedThemeSwitch)`；主题映射、`onChanged`、跟随系统选择、可访问名称/选中语义及单次激活行为保持。
+- `appearance_selector.dart` 可调整布局及“跟随系统”按钮的材质/图案，继续复用 `GlassThemeSwitch`；主题映射、`onChanged`、跟随系统选择、可访问名称/选中语义及单次激活行为保持。基线阶段曾使用 `videoFittedThemeSwitch`；2026-11-19 用户指定网页参考后，macOS 设置页改用 `ThemeSwitchCalibration.reference`，Android 默认仍用 `videoFittedThemeSwitch`，详见[UI-6.8 网页与 macOS Profile 同屏双向对照](acceptance-record.md#2026-11-19-ui-68-网页与-macos-profile-同屏双向对照)。
 
 所有仅呈现的差异都要逐项记录和审阅；新通用按钮不能替换实时主题滑块。默认参考路径的模型/光学期望值不得因新背景接线被重录或放宽。
 
