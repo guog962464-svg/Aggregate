@@ -620,6 +620,13 @@ Future<void> _exportModelFrames(
   Directory output,
 ) async {
   final input = File(_modelInput).absolute;
+  final sourceManifest = jsonDecode(
+    File('${input.parent.path}/source-manifest.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
+  expect(sourceManifest['viewport'], [720, 540]);
+  expect(sourceManifest['devicePixelRatio'], 1);
+  expect(sourceManifest['sceneOrigin'], [_center.dx, _center.dy]);
+  expect(sourceManifest['scale'], _scale);
   final model = (jsonDecode(input.readAsStringSync()) as List<dynamic>)
       .cast<Map<String, dynamic>>();
   expect(model, hasLength(151));
@@ -628,7 +635,11 @@ Future<void> _exportModelFrames(
   for (var expectedIndex = 0; expectedIndex < model.length; expectedIndex++) {
     final data = model[expectedIndex];
     final index = (data['i'] as num).toInt();
-    expect(index, expectedIndex, reason: 'Model input frames must be contiguous.');
+    expect(
+      index,
+      expectedIndex,
+      reason: 'Model input frames must be contiguous.',
+    );
     double value(String key) => (data[key] as num).toDouble();
     final halfWidth = value('hx');
     final halfHeight = value('hy');

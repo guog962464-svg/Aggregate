@@ -13,7 +13,6 @@ import '../features/settings/theme_switch_simulation.dart';
 
 const _modelInputPath = String.fromEnvironment('THEME_SWITCH_MODEL_INPUT');
 const _exportPath = String.fromEnvironment('THEME_SWITCH_EXPORT_DIR');
-const _size = Size(720, 540);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +39,10 @@ class _NativeCapturePage extends StatefulWidget {
 
 class _NativeCapturePageState extends State<_NativeCapturePage> {
   final _boundaryKey = GlobalKey();
+  Size _size = const Size(720, 540);
+  Offset _center = const Offset(360, 267);
+  double _scale = .76;
+  double _devicePixelRatio = 1;
   ThemeSwitchSnapshot? _frame;
   ui.FragmentProgram? _program;
   double _time = 0;
@@ -62,7 +65,10 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
       child: _frame == null
           ? const SizedBox.shrink()
           : MediaQuery(
-              data: const MediaQueryData(size: _size, devicePixelRatio: 1),
+              data: MediaQueryData(
+                size: _size,
+                devicePixelRatio: _devicePixelRatio,
+              ),
               child: RepaintBoundary(
                 key: _boundaryKey,
                 child: SizedBox.fromSize(
@@ -71,8 +77,8 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
                     frame: _frame!,
                     time: _time,
                     program: _program,
-                    scale: .76,
-                    center: const Offset(360, 267),
+                    scale: _scale,
+                    center: _center,
                     optics: const ThemeSwitchOptics(),
                   ),
                 ),
@@ -98,6 +104,18 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
       final sourceManifestBytes = sourceManifestFile.readAsBytesSync();
       final sourceManifest =
           jsonDecode(utf8.decode(sourceManifestBytes)) as Map<String, dynamic>;
+      final viewport = (sourceManifest['viewport'] as List<dynamic>)
+          .cast<num>();
+      final sourceOrigin = (sourceManifest['sceneOrigin'] as List<dynamic>)
+          .cast<num>();
+      if (viewport.length != 2 || sourceOrigin.length != 2) {
+        throw StateError('Source manifest geometry is invalid.');
+      }
+      _size = Size(viewport[0].toDouble(), viewport[1].toDouble());
+      _center = Offset(sourceOrigin[0].toDouble(), sourceOrigin[1].toDouble());
+      _scale = (sourceManifest['scale'] as num).toDouble();
+      _devicePixelRatio = (sourceManifest['devicePixelRatio'] as num)
+          .toDouble();
       final sourceFrames = (sourceManifest['frameIndices'] as List<dynamic>)
           .cast<int>();
       final rows = (jsonDecode(input.readAsStringSync()) as List<dynamic>)
@@ -106,6 +124,7 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
         throw StateError('Expected the full 151-frame source.');
       }
       if (sourceFrames.length != rows.length ||
+          _devicePixelRatio != 1 ||
           rows.any(
             (row) => (row['particles'] as List<dynamic>).length != 113,
           )) {
@@ -148,7 +167,8 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
         }
         final image = await renderObject.toImage(pixelRatio: 1);
         try {
-          if (image.width != 720 || image.height != 540) {
+          if (image.width != _size.width.round() ||
+              image.height != _size.height.round()) {
             throw StateError('Unexpected native image size at frame $index.');
           }
           final png = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -191,12 +211,12 @@ class _NativeCapturePageState extends State<_NativeCapturePage> {
             'Aggregate Flutter macOS Profile renderer; RepaintBoundary.toImage',
         'frameCount': frames.length,
         'scene': {
-          'width': 720,
-          'height': 540,
-          'devicePixelRatio': 1,
-          'scale': .76,
-          'centerX': 360,
-          'centerY': 267,
+          'width': _size.width,
+          'height': _size.height,
+          'devicePixelRatio': _devicePixelRatio,
+          'scale': _scale,
+          'centerX': _center.dx,
+          'centerY': _center.dy,
         },
         'limitations': [
           'This is an offline same-state Profile renderer capture.',
