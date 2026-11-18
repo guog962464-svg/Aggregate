@@ -149,3 +149,8 @@ B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读�
 ### UI-6.7 补证：错误结果恢复操作 B106（2026-11-18）
 
 暗色 Profile 中本地模拟失败结果可滚动到 MiniPlayer 上方并完整显示“检查活动状态”入口。点击后 AX 状态不变：假 Runtime 在返回 RunHandle 前抛错，恢复回调因没有 handle 直接返回；这只限定本地模拟路径，不能代表真实 Runtime 活动查询。截图、SHA 与覆盖边界见[验收记录](acceptance-record.md#2026-11-18-ui-67-错误结果恢复操作-b106-profile-补证)和[逐实例表](ui-6.7-button-instance-matrix.md)。无按下帧或 FrameTiming，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：本地文件结果 B108–B109（2026-11-18）
+
+临时暗色 Profile 夹具呈现生产 `ResultPanel` 文件结果；B108 预览只通过 PreviewRuntime 返回内存说明文本，B109 的 fixture Finder 揭示回调为空实现，前后均没有 Finder 窗口。截图、SHA 与未覆盖生产文件行为的范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-本地文件结果-b108b109-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。未触及复制按钮或剪贴板，无按下帧/FrameTiming，UI-6.7 仍部分验收。

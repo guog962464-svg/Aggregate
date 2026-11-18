@@ -117,11 +117,11 @@
 | B102 | `app/lib/widgets/capability_row.dart:35` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“两个整数相加”行后打开参数页，结果状态仍为“尚未运行”；`feature-open-form-dark.png`。没有点运行，未调用 Runtime。 |
 | B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“收藏 两个整数相加”，出现收藏分组和“取消收藏”按钮；随后取消并确认空收藏恢复。收藏仅改动 `PreviewRuntime` 内存偏好；截图 `workspace-actions-dark.png`、`workspace-favorite-added-dark.png`。 |
 | B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 2026-11-18 临时暗色 Profile 夹具呈现生产 `PageState.error`，点击“重试”后 AX 计数由 0 变为 1；截图 `page-state-error-dark.png`。回调仅递增夹具计数，不代表真实数据重试；无按下关键帧、浅色图或帧率数据 |
-| B105 | `app/lib/widgets/result_panel.dart:74` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色成功结果图 `04-run-result-dark.png`；仅复制按钮静态外观已目视，复制动作未验证 |
-| B106 | `app/lib/widgets/result_panel.dart:238` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色 Profile 新图 `failure-recovery-scrolled-dark.png` 显示“检查活动状态”和错误详情入口完整位于 MiniPlayer 上方。点击后状态不变：本地模拟 `inspection-error` 在返回 `RunHandle` 前抛错，`_checkActivityStatus` 因 handle 为空直接返回；不证明真实 Runtime 活动查询。先前浅色滚动验收与错误详情图见本表前文；无按下帧或 FrameTiming |
-| B107 | `app/lib/widgets/result_panel.dart:288` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
-| B108 | `app/lib/widgets/result_panel.dart:364` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
-| B109 | `app/lib/widgets/result_panel.dart:376` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
+| B105 | `app/lib/widgets/result_panel.dart:88` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色成功结果图 `04-run-result-dark.png`；仅复制按钮静态外观已目视，复制动作未验证 |
+| B106 | `app/lib/widgets/result_panel.dart:349` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色 Profile 新图 `failure-recovery-scrolled-dark.png` 显示“检查活动状态”和错误详情入口完整位于 MiniPlayer 上方。点击后状态不变：本地模拟 `inspection-error` 在返回 `RunHandle` 前抛错，`_checkActivityStatus` 因 handle 为空直接返回；不证明真实 Runtime 活动查询。先前浅色滚动验收与错误详情图见本表前文；无按下帧或 FrameTiming |
+| B107 | `app/lib/widgets/result_panel.dart:399` | 调用结果：复制、展开与结果操作 | 无结果面板截图 |
+| B108 | `app/lib/widgets/result_panel.dart:477` | 调用结果：复制、展开与结果操作 | 2026-11-18 临时暗色 Profile 呈现生产 ResultPanel 文件结果；点“预览文件”后 AX 显示 fake PreviewRuntime 返回的 `预览文件：/tmp/aggregate-preview-report.txt`。图 `local-file-preview-dark.png`；未读取真实文件，无按下帧/FrameTiming |
+| B109 | `app/lib/widgets/result_panel.dart:491` | 调用结果：复制、展开与结果操作 | 2026-11-18 同一夹具点“在访达中显示”；fake `revealLocalFile` 为空实现，AX 无错误/状态变化且 Finder 前后均无窗口。只验到控件触发，不覆盖生产揭示行为；图 `local-file-preview-dark.png` |
 
 ## 当前结论
 

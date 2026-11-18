@@ -920,3 +920,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 向下滚动 8 个滚轮单位后，恢复卡片、“检查活动状态”及“查看错误详情”均完整显示在固定 MiniPlayer 上方。截图 [`failure-recovery-scrolled-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-failure-recovery/failure-recovery-scrolled-dark.png>)（SHA `59e9a7cf04f3423f975519bf163744d19a55fd6f4ad954607a54f4d008ba1490`）。
 - 点击“检查活动状态”后，新的 AX 树仍为“运行失败”，没有恢复结果或状态变化；AXPress 回执 `delivered_unverified`。源码显示 `CapabilityRunPage._checkActivityStatus` 在 `handle == null` 时直接返回，而此假错误在产生 RunHandle 前抛出，因此该按钮在此 fixture 路径不能验证真实活动查询。此边界只说明本地模拟错误的交互限制，不外推为所有生产 Runtime 的故障。
 - fixture 正常关闭，GUI app 和 Flutter runner 无残留。没有产品代码变化或测试运行；无物理按下关键帧/FrameTiming，B106 仅暗色 Profile 视觉与受限交互验收，UI-6.7 仍部分验收。此结果覆盖先前“检查活动状态未点击”的范围描述；早前截图、布局滚动位置与真实 Runtime 行为限制仍保留。
+
+
+### 2026-11-18 UI-6.7 本地文件结果 B108–B109 Profile 验收
+
+- 使用临时 `ui6_file_result_fixture_main.dart` 暗色 macOS Profile 入口直接呈现生产 `ResultPanel` 文件结果组件（Flutter 3.47.8 / Dart 3.13.7，800×632 logical px、DPR 2），假路径为 `/tmp/aggregate-preview-report.txt`。点击 B108“预览文件”后 AX 显示“预览文件：/tmp/aggregate-preview-report.txt”；`Ui6InspectionRuntime.previewLocalFile` 仅委托 `PreviewRuntime` 返回该字符串，不读取真实文件。截图 [`local-file-preview-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-file-result/local-file-preview-dark.png>)（SHA `d2160e2705220175101217a876a07af59f22310df6bf52591bf2bbe7d4f12b8d`）。
+- B109“在访达中显示”点击回执为 `delivered_unverified`；前后 Finder 窗口列表均为空，AX 页面无错误或状态变化。该 fixture 的 `revealLocalFile` 是空实现，因此只证明控件可触发且没有启动 Finder，不代表生产文件揭示行为。
+- 临时 fixture 已删除，Aggregate Profile app 与 Flutter runner 均正常关闭且无残留。没有产品代码变化或测试运行；未点击“复制结果”，无按下动画关键帧/FrameTiming。B108–B109 仅暗色组件级 fake 验收，UI-6.7 仍部分验收。
