@@ -184,3 +184,8 @@ Profile 浅/深静置对照确认，运行三角先前锚在 9×9 网格最左�
 ### UI-6.7 补证：Mac Host 邀请复制 B091（2026-11-18）
 
 macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截获到内存；复制一次后 payload 与对应二维码 payload 一致，成功提示可见。定向测试 1 项和静态分析通过。没有写入系统剪贴板、启动真实 Host 或进行网络配对；不是原生按下帧验收。详情见[验收记录](acceptance-record.md#2026-11-18-ui-67-b091-mac-host-配对信息复制-widget-验收)和[逐实例表](ui-6.7-button-instance-matrix.md)。UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：Mac Host 邀请二维码完整可见 B090（2026-11-18）
+
+暗色隔离 Profile 中启动 fake Host 并生成邀请，滚动到详情后实窗截图显示完整二维码、过期时间、地址数量和复制按钮；图像 SHA 与范围见[验收记录](acceptance-record.md#2026-11-18-ui-67-b090-mac-host-邀请二维码完整可见性复核)及[逐实例表](ui-6.7-button-instance-matrix.md)。AX 仍报告复制按钮 bounds 高 1 px，且没有按下动画关键帧，故只通过截图可见性，不提升 B090 总体状态；UI-6.7 仍部分验收。

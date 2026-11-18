@@ -972,3 +972,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 使用生产 `MacHostSettingsPanel` 与测试 fake Host/PairingControl。启动只改变测试进程内状态，生成的短时邀请及 `127.0.0.1:43123` endpoint 都是 fake。点击“复制配对信息”后，测试 messenger 在 `SystemChannels.platform` 捕获一次 `Clipboard.setData`；写入文本与同一 fake 邀请的完整 `qrPayload` 完全一致，页面显示“配对信息已复制”。
 - 定向执行 `flutter test --no-pub --reporter compact --plain-name 'copies the generated invitation through an intercepted platform channel' test/mac_host_settings_panel_test.dart`（macOS Widget 变体）通过 1 项；`flutter analyze --no-pub` 无问题，`dart format` 和 `git diff --check` 通过。
 - 这是组件回调和 payload 的隔离验收，不是 macOS Profile 系统剪贴板写入、真实 Host、网络配对或原生按下动画验收；测试未读取或改变系统剪贴板，B091 仍部分验收，UI-6.7 继续部分验收。
+
+
+### 2026-11-18 UI-6.7 B090 Mac Host 邀请二维码完整可见性复核
+
+- 使用 `ui6_inspection_main.dart` macOS Profile（窗口 AX bounds 800×632 logical px，DPR 2）；Host 和配对数据均来自进程内 `Ui6InspectionHost` fake。启动 fake Host、生成一次邀请后，将 Mac Host 页面滚动到邀请详情。未启用真实 listener、网络配对或 Keychain。
+- 暗色实窗截图 [`host-invitation-generated-dark-scrolled.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-invitation-scroll/host-invitation-generated-dark-scrolled.png>) 为 1824×1488 PNG，SHA-256 `a5a1c3cb775a32ddcd8d5eb3a2e2fd0c185fdad224f731fcdc69865f6537f097`。完整二维码、邀请过期时间、一个本机网络地址及“复制配对信息”按钮均在截图中可见；首屏原浅色截图的二维码裁切由滚动后完整截图补足。
+- AX 树能读到二维码语义、过期时间和地址数量，但滚动后的“复制配对信息”仍报告 bounds 高 1 px，故只签收实窗视觉可见性，不签收该按钮的 AX 几何。没有捕获原生按下关键帧；B090 保持部分验收，UI-6.7 仍部分验收。Profile app 和 Flutter runner 已正常退出，无残留；无产品代码或测试变化。
