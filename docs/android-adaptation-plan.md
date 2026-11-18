@@ -180,6 +180,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-18 上游安全版时效复核：Node 官方 `v24.22.3` 为 11 月 11 日 LTS security release；fogtape 最新 Node 24 Android prerelease 仍是 10 月 22 日的 `24.22.1-0`（基于官方 `v24.22.1`），原始 nodejs-mobile 最新 Android 库是 Node 18.20.4。仓库 Docker daemon 未运行且临时 24.22.3 构建材料缺失，本轮未下载/重建/安装旧包；A3.6 仍缺安全版本匹配 Android SDK、完整 suite/SBOM/legal 与 16 KB 真机。来源见[上游发行复核](android-a3-runtime-research.md#2026-11-18-上游-android-node-发行时效复核)。
 
+  - 2026-11-18 NodeProbe Release AAB split 补验：从当前锁定输入重建 APK/AAB，修正旧 AAB 缺少 `libnode_cli.so` 的产物错配；5 个 ELF 的 16 KB 静态布局、APK zipalign、Bundletool `PAGE_ALIGNMENT_16K` 及 AAB connected split 均通过。测试签名 split 在 LGE AN10 4 KB 真机执行固定 npm `script-allowed`，Node child 与 Messenger 终态均为 exit 0；测试包已卸载。结果只覆盖 Node `24.22.1-0` 的单 ABI/单设备/本地 fixture，不改变完整 npm integrity 不稳定结论。A3.6/A4.4 继续开放，产品 npm/CLI 仍关闭；详见 [Release AAB split 与 npm lifecycle 验收](android-a3-runtime-research.md#2026-11-18-当前-nodeprobe-release-aab-split-与-npm-lifecycle-验收)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
