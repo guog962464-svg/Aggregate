@@ -25,9 +25,9 @@
 | B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 深/浅 Profile 的运行中列表及详情均已截图；两种主题滚至操作区后“取消运行”语义点击成功，AX 状态变为“已取消”。浅色按钮与 MiniPlayer 暂停控件 AX 矩形相隔 11 个逻辑像素。仅验证隔离内存 fixture，真实服务响应仍待核 |
 | B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 深浅失败详情图可见“复制诊断”；未点击，系统剪贴板未改动 |
 | B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：搜索框清除按钮 | 浅色 Profile 实窗键盘输入 Git 后显示 3 项、清除恢复 17 项；深色 Profile 默认 PreviewRuntime 输入 Git 后显示 1 项、点击清除恢复 12 项，悬停提示“清除搜索”；截图与 SHA 见验收记录。仅签收深色功能与悬停提示，深色点击动效仍待核 |
-| B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：空连接态添加 CLI | 浅色空态实窗点击后进入本机 Mac（预览）的 CLI 配置，并取消退出；截图 85/86。没有测试或保存，深色与动效待核 |
-| B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：空连接态添加 MCP | 浅色空态实窗点击后进入本机 Mac（预览）的 stdio MCP 配置，并取消退出；截图 85/87。没有测试或保存，深色与动效待核 |
-| B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：空连接态添加 HTTP MCP | HTTP-only 浅色实窗点击后进入本机 Mac（预览）的 HTTP MCP 配置，并取消退出；截图 88/89。未输入凭据、测试或保存，深色与动效待核 |
+| B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：空连接态添加 CLI | 浅色空态进入本机 Mac（预览）CLI 配置并取消；深色 Profile 同样打开“预览 CLI”表单后取消，未修改默认字段、测试或保存。截图与 SHA 见验收记录；动效待核 |
+| B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：空连接态添加 MCP | 浅色空态进入本机 Mac（预览）stdio MCP 配置并取消；深色 Profile 同样打开“预览 stdio MCP”表单后取消，未修改默认字段、测试或保存。截图与 SHA 见验收记录；动效待核 |
+| B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：空连接态添加 HTTP MCP | HTTP-only 浅色空态进入本机 Mac（预览）HTTP MCP 配置并取消；深色 HTTP-only Profile 同样打开“预览 MCP HTTP”表单后取消。URL/token 未输入，未测试或保存；截图与 SHA 见验收记录，动效待核 |
 | B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：无匹配结果清除筛选 | 浅色 Profile 实窗在资源筛选下输入无匹配文本，点击清除恢复 17 项；深色 UI 检查 Profile 同样在资源筛选下输入无匹配文本，空态 AX 有“清除筛选”，点击后搜索清空、筛选复位并恢复 17 项，截图与 SHA 见验收记录。仅签收深色功能和静态悬停外观，点击动效待核 |
 | B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：类型筛选分段按钮 | 浅色 Profile 实窗逐项选择工具、资源、提示、CLI；AX 结果数依次为 3、1、1、12；恢复“全部”后为 17。深色 UI 检查 Profile 复现同样计数；截图与 SHA-256 见验收记录。仅签收筛选结果与静态外观，动效逐帧待核 |
 | B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击新增后 AX 清单出现 `action1`；取消再打开恢复原有单项。截图 `90-action-editor-added.png`；深色仅有静态截图，动效仍待核 |

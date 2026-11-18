@@ -1172,3 +1172,21 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 | 全部（恢复） | 17 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-b017-dark-profile/all-restored.png>) `48e32321d000cf006b286031219fea0fcccfb03f873adb928c11fd27af803036` |
 
 - 边界：记录深色各筛选下的静态呈现及结果数，不代表分段按钮的点击/悬停动画逐帧验收，也不代表物理 display-present 时序。Profile 已优雅退出；UI-6.7 继续部分验收。
+
+
+### 2026-11-19 UI-6.7 B013–B015 空工作区连接入口深色 Profile 验收
+
+- 使用 `lib/preview/ui6_inspection_main.dart` 的 macOS Profile 内存夹具：B013/B014 设 `UI6_EMPTY_WORKSPACE=true` 与本机可用的 CLI、stdio MCP；B015 另外设 `UI6_HTTP_ONLY_WORKSPACE=true`。macOS 27.2.1、Flutter 3.47.8 stable、窗口 800×632 logical px、DPR 2。连接/Host 状态均为内存样例，没有真实设备、外部进程或服务。
+- B013/B014 初始深色空态同时有“添加 CLI”“添加 MCP”。点击入口后出现目标选择；选择“本机 Mac（预览）”后分别读回配置表单适配器“预览 CLI”及“预览 stdio MCP”。表单默认名称由夹具预填，未改字段；CLI 程序路径为空、启动参数为 `[]`。各自点击“取消”后回到连接管理页，再进“所有功能”仍见原空工作区的两个添加入口，未保存连接。B015 HTTP-only 空态只出现“添加 HTTP MCP”；选择本机预览目标后表单适配器为“预览 MCP HTTP”，URL 与 Bearer Token 都保持空白；点击“取消”后仍可从空工作区看到 HTTP MCP 入口。
+- 目标选择弹层上的全窗 `Dismiss` 静态文本会让 agent-desktop 的语义点击报告 `receives_events` 遮挡、且未发出动作；随后按可见目标中心使用 headed 物理点击，下一次 AX snapshot 确认进入对应本机预览表单。取消动作也用物理点击并经下一次 AX 状态确认返回；未点“测试连接”或“保存连接”。
+- Aggregate 单窗口 1824×1488 PNG：
+
+| 状态 | 截图 | SHA-256 |
+| --- | --- | --- |
+| 本机 CLI / MCP 空态 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-empty-forms-dark-profile/empty-local-desktop.png>) | `cac27a2911591255623a6ba6a1b948188f603cc7255145623963d692bc58851c` |
+| CLI 预览配置表单 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-empty-forms-dark-profile/cli-form.png>) | `11d14c7ac314ac031ac9e2e24c19b86f6960f58a85b24854630d42c0b3bf4b72` |
+| stdio MCP 预览配置表单 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-empty-forms-dark-profile/stdio-mcp-form.png>) | `f2f0be4e515afe34c955bf8eecbc0f969a870b84860c061f0c6cb288dfe14993` |
+| HTTP-only 空态 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-empty-forms-dark-profile/empty-http-only.png>) | `986c717be553ccf7b96ce8539282ec750540124193405cebb9ceb556637e6bf2` |
+| HTTP MCP 预览配置表单 | [PNG](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-empty-forms-dark-profile/http-mcp-form.png>) | `368c8019cc6cba2eb0f648e03a0b6b273f326e3d65614051aa11919c05e82ca5` |
+
+- 边界：本轮签收深色静态空态、三个入口到对应配置表单的路由以及取消返回；不含连接测试/保存、深色按钮动效时序或物理 display-present。各 Profile 已关闭，B013–B015 继续部分验收。
