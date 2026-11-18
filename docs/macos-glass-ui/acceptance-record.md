@@ -450,6 +450,14 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 清理：两轮完成后分别退出唯一隔离应用，PID 查询为空；删除临时 `AXEnhancedUserInterface` 键并确认恢复为启动前的未设置状态；删除临时 Aggregate/Flutter worktree 和 Swift 查询脚本，不接触用户其他应用。
 - 结论：Flutter 3.50.0 Widget 语义测试通过，原生 AX 禁用态仍不通过，UI-5.4 继续部分验收。启动前打开 AX 增强树、换用标准按钮或静态文本都没有修复，因此目前没有证据支持应用层无损补丁；不因 engine 源码包含 restriction 映射而推断 macOS app 已修复。生产源码、太阳/月亮切换逻辑及业务行为均未改动。
 
+### 2026-11-19 Flutter 3.47.8 禁用语义 AX 最小原生复现
+
+- 环境：macOS 27.2.1（Mac17,9 arm64），Flutter 3.47.8 / Dart 3.13.7、engine revision `cf636b1dfb`；Profile 800×632 logical px、Impeller MetalSDF。临时入口只包含一个禁用生产 `GlassActionButton`、一个显式禁用 `Semantics`、一个禁用标准 `TextButton` 和一个启用玻璃控制；无 Runtime、网络或业务回调。入口完成复现后已移除源码，源文件和查询脚本保存在[本地诊断证据](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui5-4-disabled-ax-probe/results.md>)。
+- 原生结果：`agent-desktop` 的精确标签 AX 查询连续 3 次报告禁用玻璃按钮 `enabled=true`。独立 Swift `AXUIElementCopyAttributeValue(kAXEnabledAttribute)` 直接读取结果：玻璃按钮、显式 `Semantics`、标准 Material 按钮均为 `AXEnabled=1`；启用玻璃按钮也是 `1`（`AXError=0`）。因此排除 agent-desktop 单独误读及 GlassActionButton 单独包裹方式。
+- Framework 对照：`flutter test --no-pub test/glass_action_button_test.dart test/accessibility_test.dart` 共 16 项通过。新增 `null callback keeps disabled framework semantics` 用例覆盖最小组件调用，Flutter Semantics `isEnabled=false`、无 tap action；已有 busy/disabled 回归继续验证业务回调不触发。框架语义测试不是原生 AX 修复，原生树的 enabled 状态仍不正确。
+- 版本及来源：本次 3.47.8 结果与此前 3.50.0 Profile 结果呈现方式不同，但两者都不能提供可读且准确的禁用原生节点；后者的精确记录见上方 2026-11-17 小节。Flutter 3.50.0 官方发布说明列出 [PR #190353](https://github.com/flutter/flutter/pull/190353)，其目标是将禁用/只读状态映射到 AX node restriction；这一 upstream 变更没有推翻本项目对实际 Profile 窗口的观测。当前证据把差异定位在 Flutter framework semantics 到 macOS AX 的导出边界，具体 engine/AppKit 函数仍未单独定位。没有通过加入可操作 tap、隐藏禁用项或重复原生控件做视觉/语义妥协，因此 UI-5.4 仍部分验收；VoiceOver 朗读也未完成。
+- 测试夹具没有改系统 VoiceOver 或 AXEnhancedUserInterface 设置。临时 Profile app 与 runner 已关闭，入口源码已移除；主题切换和生产业务逻辑未改。
+
 ### 2026-11-17 macOS 系统减少动态效果接线
 
 - 原因：在隔离 Profile 探针中，将 macOS 系统 Reduce Motion 开启且确认 `NSWorkspace.shared.accessibilityDisplayShouldReduceMotion == true` 后，原应用窗口仍读到 `MediaQuery.disableAnimations == false`。当前 Flutter macOS Runner 没有把 AppKit 该偏好映射到 Flutter accessibility features。

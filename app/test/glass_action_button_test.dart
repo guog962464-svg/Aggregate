@@ -467,6 +467,33 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('null callback keeps disabled framework semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassActionButton(
+              label: 'Disabled AX probe',
+              glyph: GlassGlyph.copy,
+              enabled: false,
+              onPressed: null,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final data = tester
+        .getSemantics(find.bySemanticsLabel('Disabled AX probe'))
+        .getSemanticsData();
+    expect(data.flagsCollection.isEnabled, ui.Tristate.isFalse);
+    expect(data.hasAction(SemanticsAction.tap), isFalse);
+    semantics.dispose();
+  });
+
   testWidgets(
     'button sizes preserve their target heights and selected semantics',
     (tester) async {
