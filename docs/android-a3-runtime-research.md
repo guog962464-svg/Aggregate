@@ -430,6 +430,15 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 
 ### 后续门槛与决策
 
-nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 npm_node_execpath 运行固定 npm script 已有一台 4 KB 真机证据。这修正了“wrapper 仅 compile-only、没有进入 APK 或设备运行”的先前结论。它没有解决通用 npm lifecycle 对 node 命令的解析；目前也未证明 npm install、任意 CLI/TUI、稳定性或 16 KB 系统兼容。继续保持 ADR 0003 与产品 npm/CLI 边界不变；A3.6 仍需当前安全版本与来源、可审计构建、完整 mobile suite、完整 SBOM/许可审查及 16 KB 真机。下一步先确定只通过 APK 安装的 node 命令解析方案，再验证本地 npm 安装与受控 lifecycle fixture；不能通过时，保留固定打包 JS/Host 边界。
+nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 npm_node_execpath 运行固定 npm script 已有一台 4 KB 真机证据。2026-11-18 又以临时隔离 APK 证明：在 app-private PATH 目录创建指向 APK `nativeLibraryDir/libnode_cli.so` 的 `node` 符号链接，并由 Node 启动脚本将该目录加到 PATH 后，npm 本地授权安装脚本可以成功启动 Node 子进程。该结果只验证了手动配置的 4 KB 原型机制；不表示现有 NodeBridge 会自动创建别名，也不推翻无别名时 `node` 命令返回 127 的历史结果。A3.6 仍需当前安全版本与来源、可审计构建、完整 mobile suite、准确二进制 SBOM/许可审查及 16 KB 真机。继续保持 ADR 0003 与产品 npm/CLI 边界不变；详情见下节。
+
+## 2026-11-18 NativeLibraryDir 别名与 npm lifecycle 命令查找
+
+- **APK 与设备：**以既有 NodeProbe Debug APK 为基础制作一次性 APK，包名 `io.github.guog962464.aggregate.nodeprobe.a3exec`、targetSdk 36，使用本机 Android Debug 证书签名；APK SHA-256 `7165e5e80f7a4a8ef6efa0a624c1b83942b33ff4cb62c946128f44e4569e8575`。`zipalign -c -P 16 4` 与 `apksigner verify` 均通过。LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。
+- **别名机制：**用 `run-as` 在 app-private `files/node-bin/` 创建 `node` → `nativeLibraryDir/libnode_cli.so` 符号链接，并将 `libnode.so`、`libc++_shared.so` 同目录链接以满足 `$ORIGIN` 依赖；直接执行别名返回 `v24.22.1`。一次性 Node 启动脚本将 `files/node-bin` 前置到 `PATH`。使用 APK 内固定 npm 12.2.2、本地授权 tarball 和临时 fixture；fixture 的 `install` 脚本调用 `spawnSync('node', ['--version'])`。npm `script-allowed` 返回 0，安装标记记录 child status 0、stdout `v24.22.1`、stderr 为空。
+- **探针修正：**观察到 npm `--global --prefix` 将 fixture 放在 `<prefix>/lib/node_modules/`，而 `a4-npm-probe.js` 原本只查 `<prefix>/node_modules/`，会把已运行的脚本误报为 marker 缺失。已将 `scriptAllowedMarker` 改为检查实际 global prefix 路径。旧 Debug 记录中的无别名 `node install.js` 127 仍准确；本轮成功结果额外提供了 alias 与 PATH 前置条件。
+- **清理与限制：**一次性 test-signed APK、`.a3exec` 包及应用私有别名目录均已删除；普通 Aggregate 包仍安装，ADB reverse 为空。此次测试只证明旧版 Node v24.22.1、单台 4 KB 真机、固定本地 npm lifecycle fixture 和手动别名方案；未证明自动初始化、一般 registry 安装脚本、任意 CLI/TUI、正式签名、当前安全版 Node 或 16 KB 系统兼容。没有生产 Host、账号或业务数据参与。
+- **verified_scope：**隔离 test-signed NodeProbe APK；Android 15/API 35/4 KB/arm64；实际 `npmExitCode=0`、探针 `scriptAllowedMarker=true` 及 fixture child 输出；设备临时包卸载后的 ADB/包状态。未修改产品 Node runtime，未运行完整 Node mobile suite。
+- **retrieval_feedback：**查询 Android `nativeLibraryDir` 执行、npm lifecycle 的 `node` 命令查找和 A4.4 `script-allowed` 结果；采用本文件 2026-11-18 native executable/Node self-spawn 记录、`docs/android-a4-npm-install-research.md` 的无别名 127 历史及当前 `NodeProbeService`/npm fixture 源码。保留旧结果作为无别名基线；本次 PATH/别名是临时改造，没有外推为当前产品实现。
 
 [Android 16 KB page-size guide](https://developer.android.com/guide/practices/page-sizes) 仍要求正确的共享库 ELF 与 APK zip alignment，并提醒静态对齐不能替代设备运行检查。

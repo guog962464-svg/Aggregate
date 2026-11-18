@@ -168,7 +168,7 @@ function finalize() {
     scriptDefaultMarker: fs.existsSync(path.join(roots.scriptDefault,
       'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
     scriptAllowedMarker: fs.existsSync(path.join(roots.scriptAllowed,
-      'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
+      'lib', 'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
     cacheBytes: directoryBytes(cacheRoot),
   };
   fs.writeFileSync(outputPath, JSON.stringify(result));

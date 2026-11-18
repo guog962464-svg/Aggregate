@@ -174,6 +174,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-18 Android native Node launcher 4 KB 真机补验：targetSdk 36 的独立 Debug APK 在 LGE-AN10 / Android 15 / API 35 / arm64 / 4 KB 页上，由应用 ProcessBuilder 执行 APK 安装后的 PIE wrapper；Node v24.22.1 的 --version 与 process.execPath self-spawn 均通过，npm 12.2.2 --version 及使用 npm_node_execpath 的固定 npm run 通过。直接写 node --version 的脚本以 127 失败；将无扩展名 node 作为 jniLibs 输入后没有进入 APK。临时包已卸载，产品源未改；npm install/lifecycle、16 KB 实机、供应包安全版本/provenance、完整 suite 与法律审查仍未完成，A3.6 保持开放。详见 [A3.6 native Node launcher 探针](android-a3-runtime-research.md)。
 
+  - 2026-11-18 npm `node` 命令别名补验：隔离 test-signed NodeProbe APK 中将 `nativeLibraryDir/libnode_cli.so` 通过 app-private 符号链接映射为 `node`，并以前置 PATH 的临时 Node 启动脚本执行固定 npm 本地授权生命周期 fixture；LGE AN10 4 KB 真机上的 child `node --version` 与 npm 安装均成功。修正了 `scriptAllowedMarker` 对 npm global prefix 路径的检查。该原型使用 Node v24.22.1，别名和 PATH 均由临时验收代码/ADB 手动配置，不是 NodeBridge 产品实现；A3.6 仍需当前安全版候选、自动化初始化、完整 mobile suite、SBOM/许可审查及 16 KB 真机。详见 [Node alias/npm lifecycle 验收](android-a3-runtime-research.md#2026-11-18-nativelibrarydir-别名与-npm-lifecycle-命令查找)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。

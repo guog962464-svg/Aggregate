@@ -80,3 +80,13 @@ Release 测试只证明表列固定动作。`script-default` 与 `script-allowed
 
 - **verified_scope：**NodeProbe `24.22.3-0` arm64 test-signed Release APK、Android 15/API 35/4 KB LGE AN10、npm 12.2.2 固定 action intents；Messenger terminal JSON 对所有标记为“终态收到”的动作均从 kind=3 Activity log 取得。脚本 fixture 的两次 action 只有 kind=7 npmResult、无 kind=3；其完整 result file/marker 未读取。未运行 Release `script-default`/`script-allowed`、16 KB 设备、其它 ABI 或 Aggregate 产品包。
 - **retrieval_feedback：**复核本项目 A4.4 的固定 fixture、`verify_a4_npm.py` assertions、NodeProbe Service 的 intent allowlist/result protocol 和 2026-11-12 Debug 结果；复用相同 package versions、registry integrity 与升级检查，但不把 Debug 结论外推至本次 Node 24.22.3 Release。A3.6 的测试签名 APK/hash 与现场 logcat 核对，Release private result 改从既有 Messenger kind=3 Activity detail 读取；脚本 action 没有 kind=3 时保持未知。未检索其他项目。
+
+
+## 2026-11-18 Debug npm lifecycle `node` 别名补验
+
+- **复验条件：**以隔离 NodeProbe Debug APK 为底制作 test-signed APK，targetSdk 36、包名 `io.github.guog962464.aggregate.nodeprobe.a3exec`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB。APK SHA-256 `7165e5e80f7a4a8ef6efa0a624c1b83942b33ff4cb62c946128f44e4569e8575`，APK 静态对齐与签名验证通过。Node 为 v24.22.1，npm 为 12.2.2。
+- **结果：**临时 APK 的 Node 启动代码把 app-private `files/node-bin` 前置到 PATH；ADB 在该目录创建 `node` 符号链接指向 APK `nativeLibraryDir/libnode_cli.so`，并同目录链接 `libnode.so`/`libc++_shared.so`。固定本地 npm 授权 tarball 的 install script 调用 `spawnSync('node', ['--version'])`，npm 退出 0，子进程退出 0 并返回 `v24.22.1`。这补充了“仅在提供别名及 PATH 后，该固定 lifecycle 脚本可运行”的证据；旧 Debug 实验未提供该别名时的 127 结果仍成立。
+- **测量修正：**npm global prefix 把安装内容写到 `lib/node_modules/`；NodeProbe 原 `scriptAllowedMarker` 检查路径漏掉 `lib/`，导致结果字段报 false，尽管标记文件存在。已修复 `app/android/nodebridge/src/main/assets/a4-npm-probe.js` 并在本轮 test APK 验证字段为 true。
+- **范围：**别名目录、PATH 前置和带 `spawnSync` 的 fixture 均只在一次性 APK/测试输入中修改；NodeBridge 未自动生成别名。本次不证明任意 npm 安装脚本、registry 安装、通用 CLI/TUI、当前安全版 Node、正式签名或 16 KB 兼容。测试包卸载、临时 APK 与文件删除；普通 Aggregate 包未触碰。A4.4 的产品边界不变。
+- **verified_scope：**固定 Debug npm 12.2.2、本地授权 tarball、手动 nativeLibraryDir 符号链接、Android 15 4 KB arm64 实机；实际 result JSON 的 `npmExitCode=0`、`scriptAllowedMarker=true` 和安装标记的 child status/stdout。未运行完整 npm suite 或生产业务。
+- **retrieval_feedback：**沿用本文件 2026-11-12 npm Debug 无别名 127 与 A3.6 2026-11-18 native executable 记录；对照 Android 包路径、npm global prefix 实际安装目录及当前探针结果字段。新证据带有手动 PATH/别名前提，不替换无别名历史记录，也不将其上推为产品支持。
