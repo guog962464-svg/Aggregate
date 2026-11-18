@@ -52,7 +52,20 @@
       90,
       110,
       150
-    ]
+    ],
+    "particle_trajectory_oracle": {
+      "file": "theme_switch_particle_trajectories.json.gz",
+      "sha256": "fe107b7ef7e72e8e1ca49043c4c51e1ea173de00dc098ce6aed810746b2f00f2",
+      "compression": "gzip containing JSON [frame][particle][x,y,size,alpha]",
+      "frame_count": 151,
+      "particle_count": 113,
+      "fields": [
+        "x",
+        "y",
+        "size",
+        "alpha"
+      ]
+    }
   },
   "particle_indices": [
     0,

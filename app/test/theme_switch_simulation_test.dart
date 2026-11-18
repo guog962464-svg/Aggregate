@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:aggregate/features/settings/theme_switch_simulation.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -56,6 +57,18 @@ void main() {
       };
       final particleIndices = (fixture['particle_indices'] as List).cast<int>();
       final lastFrame = expected.keys.reduce(math.max);
+      final trajectoryMetadata =
+          provenance['particle_trajectory_oracle'] as Map<String, dynamic>;
+      final trajectoryBytes = File(
+        'test/fixtures/${trajectoryMetadata['file']}',
+      ).readAsBytesSync();
+      expect(
+        sha256.convert(trajectoryBytes).toString(),
+        trajectoryMetadata['sha256'],
+      );
+      final fullParticleOracle =
+          jsonDecode(utf8.decode(gzip.decode(trajectoryBytes))) as List;
+      expect(fullParticleOracle, hasLength(lastFrame + 1));
 
       for (var frame = 0; frame <= lastFrame; frame++) {
         final event = events[frame];
@@ -67,9 +80,32 @@ void main() {
         }
         simulation.advance(frame == 0 ? 0 : 1 / fps, frame / fps);
 
+        final snapshot = simulation.snapshot;
+        expect(snapshot.particles.length, provenance['particle_count']);
+        final sourceParticles = (fullParticleOracle[frame] as List)
+            .cast<List<dynamic>>();
+        expect(sourceParticles, hasLength(snapshot.particles.length));
+        for (var index = 0; index < sourceParticles.length; index++) {
+          final particle = snapshot.particles[index];
+          final actual = [
+            particle.x,
+            particle.y,
+            particle.size,
+            particle.alpha,
+          ];
+          final sourceParticle = sourceParticles[index].cast<num>();
+          for (var field = 0; field < actual.length; field++) {
+            expect(
+              actual[field],
+              closeTo(sourceParticle[field].toDouble(), 1e-9),
+              reason:
+                  'source frame $frame, particle $index, field $field (full trajectory)',
+            );
+          }
+        }
+
         final sample = expected[frame];
         if (sample == null) continue;
-        final snapshot = simulation.snapshot;
         final scalars = {
           'p': snapshot.position,
           'v': snapshot.velocity,

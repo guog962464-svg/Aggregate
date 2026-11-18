@@ -98,7 +98,7 @@ python3 app/tool/profile_theme_switch.py \
 
 ## 独立期望值
 
-`app/test/fixtures/theme_switch_model.json` 保存原实现的固定输入 oracle，并记录来源 SHA256、LCG 种子和事件顺序；另保存该种子下从官方 JS 初始化得到的全部 113 组粒子参数。回归逐字段比较 791 个 delay/curl/lift/stiffness/drag/phase/twinkle 数值，再以 60 Hz 推进 151 个时间步，并在第 0、60、70、90、110、150 帧比较全部 113 颗粒子的 x/y/size/alpha，共 678 个状态、2712 个数值。现有样本与官方脚本复导值一致；Dart 轨迹断言容差为 `1e-9`。这证明选定确定性输入下模型生成规则与若干动态检查点匹配源码，不代表逐刷新帧都已核对，也不代表线上每次 `Math.random` 初始化或产品视频拟合参数都具有相同的粒子轨迹。
+`app/test/fixtures/theme_switch_model.json` 保存原实现的固定输入 oracle，并记录来源 SHA256、LCG 种子和事件顺序；另保存该种子下从官方 JS 初始化得到的全部 113 组粒子参数，逐字段比较 791 个 delay/curl/lift/stiffness/drag/phase/twinkle 数值。模拟按事件推进 60 Hz、151 个时间步；独立的压缩源基线记录每一步全部 113 颗粒子的 x/y/size/alpha，共 17,063 个粒子状态、68,252 个数值。六个关键帧另保留可读的滑块/光带标量与粒子样本；Dart 轨迹断言容差为 `1e-9`，压缩基线 SHA-256 为 `fe107b7ef7e72e8e1ca49043c4c51e1ea173de00dc098ce6aed810746b2f00f2`。这证明选定确定性种子和 60 Hz 输入下的粒子运动模型与官方脚本逐帧匹配；它不代表录屏随机种子已找回，也不代表使用视频拟合参数的产品控件与线上随机会话同步逐帧。
 
 `theme_switch_optics.json` 的颜色探针来自原 WebGL 输出。另导出了 6 个相同状态的完整图像作 RGB 差分；线性采样修正后的平均 MAE 约 `0.0066/255`。剩余差异集中在点阵纹理边缘的光栅化/采样。这个数据不代表与用户录屏的直接差分。
 

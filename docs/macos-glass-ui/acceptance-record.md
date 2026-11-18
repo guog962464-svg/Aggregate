@@ -877,6 +877,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 验证：`flutter test --no-pub --reporter compact test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart` 共 10 项通过；`flutter analyze --no-pub` 无问题，`git diff --check` 通过。主题切换产品代码及拟合参数没有修改。
 - 边界：这补齐选定随机种子下六个检查点的内部粒子动态模型对照，不覆盖全部 151 帧、未知录屏随机种子或 macOS 实际展示时刻；网页与产品仍没有共享时钟/随机种子，逐帧 1:1 仍未签收。
 
+### 2026-11-18 UI-6.8 官方脚本全 151 帧粒子轨迹对照
+
+- 来源与数据：继续使用当前官方脚本 SHA-256 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`、固定 LCG 种子 `1831565813` 和相同的 hover/主题反向事件。由官方 JS 逐帧采集 0–150 帧的全部 113 颗粒子，每粒子记录相对坐标、尺寸及 alpha（共 17,063 个状态、68,252 个字段），以 gzip JSON 基线保存于 `app/test/fixtures/theme_switch_particle_trajectories.json.gz`，SHA-256 `fe107b7ef7e72e8e1ca49043c4c51e1ea173de00dc098ce6aed810746b2f00f2`。
+- 验证：模拟按同一 60 Hz 事件序列完整运行 151 步，每一步将 Dart 端全部 113 颗粒子的 x/y/size/alpha 与源基线逐项比较，容差 `1e-9`；同时校验压缩基线 SHA。`flutter test --no-pub --reporter compact test/theme_switch_simulation_test.dart` 全部 5 项通过。原有六个关键帧标量和可读粒子快照仍保留。
+- 范围：这是固定随机种子下、官方脚本与 Dart 模型在 60 Hz 上的完整粒子轨迹算法回归；没有复原录屏所用随机种子，也没有同步线上网页与 macOS 的时钟、输入、渲染器或实际显示呈现时间。因此不能声称录屏逐帧 1:1；UI-6.8 仍部分验收。
+
 ### 2026-11-18 UI-6.7 三枚主图标点击反馈增强与 Profile 复核
 
 - 根据 96 dp 参考图保留运行、刷新、搜索的 9×9 点阵轮廓，只调整 `GlassMotionAction.play/search/refresh` 的点击幅度：运行增加右向位移、轻微横向扩张与扫光；搜索扩大镜片缩放和扫光；刷新保留整圈旋转并加深点光亮度。未改 glyph 掩码、按钮 hitbox/业务回调或太阳/月亮主题切换状态机。
