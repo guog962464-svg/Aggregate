@@ -40,26 +40,26 @@
 | B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 本机 Mac 预览表单打开原生文件面板后取消；未选文件或读取文件。配置静态图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 另见；深色交互待核 |
 | B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 输入虚构路径后点击测试；隔离 stub 显示安全检查通过，未访问本机命令、网络或凭据。截图 `98-connection-setup-test-passed-light.png`；未使用真实连接 |
 | B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 的安全 stub 检查通过后 AX 显示保存按钮已启用；未点击，未新增连接。深色仍为静态配置图 |
-| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | Profile 窗口请求缩至 540pt 后实际宽度停在 768pt，无法进入 600pt 以下紧凑分支；小屏 Widget 回归改为点击“关闭添加连接”，断言弹窗关闭且未保存草稿。原生紧凑外观仍未核 |
+| B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 窗口以 540×700pt 进入紧凑分支；点击“关闭添加连接”后表单收起且草稿未保存，截图 `102-connection-setup-compact-light.png`。更正此前“实际宽度停在 768pt”的结论；小屏 Widget 回归也覆盖关闭与丢弃草稿 |
 | B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 表单点击取消后退出，没有保存连接；深色仅静态配置图 |
 | B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器见截图 `96-connection-target-light-current.png`；选择本机 Mac（预览）后进入隔离配置表单 `97-connection-setup-local-light-current.png`，没有连接真实设备 |
 | B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 选择虚构的配对 Mac（样例），进入只连内存 stub 的配置表单 `99-connection-setup-paired-mac-light.png`；未连接设备 |
 | B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器的取消操作关闭弹窗；没有创建连接。截图 `96-connection-target-light-current.png`；深色取消交互待核 |
-| B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 深色删除确认图 `55-delete-confirm-dark.png` 可见取消按钮；AX 点击未关闭，最终按 Escape 退出；浅色状态仍待核 |
-| B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 深色删除确认图 `55-delete-confirm-dark.png` 可见危险操作；未点击，未删除内存样例；浅色状态仍待核 |
-| B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅/深连接列表图 `50-connections-list-light.png`、`50-connections-list-dark.png` 可见添加连接按钮并打开目标选择器 |
-| B036 | `app/lib/features/connections/connections_page.dart:332` | 连接管理：连接行、筛选与操作 | 紧凑布局返回按钮未捕获；本次为宽布局 |
-| B037 | `app/lib/features/connections/connections_page.dart:366` | 连接管理：连接行、筛选与操作 | 打开连接工作区按钮在本次 fixture 未呈现，仍待核 |
-| B038 | `app/lib/features/connections/connections_page.dart:425` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见禁用的连接上移按钮；未点击 |
-| B039 | `app/lib/features/connections/connections_page.dart:431` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见连接下移按钮；未点击 |
-| B040 | `app/lib/features/connections/connections_page.dart:440` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见编辑动作入口；打开编辑器后只查看并取消 |
-| B041 | `app/lib/features/connections/connections_page.dart:445` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见测试连接按钮；未点击 |
-| B042 | `app/lib/features/connections/connections_page.dart:450` | 连接管理：连接行、筛选与操作 | 浅/深列表图可见删除连接入口；未点击，确认弹窗仍待核 |
-| B043 | `app/lib/features/connections/connections_page.dart:500` | 连接管理：连接行、筛选与操作 | 浅色图 `56-connection-detail-light.png` 显示选中的内存样例连接详情；列表和详情静态实例已目视，动态状态待核 |
-| B044 | `app/lib/features/connections/connections_page.dart:724` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见程序路径选择图标；未打开文件面板 |
-| B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见动作清单选择图标；未打开文件面板 |
-| B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见取消按钮并用于退出；未保存 |
-| B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见禁用的添加按钮；未添加连接 |
+| B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 浅色紧凑删除确认弹窗见 `105-delete-confirm-light-compact.png`；点击取消后弹窗关闭，内存样例仍保留。深色图 `55-delete-confirm-dark.png` 另可见静态样式 |
+| B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 浅色紧凑删除确认弹窗中危险删除按钮可见但未点击；删除操作未确认，内存样例未删除。深色图 `55-delete-confirm-dark.png` 另可见静态样式 |
+| B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅色紧凑连接页点击“添加连接”打开目标选择器；见 `101-connection-target-compact-light.png`。仅后续进入内存预览表单，没有创建连接 |
+| B036 | `app/lib/features/connections/connections_page.dart:332` | 连接管理：连接行、筛选与操作 | 浅色紧凑 Git CLI 详情页点击“返回连接”后返回列表；详情见 `103-connection-detail-compact-light.png` |
+| B037 | `app/lib/features/connections/connections_page.dart:366` | 连接管理：连接行、筛选与操作 | macOS 不适用：`app_shell.dart` 仅在 `_mobilePlatform` 下传入 `onOpenConnection`，此按钮只供移动端连接工作区使用，macOS 页面按设计不呈现 |
+| B038 | `app/lib/features/connections/connections_page.dart:425` | 连接管理：连接行、筛选与操作 | 浅色紧凑首行上移按钮呈禁用状态；点击 Git CLI 的“连接下移”后列表顺序更新，见 `104-connection-actions-first-item-compact-light.png`。动态视觉仅核对此实例 |
+| B039 | `app/lib/features/connections/connections_page.dart:431` | 连接管理：连接行、筛选与操作 | 浅色紧凑列表点击“连接下移”后以 AX 重新读取并确认顺序变化；见 `104-connection-actions-first-item-compact-light.png`。其余行及深色状态待核 |
+| B040 | `app/lib/features/connections/connections_page.dart:440` | 连接管理：连接行、筛选与操作 | 浅色紧凑 Git CLI 详情点击“编辑动作”打开编辑器，清单显示原动作 `version`；点击取消返回详情，未保存；见 `106-action-editor-from-detail-compact-light.png` |
+| B041 | `app/lib/features/connections/connections_page.dart:445` | 连接管理：连接行、筛选与操作 | 浅色紧凑 MCP 与 Git 样例分别点击“测试连接”；隔离 `Ui6InspectionRuntime.refreshConnection` 只返回内存连接，未运行外部服务或网络请求 |
+| B042 | `app/lib/features/connections/connections_page.dart:450` | 连接管理：连接行、筛选与操作 | 浅色紧凑详情点击删除后打开确认弹窗；点击取消后弹窗关闭，未删除样例；见 `105-delete-confirm-light-compact.png` |
+| B043 | `app/lib/features/connections/connections_page.dart:500` | 连接管理：连接行、筛选与操作 | 浅色紧凑 Git CLI 样例详情及其操作按钮见 `103-connection-detail-compact-light.png`；点击返回后列表恢复。深色动态状态待核 |
+| B044 | `app/lib/features/connections/connections_page.dart:724` | 连接管理：通用创建连接对话框 | macOS 不适用：`LocalRuntimePort` 实现 `ConnectionSetupPort`，macOS 新建流程使用 `ConnectionSetupDialog`，其文件选择已由 B025 覆盖；通用 `AddConnectionDialog` 不在 macOS 路由中 |
+| B045 | `app/lib/features/connections/connections_page.dart:747` | 连接管理：通用创建连接对话框 | macOS 不适用：动作清单选择属于通用 `AddConnectionDialog`；macOS 正式运行端走 `ConnectionSetupDialog`，不呈现此控件 |
+| B046 | `app/lib/features/connections/connections_page.dart:768` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；macOS 配置表单取消已由 B029 覆盖 |
+| B047 | `app/lib/features/connections/connections_page.dart:774` | 连接管理：通用创建连接对话框 | macOS 不适用：通用 `AddConnectionDialog` 不在 macOS 正式运行端路由中；不以 PreviewRuntime 绕过“不能添加真实连接”保护来触发此按钮 |
 | B048 | `app/lib/features/invocation/capability_run_page.dart:401` | 功能调用：运行表单与结果页 | 浅色确认图 `45-write-confirm-dialog-light.png` 中可见；用无敏感验收文本打开后取消，未执行；暗色同类确认状态待核 |
 | B049 | `app/lib/features/invocation/capability_run_page.dart:407` | 功能调用：运行表单与结果页 | 浅色确认图 `45-write-confirm-dialog-light.png` 中可见；执行按钮未点击；暗色同类确认状态待核 |
 | B050 | `app/lib/features/invocation/capability_run_page.dart:581` | 功能调用：运行表单与结果页 | 暗色表单图 `03-run-form-dark.png`；浅色 `40-cli-result-form-light.png` 可见运行按钮并打开确认框；busy/disabled 待核 |
