@@ -30,12 +30,12 @@
 | B015 | `app/lib/features/catalog/workspace_page.dart:253` | 工作台：空连接态添加 HTTP MCP | HTTP-only 浅色实窗点击后进入本机 Mac（预览）的 HTTP MCP 配置，并取消退出；截图 88/89。未输入凭据、测试或保存，深色与动效待核 |
 | B016 | `app/lib/features/catalog/workspace_page.dart:265` | 工作台：无匹配结果清除筛选 | 浅色 Profile 实窗在资源筛选下输入无匹配文本，点击清除恢复搜索、筛选及 17 项；见截图 83/84。深色与点击动效待核 |
 | B017 | `app/lib/features/catalog/workspace_page.dart:344` | 工作台：类型筛选分段按钮 | 浅色 Profile 实窗逐项选择工具、资源、提示、CLI；AX 结果数依次为 3、1、1、12；恢复“全部”后为 17。截图及 SHA-256 见验收记录。仅签收筛选结果与静态外观，动效逐帧待核 |
-| B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见新增动作；未点击 |
-| B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见导入；未导入文件 |
-| B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 浅色 `53-action-editor-light.png`、深色 `54-action-editor-dark.png` 可见导出；未导出文件 |
-| B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 浅/深滚动图 `53a-action-editor-light-scrolled.png`、`54a-action-editor-dark-scrolled.png` 可见参数预览按钮；未执行预览 |
-| B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅/深动作编辑器截图可见取消按钮并用于关闭；未修改清单 |
-| B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅/深动作编辑器截图可见保存按钮；未保存 |
+| B018 | `app/lib/features/connections/action_editor_dialog.dart:255` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击新增后 AX 清单出现 `action1`；取消再打开恢复原有单项。截图 `90-action-editor-added.png`；深色仅有静态截图，动效仍待核 |
+| B019 | `app/lib/features/connections/action_editor_dialog.dart:260` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗打开原生文件面板，因未选择文件而禁用“打开”；点击“取消”返回编辑器，未读文件。深色仅有静态截图 |
+| B020 | `app/lib/features/connections/action_editor_dialog.dart:266` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗打开原生保存面板后点击“取消”；未选保存路径、未写文件。深色仅有静态截图 |
+| B021 | `app/lib/features/connections/action_editor_dialog.dart:336` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击参数预览；AX 结果为 `["仅内存预览", "--help"]`，提示清单有效且不会运行程序。没有执行外部命令；深色仅有静态截图 |
+| B022 | `app/lib/features/connections/action_editor_dialog.dart:366` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗点击取消后关闭；重开清单确认新增草稿已丢弃。`action_editor_test.dart` 回归覆盖取消后重开且未调用保存；截图 `94-action-editor-cancel-check.png` 为取消后的连接详情 |
+| B023 | `app/lib/features/connections/action_editor_dialog.dart:372` | 连接管理：动作编辑对话框 | 浅色 Profile 实窗保存后重开，AX 下拉项包含原动作与 `action1`；仅写入进程内 `Ui6InspectionRuntime`，退出即丢弃，不触碰磁盘或外部服务。Widget 回归覆盖新增、参数预览和保存；深色动态状态仍待核 |
 | B024 | `app/lib/features/connections/connection_setup_dialog.dart:477` | 连接管理：创建/编辑连接对话框 | 自动检测仅在特定类型/适配器出现；本次 CLI 预览未显示该按钮，仍待核 |
 | B025 | `app/lib/features/connections/connection_setup_dialog.dart:483` | 连接管理：创建/编辑连接对话框 | 浅/深配置图 `52-connection-setup-light.png`、`52-connection-setup-dark.png` 可见程序路径选择按钮；未打开文件面板 |
 | B026 | `app/lib/features/connections/connection_setup_dialog.dart:757` | 连接管理：创建/编辑连接对话框 | 浅/深配置图可见测试连接按钮；未点击 |

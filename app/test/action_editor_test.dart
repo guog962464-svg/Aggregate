@@ -66,6 +66,54 @@ void main() {
     expect(runtime.saved?['actions'], hasLength(2));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('connection action editor cancel discards its draft', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = _ActionRuntime();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ConnectionsPage(runtime: runtime, onOpen: (_) {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('编辑动作'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('新增动作'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('action-manifest-json')))
+          .controller!
+          .text,
+      contains('action1'),
+    );
+
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('action-manifest-json')), findsNothing);
+    expect(runtime.saved, isNull);
+
+    await tester.tap(find.text('编辑动作'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('action-manifest-json')))
+          .controller!
+          .text,
+      isNot(contains('action1')),
+    );
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 }
 
 final class _HostConnectionRuntime implements RuntimePort {
