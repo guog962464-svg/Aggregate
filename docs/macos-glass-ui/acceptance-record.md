@@ -798,3 +798,9 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 新轮廓控制在 glyph 画布既有 `4..25.6` 点中心范围内，点序直接供原有 `GlassMotionController` 使用。新增 32 dp、DPR 2 的浅/深视觉 golden：[`浅色`](../../app/test/goldens/glass_primary_glyphs_light.png)、[`深色`](../../app/test/goldens/glass_primary_glyphs_dark.png)；同时更新 1×/2× 的全字典 golden。聚焦图只展示点阵与主题底色，不模拟按钮玻璃 shader。
 - 一次初始重绘将点中心放到既有画布范围之外，`glass_action_button_test.dart` 的点阵坐标约束检出；将三种几何收回原范围后，glyph 映射、坐标、按钮、动画、主题切换、模拟/实时/光学和文字对比定向套件共 51 项通过。`flutter analyze --no-pub` 无问题；macOS Profile fixture 构建成功（62.9 MB）。构建输出包含依赖 `mobile_scanner` 的既有 macOS API 弃用警告。
 - 当前证据为静态点阵预览、Widget 动画/业务回归和 Profile 构建；没有重新采集玻璃按钮实窗按压帧、FrameTiming/FPS 或所有生产调用点。此轮只完成三个轮廓修订，UI-6.7 仍部分验收。
+
+### 2026-11-18 UI-6.7 三枚主图标玻璃实窗静态复核
+
+- 重新打开隔离的 macOS Profile `glass_buttons_fixture_main.dart`，在 96 dp 玻璃控件中同屏核对运行、刷新、搜索。深色截图 [`dark`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-redrawn-dark-complete.png>)，SHA-256 `3effdeb02f2d5cc846b3c9f72f97cb4912870ee82e895379fdeaefd7401db430`；浅色截图 [`light`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-design-alignment/native-profile-three-glyphs-redrawn-light.png>)，SHA-256 `c64022c1f2e67cafbe5d75077161b4be50f696ae9097b6263f6321dbcd1005da`。两张均为 1692×1356 截图、DPR 2。
+- AX 读取主题状态由“深色”变为“浅色”；仅操作隔离夹具中的主题演示，不调用产品动作。实窗确认播放三角与圆点光晕清晰，搜索柄接点连续，刷新弧的箭头尖端在浅深背景均可见。Profile 进程已正常退出，`agent-desktop list-apps --app Aggregate` 返回空列表。
+- 尝试用原生指针拖动留取运行按钮按压帧，但操作返回 `delivered_unverified`，截图不能证明帧处于按下状态，因此不作为按压态验收证据。按压帧、FrameTiming/FPS、生产调用点全覆盖仍待补；本节只签收浅深静态实窗轮廓，UI-6.7 继续部分验收。
