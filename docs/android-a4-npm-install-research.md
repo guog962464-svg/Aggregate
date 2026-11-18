@@ -117,8 +117,16 @@ NodeProbe Debug 专用实现现会在固定 `a4-npm` action 中将 APK `nativeLi
 - 在同一 NodeProbe APK（SHA-256 `fe9dc80087c113e9967374b06428422464cd117fc4efe8e2a4981c04aded87fc`）和 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机上，把最小场景缩到单个 `integrity-bad` npm ci 操作。两组各 8 轮；每轮先删除应用私有 integrity workspace、npm cache 与 npm home。每一轮均以 npm exit 1 报 integrity mismatch，并收到 Messenger `kind=3` 和匹配 Node 关闭 `kind=5`。第一组 1/8 留下 `json5/lib/unicode.d.ts` 与 `json5/lib/util.d.ts`；第二组 2/8 留下相同文件。没有据此推断为完整或可加载的包。
 - 第二组使用已有 `integrityPackageExistsAtFinalize` 结果字段观测收尾时机：两次残留轮在 Probe `beforeExit` 结果写入时已存在包目录，立即检查、等待 500 ms 和 3 秒后文件均保持不变。通过同一 app UID 的 `run-as rm -rf` 可删除它们。由此排除读取过早、延迟清理及 UID 无删除权限作为这次残留的解释；每轮清除 workspace/cache 后仍复现，也不支持单纯旧状态污染。
 - 核对本地准备出的固定 npm 12.2.2 `pacote/lib/fetcher.js`：`extract()` 先对目标目录执行 `#mkdir()`，再启动 tarball stream 和 tar extractor；stream/extractor 出错时 rejection handler 记录并拒绝 Promise，没有清理目标目录的分支。这个源码路径与真机在 `beforeExit` 看到的部分解包吻合。该判断针对本地固定 npm 资产，不外推其他版本。
-- **处理结论：**这是被测 npm tarball 解包失败留下部分文件的行为，不是 NodeProbe Messenger 终态或设备文件权限故障。保留 `verify_a4_npm.py` 的失败断言，不通过改写预期将套件置绿；NodeProbe/产品 NodeBridge 未增加安装回滚代码，ADR 0003 的“Android 用户 npm 安装不开放”决定不变。A4.4 仍仅表示受限 Debug 可行性样本已运行，不能宣称 integrity 失败保证无半成品。
+- **该轮处理结论：**这是被测 npm tarball 解包失败留下部分文件的行为，不是 NodeProbe Messenger 终态或设备文件权限故障。保留 `verify_a4_npm.py` 的失败断言，不通过改写预期将套件置绿；截至该轮，NodeProbe/产品 NodeBridge 未增加安装回滚代码，ADR 0003 的“Android 用户 npm 安装不开放”决定不变。A4.4 仍仅表示受限 Debug 可行性样本已运行，不能宣称原始 npm integrity 失败保证无半成品。
 - 清理回读：NodeProbe 独立包已卸载，普通 Aggregate 仍安装，ADB reverse 为空；没有启动生产 Mac Host。只跑上述固定 integrity action，没有重跑完整 11 项 npm suite。
+
+## 2026-11-18 Debug npm 暂存失败回滚原型
+
+- supersedes：上节“截至该轮，NodeProbe/产品 NodeBridge 未增加安装回滚代码”只在 NodeProbe 的固定 Debug 诊断范围内更新；上节关于原始 npm 解包失败会遗留部分文件的观察仍有效，产品 npm 决定不变。
+- **实现范围：**新增固定 allowlist 动作 `integrity-transaction`，只在独立 `:nodeprobe` / `:nodebridge` Debug 探针中运行。它把 `npm ci` 的 prefix 指向独立 `.staging`，以一份 527,123-byte 合成包和错误 SHA-512 lockfile 经本机 `127.0.0.1` fixture 测试；设备到主机只通过 `adb reverse`，npm registry 设置也指向该 loopback。探针在 `beforeExit` 先记录 npm 暂存包树，失败后只删除 `.staging`，再核对另一目录内预置的 0.9.0 包及标记文件未变。原 `integrity-bad` action 和 npm CLI 本身未修改，产品 NodeBridge 未加入安装回滚逻辑。
+- **真机验收：**构建 `:nodeprobe:assembleDebug --offline -Pa3Probe=true` 成功，测试 APK SHA-256 为 `6f508baeb617840dc645bb2056113942fe5854ee376e39bf18d1a172bba2635e`；执行 `python3 nodeprobe/verify_a4_npm.py --integrity-transaction-only`。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机上的 npm 12.2.2 / Node v24.22.1 返回 `EINTEGRITY`、npm exit 1，并收到 Messenger `kind=3` 和 Node close `kind=5`。本轮第 1/16 次干净 cache 尝试在 `.staging/node_modules/aggregate-a4-integrity-fixture` 观察到 `lib/fixture-059.d.ts` 至 `lib/fixture-063.d.ts` 的部分解包；清理后 `.staging` 不存在，预置包仍为 0.9.0，标记内容前后均为 `old-install-preserved`。验证器最多尝试 16 次以处理 npm 部分解包的非确定性，并要求本轮至少捕获一次暂存包残留。
+- **结论与限制：**该原型证明固定失败场景下，隔离暂存清理可以清除实际观测到的部分解包并保留既有目录。它没有验证成功安装后的 promotion/原子切换，也不改变 npm 自身的行为；不支持任意用户 npm 包、生命周期脚本或产品 Node 入口。只覆盖这一台 4 KB arm64 真机；16 KB、其他 ABI、产品 Release 与正式发布资格仍未验证。
+- **清理回读：**独立 NodeProbe 测试包已卸载，`adb reverse --list` 为空；未启动 Mac Host、未连接外网 registry，用户 `pubspec.lock` 修改未纳入任务变更。原始完整 npm suite 未重跑。
 
 ## 2026-11-18 Google Play 动态代码政策复核
 

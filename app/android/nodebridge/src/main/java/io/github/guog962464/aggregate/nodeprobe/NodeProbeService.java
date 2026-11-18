@@ -89,6 +89,7 @@ public final class NodeProbeService extends Service {
         final String entrypoint = request.getData().getString("entrypoint", "a3-fixed");
         String cliArgsJson = request.getData().getString("cliArgsJson", "[\"--version\"]");
         final String npmAction = request.getData().getString("npmAction");
+        final int npmFixturePort = request.getData().getInt("npmFixturePort", 0);
         final String boundaryAction = request.getData().getString("boundaryAction");
         final String ncmAction = request.getData().getString("ncmAction");
         final String ncmPlayArgumentsJson = request.getData().getString("ncmPlayArgumentsJson");
@@ -103,6 +104,11 @@ public final class NodeProbeService extends Service {
         }
         if ("a4-npm".equals(entrypoint) && !isNpmActionAllowed(npmAction)) {
             reject(reply, requestId, autoClose, "invalidArgument", "npm action is not in the fixed allowlist");
+            return true;
+        }
+        if ("a4-npm".equals(entrypoint) && "integrity-transaction".equals(npmAction)
+                && (npmFixturePort < 1 || npmFixturePort > 65535)) {
+            reject(reply, requestId, autoClose, "invalidArgument", "npm fixture port is invalid");
             return true;
         }
         if ("a4-boundary".equals(entrypoint) && !isBoundaryActionAllowed(boundaryAction)) {
@@ -147,12 +153,14 @@ public final class NodeProbeService extends Service {
         send(reply, STARTED, "worker started", 0, 0, requestId);
         final String safeCliArgsJson = cliArgsJson;
         new Thread(() -> run(reply, requestId, autoClose, delayMs, fail, entrypoint,
-                safeCliArgsJson, npmAction, boundaryAction, ncmAction, ncmPlayArgumentsJson), "a3-node-worker").start();
+                safeCliArgsJson, npmAction, npmFixturePort, boundaryAction, ncmAction,
+                ncmPlayArgumentsJson), "a3-node-worker").start();
         return true;
     }
 
     private void run(Messenger reply, int requestId, boolean autoClose, int delayMs, boolean fail,
-                     String entrypoint, String cliArgsJson, String npmAction, String boundaryAction,
+                     String entrypoint, String cliArgsJson, String npmAction, int npmFixturePort,
+                     String boundaryAction,
                      String ncmAction, String ncmPlayArgumentsJson) {
         long startedAt = System.nanoTime();
         try {
@@ -205,6 +213,14 @@ public final class NodeProbeService extends Service {
                 File actionFile = new File(getFilesDir(), "a4-npm-action.txt");
                 try (FileOutputStream action = new FileOutputStream(actionFile, false)) {
                     action.write(npmAction.getBytes(StandardCharsets.UTF_8));
+                }
+                File fixturePortFile = new File(getFilesDir(), "a4-npm-fixture-port.txt");
+                if ("integrity-transaction".equals(npmAction)) {
+                    try (FileOutputStream port = new FileOutputStream(fixturePortFile, false)) {
+                        port.write(Integer.toString(npmFixturePort).getBytes(StandardCharsets.UTF_8));
+                    }
+                } else if (fixturePortFile.exists() && !fixturePortFile.delete()) {
+                    throw new IllegalStateException("Cannot remove stale npm fixture port");
                 }
             } else if (boundaryProbe) {
                 copyAsset("a4-boundary-native-addon.node",
@@ -313,7 +329,7 @@ public final class NodeProbeService extends Service {
         return "version".equals(action) || "install".equals(action) || "offline".equals(action)
                 || "cache-verify".equals(action) || "script-ignored".equals(action)
                 || "script-default".equals(action) || "script-allowed".equals(action)
-                || "integrity-bad".equals(action)
+                || "integrity-bad".equals(action) || "integrity-transaction".equals(action)
                 || "upgrade-old".equals(action)
                 || "upgrade-new".equals(action) || "uninstall".equals(action);
     }

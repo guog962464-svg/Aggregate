@@ -23,6 +23,10 @@ const roots = {
   scriptIgnored: path.join(filesRoot, 'a4-npm-workspace', 'script-ignored'),
   scriptDefault: path.join(filesRoot, 'a4-npm-workspace', 'script-default'),
   integrityBad: path.join(filesRoot, 'a4-npm-workspace', 'integrity-bad'),
+  integrityTransaction: path.join(filesRoot, 'a4-npm-workspace', 'integrity-transaction'),
+  integrityStage: path.join(filesRoot, 'a4-npm-workspace', 'integrity-transaction', '.staging'),
+  integrityTarget: path.join(filesRoot, 'a4-npm-workspace', 'integrity-transaction',
+    'node_modules', 'aggregate-a4-integrity-fixture'),
   scriptAllowed: path.join(filesRoot, 'a4-npm-global', 'script-allowed'),
 };
 const fixture = path.join(filesRoot, 'a4-npm-install-script.tgz');
@@ -45,6 +49,11 @@ const npmArgs = (() => {
         `--allow-scripts=file:${fixture}`, '--foreground-scripts', fixture];
     case 'integrity-bad':
       return ['ci', '--prefix', roots.integrityBad, ...baseArgs, '--ignore-scripts'];
+    case 'integrity-transaction': {
+      const fixtureUrl = writeIntegrityTransactionFixture();
+      return ['ci', '--prefix', roots.integrityStage, ...baseArgs,
+        `--registry=http://127.0.0.1:${fixtureUrl.port}/`, '--fetch-retries=0', '--ignore-scripts'];
+    }
     case 'upgrade-old':
       return ['install', '--prefix', roots.upgrade, ...baseArgs, '--ignore-scripts', 'json5@2.2.2'];
     case 'upgrade-new':
@@ -144,6 +153,52 @@ function writeBadIntegrityFixture() {
   }, null, 2));
 }
 
+function writeIntegrityTransactionFixture() {
+  const portFile = path.join(filesRoot, 'a4-npm-fixture-port.txt');
+  const port = Number(fs.readFileSync(portFile, 'utf8'));
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('Invalid local integrity fixture port');
+  }
+  fs.rmSync(roots.integrityTransaction, {recursive: true, force: true});
+  fs.rmSync(cacheRoot, {recursive: true, force: true});
+
+  fs.mkdirSync(path.join(roots.integrityTarget, 'lib'), {recursive: true});
+  fs.writeFileSync(path.join(roots.integrityTarget, 'package.json'), JSON.stringify({
+    name: 'aggregate-a4-integrity-fixture',
+    version: '0.9.0',
+    main: 'lib/index.js',
+  }, null, 2));
+  fs.writeFileSync(path.join(roots.integrityTarget, 'lib', 'index.js'),
+    "module.exports = 'preexisting-package';\n");
+  fs.writeFileSync(path.join(roots.integrityTarget, 'preserved-install.txt'), 'old-install-preserved');
+
+  fs.mkdirSync(roots.integrityStage, {recursive: true});
+  const name = 'aggregate-a4-integrity-transaction';
+  const version = '1.0.0';
+  const dependency = 'aggregate-a4-integrity-fixture';
+  fs.writeFileSync(path.join(roots.integrityStage, 'package.json'), JSON.stringify({
+    name,
+    version,
+    private: true,
+    dependencies: {[dependency]: '1.0.0'},
+  }, null, 2));
+  fs.writeFileSync(path.join(roots.integrityStage, 'package-lock.json'), JSON.stringify({
+    name,
+    version,
+    lockfileVersion: 3,
+    requires: true,
+    packages: {
+      '': {name, version, dependencies: {[dependency]: '1.0.0'}},
+      [`node_modules/${dependency}`]: {
+        version: '1.0.0',
+        resolved: `http://127.0.0.1:${port}/integrity-fixture.tgz`,
+        integrity: `sha512-${Buffer.alloc(64).toString('base64')}`,
+      },
+    },
+  }, null, 2));
+  return {port};
+}
+
 function directoryBytes(root) {
   if (!fs.existsSync(root)) return 0;
   const entries = fs.readdirSync(root, {withFileTypes: true});
@@ -154,10 +209,63 @@ function directoryBytes(root) {
   }, 0);
 }
 
+function treeEntries(root) {
+  if (!fs.existsSync(root)) return [];
+  const entries = [];
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      const child = path.join(directory, entry.name);
+      const relative = path.relative(root, child);
+      entries.push(relative);
+      if (entry.isDirectory() && !entry.isSymbolicLink()) visit(child);
+    }
+  };
+  visit(root);
+  return entries.sort();
+}
+
+function readPackageVersion(packageRoot) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')).version;
+  } catch (_) {
+    return null;
+  }
+}
+
+function readFileOrNull(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (_) {
+    return null;
+  }
+}
+
 function finalize() {
   if (finalized) return;
   finalized = true;
   const npmExitCode = explicitExitCode ?? process.exitCode ?? (commandError ? 1 : 0);
+  let integrityTransaction = null;
+  if (action === 'integrity-transaction') {
+    const stagedPackage = path.join(roots.integrityStage, 'node_modules',
+      'aggregate-a4-integrity-fixture');
+    const stageEntriesBeforeCleanup = treeEntries(roots.integrityStage);
+    const stagedPackageEntriesBeforeCleanup = treeEntries(stagedPackage);
+    const preservedMarker = path.join(roots.integrityTarget, 'preserved-install.txt');
+    const oldPackageVersionBeforeCleanup = readPackageVersion(roots.integrityTarget);
+    const oldPackageMarkerBeforeCleanup = readFileOrNull(preservedMarker);
+    if (npmExitCode !== 0) {
+      fs.rmSync(roots.integrityStage, {recursive: true, force: true});
+    }
+    integrityTransaction = {
+      stageEntriesBeforeCleanup,
+      stagedPackageEntriesBeforeCleanup,
+      oldPackageVersionBeforeCleanup,
+      oldPackageMarkerBeforeCleanup,
+      stageExistsAfterCleanup: fs.existsSync(roots.integrityStage),
+      oldPackageVersionAfterCleanup: readPackageVersion(roots.integrityTarget),
+      oldPackageMarkerAfterCleanup: readFileOrNull(preservedMarker),
+    };
+  }
   const result = {
     action,
     nodeVersion: process.version,
@@ -174,6 +282,7 @@ function finalize() {
     upgradeLockPackages: packageState(roots.upgrade),
     integrityLockPackages: packageState(roots.integrityBad),
     integrityPackageExistsAtFinalize: fs.existsSync(path.join(roots.integrityBad, 'node_modules', 'json5')),
+    integrityTransaction,
     scriptIgnoredMarker: fs.existsSync(path.join(roots.scriptIgnored,
       'node_modules', 'aggregate-a4-install-script-fixture', 'install-marker.json')),
     scriptDefaultMarker: fs.existsSync(path.join(roots.scriptDefault,

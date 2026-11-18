@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """Verify a pinned npm CLI and bounded install cases on the connected Android device."""
 
+import argparse
+import io
 import json
+import random
 import re
 import subprocess
+import tarfile
 import tempfile
 import time
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Optional
 
 from verify_device import APK, PACKAGE, adb
 
@@ -52,10 +59,19 @@ def wait_result(log_path: Path, action: str, count: int, seconds: float = 120) -
     raise RuntimeError(f"Only {len(npm_events(log_path))} npm completion event(s); see {log_path}")
 
 
-def run_action(action: str, count: int, log_path: Path, seconds: float = 120) -> dict:
+def run_action(
+    action: str,
+    count: int,
+    log_path: Path,
+    seconds: float = 120,
+    fixture_port: Optional[int] = None,
+) -> dict:
     adb("shell", "am", "force-stop", PACKAGE)
-    adb("shell", "am", "start", "-n", ACTIVITY,
-        "--es", "probe", "a4-npm", "--es", "npmAction", action)
+    command = ["shell", "am", "start", "-n", ACTIVITY,
+               "--es", "probe", "a4-npm", "--es", "npmAction", action]
+    if fixture_port is not None:
+        command.extend(["--ei", "npmFixturePort", str(fixture_port)])
+    adb(*command)
     result = wait_result(log_path, action, count, seconds)
     assert result["action"] == action, result
     assert result["npmVersion"] == "12.2.2", result
@@ -70,6 +86,70 @@ def run_action(action: str, count: int, log_path: Path, seconds: float = 120) ->
         flush=True,
     )
     return result
+
+
+def make_integrity_fixture_tarball() -> bytes:
+    files = {
+        "package/package.json": json.dumps({
+            "name": "aggregate-a4-integrity-fixture",
+            "version": "1.0.0",
+            "main": "lib/index.js",
+        }, separators=(",", ":")).encode(),
+        "package/lib/index.js": b"module.exports = 'new-package';\n",
+        "package/lib/unicode.d.ts": b"export declare const unicode: string;\n",
+        "package/lib/util.d.ts": b"export declare function util(): void;\n",
+    }
+    fixture_bytes = random.Random(0xA4)
+    for index in range(64):
+        files[f"package/lib/fixture-{index:03}.d.ts"] = bytes(
+            fixture_bytes.getrandbits(8) for _ in range(8192)
+        )
+    archive_bytes = io.BytesIO()
+    with tarfile.open(fileobj=archive_bytes, mode="w:gz") as archive:
+        for name, contents in files.items():
+            entry = tarfile.TarInfo(name)
+            entry.size = len(contents)
+            entry.mtime = 0
+            entry.mode = 0o644
+            entry.uid = 0
+            entry.gid = 0
+            archive.addfile(entry, io.BytesIO(contents))
+    return archive_bytes.getvalue()
+
+
+class IntegrityFixtureServer:
+    def __init__(self) -> None:
+        fixture = make_integrity_fixture_tarball()
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self) -> None:
+                if self.path != "/integrity-fixture.tgz":
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "application/gzip")
+                self.send_header("Content-Length", str(len(fixture)))
+                self.end_headers()
+                self.wfile.write(fixture)
+
+            def log_message(self, _format: str, *args: object) -> None:
+                return
+
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.server.daemon_threads = True
+        self.port = self.server.server_address[1]
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+
+    def __enter__(self) -> int:
+        self.thread.start()
+        adb("reverse", f"tcp:{self.port}", f"tcp:{self.port}")
+        return self.port
+
+    def __exit__(self, _exc_type: object, _exc: object, _traceback: object) -> None:
+        adb("reverse", "--remove", f"tcp:{self.port}", check=False)
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
 
 
 def wait_node_close(log_path: Path, generation: str, seconds: float = 15) -> None:
@@ -104,6 +184,13 @@ def npm_packages(result: dict, field: str) -> dict[str, dict]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--integrity-transaction-only",
+        action="store_true",
+        help="run only the local integrity rollback action on the connected device",
+    )
+    options = parser.parse_args()
     if not APK.is_file():
         raise SystemExit(f"Build :nodeprobe:assembleDebug first: {APK}")
     adb("uninstall", PACKAGE, check=False)
@@ -126,9 +213,47 @@ def main() -> None:
                 assert version["stdout"].strip() == "12.2.2", version
                 print("npm 12.2.2 starts on Node v24.22.1 inside the Android Node service.")
 
-                installed = run_action("install", 2, log_path)
+                transaction = None
+                residue_attempts = []
+                with IntegrityFixtureServer() as fixture_port:
+                    for attempt in range(16):
+                        transaction = run_action(
+                            "integrity-transaction", 2 + attempt, log_path,
+                            fixture_port=fixture_port,
+                        )
+                        transaction_output = "\n".join((
+                            transaction["stdout"], transaction["stderr"],
+                            transaction["error"] or "",
+                        ))
+                        rollback = transaction["integrityTransaction"]
+                        assert transaction["npmExitCode"] != 0, transaction
+                        assert re.search(r"integrity", transaction_output, re.IGNORECASE), transaction
+                        assert rollback["stageExistsAfterCleanup"] is False, rollback
+                        assert rollback["oldPackageVersionBeforeCleanup"] == "0.9.0", rollback
+                        assert rollback["oldPackageVersionAfterCleanup"] == "0.9.0", rollback
+                        assert rollback["oldPackageMarkerBeforeCleanup"] == "old-install-preserved", rollback
+                        assert rollback["oldPackageMarkerAfterCleanup"] == "old-install-preserved", rollback
+                        staged_entries = rollback["stagedPackageEntriesBeforeCleanup"]
+                        residue_attempts.append(staged_entries)
+                        if staged_entries:
+                            break
+                assert transaction is not None
+                rollback = transaction["integrityTransaction"]
+                assert rollback["stagedPackageEntriesBeforeCleanup"], {
+                    "attempts": residue_attempts,
+                    "lastResult": rollback,
+                }
+                print(
+                    "Integrity transaction: first observed staged package residue on attempt "
+                    f"{len(residue_attempts)}/16: {rollback['stagedPackageEntriesBeforeCleanup']}; "
+                    "staging removed and preexisting 0.9.0 package preserved each attempt."
+                )
+                if options.integrity_transaction_only:
+                    return
+
+                installed = run_action("install", 3, log_path)
                 if installed["npmExitCode"] != 0:
-                    ignored = run_action("script-ignored", 3, log_path)
+                    ignored = run_action("script-ignored", 4, log_path)
                     assert ignored["npmExitCode"] != 0, ignored
                     assert not ignored["scriptIgnoredMarker"], ignored
                     assert not adb(
@@ -158,23 +283,23 @@ def main() -> None:
                 assert installed["installPackageLoad"]["loaded"] is True, installed
                 print("Registry install passed with transitive has-flag dependency and SHA-512 lockfile integrity.")
 
-                offline = run_action("offline", 3, log_path)
+                offline = run_action("offline", 4, log_path)
                 assert offline["npmExitCode"] == 0, offline
                 offline_packages = npm_packages(offline, "offlineLockPackages")
                 assert "node_modules/supports-color" in offline_packages
                 assert "node_modules/has-flag" in offline_packages
                 assert offline["offlinePackageLoad"]["loaded"] is True, offline
 
-                ignored = run_action("script-ignored", 4, log_path)
+                ignored = run_action("script-ignored", 5, log_path)
                 assert ignored["npmExitCode"] == 0, ignored
                 assert ignored["scriptIgnoredMarker"] is False, ignored
-                default_scripts = run_action("script-default", 5, log_path)
+                default_scripts = run_action("script-default", 6, log_path)
                 assert default_scripts["npmExitCode"] == 0, default_scripts
                 assert default_scripts["scriptDefaultMarker"] is False, default_scripts
-                allowed = run_action("script-allowed", 6, log_path)
+                allowed = run_action("script-allowed", 7, log_path)
                 script_succeeded = allowed["npmExitCode"] == 0 and allowed["scriptAllowedMarker"] is True
 
-                integrity = run_action("integrity-bad", 7, log_path)
+                integrity = run_action("integrity-bad", 8, log_path)
                 integrity_output = "\n".join((integrity["stdout"], integrity["stderr"], integrity["error"] or ""))
                 assert integrity["npmExitCode"] != 0, integrity
                 assert re.search(r"integrity", integrity_output, re.IGNORECASE), integrity
@@ -185,18 +310,18 @@ def main() -> None:
                 else:
                     print("A deliberately incorrect lockfile SHA-512 was rejected; no package files remained after Node closed.")
 
-                old = run_action("upgrade-old", 8, log_path)
+                old = run_action("upgrade-old", 9, log_path)
                 assert old["npmExitCode"] == 0, old
                 assert any(item.get("version") == "2.2.2"
                            for item in npm_packages(old, "upgradeLockPackages").values()), old
-                new = run_action("upgrade-new", 9, log_path)
+                new = run_action("upgrade-new", 10, log_path)
                 assert new["npmExitCode"] == 0, new
                 assert any(item.get("version") == "2.2.3"
                            for item in npm_packages(new, "upgradeLockPackages").values()), new
-                removed = run_action("uninstall", 10, log_path)
+                removed = run_action("uninstall", 11, log_path)
                 assert removed["npmExitCode"] == 0, removed
                 assert "node_modules/json5" not in npm_packages(removed, "upgradeLockPackages")
-                cache = run_action("cache-verify", 11, log_path)
+                cache = run_action("cache-verify", 12, log_path)
                 assert cache["npmExitCode"] == 0, cache
 
                 print("Offline cache, script-disabled install, version upgrade/uninstall, and cache verify passed.")

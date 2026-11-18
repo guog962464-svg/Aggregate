@@ -96,7 +96,11 @@ public final class ProbeActivity extends Activity {
                 arguments.putString("cliArgsJson",
                         cliArgsJson == null ? "[\"--version\"]" : cliArgsJson);
             } else if ("a4-npm".equals(probe)) {
-                arguments.putString("npmAction", getIntent().getStringExtra("npmAction"));
+                String action = getIntent().getStringExtra("npmAction");
+                arguments.putString("npmAction", action);
+                if ("integrity-transaction".equals(action)) {
+                    arguments.putInt("npmFixturePort", getIntent().getIntExtra("npmFixturePort", 0));
+                }
                 arguments.putBoolean("autoClose", true);
             } else if ("a4-boundary".equals(probe)) {
                 arguments.putString("boundaryAction", getIntent().getStringExtra("boundaryAction"));
