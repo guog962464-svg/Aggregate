@@ -14,16 +14,22 @@ final class Ui6InspectionRuntime
         ConnectionSetupPort,
         ConnectionSetupTargetPort,
         ConnectionAccountPort {
-  Ui6InspectionRuntime()
-    : _preview = PreviewRuntime(
-        connections: _seedConnections,
-        capabilities: _seedCapabilities,
-        latency: const Duration(milliseconds: 240),
-        features: RuntimeFeatures.localDesktop,
-      ),
-      _connections = List.of(_seedConnections);
+  Ui6InspectionRuntime({
+    bool emptyWorkspace = false,
+    RuntimeFeatures features = RuntimeFeatures.localDesktop,
+  }) : _features = features,
+       _preview = PreviewRuntime(
+         connections: emptyWorkspace ? const <Connection>[] : _seedConnections,
+         capabilities: _seedCapabilities,
+         latency: const Duration(milliseconds: 240),
+         features: features,
+       ),
+       _connections = emptyWorkspace
+           ? <Connection>[]
+           : List.of(_seedConnections);
 
   final PreviewRuntime _preview;
+  final RuntimeFeatures _features;
   final List<Connection> _connections;
   final Map<String, ConnectionSetupDraft> _drafts = {};
   final Map<String, StreamController<String>> _terminalStreams = {};
@@ -301,7 +307,7 @@ final class Ui6InspectionRuntime
   bool get isPreview => false;
 
   @override
-  RuntimeFeatures get features => RuntimeFeatures.localDesktop;
+  RuntimeFeatures get features => _features;
 
   @override
   List<String> get startupNotices => const [];

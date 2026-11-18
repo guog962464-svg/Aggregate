@@ -1,3 +1,4 @@
+import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
 import '../app/aggregate_app.dart';
@@ -10,12 +11,19 @@ const _seedRunningActivity = bool.fromEnvironment('UI6_SEED_ACTIVITY_RUNNING');
 const _seedActivityFilterStates = bool.fromEnvironment(
   'UI6_SEED_ACTIVITY_FILTER_STATES',
 );
+const _emptyWorkspace = bool.fromEnvironment('UI6_EMPTY_WORKSPACE');
+const _httpOnlyWorkspace = bool.fromEnvironment('UI6_HTTP_ONLY_WORKSPACE');
 
 /// Dedicated macOS Profile entrypoint for reviewing production button contexts.
 /// All runtime, setup, account, terminal, and Host services are in-memory stubs.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final runtime = Ui6InspectionRuntime();
+  final runtime = Ui6InspectionRuntime(
+    emptyWorkspace: _emptyWorkspace,
+    features: _httpOnlyWorkspace
+        ? RuntimeFeatures.httpOnly
+        : RuntimeFeatures.localDesktop,
+  );
   if (_seedActivity || _seedRunningActivity || _seedActivityFilterStates) {
     await runtime.seedActivityForInspection(
       includeRunning: _seedRunningActivity,
