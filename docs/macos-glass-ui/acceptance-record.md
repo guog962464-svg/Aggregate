@@ -473,6 +473,12 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 收尾：停止 Xcode 后台测试运行器，退出相关进程，删除临时 worktree 和结果包；系统 VoiceOver 保持关闭、全局分组恢复“标准”、AppleScript 控制保持关闭。主工作区原有 `pubspec.lock` 未动、未暂存。
 - 结论：Xcode UI 测试 harness 配置/启动问题仍待定位；UI-5.7 VoiceOver 主流程保持部分验收。下一次应先用最小原生 macOS UI testing target 单独验证 runner/worker 生命周期，再接入 Flutter 预览应用。
 
+### 2026-11-18 macOS VoiceOver 空内容组上游对照
+
+- 对照：Flutter 官方 issue [#189683](https://github.com/flutter/flutter/issues/189683) 报告 macOS VoiceOver 启用后，`FlutterView` 内容 `AXGroup` 仍为空，即使 framework semantics tree 已有名称和按钮；报告记录 VoiceOver 只进入空 group，并于 2026-08-01 关闭为 `not planned`。该症状与本项目 2026-11-17 的 Profile 尝试相符，但报告使用 Flutter 3.44.6 / macOS 26.5.1，不能据此认定本项目当前 engine 的精确根因，也不代表有可用修复。
+- 当前源码核对：Flutter 3.47.8 的 [GlassActionButton](../../app/lib/widgets/glass/glass_action_button.dart) 显式输出 `button: true`、`enabled: _enabled`，并仅在启用时提供 `onTap`；本机 SDK engine 的 `ax_platform_node_mac.mm` 将语义 role/name 映射到 AX 属性，并以 node restriction 计算 `AXEnabled`。现有 Widget 语义回归可检查这些 framework 输出，但无法修复或证明 macOS 原生导出树已可读。没有找到符合现有约束的 app 层无损补丁，本轮未修改业务或主题代码。
+- 结论：UI-5.4 与 UI-5.7 仍未通过；真实 VoiceOver 主流程也未获有效控件朗读证据。不得把 upstream issue 的相似症状当作 Aggregate 根因诊断；后续需在获得可工作的原生语义树/VoiceOver 输入路径后重测。
+
 ### 2026-11-17 独立 Xcode UI testing runner 复核与清理
 
 - 方法：根据前一轮记录，另建不依赖 Flutter 的最小原生 SwiftUI 宿主与 `MinimalVoiceOverUITests` UI testing target。测试目标尝试通过 `XCUIDevice.shared.voiceOverService` 启用 VoiceOver 并遍历控件；Xcode 项目与 DerivedData 均放在 `/private/tmp/aggregate-vo-minimal`。
