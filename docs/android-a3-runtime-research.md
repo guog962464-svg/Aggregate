@@ -400,3 +400,11 @@ Android 官方指南规定：NDK r28 及以上默认用 16 KB ELF 对齐，但�
 - **A3.6 状态与范围限制：**当前 `adb devices -l` 无设备，本次未安装或运行 APK/AAB；无 16 KB 真机，故只完成静态 Release 供应包基线，不验证 4 KB/16 KB 系统运行、签名、产品分发、full mobile suite 或其他 ABI。Node 24.22.3 维护方二进制、可审计 source/recipe provenance、与准确二进制绑定的静态链接/第三方许可闭包、suite 结果、产品签名成品及 16 KB 实机仍未完成，A3.6 不关闭。
 - **verified_scope：**仓库 HEAD `7ee9625` 上的 NodeProbe/NodeBridge Gradle Release 任务；工作树另有未暂存的 `pubspec.lock` 镜像 URL 改动，未纳入本次提交。NDK `28.2.13676358` `llvm-readelf` 检查四个 APK/AAB ELF，Build Tools 36.0.0 zipalign、Bundletool 1.18.3 validate/config 和 `jarsigner` AAB 签名检查；APK 与生成 BOM 的精确 SHA-256 如上。未运行 Node suite、未连接设备、未启动模拟器或生产 Host。
 - **retrieval_feedback：**查询 `A3.6 vendor NodeProbe Release bundle static alignment CycloneDX`；采用 `2026-11-17/aggregate/01a1c4f2-53d2-7c80-889d-ea988fc30461__daily-task.md` 中供应方版本、suite gate 和 16 KB 证据边界，依当前 `prepare.sh` 固定 archive/license SHA、APK/AAB 内容、ELF 与 Bundletool 输出复核；结论只扩展供应包静态构建证据，不把旧预发布包、归档 BOM 或静态 16 KB 对齐提升为产品候选/实体设备通过。
+
+## 2026-11-18 Android Node 供应包版本新鲜度复核
+
+- Node 官方当前安全 LTS 为 `v24.22.3` 与 `v26.13.1`；两版均于 2026-11-11 发布安全修复。[Node 24.22.3](https://nodejs.org/en/blog/release/v24.22.3)、[Node 26.13.1](https://nodejs.org/en/blog/release/v26.13.1)
+- fogtape Android 移动发行按维护线仍列 `v24.22.1-0` 与 `v26.12.1-0`，两者都是 2026-10-22 的预发布版，分别落后 Node 24 `v24.22.3` 和 Node 26 `v26.13.1`。官方 `nodejs-mobile` 的 latest Android Release 仍是 Node `v18.20.4`；Node 18 已 EOL。[fogtape 24.22.1-0](https://github.com/fogtape/nodejs-mobile/releases/tag/v24.22.1-0)、[fogtape 26.12.1-0](https://github.com/fogtape/nodejs-mobile/releases/tag/v26.12.1-0)、[官方 nodejs-mobile 18.20.4](https://github.com/nodejs-mobile/nodejs-mobile/releases/tag/v18.20.4)、[Node release status](https://nodejs.org/en/about/previous-releases)
+- **结论不变：**截至本次核对，未找到与 Node 官方当前安全 LTS tag 匹配、由 Android 移动运行时维护方发布的 SDK。Node 24.22.3 的本地重建仍是项目自行维护候选，不是上游发行包；不因 Node 26 Android fork 存在就自动改用另一移动维护线。A3.6 的 provenance、移动测试、供应包组件/法律审查和 Aggregate 16 KB 实机门槛继续开放，产品 Node/npm/CLI 入口关闭。
+- **verified_scope：**2026-11-18 只读查看 Node 官方 `v24.22.3`/`v26.13.1` 发布说明与 release-status 页面、fogtape Node 24/26 releases、官方 `nodejs-mobile` Releases；未下载、构建、签名或安装第三方包，未运行 Node 测试。
+- **retrieval_feedback：**查询当前 Node LTS security releases 与 fogtape/nodejs-mobile Android release tags。采用 Node 官方 release 页面确认安全版本及 LTS 状态，并从移动项目 Releases 核对对应 tag 和 prerelease 标识；结论仅刷新供应包时效，不将 fork 源码或本地 Node 24.22.3 构建写成维护方已发布 SDK。
