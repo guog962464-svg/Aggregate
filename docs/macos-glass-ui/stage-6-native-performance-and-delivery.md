@@ -134,3 +134,8 @@ B092–B098 在隔离 macOS Profile 中覆盖待配对/已配对卡片、只读�
 ### UI-6.7 补证：权限弹窗按钮 B099–B101（2026-11-18）
 
 已在前一节 B096/B097 同一 Profile fixture 中实窗点击 B099 取消、B100 保存和 B101 逐连接权限 chip；取消保持 grant，保存更新假 grant，chip 的 AX 选择态符合读取/控制/外部写入约束。截图复用[验收记录](acceptance-record.md#2026-11-18-ui-67-mac-host-配对与设备权限-profile-验收)。没有物理按下帧或帧率证据，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：工作台功能行 B102–B103（2026-11-18）
+
+暗色 Profile fixture 中点击能力行只进入未运行的参数页；收藏按钮在 PreviewRuntime 内增加收藏，再取消并复核恢复为空集合。没有执行 MCP/CLI 操作或写持久偏好。截图及 SHA、AX 回读和覆盖边界见[验收记录](acceptance-record.md#2026-11-18-ui-67-工作台功能行-b102b103-profile-验收)及[逐实例表](ui-6.7-button-instance-matrix.md)。无按下帧或帧率数据，UI-6.7 仍部分验收。

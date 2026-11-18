@@ -897,3 +897,11 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 ### 2026-11-18 UI-6.7 权限弹窗按钮 B099–B101 补充映射
 
 B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际点击；弹窗关闭，新的 AX 树仍显示原假 grant。B100“保存权限”已在同一实窗编辑流程点击，AX 回读范围从读取连接/连接向导更新为再含连接管理。B101 逐连接权限 chip 在 B096/B097 中分别选择 Git CLI 本机控制和外部写入，AX 读回选择态，并确认本机控制/外部写入自动包含读取。截图沿用前一节的 [`custom-permission-dialog-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-permissions/custom-permission-dialog-dark.png>) 与 [`edit-permission-dialog-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-host-permissions/edit-permission-dialog-dark.png>)。这些回调只读写 `Ui6InspectionHost`；AXPress 回执未证明物理按压，未采按下动画帧。
+
+
+### 2026-11-18 UI-6.7 工作台功能行 B102–B103 Profile 验收
+
+- 使用 `lib/preview/ui6_inspection_main.dart` 隔离 macOS Profile fixture（Flutter 3.47.8 / Dart 3.13.7，macOS 27.2.1 arm64，800×632 logical px、DPR 2）。`Ui6InspectionRuntime` 委托 `PreviewRuntime`，不启动外部命令或网络；偏好设置也存于本进程的 PreviewRuntime。
+- B102 点击工作台“两个整数相加”功能行，只进入参数页；AX 显示来源 UI 检查 · MCP、只读权限和“运行状态：尚未运行”。没有触发“运行”或快捷键，故没有执行工具。工作台浅深截图 [`workspace-actions-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-workspace-actions/workspace-actions-dark.png>)（SHA `ad1153ef4ef4458db22ed6686d587329c87524a4689b40d28831269590e7ab8c`）；行打开后的参数页 [`feature-open-form-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-workspace-actions/feature-open-form-dark.png>)（SHA `f73c58c6bde5c86322ca57bd734b93ed050ef5e9aef1f3493d538c1937c1a849`）。
+- B103 点击同一条目的收藏按钮，AX 显示“收藏的功能”分组和“取消收藏”；截图 [`workspace-favorite-added-dark.png`](</Users/guo/.codex/visualizations/2026/11/18/aggregate-ui6-7-workspace-actions/workspace-favorite-added-dark.png>)（SHA `071f7885d1ba84b7410ccce267af5d44b6fa95eca4cca5ec21fc565f352c9053`）。随后点击取消收藏，AX 显示恢复“收藏 两个整数相加”，没有收藏分组；退出 fixture 前 PreviewRuntime 偏好恢复空集合。
+- AXPress 回执仍为 `delivered_unverified`，以新的 AX 树确认页面/收藏状态；没有物理按下关键帧。应用关闭且无 Aggregate runner 残留。无产品代码变化或测试运行，`git diff --check` 通过。B102–B103 仅暗色交互覆盖，UI-6.7 其余状态和生产调用点仍未全部验收。
