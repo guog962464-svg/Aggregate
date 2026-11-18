@@ -100,7 +100,7 @@ python3 app/tool/profile_theme_switch.py \
 
 `app/test/fixtures/theme_switch_model.json` 保存原实现的固定输入 oracle，并记录来源 SHA256、LCG 种子和事件顺序；另保存该种子下从官方 JS 初始化得到的全部 113 组粒子参数，逐字段比较 791 个 delay/curl/lift/stiffness/drag/phase/twinkle 数值。模拟按事件推进 60 Hz、151 个时间步；独立的压缩源基线记录每一步全部 113 颗粒子的 x/y/size/alpha，共 17,063 个粒子状态、68,252 个数值。六个关键帧另保留可读的滑块/光带标量与粒子样本；Dart 轨迹断言容差为 `1e-9`，压缩基线 SHA-256 为 `fe107b7ef7e72e8e1ca49043c4c51e1ea173de00dc098ce6aed810746b2f00f2`。这证明选定确定性种子和 60 Hz 输入下的粒子运动模型与官方脚本逐帧匹配；它不代表录屏随机种子已找回，也不代表使用视频拟合参数的产品控件与线上随机会话同步逐帧。
 
-现行网页源图可用 `app/tool/capture_theme_switch_source_frames.cjs` 在独立 Chrome headless / ANGLE SwiftShader 进程中导出。工具要求官方 `main.js` SHA 与模型 fixture 相同，会复用固定种子、事件及光学 fixture 的 720×540 视口，并在落盘前核对六个源状态的全部标量与 113 颗粒子（容差 `1e-9`，来自已验 SHA 的完整轨迹基线）。随后 `theme_switch_reference_frames_test.dart` 对相同状态绘制 Flutter shader，`compare_theme_switch_frames.py` 生成无注册、无校色、无遮罩的差分：
+现行网页源图可用 `app/tool/capture_theme_switch_source_frames.cjs` 在独立 Chrome headless / ANGLE SwiftShader 进程中导出。工具要求官方 `main.js` SHA 与模型 fixture 相同，会复用固定种子、事件及光学 fixture 的 720×540 视口，导出 0–150 帧，并在落盘前核对六个源模型检查点的标量和全部 151×113 颗粒子状态（容差 `1e-9`，来自已验 SHA 的完整轨迹基线）。随后 `theme_switch_reference_frames_test.dart` 对相同 151 组状态绘制 Flutter shader，`compare_theme_switch_frames.py` 生成无注册、无校色、无遮罩的差分：
 
 ```sh
 curl -fsSL 'https://experiments.thisiswhitespace.com/standalone/glass-light-toggle/main.js?v=3' -o /tmp/glass-light-toggle-main.js
@@ -112,7 +112,7 @@ uv run --python 3.13 --with pillow==13.0.0 --with numpy==2.5.4 \
   python tool/compare_theme_switch_frames.py /tmp/theme-flutter-frames/manifest.json /tmp/theme-image-comparison
 ```
 
-2026-11-18 六帧平均 RGB MAE 为 `0.0578675/255`，最大单帧 `0.0745979/255`，完全相同像素比例为 `98.77%–99.25%`。这是 SwiftShader 和 Flutter widget-test renderer 在控制相同模型状态下的图像差异，不是 macOS Profile 实窗或 Metal/display-present 测量；它也不验证未知录屏种子或线上实时相位。逐项证据见 [UI-6.8 图像对照记录](macos-glass-ui/acceptance-record.md#2026-11-18-ui-68-官方-webgl-与-flutter-shader-同状态图像对照)。
+2026-11-18 全 151 帧平均 RGB MAE 为 `0.0631750/255`，最大单帧 `0.0747111/255`，完全相同像素比例为 `98.73%–99.42%`。这是 SwiftShader 和 Flutter widget-test renderer 在控制相同模型状态下的图像差异，不是 macOS Profile 实窗或 Metal/display-present 测量；它也不验证未知录屏种子或线上实时相位。逐项证据见 [UI-6.8 图像对照记录](macos-glass-ui/acceptance-record.md#2026-11-18-ui-68-官方-webgl-与-flutter-shader-同状态图像对照)。
 
 `theme_switch_optics.json` 的颜色探针来自原 WebGL 输出。另导出了 6 个相同状态的完整图像作 RGB 差分；线性采样修正后的平均 MAE 约 `0.0066/255`。剩余差异集中在点阵纹理边缘的光栅化/采样。这个数据不代表与用户录屏的直接差分。
 

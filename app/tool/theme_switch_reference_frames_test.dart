@@ -622,13 +622,13 @@ Future<void> _exportModelFrames(
   final input = File(_modelInput).absolute;
   final model = (jsonDecode(input.readAsStringSync()) as List<dynamic>)
       .cast<Map<String, dynamic>>();
-  final byIndex = {for (final item in model) (item['i'] as num).toInt(): item};
+  expect(model, hasLength(151));
   final frames = <Map<String, Object?>>[];
   var previousTime = 0.0;
-  for (final index in const [0, 60, 70, 90, 110, 150]) {
-    final row = byIndex[index];
-    expect(row, isNotNull, reason: 'Model input has no frame $index.');
-    final data = row!;
+  for (var expectedIndex = 0; expectedIndex < model.length; expectedIndex++) {
+    final data = model[expectedIndex];
+    final index = (data['i'] as num).toInt();
+    expect(index, expectedIndex, reason: 'Model input frames must be contiguous.');
     double value(String key) => (data[key] as num).toDouble();
     final halfWidth = value('hx');
     final halfHeight = value('hy');

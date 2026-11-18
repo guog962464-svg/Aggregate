@@ -58,7 +58,8 @@ const [width, height] = optics.viewport;
 const [centerX, centerY] = optics.scene_origin;
 const scale = optics.scene_scale;
 const dpr = optics.device_pixel_ratio;
-const frames = provenance.trajectory_sample_frames;
+const frames = Array.from({length: fullParticleOracle.length}, (_, index) => index);
+const modelCheckpointFrames = new Set(provenance.trajectory_sample_frames);
 const events = provenance.events_before_frame;
 const particleCount = provenance.particle_count;
 const chromeBin = chromeArg || process.env.AGGREGATE_CHROME_BIN ||
@@ -157,7 +158,10 @@ const server = http.createServer((request, response) => {
     request.on('data', chunk => chunks.push(chunk));
     request.on('end', () => {
       const rows = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-      if (rows.length !== frames.length || rows.some(row => row.particles.length !== particleCount)) {
+      if (
+        rows.length !== frames.length ||
+        rows.some((row, index) => row.i !== frames[index] || row.particles.length !== particleCount)
+      ) {
         response.writeHead(400);
         response.end('Unexpected model dimensions.');
         return;
@@ -207,10 +211,12 @@ function verifySourceSamples(rows) {
   const scalarFields = ['p', 'v', 'theme', 'x', 'hx', 'hy', 'theta', 'led', 'lift'];
   for (const row of rows) {
     const expected = expectedRows.get(row.i);
-    if (!expected) throw new Error(`Unexpected source frame ${row.i}.`);
-    for (const field of scalarFields) {
-      if (Math.abs(row[field] - expected[field]) > 1e-12) {
-        throw new Error(`Source scalar mismatch at frame ${row.i}: ${field}.`);
+    if (modelCheckpointFrames.has(row.i)) {
+      if (!expected) throw new Error(`Missing source checkpoint ${row.i}.`);
+      for (const field of scalarFields) {
+        if (Math.abs(row[field] - expected[field]) > 1e-12) {
+          throw new Error(`Source scalar mismatch at frame ${row.i}: ${field}.`);
+        }
       }
     }
     const trajectory = fullParticleOracle[row.i];
