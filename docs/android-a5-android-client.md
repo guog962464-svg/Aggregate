@@ -246,3 +246,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **启动：**从当前工作树启动 Debug Aggregate，在“设置 → Mac Host”点击“启动 Host”后，macOS 弹出 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串授权框。按用户先前提供的凭据输入后，授权框仍未关闭；随后取消该次请求，设置页恢复“启动 Host”，没有批准或改变现存 Host 身份。
 - **网络与服务：**Mac `en0=192.168.8.4/24`，LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 手机 `wlan0=192.168.31.135/24`，仍属不同子网。Host `47321` 无 listener；本轮未配对、未运行 NSD/WSS、未调用任何 RPC。
 - **清理：**已优雅退出本轮 Debug Aggregate，未安装或启动 testnode，手机原测试项目仍在前台；未改动 Android 配对记录、Mac TLS 身份或网络设置。该次启动未能完成钥匙串授权，不能作为 Host 启动或 LAN 验收通过。
+
+## 2026-11-19 21:22 正式入口 Host 启动前台复核
+
+- **入口确认：**用户允许使用前台后，检查发现当时桌面 Aggregate 窗口是 Profile `preview_main.dart`，Mac Host 页没有真实 Host 控件。以正式 `main.dart` 运行 `flutter run --no-pub -d macos` 后构建成功，并在“设置 → Mac Host”看到“启动 Host”。
+- **钥匙串结果：**启动触发 macOS 登录钥匙串对 Host TLS 私钥的导出授权请求。按用户此前提供的密码输入并选择“始终允许”后，SecurityAgent 提示仍未关闭；在确认安全输入及前台交互后仍无进展，Flutter Debug 进程丢失连接并退出。请求遗留提示随后被清理；没有更改钥匙串项目或身份。不能据此判断密码错误，也不将该次尝试计作 Host 启动成功。
+- **服务与网络：**Mac `en0=192.168.8.4/24`，LGE AN10 手机 `wlan0=192.168.31.135/24`，仍属不同子网。Mac `47321` 无 listener；没有配对、NSD、WSS 或 RPC。手机前台仍为原 LoginPasswordActivity，没有启动 testnode。
+- **运行环境与清理：**发现另一个仍运行的 Profile 预览 Flutter 会话；切换时预览窗口曾自动恢复，之后没有再关闭该会话。Debug Host 请求结束后没有 Aggregate Host listener。当前共享工作区中的 UI 文件及 `pubspec.lock` 修改均未由本轮编辑或暂存。
+- **结论：**A5.4/A5.5 仍开放。阻塞因素是 macOS Host TLS Keychain 授权未完成及当前异网段；本轮没有获得新的配对/RPC 证据。前台权限已用于本次入口检查，不需要再启动 testnode。
