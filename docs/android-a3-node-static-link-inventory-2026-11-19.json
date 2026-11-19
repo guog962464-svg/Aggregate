@@ -56,7 +56,59 @@
     "sourceArchiveSha256": "6df67207ad3c607269e09622d170e9b1e3ed58e9c3b5e399f6cc5855f835028b",
     "testSignedApkSha256": "b13c9446eba58647077a4740ca38edfe998e815ce70ba9dbc2b811397bd5036d",
     "testSignedApkSigner": "local Android debug keystore; verification only, not a product signature",
-    "aabConnectedSplitVerification": "Bundletool 1.18.3 debug-signed connected split installed on LGE AN10 4 KB device; Node v24.22.3/mobile 24.22.3-0, file, and loopback network checks passed"
+    "aabConnectedSplitVerification": "Bundletool 1.18.3 debug-signed connected split installed on LGE AN10 4 KB device; Node v24.22.3/mobile 24.22.3-0, file, and loopback network checks passed",
+    "runtimeDynamicDependencyInspection": {
+      "testSignedApkSha256": "b13c9446eba58647077a4740ca38edfe998e815ce70ba9dbc2b811397bd5036d",
+      "inspection": "NDK r28c llvm-readelf -dW over each arm64 .so extracted from the exact test-signed APK",
+      "minSdk": 24,
+      "packagedDynamicEdgeCount": 2,
+      "platformDynamicEdgeCount": 11,
+      "uniquePlatformLibraries": [
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ],
+      "directNeeded": [
+        {
+          "path": "lib/arm64-v8a/libaggregate_node_probe.so",
+          "sha256": "98a9351dfc6020299f10c6e80027ae0bfeceaa4e41fcce531ca7d9a43e2e6654",
+          "bundled": [
+            "libnode.so"
+          ],
+          "platform": [
+            "libc.so",
+            "libdl.so",
+            "liblog.so",
+            "libm.so"
+          ]
+        },
+        {
+          "path": "lib/arm64-v8a/libc++_shared.so",
+          "sha256": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+          "bundled": [],
+          "platform": [
+            "libc.so",
+            "libdl.so",
+            "libm.so"
+          ]
+        },
+        {
+          "path": "lib/arm64-v8a/libnode.so",
+          "sha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
+          "bundled": [
+            "libc++_shared.so"
+          ],
+          "platform": [
+            "libc.so",
+            "libdl.so",
+            "liblog.so",
+            "libm.so"
+          ]
+        }
+      ],
+      "limits": "This maps direct DT_NEEDED edges and minimum SDK only. Android system library build/version and full symbol/API compatibility are supplied by the device OS and remain outside this inventory; this is not legal approval or a complete transitive platform SBOM."
+    }
   },
   "created": "2026-11-19",
   "embeddedNdkNotices": [
@@ -75,8 +127,8 @@
   ],
   "format": "aggregate-node-static-link-inventory-v1",
   "limitations": [
-    "CycloneDX compositions.aggregate remains incomplete: 11 Android/platform dynamic requirements are not individually versioned, and legal review has not approved the candidate.",
-    "Abseil and Highway provenance caveats from the exact Node source tree remain in sourceComponents; Highway contributes no retained section.",
+    "CycloneDX compositions.aggregate remains incomplete: 11 Android/platform dynamic edges are now mapped by ELF, but the OS-provided library builds/versions and full symbol/API compatibility are not pinned; legal review has not approved the candidate.",
+    "Abseil vendored files match the pinned Chromium mirror subset; the Highway source delta matches the documented Google fix cherry-picked by Node. The older Highway README/DEPS revision metadata remains stale; libhighway.a contributes no retained section.",
     "Release APK/AAB are unsigned NodeProbe experiments; a debug-keystore-signed copy used for physical verification is not a production release.",
     "No 16 KB physical device was available; runtime/install/load behavior on 16 KB hardware remains an open release gate.",
     "The candidate is a local Darwin-hosted cross build from a fogtape recipe and official Node source; it is not an upstream-maintained Android binary release.",
@@ -507,7 +559,7 @@
       ],
       "name": "Highway",
       "notes": [
-        "README.chromium says upstream revision 8295336dd70f1201d42c22ab5b0861de38cf8fbf; V8 DEPS pins Chromium mirror commit 00fe003dac355b979f36157f9407c7c46448958e. File-hash comparison of the vendored src subtree against the mirror pin found 183 identical files, 57 omitted mirror build/CI files, and one content delta in hwy/ops/ppc_vsx-inl.h. The exact source tree ID is recorded; the README revision and one-file delta require maintainer provenance confirmation. Link map retains no section from libhighway.a."
+        "README.chromium says upstream revision 8295336dd70f1201d42c22ab5b0861de38cf8fbf; V8 DEPS pins Chromium mirror commit 00fe003dac355b979f36157f9407c7c46448958e. The vendored src subtree differs from the mirror pin in hwy/ops/ppc_vsx-inl.h; the candidate file (SHA-256 6874d3306da1d953cbfb3c5261d2ed9fe083a5d7786c640c290ce6682044e22e) matches the official Node v24.22.3 file byte-for-byte and its patch-id matches Node commit e54975e17d8b85e0862304dfa45c288f03e6e542, which cherry-picks Google Highway commit dcc0ca1cd4245ecff9e5ba50818e47d5e2ccf699. The code delta is attributable; README/DEPS revision metadata remains stale. Link map retains no section from libhighway.a."
       ],
       "sourceGitTreeObjectId": "8ff0c677454219b9e10b43d46f08f09e11466ce9",
       "sourceRoot": "deps/v8/third_party/highway",
@@ -520,6 +572,22 @@
         {
           "path": "deps/v8/DEPS",
           "sha256": "9a1ae8b723b4147a7d4ff124288efbe13e98fe8c961e0a2470781f4c14d7be47"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "kind": "Google Highway upstream fix",
+          "commit": "dcc0ca1cd4245ecff9e5ba50818e47d5e2ccf699"
+        },
+        {
+          "kind": "Node V8 downstream cherry-pick",
+          "commit": "e54975e17d8b85e0862304dfa45c288f03e6e542"
+        },
+        {
+          "kind": "Node v24.22.3 candidate file",
+          "commit": "e63cab040c09d43ceef8cb35508c40044614e906",
+          "path": "deps/v8/third_party/highway/src/hwy/ops/ppc_vsx-inl.h",
+          "sha256": "6874d3306da1d953cbfb3c5261d2ed9fe083a5d7786c640c290ce6682044e22e"
         }
       ]
     },
