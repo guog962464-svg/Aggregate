@@ -1319,3 +1319,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - Widget 操作/结果：检查“重新打开功能”可访问名称及至少 40×40 的按钮 hit target 后点击。定向断言确认只调用一次 capability 搜索和 `onOpen`，打开的 capability ID 与失败记录相同；没有调用 cancel 或 invoke，也没有 Flutter 异常。`flutter test --no-pub test/activity_page_test.dart`：6 项通过；`flutter analyze --no-pub` 无问题，`git diff --check` 通过。
 - Profile 尝试：`lib/preview/ui6_inspection_main.dart` 的 `Ui6InspectionRuntime`，只含进程内样例，无真实服务。Flutter Profile 构建成功；首轮 AX 树曾显示失败详情及“重新打开功能”名称。继续检查时该进程退出，AX 点击得到 `STALE_REF`；直接启动隔离 Profile 包后，AX 导航过程中窗口数次暂时消失（`WINDOW_NOT_FOUND`/空窗口清单），进程仍存活。未能稳定取得详情截图或点击 B009；没有将这次原生尝试计为视觉/动画通过。为避免残留，已终止此次隔离 Profile 进程。
 - 结论：B009 的失败态按钮行为和 Widget hit target 通过组件树验证；生产 Profile 的实际玻璃外观、点击动画及原生窗口稳定性仍待验，B009 不签收。未改生产按钮、Runtime 或太阳/月亮主题逻辑。
+
+### 2026-11-19 UI-6.7 B011 复制诊断Widget回归
+
+- Widget 环境：macOS target variant；生产 `ActivityPage`、`AggregateActionButton` 与 `GlassMotionScope`，1000×720 logical px、DPR 1、手动动效时钟。fake runtime 提供一条固定时间的失败记录。
+- 操作/结果：通过 `TestDefaultBinaryMessengerBinding` 拦截 `SystemChannels.platform` 的 `Clipboard.setData`。点击“复制诊断”只产生一次剪贴板写入请求，payload 精确为 `Run failed-run · 失败 · 2026-11-19 12:34:56`，随后显示“已复制脱敏诊断”；没有读取/写入 macOS 系统剪贴板，也没有访问运行参数或结果。`flutter test --no-pub test/activity_page_test.dart`：7 项通过；`flutter analyze --no-pub` 无问题。
+- 结论：只通过组件树和内存 channel 检查 B011 点击/脱敏 payload；Profile 实窗的按钮材料、按下动画和原生剪贴板接线仍未验，B011 保持部分验收。未改生产逻辑或主题切换。

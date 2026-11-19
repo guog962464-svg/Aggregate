@@ -23,7 +23,7 @@
 | B008 | `app/lib/features/activity/activity_page.dart:263` | 活动页：记录操作与列表状态 | 浅深紧凑详情可见返回记录；浅色 `59c-activity-failed-list-light.png` 为点击后回到失败列表的状态 |
 | B009 | `app/lib/features/activity/activity_page.dart:282` | 活动页：记录操作与列表状态 | 深浅失败详情 `58a-activity-failed-detail-dark-scrolled.png`、`59b-activity-failed-detail-light-scrolled.png` 可见“重新打开功能”。新增 macOS Widget 回归在共享玻璃作用域中验证该按钮的可访问名称、至少 40×40 hit target，以及点击只搜索并打开同一能力、没有运行或取消调用；`flutter test --no-pub test/activity_page_test.dart` 通过。Profile 隔离窗在打开失败详情后失去可访问窗口，未完成原生点击与动效核验，仍待签收 |
 | B010 | `app/lib/features/activity/activity_page.dart:292` | 活动页：记录操作与列表状态 | 深/浅 Profile 的运行中列表及详情均已截图；两种主题滚至操作区后“取消运行”语义点击成功，AX 状态变为“已取消”。浅色按钮与 MiniPlayer 暂停控件 AX 矩形相隔 11 个逻辑像素。仅验证隔离内存 fixture，真实服务响应仍待核 |
-| B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 深浅失败详情图可见“复制诊断”；未点击，系统剪贴板未改动 |
+| B011 | `app/lib/features/activity/activity_page.dart:303` | 活动页：记录操作与列表状态 | 深浅失败详情图可见“复制诊断”。新增 macOS Widget 回归通过测试通道拦截 `Clipboard.setData`，验证单次复制的脱敏运行 ID/状态/时间内容和成功提示，系统剪贴板未读写；`flutter test --no-pub test/activity_page_test.dart` 通过。Profile 原生点击与动效仍待验 |
 | B012 | `app/lib/features/catalog/workspace_page.dart:183` | 工作台：搜索框清除按钮 | 浅色 Profile 实窗键盘输入 Git 后显示 3 项、清除恢复 17 项；深色 Profile 默认 PreviewRuntime 输入 Git 后显示 1 项、点击清除恢复 12 项，悬停提示“清除搜索”；截图与 SHA 见验收记录。仅签收深色功能与悬停提示，深色点击动效仍待核 |
 | B013 | `app/lib/features/catalog/workspace_page.dart:239` | 工作台：空连接态添加 CLI | 浅色空态进入本机 Mac（预览）CLI 配置并取消；深色 Profile 同样打开“预览 CLI”表单后取消，未修改默认字段、测试或保存。截图与 SHA 见验收记录；动效待核 |
 | B014 | `app/lib/features/catalog/workspace_page.dart:246` | 工作台：空连接态添加 MCP | 浅色空态进入本机 Mac（预览）stdio MCP 配置并取消；深色 Profile 同样打开“预览 stdio MCP”表单后取消，未修改默认字段、测试或保存。截图与 SHA 见验收记录；动效待核 |

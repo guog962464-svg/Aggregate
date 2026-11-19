@@ -3,6 +3,7 @@ import 'package:aggregate/preview/ui6_inspection_runtime.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
@@ -233,6 +234,67 @@ void main() {
     expect(openCalls, 1);
     expect(opened?.id.key, _capability.id.key);
     expect(runtime.cancelCalls, 0);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
+  testWidgets('failed activity copies only its redacted diagnostic', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    String? clipboardPayload;
+    var clipboardWrites = 0;
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        final arguments = call.arguments as Map<Object?, Object?>;
+        clipboardPayload = arguments['text'] as String?;
+        clipboardWrites++;
+      }
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    final runtime = _ActivityRuntime()
+      ..runs = [
+        RunSummary(
+          const RunId('failed-run'),
+          _capability.id,
+          RunEvent(
+            runId: const RunId('failed-run'),
+            sequence: 1,
+            state: RunState.failed,
+            occurredAt: DateTime(2026, 11, 19, 12, 34, 56),
+          ),
+        ),
+      ];
+    final clock = ManualGlassMotionClock();
+    addTearDown(clock.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassMotionScope(
+          clock: clock,
+          child: Scaffold(
+            body: ActivityPage(runtime: runtime, onOpen: (_) {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('复制诊断'));
+    await tester.pump();
+
+    expect(clipboardWrites, 1);
+    expect(clipboardPayload, 'Run failed-run · 失败 · 2026-11-19 12:34:56');
+    expect(find.text('已复制脱敏诊断'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 }
