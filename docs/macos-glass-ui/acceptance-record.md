@@ -1305,3 +1305,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 
 - 对照当前构造点把六处矩阵位置移到按钮本身：B080 主题控件 `appearance_selector.dart:44`；B103 收藏按钮 `capability_row.dart:57`；B106/B107 恢复动作 `result_panel.dart:348/398`；B108/B109 文件预览/访达动作 `result_panel.dart:474/486`。其余 B073–B109 检查点均落在对应动作按钮构造处。
 - 这次只修正源码定位，没有新增截图、点击结果或视觉通过结论；按钮交互、浅深覆盖及动效的原验收缺口不变。`git diff --check` 通过；未运行测试。
+
+
+### 2026-11-19 UI-6.7 B073/B074 音乐搜索授权回归复核
+
+- 已有 macOS Profile 启动本轮构建成功，但 Flutter 报告 `Failed to foreground app; open returned 1`；`agent-desktop list-windows` 中本次 Aggregate 窗口为 `visible=false`、`accessible=false`。没有对该窗口执行快照、点击或坐标输入，随即终止本次 Profile。B073/B074 原生窗口态、点击动画与 display-present 仍未复核。
+- 重跑现有 `flutter test --no-pub test/music_search_permission_test.dart`，1 项通过：搜索未获授权时取消不会执行；允许后把明确授权传给 `_PermissionGateRuntime`，其仅委托进程内 `PreviewRuntime` 返回样例结果，后续搜索在同一会话复用授权。
+- 该 Widget 回归验证了授权逻辑，不替代 macOS 原生按钮画面或按下态验收。未改产品代码；UI-6.7 继续部分验收。
