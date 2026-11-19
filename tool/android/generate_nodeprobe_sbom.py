@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import struct
 import uuid
 import zipfile
@@ -24,6 +25,9 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
 LICENSE_FILE_PREFIXES = ("license", "licence", "notice", "copying", "copyright")
+SPDX_EXPRESSION_PATTERN = re.compile(
+    r"[A-Za-z0-9.+-]+(?: (?:AND|OR|WITH) [A-Za-z0-9.+-]+)*"
+)
 
 
 def sha256(data: bytes) -> str:
@@ -377,6 +381,40 @@ def validate_inventory_digest(value: object, field: str) -> str:
     return value.lower()
 
 
+def license_candidate_fields(
+    candidate: object, owner: str, has_evidence: bool
+) -> tuple[list[dict[str, object]] | None, list[dict[str, str]]]:
+    if not isinstance(candidate, dict):
+        raise ValueError(f"{owner} is missing its license-candidate record")
+    status = candidate.get("status")
+    if status == "candidate":
+        expression = candidate.get("expression")
+        if (
+            not isinstance(expression, str)
+            or SPDX_EXPRESSION_PATTERN.fullmatch(expression) is None
+        ):
+            raise ValueError(f"{owner} has an invalid SPDX candidate expression")
+        if not has_evidence:
+            raise ValueError(f"{owner} has a license candidate without evidence")
+        license_properties = [
+            property_item("aggregate:license-candidate-status", "candidate; legal review pending"),
+            property_item("aggregate:license-candidate-expression", expression),
+        ]
+        return [{"expression": expression}], license_properties
+    if status == "unresolved":
+        reason = candidate.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError(f"{owner} has no reason for its unresolved license")
+        if "expression" in candidate:
+            raise ValueError(f"{owner} has an expression marked unresolved")
+        license_properties = [
+            property_item("aggregate:license-candidate-status", "unresolved"),
+            property_item("aggregate:license-candidate-reason", reason),
+        ]
+        return None, license_properties
+    raise ValueError(f"{owner} has an unsupported license-candidate status")
+
+
 def static_link_components(
     inventory: dict[str, object],
 ) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str], dict[str, int]]:
@@ -412,6 +450,13 @@ def static_link_components(
             property_item("aggregate:source-version-evidence", json.dumps(raw.get("versionEvidence", []), sort_keys=True)),
             property_item("aggregate:source-license-evidence", json.dumps(raw.get("licenseEvidence", []), sort_keys=True)),
         ]
+        source_license_candidate = raw.get("licenseCandidate")
+        license_entries, license_properties = license_candidate_fields(
+            source_license_candidate,
+            f"static-link source component {component_id}",
+            isinstance(raw.get("licenseEvidence"), list) and bool(raw["licenseEvidence"]),
+        )
+        properties.extend(license_properties)
         source_root = raw.get("sourceRoot")
         if isinstance(source_root, str):
             properties.append(property_item("aggregate:source-root", source_root))
@@ -424,15 +469,16 @@ def static_link_components(
                 for note in notes
                 if isinstance(note, str)
             )
-        components.append(
-            {
-                "type": "library",
-                "bom-ref": source_ref,
-                "name": name,
-                "version": version,
-                "properties": properties,
-            }
-        )
+        source_component: dict[str, object] = {
+            "type": "library",
+            "bom-ref": source_ref,
+            "name": name,
+            "version": version,
+            "properties": properties,
+        }
+        if license_entries is not None:
+            source_component["licenses"] = license_entries
+        components.append(source_component)
 
     explicit_archives = link_map["explicitArchiveInputs"]
     implicit_archives = link_map["implicitNdkToolchainArchives"]
@@ -479,18 +525,27 @@ def static_link_components(
             property_item("aggregate:members-with-retained-sections", retained_members),
             property_item("aggregate:archive-make-input", raw.get("makeInput", "")),
         ]
+        archive_license_candidate = source_row.get("licenseCandidate")
+        license_entries, license_properties = license_candidate_fields(
+            archive_license_candidate,
+            f"static-link archive {name}",
+            isinstance(source_row.get("licenseEvidence"), list)
+            and bool(source_row["licenseEvidence"]),
+        )
+        properties.extend(license_properties)
         if isinstance(source_tree, str):
             properties.append(property_item("aggregate:source-git-tree-object-id", source_tree))
-        components.append(
-            {
-                "type": "library",
-                "bom-ref": archive_ref,
-                "name": name,
-                "version": str(source_row["version"]),
-                "hashes": [{"alg": "SHA-256", "content": digest}],
-                "properties": properties,
-            }
-        )
+        archive_component: dict[str, object] = {
+            "type": "library",
+            "bom-ref": archive_ref,
+            "name": name,
+            "version": str(source_row["version"]),
+            "hashes": [{"alg": "SHA-256", "content": digest}],
+            "properties": properties,
+        }
+        if license_entries is not None:
+            archive_component["licenses"] = license_entries
+        components.append(archive_component)
         archive_dependency_nodes.append({"ref": archive_ref, "dependsOn": []})
         if retained_members > 0:
             retained_archive_count += 1
@@ -539,18 +594,27 @@ def static_link_components(
             property_item("aggregate:members-with-retained-sections", retained_members),
             property_item("aggregate:ndk-relative-path", raw.get("ndkRelativePath", "")),
         ]
+        archive_license_candidate = source_row.get("licenseCandidate")
+        license_entries, license_properties = license_candidate_fields(
+            archive_license_candidate,
+            f"implicit NDK archive {name}",
+            isinstance(source_row.get("licenseEvidence"), list)
+            and bool(source_row["licenseEvidence"]),
+        )
+        properties.extend(license_properties)
         if isinstance(source_tree, str):
             properties.append(property_item("aggregate:source-git-tree-object-id", source_tree))
-        components.append(
-            {
-                "type": "library",
-                "bom-ref": archive_ref,
-                "name": name,
-                "version": str(source_row["version"]),
-                "hashes": [{"alg": "SHA-256", "content": digest}],
-                "properties": properties,
-            }
-        )
+        archive_component: dict[str, object] = {
+            "type": "library",
+            "bom-ref": archive_ref,
+            "name": name,
+            "version": str(source_row["version"]),
+            "hashes": [{"alg": "SHA-256", "content": digest}],
+            "properties": properties,
+        }
+        if license_entries is not None:
+            archive_component["licenses"] = license_entries
+        components.append(archive_component)
         archive_dependency_nodes.append({"ref": archive_ref, "dependsOn": []})
         retained_archive_refs.append(archive_ref)
 
@@ -665,6 +729,7 @@ def main() -> int:
     gradle_runtime_manifest_bytes: bytes | None = None
     gradle_runtime_manifest_source: str | None = None
     gradle_runtime_refs: dict[str, str] = {}
+    binary_license_mappings_by_path: dict[str, dict[str, object]] = {}
     with zipfile.ZipFile(args.archive) as archive:
         names = archive.namelist()
         lib_prefixes = ("lib/", "base/lib/")
@@ -728,24 +793,34 @@ def main() -> int:
                 if not isinstance(source_row, dict):
                     raise ValueError("static-link source component must be an object")
                 for evidence in source_row.get("licenseEvidence", []):
-                    if not isinstance(evidence, dict) or not isinstance(evidence.get("packagedAsset"), str):
+                    if not isinstance(evidence, dict):
                         continue
-                    packaged_asset = evidence["packagedAsset"]
-                    packaged_path = archive_member_by_suffix(names, packaged_asset)
-                    if sha256(archive.read(packaged_path)) != evidence.get("sha256"):
-                        raise ValueError(f"packaged static license asset hash mismatch: {packaged_path}")
-                    continue
-                if evidence.get("path") == "LICENSE" and evidence.get("status") == "source-project license file":
-                    expected_source_license = validate_inventory_digest(
-                        evidence.get("sha256"), "Node source license sha256"
-                    )
-                    matching_source_licenses = [
-                        path for path in names
-                        if PurePosixPath(path).name == "nodejs-mobile-LICENSE.txt"
-                        and sha256(archive.read(path)) == expected_source_license
-                    ]
-                    if len(matching_source_licenses) != 1:
-                        raise ValueError("packaged Node source license does not match the inventory")
+                    if isinstance(evidence.get("packagedAsset"), str):
+                        packaged_path = archive_member_by_suffix(
+                            names, evidence["packagedAsset"]
+                        )
+                        expected_packaged_digest = validate_inventory_digest(
+                            evidence.get("packagedAssetSha256", evidence.get("sha256")),
+                            "packaged static license asset sha256",
+                        )
+                        if sha256(archive.read(packaged_path)) != expected_packaged_digest:
+                            raise ValueError(
+                                f"packaged static license asset hash mismatch: {packaged_path}"
+                            )
+                    if (
+                        evidence.get("path") == "LICENSE"
+                        and evidence.get("status") == "source-project license file"
+                    ):
+                        expected_source_license = validate_inventory_digest(
+                            evidence.get("sha256"), "Node source license sha256"
+                        )
+                        matching_source_licenses = [
+                            path for path in names
+                            if PurePosixPath(path).name == "nodejs-mobile-LICENSE.txt"
+                            and sha256(archive.read(path)) == expected_source_license
+                        ]
+                        if len(matching_source_licenses) != 1:
+                            raise ValueError("packaged Node source license does not match the inventory")
             for notice in static_inventory.get("embeddedNdkNotices", []):
                 if not isinstance(notice, dict) or not isinstance(notice.get("path"), str):
                     continue
@@ -755,6 +830,64 @@ def main() -> int:
                 packaged_path = archive_member_by_suffix(names, notice_path)
                 if sha256(archive.read(packaged_path)) != notice.get("sha256"):
                     raise ValueError(f"packaged NDK notice hash mismatch: {packaged_path}")
+
+            raw_binary_mappings = static_inventory.get("binaryLicenseMappings")
+            if not isinstance(raw_binary_mappings, list):
+                raise ValueError("static-link inventory is missing packaged binary license mappings")
+            expected_binary_paths: set[str] = set()
+            for raw_mapping in raw_binary_mappings:
+                if not isinstance(raw_mapping, dict):
+                    raise ValueError("packaged binary license mapping must be an object")
+                name = raw_mapping.get("name")
+                paths = raw_mapping.get("archivePaths")
+                if not isinstance(name, str) or not isinstance(paths, dict):
+                    raise ValueError("packaged binary license mapping needs a name and archive paths")
+                packaged_path = paths.get(artifact_kind)
+                if not isinstance(packaged_path, str) or PurePosixPath(packaged_path).name != name:
+                    raise ValueError(f"invalid {artifact_kind.upper()} path for packaged binary {name}")
+                if packaged_path in binary_license_mappings_by_path:
+                    raise ValueError(f"duplicate packaged binary license mapping: {packaged_path}")
+                if packaged_path not in names:
+                    raise ValueError(f"packaged binary license mapping path is absent: {packaged_path}")
+                expected_digest = validate_inventory_digest(
+                    raw_mapping.get("sha256"), f"{name} binary sha256"
+                )
+                if sha256(archive.read(packaged_path)) != expected_digest:
+                    raise ValueError(f"packaged binary hash mismatch for {packaged_path}")
+                candidate_record = raw_mapping.get("licenseCandidate")
+                evidence = raw_mapping.get("evidence")
+                license_entries, license_properties = license_candidate_fields(
+                    candidate_record,
+                    f"packaged binary {name}",
+                    isinstance(evidence, dict) and bool(evidence),
+                )
+                if isinstance(candidate_record, dict) and candidate_record.get("status") == "candidate":
+                    evidence_path = evidence.get("path") if isinstance(evidence, dict) else None
+                    evidence_digest = validate_inventory_digest(
+                        evidence.get("sha256") if isinstance(evidence, dict) else None,
+                        f"{name} license evidence sha256",
+                    )
+                    matching_notice = [
+                        notice for notice in static_inventory.get("embeddedNdkNotices", [])
+                        if isinstance(notice, dict)
+                        and notice.get("path") == evidence_path
+                        and notice.get("sha256") == evidence_digest
+                    ]
+                    if not matching_notice:
+                        raise ValueError(f"{name} license evidence is not bound to a packaged NDK notice")
+                mapping = dict(raw_mapping)
+                mapping["_licenseEntries"] = license_entries
+                mapping["_licenseProperties"] = license_properties
+                binary_license_mappings_by_path[packaged_path] = mapping
+                expected_binary_paths.add(packaged_path)
+            actual_binary_paths = {
+                path for path in names
+                if path.endswith(".so") and path.startswith(lib_prefixes)
+            }
+            if actual_binary_paths != expected_binary_paths:
+                raise ValueError(
+                    "packaged native library paths do not match the binary license inventory"
+                )
 
         for path in sorted(names):
             if path.endswith("/"):
@@ -784,6 +917,20 @@ def main() -> int:
                         ],
                     ],
                 }
+                binary_license_mapping = binary_license_mappings_by_path.get(path)
+                if binary_license_mapping is not None:
+                    component["properties"].extend(
+                        binary_license_mapping["_licenseProperties"]
+                    )
+                    component["properties"].append(
+                        property_item(
+                            "aggregate:license-evidence",
+                            json.dumps(binary_license_mapping.get("evidence", {}), sort_keys=True),
+                        )
+                    )
+                    license_entries = binary_license_mapping["_licenseEntries"]
+                    if license_entries is not None:
+                        component["licenses"] = license_entries
                 if name == "libnode.so":
                     component["name"] = "Node.js mobile runtime"
                     component["version"] = args.node_version

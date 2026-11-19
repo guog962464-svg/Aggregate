@@ -4,19 +4,25 @@
     "cycloneDxBoms": [
       {
         "kind": "apk",
-        "sha256": "919c2a8b2bd2bcb2d74401de84f7528c24e641b531ede71188b786cb9c2b6b8a",
+        "sha256": "37a8a9550a07f7ce11b6bba7f37fcadfae3b95f091425bfc638f163acb945ae6",
         "componentCount": 95,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
-        "composition": "incomplete"
+        "composition": "incomplete",
+        "libraryLicenseFieldCount": 54,
+        "candidateLicenseExpressionCount": 52,
+        "unresolvedLicenseComponentCount": 16
       },
       {
         "kind": "aab",
-        "sha256": "d77b5040f8ef52477fab20a9edb956c196caf3538928d2482bfa3adc11deca56",
+        "sha256": "d9ad40ece6007b2990bb4644b5b904145467bf0a9190a6b61b48ae8d9d5efbe9",
         "componentCount": 95,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
-        "composition": "incomplete"
+        "composition": "incomplete",
+        "libraryLicenseFieldCount": 54,
+        "candidateLicenseExpressionCount": 52,
+        "unresolvedLicenseComponentCount": 16
       }
     ],
     "libnodePackagedStrippedSha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
@@ -486,7 +492,12 @@
           "path": "deps/v8/DEPS",
           "sha256": "9a1ae8b723b4147a7d4ff124288efbe13e98fe8c961e0a2470781f4c14d7be47"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Apache-2.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "ada",
@@ -506,7 +517,12 @@
           "path": "deps/ada/ada.h",
           "sha256": "0010b17b3ff489e13998e86d921b16e1643e370ee3276c584f1b0c4b72bdf628"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "brotli",
@@ -526,7 +542,12 @@
           "path": "deps/brotli/c/common/version.h",
           "sha256": "67783763c494a7fa337f215c858cb4b05b346318186a11160f6382ac3fb078a0"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "cares",
@@ -546,7 +567,12 @@
           "path": "deps/cares/include/ares_version.h",
           "sha256": "730d52c204f13529c679310293ae1e292a99df4300b643df44ab30063831b5f4"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "highway",
@@ -589,7 +615,12 @@
           "path": "deps/v8/third_party/highway/src/hwy/ops/ppc_vsx-inl.h",
           "sha256": "6874d3306da1d953cbfb3c5261d2ed9fe083a5d7786c640c290ce6682044e22e"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Apache-2.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "histogram",
@@ -609,7 +640,12 @@
           "path": "deps/histogram/include/hdr/hdr_histogram_version.h",
           "sha256": "3d49d6dbd5312936b5b38faac4d633413b9f077a5e95698dc0f01a96132f6dcf"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "BSD-2-Clause OR CC0-1.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "icu",
@@ -632,7 +668,12 @@
           "path": "deps/icu-small/source/common/unicode/uvernum.h",
           "sha256": "13cd24940babf5c6c1016131c9917742fc6cf198228689904d88116bb7d04118"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Unicode-3.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "inspector_protocol",
@@ -655,7 +696,12 @@
           "path": "deps/inspector_protocol/README.node",
           "sha256": "834d3997b658d5600c3a33e26a7fa81f9176bc416b7a262472e54af9a305ab55"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "BSD-3-Clause",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "llhttp",
@@ -680,7 +726,12 @@
           "path": "deps/llhttp/include/llhttp.h",
           "sha256": "52a7011f979b31f761403c1a333bf7fc26dc70f5745d8488eed1609c92097100"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "merve",
@@ -700,7 +751,12 @@
           "path": "deps/merve/merve.h",
           "sha256": "572c2ac6d81aac760f659b945756e7b3d02d1010e38f9ee7425e0830f8ce19bb"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "nbytes",
@@ -723,7 +779,12 @@
           "path": "deps/nbytes/.release-please-manifest.json",
           "sha256": "94cd7b502bc527ab18a0373f6d4461c17e1b634b110eaea30ed29d04df9a7504"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "ncrypto",
@@ -746,7 +807,11 @@
           "path": "deps/ncrypto/README.md",
           "sha256": "eac7f233d33572e73765164256a7c92c207099722d59bd32c0e5e3a82b0ce292"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "The source has no standalone grant; mapping the Node project license would rely on an unconfirmed project-scope inference."
+      }
     },
     {
       "id": "ndk_compiler_rt",
@@ -769,7 +834,12 @@
           "path": "NDK:source.properties",
           "sha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "NCSA OR MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "ndk_cpufeatures",
@@ -792,7 +862,12 @@
           "path": "NDK:source.properties",
           "sha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Apache-2.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "ndk_libunwind",
@@ -815,7 +890,12 @@
           "path": "NDK:source.properties",
           "sha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Apache-2.0 WITH LLVM-exception",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "nghttp2",
@@ -835,7 +915,12 @@
           "path": "deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h",
           "sha256": "53b46254a82c2075b28459e0f0cd8da7369afbd5632a71560ab75d6af920c5e1"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "node",
@@ -858,7 +943,12 @@
           "path": "src/node_version.h",
           "sha256": "9c3400edcf0ef6f1888f3726e5bef234e70edc1c81e5641d076549496651a23c"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "openssl",
@@ -880,7 +970,12 @@
           "path": "deps/openssl/openssl/VERSION.dat",
           "sha256": "6dae52ea88792578bc22594ec2a0a26b2cf675b925ce81ce8792a1ccdf10cdb5"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Apache-2.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "simdjson",
@@ -903,7 +998,12 @@
           "path": "deps/simdjson/simdjson.h",
           "sha256": "a5c467c33c7871262eb4c82775490430758939c1c516fbdaeb662f8255860a60"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Apache-2.0",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "simdutf",
@@ -923,7 +1023,12 @@
           "path": "deps/v8/third_party/simdutf/simdutf.h",
           "sha256": "3db538b964facc1184193d4283c6eb5bbce23d5365355d20058d5740a7921879"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "sqlite",
@@ -955,7 +1060,11 @@
           "path": "deps/sqlite/sqlite3.c",
           "sha256": "0c657666d819f261cc4007526ad57e1669de9949df7a8ea847aa284a2bf0ee52"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "The source contains a public-domain blessing but does not declare a standard SPDX identifier; no custom LicenseRef is defined."
+      }
     },
     {
       "id": "uv",
@@ -980,7 +1089,12 @@
           "path": "deps/uv/include/uv/version.h",
           "sha256": "a859f2c21f7887d45b0372109ebc91759a6f8c408c7cbf2a12f9bbe579be403b"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT AND BSD-2-Clause AND ISC",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "uvwasi",
@@ -1000,7 +1114,12 @@
           "path": "deps/uvwasi/include/uvwasi.h",
           "sha256": "5103f54c5627dc198df9ccef6eb3d56124d16712bbb1c34baff1a793c81864d4"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "v8",
@@ -1038,7 +1157,11 @@
           "path": "deps/v8/include/v8-version.h",
           "sha256": "7a945b923eec649417fc366a50b1439af006869ca764f37d1d07be15eed47802"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "The aggregate includes V8 and externally maintained portions with multiple license texts; a single expression would overstate scope."
+      }
     },
     {
       "id": "zlib",
@@ -1061,7 +1184,12 @@
           "path": "deps/zlib/zlib.h",
           "sha256": "0ff41598d145693759a8322bb90bc4f2c57dcdcb3635fdf5b2195bf13df15b54"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "Zlib",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     },
     {
       "id": "zstd",
@@ -1081,21 +1209,78 @@
           "path": "deps/zstd/lib/zstd.h",
           "sha256": "9b4bc8245565c98ccfc61c07749928b57e7c0f6fddb0530c4f6aa1971893d88b"
         }
-      ]
+      ],
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "BSD-3-Clause",
+        "review": "Source evidence supports this candidate expression; legal review remains pending."
+      }
     }
   ],
   "validation": {
     "cycloneDxSchema": "1.6",
     "cycloneDxSchemaSha256": "1ebcb88a2c845ecb6ff7bee7aeabdff9422cb0347f3d6875b241bd444b7e098f",
-    "cycloneDxSchemaValidation": "passed for APK and AAB; 0 schema errors and 0 unresolved dependency references",
+    "cycloneDxSchemaValidation": "Passed for the license-candidate APK and AAB BOMs using CycloneDX 1.6 root, SPDX and JSF schemas with Draft 7 and format checking; 0 schema errors for each BOM.",
     "aabBundletoolValidate": "passed with Bundletool 1.18.3",
     "aabNativeLibraryAlignment": "PAGE_ALIGNMENT_16K",
     "apkZipalign": "passed: zipalign -c -P 16 4",
     "licenseAssetHashCheck": "passed: 24 native dependency license files, Node license manifest, two Gradle runtime components using the bundled Apache-2.0 text, and 3 NDK notices match recorded hashes in APK and AAB; OpenSSL source LICENSE.txt maps to the packaged Node top-level license asset in both APK and AAB",
     "nodeRuntimeElfAlignment": "passed: 11 PT_LOAD segments across 3 arm64 libraries in both APK and AAB; each p_align=0x4000",
-    "bomDependencyClosure": "passed: 95 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete",
+    "bomDependencyClosure": "Passed: 95 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete.",
     "physicalNodeProbeRelease": "passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages using a debug-key-signed test APK",
     "sourceEvidenceHashCheck": "passed: 26 sourceComponents; 32 license-source hashes, 29 version-source hashes, and 50 packaged APK/AAB license-asset hashes matched (111/111 total). This does not validate all 95 CycloneDX components, OS library symbol compatibility, or legal approval.",
-    "bomLicenseDeclarationCoverage": "APK and AAB each contain 95 components: 70 library and 25 license/notice file components. Only annotations and kotlin-stdlib declare Apache-2.0; 68/70 library components have no CycloneDX licenses field. Source-license hashes are recorded as evidence properties and do not replace license declarations or legal review."
-  }
+    "bomLicenseDeclarationCoverage": "APK and AAB each contain 95 components: 70 library and 25 license/notice file components. The two Maven libraries retain Apache-2.0; 52 of the other 68 library components now carry source-evidence-based candidate SPDX expressions and 16 are explicitly marked unresolved. Candidate mappings are not legal approval; source-license hashes remain evidence properties."
+  },
+  "binaryLicenseMappings": [
+    {
+      "name": "libaggregate_node_probe.so",
+      "archivePaths": {
+        "apk": "lib/arm64-v8a/libaggregate_node_probe.so",
+        "aab": "base/lib/arm64-v8a/libaggregate_node_probe.so"
+      },
+      "sha256": "98a9351dfc6020299f10c6e80027ae0bfeceaa4e41fcce531ca7d9a43e2e6654",
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "No repository-level product license statement covers the JNI bridge; dependency licenses do not establish the bridge license."
+      },
+      "evidence": {
+        "path": "app/android/nodebridge/src/main/cpp/node_probe.cpp",
+        "sha256": "986ef089614486768f59b39d37c21dc0c19ddf77f266e1541d3645d2927796f3"
+      }
+    },
+    {
+      "name": "libc++_shared.so",
+      "archivePaths": {
+        "apk": "lib/arm64-v8a/libc++_shared.so",
+        "aab": "base/lib/arm64-v8a/libc++_shared.so"
+      },
+      "sha256": "cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c",
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "NCSA OR MIT",
+        "review": "The NDK r28c notice states libc++ is dual licensed and permits either license; legal review remains pending."
+      },
+      "evidence": {
+        "path": "assets/android-ndk-llvm-NOTICE.txt",
+        "sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1",
+        "scope": "NDK r28c NOTICE lines 832-882: libc++ legacy license states NCSA BSD-like OR MIT."
+      }
+    },
+    {
+      "name": "libnode.so",
+      "archivePaths": {
+        "apk": "lib/arm64-v8a/libnode.so",
+        "aab": "base/lib/arm64-v8a/libnode.so"
+      },
+      "sha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "This composite binary contains Node core and multiple statically linked source groups; Node core MIT alone understates its modeled scope."
+      },
+      "evidence": {
+        "path": "assets/nodejs-mobile-LICENSE.txt",
+        "sha256": "c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66"
+      }
+    }
+  ]
 }
