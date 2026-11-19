@@ -258,3 +258,11 @@ flowchart LR
 - LGE AN10 / Android 15 / API 35 / arm64 真机用户 0 未安装 TalkBack；`enabled_accessibility_services=null`、`accessibility_enabled=0`，系统字体比例为 `1.0`。
 - 打开 TalkBack 官方商店入口后，Honor App Market 显示“暂不提供下载，敬请期待”；指定 Google Play 后，商店要求登录 Google 账号才能继续。未登录、安装或变更无障碍设置。
 - 已恢复测试前的前台应用。Flutter 语义树与触控目标的自动化/界面检查仍有效，但没有实体屏幕阅读器朗读验收；A7.6 因此保持未完全验收。
+
+### 2026-11-19 当前安装包前台界面冒烟复核
+
+- 设备：LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页。未重装应用；检查的是设备上原有的 `io.github.guog962464.aggregate`，`versionCode=8`、`versionName=0.3.7`。冷启动进入 `MainActivity` 后进程保持存活，工作台与四项导航可见。
+- 从连接页打开两步式连接向导：第一步只列出本机 HTTP MCP（当前没有已配对 Host）；第二步显示执行设备、HTTP MCP 适配器、名称/URL/Bearer Token 字段及测试/保存操作。没有填写 URL/Token，也没有执行测试或保存。
+- 聚焦名称字段打开系统 IME 后，测试/保存按钮仍位于键盘上方，一级底部导航已隐藏；截图见[连接表单](screenshots/android-a7.6/08-current-setup-form-smoke.png)和[输入法打开时](screenshots/android-a7.6/09-current-setup-ime-smoke.png)。临时名称输入随关闭向导丢弃；连接列表仍显示空状态。
+- 检查后将原 `hg.zp.mengnews/...LoginPasswordActivity` 任务恢复到前台，并 force-stop Aggregate；读回该前台 Activity 仍在顶层、Aggregate 无运行 PID、安装包保留。没有启动或安装 testnode。
+- UIAutomator 输出将空输入框表示为 `EditText` 节点，但没有在 XML 中提供字段 hint；此输出不能证明 TalkBack 实际朗读内容。设备仍无 TalkBack，实体读屏验收继续开放。本次只验证已安装包的启动、导航、连接表单和 IME 可见性，不刷新源码构建、Host/网络或 A7.6 全量矩阵结论。
