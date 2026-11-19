@@ -3,9 +3,9 @@
 
 The archive is the source of truth for packaged native libraries, npm package
 metadata, and embedded license/notice files. Packaged ELF dynamic requirements
-and declared npm dependencies/peer dependencies are recorded. If present, the
-archive's Gradle runtime manifest records resolved Maven source artifacts and
-their dependency edges. An optional candidate-specific static-link inventory
+and declared npm dependencies/peer dependencies are recorded. A Gradle runtime
+manifest embedded in the archive or supplied separately records resolved Maven
+artifacts and their dependency edges. An optional candidate-specific static-link inventory
 can add linker archive components and direct link edges after matching the
 inventory to the exact APK/AAB and packaged libnode.so. Platform library
 versions and legal approval remain outside this generator; the output keeps
@@ -600,6 +600,14 @@ def main() -> int:
         type=Path,
         help="candidate-specific JSON with Node source and linker archive evidence",
     )
+    parser.add_argument(
+        "--gradle-runtime-manifest",
+        type=Path,
+        help=(
+            "resolved Gradle runtime manifest JSON; use this when the archive "
+            "does not embed one"
+        ),
+    )
     args = parser.parse_args()
 
     archive_hash = sha256_file(args.archive)
@@ -654,6 +662,8 @@ def main() -> int:
     static_node_ref: str | None = None
     npm_root: str | None = None
     gradle_runtime_manifest: dict[str, object] | None = None
+    gradle_runtime_manifest_bytes: bytes | None = None
+    gradle_runtime_manifest_source: str | None = None
     gradle_runtime_refs: dict[str, str] = {}
     with zipfile.ZipFile(args.archive) as archive:
         names = archive.namelist()
@@ -665,8 +675,19 @@ def main() -> int:
         ]
         if len(gradle_manifest_paths) > 1:
             raise ValueError("archive contains multiple NodeProbe Gradle runtime manifests")
+        if gradle_manifest_paths and args.gradle_runtime_manifest is not None:
+            parser.error(
+                "--gradle-runtime-manifest cannot be combined with a manifest embedded in the archive"
+            )
         if gradle_manifest_paths:
-            gradle_runtime_manifest = json.loads(archive.read(gradle_manifest_paths[0]))
+            gradle_runtime_manifest_bytes = archive.read(gradle_manifest_paths[0])
+            gradle_runtime_manifest = json.loads(gradle_runtime_manifest_bytes)
+            gradle_runtime_manifest_source = "archive"
+        elif args.gradle_runtime_manifest is not None:
+            gradle_runtime_manifest_bytes = args.gradle_runtime_manifest.read_bytes()
+            gradle_runtime_manifest = json.loads(gradle_runtime_manifest_bytes)
+            gradle_runtime_manifest_source = "external"
+        if gradle_runtime_manifest is not None:
             if not isinstance(gradle_runtime_manifest, dict):
                 raise ValueError("NodeProbe Gradle runtime manifest must be a JSON object")
             gradle_components, gradle_runtime_refs = gradle_runtime_components(
@@ -996,6 +1017,14 @@ def main() -> int:
                 property_item("aggregate:gradle-runtime-components", len(gradle_runtime_refs)),
                 property_item("aggregate:gradle-runtime-edges", gradle_edge_count),
                 property_item("aggregate:android-gradle-runtime-graph", "resolved manifest included"),
+                property_item(
+                    "aggregate:android-gradle-runtime-manifest-source",
+                    gradle_runtime_manifest_source or "unknown",
+                ),
+                property_item(
+                    "aggregate:android-gradle-runtime-manifest-sha256",
+                    sha256(gradle_runtime_manifest_bytes or b""),
+                ),
             ]
         )
     bom = {

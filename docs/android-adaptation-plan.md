@@ -189,6 +189,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-18 当前 NodeProbe Release 供应包更新了 APK/AAB CycloneDX 归档清单（各 312 个组件、152 个依赖节点、362 条边），npm 必需依赖声明边全部解析且引用闭合；两份 BOM 明确为 incomplete。当前 archive 是 Node 24.22.1-0；24.22.3 静态链接清单哈希不匹配，故未复用。Node source/static link 闭包、schema-validator、平台库版本、法律审查和 16 KB 真机仍未完成，A3.6 保持开放。详情见[当前 Release BOM 记录](android-a3-runtime-research.md#2026-11-18-当前-nodeprobe-release-apkaab-cyclonedx-归档清单)。
 
   - 2026-11-19 NodeProbe Release Gradle 图补核：当前 `:nodeprobe:releaseRuntimeClasspath` 离线报告通过，只含 Kotlin 标准库 2.4.0、传递 annotations 13.0 和 `:nodebridge` 项目边；它不覆盖 CMake/NDK/native 链接或 Android 平台库，不能补齐二进制 SBOM。完整范围与命令见 [A3.6 Gradle 图记录](android-a3-runtime-research.md#2026-11-19-nodeprobe-release-gradle-runtime-graph-补核)。
+  - 2026-11-19 NodeProbe Release BOM 补齐 Gradle Maven runtime 图：生成器新增外部 manifest 输入，按实际 DEX、JAR/POM、许可证文件校验后，为当前 unsigned APK/AAB 各增加 2 个 Maven 组件和 2 条依赖边，同时保留原始 archive SHA。BOM 各 314 组件、dependency refs 闭合，但 `composition=incomplete`；Node 静态链接、Android 平台库、法律批准及安全版 Android archive 仍未关闭 A3.6。详见 [Release Gradle runtime BOM](android-a3-runtime-research.md#2026-11-19-nodeprobe-release-gradle-runtime-bom)。
 
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
@@ -256,6 +257,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-17 loopback WSS 突然断流补验：新增 TCP 透传夹具，在不终止 TLS/WSS 的前提下销毁两端 loopback TCP socket，不发 WebSocket close frame；验证 AndroidHostManager 转 offline，再通过保存 endpoint 显式连接、重新认证并恢复 online。该文件 4 项通过，全量 Flutter suite 297 项、全量 analyze 通过。此项只证明隔离 loopback 传输断流与手动重连，不断言 TCP RST、Wi‑Fi/Android OS/NSD 行为或自动重连；A5.5 意外网络中断实机验收仍开放。详见 [A5.5 突然断流记录](android-a5-android-client.md#2026-11-17-loopback-wss-突然断流与手动重连集成测试)。
 
   - 2026-11-19 NSD 用户反馈后复验：Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.31.135/24`，并非同一子网；手机到 Mac 的临时 TCP listener 超时。Mac `dns-sd` 可发布并本机解析 `_aggregate-host._tcp`，但隔离 `.integration` 真机调用产品 `MethodChannelAndroidHostDiscovery` 返回空 endpoint。没有配对或调用 RPC；Mac Host 已停止并退出，隔离包已卸载，普通包保留，ADB reverse 为空。NSD/direct WSS 仍待可达网络复验，A5.5 保持开放。详见 [Android NSD 实机复验记录](android-a5-android-client.md#2026-11-19-nsd-用户反馈后实机复验)。
+  - 2026-11-19 地址反馈后再次只读采样：Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.31.135/24` 仍不在同一子网；Android 到 Mac 经 `192.168.31.1`，Mac 到手机按默认路由经 `192.168.8.1`，一次 ICMP 无响应。此采样未启动 Host 或配对、未调用 RPC；此前 NSD/direct TCP 失败仍为最近的端到端证据，A5.4/A5.5 未通过。详见 [网络地址再次读回](android-a5-android-client.md#2026-11-19-用户反馈后网络地址再次读回)。
 
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 
