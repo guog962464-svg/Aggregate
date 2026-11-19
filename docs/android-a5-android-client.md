@@ -209,3 +209,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 这是上一节 direct WSS 只读验收之后单独准备验证 NSD 的状态记录；没有把直连结果当作 NSD 证据。源码检查确认 `AndroidHostManager._connectHost()` 会先调用 `discovery.discover(hostId)`，仅在发现结果为空时才回退到已保存 endpoint；上一节配对与连接成功不足以证明实际发现到 NSD 服务。
 - 重新打开当前主线 macOS Debug app 并启动 Host 后，listener 读回绑定 `192.168.10.144:47321`，与刚才 direct LAN 验收的 `192.168.8.4:47321` 不同。Android 最后一次可读地址是 `192.168.8.7/24`；随后 `adb devices -l` 为空，无法取得同一时刻的手机地址或运行 NSD 客户端探测。
 - 未生成邀请、未配对、未调用任何 RPC。发现网络条件不匹配后立即从 Mac UI 停止 Host 并优雅退出 app；复核 `47321` 无 listener、无 Aggregate 进程。当前 Mac `en0=192.168.10.144`，Android IP 当前未知，NSD 发现待设备重新连接且两端网络条件一致时补验。
+
+## 2026-11-19 NSD 用户反馈后实机复验
+
+- **邀请：**Mac UI 曾生成一条短时邀请，未复制、未分享、未用于配对；界面显示于 2026-11-19 11:24:53 到期。没有产生待审批设备。
+- **网络读回：**收到“IP 已一致”的反馈后重读网络，Mac `en0=192.168.8.4/24`，LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页手机 `wlan0=192.168.31.135/24`，手机连接 Wi-Fi `ws-5g`。两个地址仍不同子网；手机路由到 `192.168.8.4` 经 `192.168.31.1`，Android 临时 TCP 探针连接 Mac `192.168.8.4` 超时。测试期间 Mac 从 `192.168.10.144` 切换为 `192.168.8.4`，手机地址未同步变化。
+- **Mac 广播：**启动当前主线 Debug Aggregate Host，监听 `192.168.8.4:47321`。macOS `dns-sd -B/-L` 找到并本机解析 `_aggregate-host._tcp.local` 服务，TXT 记录含格式有效的 Host ID，端口为 47321。
+- **Android NSD：**以 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true` 构建隔离 `.integration` 包，在实际 LGE AN10 上运行临时集成测试，直接调用产品 `MethodChannelAndroidHostDiscovery.discover(hostId)`。4.5 秒发现窗口结束后返回 `[]`，预期的 `wss://192.168.8.4:47321/host` 未出现，测试失败。NSD 结果是空发现；结合不同子网和单播 TCP 超时，当前网络未通过 direct NSD/WSS 验收。
+- **范围与清理：**本次只检查 Bonjour/NSD 与临时 TCP 可达性；未配对、未生成或审批新设备、未调用 `host.hello`、`connection.list` 或任何其他 RPC，未改动 Mac grants 和普通 Android 包数据。已通过 UI 停止 Host 并优雅退出 app；端口 `47321` 无监听；卸载隔离 `.integration` 包，普通 `io.github.guog962464.aggregate` 保留；临时测试文件已删除，ADB reverse 为空。A5.4/A5.5 的 NSD 与 direct LAN 门槛仍开放。

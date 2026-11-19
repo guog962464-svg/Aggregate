@@ -188,6 +188,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-18 当前 NodeProbe Release 供应包更新了 APK/AAB CycloneDX 归档清单（各 312 个组件、152 个依赖节点、362 条边），npm 必需依赖声明边全部解析且引用闭合；两份 BOM 明确为 incomplete。当前 archive 是 Node 24.22.1-0；24.22.3 静态链接清单哈希不匹配，故未复用。Node source/static link 闭包、schema-validator、平台库版本、法律审查和 16 KB 真机仍未完成，A3.6 保持开放。详情见[当前 Release BOM 记录](android-a3-runtime-research.md#2026-11-18-当前-nodeprobe-release-apkaab-cyclonedx-归档清单)。
 
+  - 2026-11-19 NodeProbe Release Gradle 图补核：当前 `:nodeprobe:releaseRuntimeClasspath` 离线报告通过，只含 Kotlin 标准库 2.4.0、传递 annotations 13.0 和 `:nodebridge` 项目边；它不覆盖 CMake/NDK/native 链接或 Android 平台库，不能补齐二进制 SBOM。完整范围与命令见 [A3.6 Gradle 图记录](android-a3-runtime-research.md#2026-11-19-nodeprobe-release-gradle-runtime-graph-补核)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
@@ -252,6 +254,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-17 loopback WSS Host restart 集成补验：AndroidHostManager 经临时证书/真实 pinned TLS/WSS 配对后，Host transport 停止会使 Android session stream 结束并转 offline；同端口、同证书重启隔离 Host fixture 后，利用保存 endpoint 显式 connect、重新认证 host.hello 并恢复 online。该文件 3 项通过；当前全量 Flutter suite 296 项及 analyze 通过。范围仅为同进程 loopback Host stop/start，不含 Android 系统、Wi‑Fi/TCP abrupt drop、NSD 自动发现/重连、production Host 或 16 KB 设备；A5.5 仍开放。详见 [A5.5 WSS 生命周期验收记录](android-a5-android-client.md#2026-11-17-loopback-wss-host-stopstart-手动重连集成测试)。
 
   - 2026-11-17 loopback WSS 突然断流补验：新增 TCP 透传夹具，在不终止 TLS/WSS 的前提下销毁两端 loopback TCP socket，不发 WebSocket close frame；验证 AndroidHostManager 转 offline，再通过保存 endpoint 显式连接、重新认证并恢复 online。该文件 4 项通过，全量 Flutter suite 297 项、全量 analyze 通过。此项只证明隔离 loopback 传输断流与手动重连，不断言 TCP RST、Wi‑Fi/Android OS/NSD 行为或自动重连；A5.5 意外网络中断实机验收仍开放。详见 [A5.5 突然断流记录](android-a5-android-client.md#2026-11-17-loopback-wss-突然断流与手动重连集成测试)。
+
+  - 2026-11-19 NSD 用户反馈后复验：Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.31.135/24`，并非同一子网；手机到 Mac 的临时 TCP listener 超时。Mac `dns-sd` 可发布并本机解析 `_aggregate-host._tcp`，但隔离 `.integration` 真机调用产品 `MethodChannelAndroidHostDiscovery` 返回空 endpoint。没有配对或调用 RPC；Mac Host 已停止并退出，隔离包已卸载，普通包保留，ADB reverse 为空。NSD/direct WSS 仍待可达网络复验，A5.5 保持开放。详见 [Android NSD 实机复验记录](android-a5-android-client.md#2026-11-19-nsd-用户反馈后实机复验)。
 
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 

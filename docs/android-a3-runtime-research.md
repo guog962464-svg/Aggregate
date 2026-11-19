@@ -519,3 +519,10 @@ nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 n
 - **Node 官方基线：**Node 官方 v24.22.3 与 v26.13.1 页面均标为 2026-11-11 安全发布，release-status 页将 v24、v26 列为 LTS。[Node v24.22.3](https://nodejs.org/en/blog/release/v24.22.3)、[Node v26.13.1](https://nodejs.org/en/blog/release/v26.13.1)、[Node 发行状态](https://nodejs.org/en/about/previous-releases)
 - **Android 移动包：**截至本次页面核对，fogtape Releases 列出的 Node 24 最新 Android 包仍为 `v24.22.1-0` prerelease，Node 26 为 `v26.12.1-0` prerelease，均早于相应 Node 官方安全版；原始 nodejs-mobile Releases 仍将 `v18.20.4` 标为 Latest，其 Node 18 线已 EOL。[fogtape releases](https://github.com/fogtape/nodejs-mobile/releases)、[nodejs-mobile releases](https://github.com/nodejs-mobile/nodejs-mobile/releases)
 - **结论与范围：**本轮只读官方 Node 发布页与两份移动运行时 GitHub Releases 页面，没有下载或构建二进制。上一节 2026-11-18 的官方材料复核结论在 2026-11-19 仍成立：目前未见与官方当前 v24/v26 安全线匹配的维护方 Android archive。A3.6 的来源/provenance、完整 suite、完整二进制 SBOM/许可与 16 KB 真机门槛继续开放，不改变产品 Node/npm/CLI 关闭状态。
+
+## 2026-11-19 NodeProbe Release Gradle runtime graph 补核
+
+- **supersedes：**上一节 BOM schema 复验中“Gradle runtime graph 缺失”的判断，仅对当前 checkout 的 `:nodeprobe:releaseRuntimeClasspath` 配置作替换；native link、Android 平台库、Node 归档与 npm 依赖的闭包结论不变。
+- **验证：**在 `app/android` 执行 `./gradlew :nodeprobe:dependencies --configuration releaseRuntimeClasspath --offline -Pa3Probe=true`，BUILD SUCCESSFUL。图中包含 `org.jetbrains.kotlin:kotlin-stdlib:2.4.0`、其传递项 `org.jetbrains:annotations:13.0`，以及项目依赖 `:nodebridge`；`:nodebridge` 路径复用相同 Kotlin 标准库。该离线依赖报告没有下载或构建 NodeProbe 归档。
+- **范围边界：**Gradle 报告不呈现 CMake/NDK 静态链接、`libnode.so` 及其他打包 native 组件内部依赖、Android SDK 平台 API/系统库版本，也不解析 APK 内的 Node/npm 包。完整二进制 SBOM 和法律复核仍缺失，CycloneDX `composition` 继续为 `incomplete`；Node/npm/CLI 产品入口保持关闭。
+- **verified_scope：**当前工作树 `app/android`，Gradle `releaseRuntimeClasspath`，使用本机缓存并启用 `--offline`、`-Pa3Probe=true`；只运行 Gradle `dependencies` 报告任务。没有运行 `prepare.sh`、下载或重建运行时、修改 vendor 资产、运行 Node 测试或安装设备包。
