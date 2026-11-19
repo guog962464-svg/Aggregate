@@ -1279,3 +1279,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 环境：同一 macOS `ui6_inspection_main.dart` 隔离 Profile 和内存 PreviewRuntime 音乐样例。窗口内容 AX 边界 800×632 pt；真实账号、服务与播放进程未连接。
 - 原生 AX 快照读到迷你播放器的“暂停”按钮，边界 46×46 pt。静态窗口截图：[B071 迷你播放器播放态](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B071-mini-player-idle.png>)，SHA-256 `24dad5dc7d7684986b6cb6c1a49847c8738d43f7b80d9d0e22c4127bbbcbfe2a`。生产代码在播放样例时传入暂停图标并将 `selected` 设为真；点击进入 B070 暂停确认，不执行控制。
 - 仅签收浅色样例静态外观、按钮 AX 名称/边界及安全确认路由；没有采集按下过程或光点动画关键帧，也没有验证暗色对应态或真实播放。Profile 由 `agent-desktop close-app` 正常退出，Flutter runner 无残留。只更新 B071 矩阵与本记录，`git diff --check` 通过；未改产品代码或运行测试，UI-6.7 仍部分验收。
+
+
+### 2026-11-19 UI-6.7 B072 实例来源映射校正
+
+- 对照 `app/lib/features/music/music_mini_player.dart:333–438` 与 `app/lib/features/invocation/capability_run_page.dart:714–719`：B072 指向 `MusicRunPanel` 中循环生成的音乐动作按钮，不是全局迷你播放器的展开按钮。它涵盖可用的上一首、暂停/继续、下一首、停止、刷新状态动作；代码按 capability、播放队列/当前曲目与 busy 状态筛选。
+- `music_mini_player_test.dart` 的相关用例查到的是 `MusicMiniPlayer`（顶部类）桌面/移动控件，不呈现该 `MusicRunPanel`，所以移除它作为 B072 的验收证据。矩阵明确 B072 的 macOS Profile 静态态与点击态仍未验证。
+- 仅更新 B072 矩阵与本记录，`git diff --check` 通过；无代码或测试变更。本次是源码映射校正，不签收视觉、交互或业务执行，UI-6.7 保持部分验收。
