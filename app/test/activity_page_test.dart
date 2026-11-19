@@ -1,8 +1,11 @@
 import 'package:aggregate/features/activity/activity_page.dart';
 import 'package:aggregate/preview/ui6_inspection_runtime.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
   test('UI inspection activity seed is isolated and terminal', () async {
@@ -173,6 +176,65 @@ void main() {
     expect(find.text('已取消'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('failed activity reopens its capability without invoking it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final runtime = _ActivityRuntime()
+      ..runs = [
+        RunSummary(
+          const RunId('failed-run'),
+          _capability.id,
+          RunEvent(
+            runId: const RunId('failed-run'),
+            sequence: 1,
+            state: RunState.failed,
+            occurredAt: DateTime.utc(2026, 11, 19),
+          ),
+        ),
+      ];
+    final clock = ManualGlassMotionClock();
+    Capability? opened;
+    var openCalls = 0;
+    addTearDown(clock.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassMotionScope(
+          clock: clock,
+          child: Scaffold(
+            body: ActivityPage(
+              runtime: runtime,
+              onOpen: (capability) {
+                opened = capability;
+                openCalls++;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('重新打开功能'), findsOneWidget);
+    final actionRect = tester.getRect(find.bySemanticsLabel('重新打开功能'));
+    expect(actionRect.width, greaterThanOrEqualTo(40));
+    expect(actionRect.height, greaterThanOrEqualTo(40));
+
+    await tester.tap(find.bySemanticsLabel('重新打开功能'));
+    await tester.pumpAndSettle();
+
+    expect(runtime.searchCapabilityCalls, 1);
+    expect(openCalls, 1);
+    expect(opened?.id.key, _capability.id.key);
+    expect(runtime.cancelCalls, 0);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
 }
 
 const _capability = Capability(
@@ -188,6 +250,7 @@ const _capability = Capability(
 
 final class _ActivityRuntime implements RuntimePort {
   int cancelCalls = 0;
+  int searchCapabilityCalls = 0;
   List<RunSummary> runs = [
     RunSummary(
       const RunId('run-1'),
@@ -211,8 +274,10 @@ final class _ActivityRuntime implements RuntimePort {
   Future<List<RunSummary>> listRecentRuns() async => runs;
 
   @override
-  Future<List<Capability>> searchCapabilities(SearchQuery query) async =>
-      const [_capability];
+  Future<List<Capability>> searchCapabilities(SearchQuery query) async {
+    searchCapabilityCalls++;
+    return const [_capability];
+  }
 
   @override
   Future<void> cancel(RunId id) async {

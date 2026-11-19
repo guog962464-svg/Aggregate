@@ -1312,3 +1312,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 已有 macOS Profile 启动本轮构建成功，但 Flutter 报告 `Failed to foreground app; open returned 1`；`agent-desktop list-windows` 中本次 Aggregate 窗口为 `visible=false`、`accessible=false`。没有对该窗口执行快照、点击或坐标输入，随即终止本次 Profile。B073/B074 原生窗口态、点击动画与 display-present 仍未复核。
 - 重跑现有 `flutter test --no-pub test/music_search_permission_test.dart`，1 项通过：搜索未获授权时取消不会执行；允许后把明确授权传给 `_PermissionGateRuntime`，其仅委托进程内 `PreviewRuntime` 返回样例结果，后续搜索在同一会话复用授权。
 - 该 Widget 回归验证了授权逻辑，不替代 macOS 原生按钮画面或按下态验收。未改产品代码；UI-6.7 继续部分验收。
+
+### 2026-11-19 UI-6.7 B009 失败活动重新打开功能Widget回归与Profile尝试
+
+- Widget 环境：macOS target variant，Flutter 3.47.8 stable / Dart 3.13.7；生产 `ActivityPage`、`AggregateActionButton` 与 `GlassMotionScope`，1000×720 logical px、DPR 1，手动动效时钟。fake runtime 只提供一条终态失败记录。
+- Widget 操作/结果：检查“重新打开功能”可访问名称及至少 40×40 的按钮 hit target 后点击。定向断言确认只调用一次 capability 搜索和 `onOpen`，打开的 capability ID 与失败记录相同；没有调用 cancel 或 invoke，也没有 Flutter 异常。`flutter test --no-pub test/activity_page_test.dart`：6 项通过；`flutter analyze --no-pub` 无问题，`git diff --check` 通过。
+- Profile 尝试：`lib/preview/ui6_inspection_main.dart` 的 `Ui6InspectionRuntime`，只含进程内样例，无真实服务。Flutter Profile 构建成功；首轮 AX 树曾显示失败详情及“重新打开功能”名称。继续检查时该进程退出，AX 点击得到 `STALE_REF`；直接启动隔离 Profile 包后，AX 导航过程中窗口数次暂时消失（`WINDOW_NOT_FOUND`/空窗口清单），进程仍存活。未能稳定取得详情截图或点击 B009；没有将这次原生尝试计为视觉/动画通过。为避免残留，已终止此次隔离 Profile 进程。
+- 结论：B009 的失败态按钮行为和 Widget hit target 通过组件树验证；生产 Profile 的实际玻璃外观、点击动画及原生窗口稳定性仍待验，B009 不签收。未改生产按钮、Runtime 或太阳/月亮主题逻辑。
