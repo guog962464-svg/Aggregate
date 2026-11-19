@@ -1264,3 +1264,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：检查[深→浅接触表](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-8-web-native-sync/linear-ci-windowserver-sync-2026-11-19/dark-to-light-contact.png>)（SHA-256 `92a4f14744f1849f5ff75a8ff628b07b85a55a81b93215cc15e609b537db690c`）与[浅→深接触表](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-8-web-native-sync/linear-ci-windowserver-sync-2026-11-19/light-to-dark-contact.png>)（SHA-256 `5358921663ae81692d02ba4f5e29a491e0adb7e2601d3e33a7fa7f7fcca462b5`）。两方向都看到月亮/太阳内部点阵、滑块、边缘光与背景随拖动持续变化；在所选同进度时点，粒子与光效节奏目视接近。应用拖动后保留的焦点环是网页没有的额外视觉层，由 `FocusableActionDetector` 为键盘焦点可见性提供；本轮没有为图像相似度关闭它。控件尺寸不同，接触表按归一化比例显示，不能据此签收成品绝对尺寸相同。
 - 结构化事件和逐帧索引：[同步分析 JSON](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-8-web-native-sync/linear-ci-windowserver-sync-2026-11-19/synchronized-analysis.json>)，SHA-256 `82c37cf1d9dd8b5a1eaf166ff749d60527878ad43d5bec3331c2030f88efdc4e`；[输入事件 JSONL](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-8-web-native-sync/pointer-events-linear-ci.jsonl>)，SHA-256 `85fef06c8d2f074795372e62e41383afe919eac989671d35b573f61fb0dbbc32`。完整逐窗帧文件在同一视觉证据目录内。
 - 结论边界：这补齐了用户指定网页的实际 iframe、确定性粒子种子、共同主机时钟上的真实输入与 WindowServer 帧关联，以及正反向连续拖动关键相位；不是两个 renderer 的同一时刻同步输入，也不是逐帧逐像素零差异证明。WindowServer `displayTime` 不是物理面板扫描/光子响应测量；全流还存在少数超过 20 ms 的帧间隔。原 MP4 已删除，因此无法再对该视频作逐帧签收。太阳/月亮主题状态机、手势、回调、业务逻辑与 Android 路由均未改。本批只更新验收文档，没有运行代码测试；UI-6.8 仍部分验收。
+
+
+### 2026-11-19 UI-6.7 B070 音乐暂停确认原生界面
+
+- 环境：使用 `lib/preview/ui6_inspection_main.dart` macOS Profile 与进程内 `Ui6InspectionRuntime`/`PreviewRuntime` 样例，窗口 AX 边界 800×632 pt。样例音乐连接为“UI 检查 · 音乐”，没有真实账号、服务或播放进程。
+- 从全局迷你播放器点击“暂停”后，生产 `confirmMusicControl` 呈现“暂停？”确认框。macOS AX 快照读到“取消”和“执行”两个按钮，边界各为 87×41 pt。按源码路径只点击“取消”；随后等待并确认 `button:取消` 已从 AX 树消失。没有点“执行”，没有授权或调用播放操作。
+- 原生窗口截图：[B070 暂停确认](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B070-pause-confirmation-window.png>)，SHA-256 `af632e4c8cc5ed45a7f64d20a31dbb9d3f68a484e01d6a32c5fc544a766b9357`。截图含底层预览样例和确认框；AX 尺寸以单独快照读取为准。
+- Profile 已由 `agent-desktop close-app` 正常退出；Flutter runner 随后自行结束。仅更新 B070 矩阵和本记录，`git diff --check` 通过；没有改产品代码或运行测试。B070 目前只补浅底样例中的原生静态确认框与取消路径；深色对应态、取消/执行按钮按下相位和真实播放仍未验收，UI-6.7 继续部分验收。
