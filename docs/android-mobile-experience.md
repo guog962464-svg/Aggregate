@@ -252,3 +252,9 @@ flowchart LR
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机通过系统文档选择器选择无敏感测试文件；Integration Test 收到字节内容，随后扫描 Aggregate app cache 未发现测试文本。测试文件已从 Downloads 删除；A8.3 后普通 versionCode 11、targetSdk 36 APK 重新安装、清数据并启动，Activity 回到前台，未见 AndroidRuntime/Flutter 崩溃日志。文件选择在读取结束后立即丢弃 URI；本轮没有模拟外部 provider 主动撤销读取期间授权，应用也不会保留该授权供后续访问。
 - 验证：全量 Flutter 测试 200 项、共享 contracts/domain/connectors/runtime 测试 15 项、`flutter analyze --no-pub`、公共层边界检查、`git diff --check`、Android arm64 Debug 与 macOS Debug 构建通过。A8.3 改动的 Dart 文件格式通过；全跟踪文件格式检查仍报告既有 `app/integration_test/android_node_probe_test.dart` 有 formatter 差异，工作树另有未提交主题切换文件会阻挡整合格式门禁；均未纳入或格式化用户主题修改。受控进程终止测试由 ADB 强停，Flutter 集成测试框架因此报告测试未完成；强停前 marker 确认草稿已经测试，强停后检查应用私有文件目录通过。
 - 范围限制：没有在本阶段连接 production Mac Host；撤权跨端行为由 Host 协议/WSS 测试和 Android Runtime fake 覆盖。真机有 4 KB 页，未有 16 KB 设备；未据此声称 16 KB 系统运行通过。内存中的 Dart 字符串不做底层 RAM 擦除保证，验收针对的是文件/凭证/URI 持久化与逻辑生命周期。
+
+### 2026-11-19 TalkBack 实体设备可用性复核
+
+- LGE AN10 / Android 15 / API 35 / arm64 真机用户 0 未安装 TalkBack；`enabled_accessibility_services=null`、`accessibility_enabled=0`，系统字体比例为 `1.0`。
+- 打开 TalkBack 官方商店入口后，Honor App Market 显示“暂不提供下载，敬请期待”；指定 Google Play 后，商店要求登录 Google 账号才能继续。未登录、安装或变更无障碍设置。
+- 已恢复测试前的前台应用。Flutter 语义树与触控目标的自动化/界面检查仍有效，但没有实体屏幕阅读器朗读验收；A7.6 因此保持未完全验收。
