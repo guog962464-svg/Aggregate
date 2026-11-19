@@ -193,6 +193,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-19 Node 24.22.3 arm64 Release 探针补验：使用官方 Node `v24.22.3` 源码与 fogtape recipe（源码提交 `93d89692fe87ca2ed7895285a2d38f6a1bd3b3a4`、tree `f693fe78e1540052404756a6c83c1b12e4c01315`、recipe `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`），在 macOS 主机以 NDK r28c 本机构建；只对临时生成的 Makefile 做 Darwin host 兼容改动，Node 源码未改。本机 `libnode.so` 经 16 KB 链接选项构建，37 个显式静态归档、3,608 个成员及 2,954 个保留 section 的 archive-object 对纳入 map 清单。unsigned Release APK/AAB 的 zipalign、Bundletool、11 个 ELF `PT_LOAD`、24 份 native 许可、Node/Gradle manifest 与 3 份 NDK NOTICE 哈希检查通过；CycloneDX 1.6 schema/ref 校验通过，各 95 个组件、40 条依赖边，composition 仍 incomplete。隔离 NodeProbe 在 LGE AN10 / Android 15 / 4 KB 真机通过五轮生命周期；AAB split 启动和 Node 文件/loopback smoke 通过。未重跑当前候选的完整 Node suite；无 16 KB 真机，产物未签名且不是维护方发行版，法律许可审查和平台动态依赖闭包仍开放，A3.6 不关闭。新的清单为 [Node 24.22.3 静态链接清单](android-a3-node-static-link-inventory-2026-11-19.json)；旧清单保留为 NDK r27d/旧源码候选历史记录。
 
+  - 2026-11-19 Node 24.22.3-0 Android `parallel sequential` configured mobile suite：四片 `0/4`–`3/4` 每片 948 项（`--flaky-tests=skip`），合计 3,792 项通过、0 失败/挂起/崩溃。后三片用低优先级后台 Service runner，testnode Activity 未抢前台；2/4 首次运行的 32 个 `MODULE_NOT_FOUND` 是 APK 测试资源拷贝不完整，临时 runner 改为直接枚举 APK ZIP 后复制 11,147 项资源，单用例与完整 2/4 重跑通过。该 runner 修改仅在 `/private/tmp`，不进入产品代码。其他 Node 测试类别、flaky/status 排除项与 16 KB 真机仍未覆盖；维护方发行 provenance、BOM/许可、签名和产品门槛未关闭，A3.6 继续开放。详情见 [Android mobile suite 后台验收](android-a3-runtime-research.md#2026-11-19-node-24223-android-mobile-suite-后台验收)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
