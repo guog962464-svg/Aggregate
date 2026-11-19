@@ -862,7 +862,15 @@
     },
     {
       "id": "openssl",
-      "licenseEvidence": [],
+      "licenseEvidence": [
+        {
+          "path": "deps/openssl/openssl/LICENSE.txt",
+          "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+          "packagedAsset": "nodejs-mobile-LICENSE.txt",
+          "packagedAssetSha256": "c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66",
+          "status": "The full Apache-2.0 source license text matches, after whitespace normalization, a substring of the OpenSSL section in the Node-generated top-level LICENSE; packaged as a composite license, not as a standalone OpenSSL asset."
+        }
+      ],
       "name": "OpenSSL",
       "sourceGitTreeObjectId": "1694e6b5ebfb0950a9a0a0d29e5c0ccd6aec4f30",
       "sourceRoot": "deps/openssl/openssl",
@@ -1083,7 +1091,7 @@
     "aabBundletoolValidate": "passed with Bundletool 1.18.3",
     "aabNativeLibraryAlignment": "PAGE_ALIGNMENT_16K",
     "apkZipalign": "passed: zipalign -c -P 16 4",
-    "licenseAssetHashCheck": "passed: 24 native dependency license files, Node license manifest, two Gradle runtime components using the bundled Apache-2.0 text, and 3 NDK notices match recorded hashes in APK and AAB",
+    "licenseAssetHashCheck": "passed: 24 native dependency license files, Node license manifest, two Gradle runtime components using the bundled Apache-2.0 text, and 3 NDK notices match recorded hashes in APK and AAB; OpenSSL source LICENSE.txt maps to the packaged Node top-level license asset in both APK and AAB",
     "nodeRuntimeElfAlignment": "passed: 11 PT_LOAD segments across 3 arm64 libraries in both APK and AAB; each p_align=0x4000",
     "bomDependencyClosure": "passed: 95 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete",
     "physicalNodeProbeRelease": "passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages using a debug-key-signed test APK"
