@@ -228,3 +228,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **接口与路由：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页设备 `wlan0=192.168.31.135/24`。两端仍不在同一子网；Android 到 Mac 经 `192.168.31.1`，Mac 到 Android 经默认网关 `192.168.8.1`。Android 对 Mac 执行一次 ICMP 探测，1 包发送、0 包收到。
 - **服务与清理：**Mac `47321` 无 TCP listener，未启动 Host；没有配对、NSD、WSS 或 RPC。本轮读取时 NodeProbe 未安装/运行，设备临时 Node 目录已清理。
 - **结论：**这次用户反馈后的实际读回仍未证明 IP 同网段或 LAN 可达，A5.4/A5.5 当前 NSD/direct LAN 验收保持开放。既有同网段 direct WSS 只读验收仍作为原时刻的历史结果，不被这次网络状态追溯性否定。
+
+## 2026-11-19 19:05 网络状态与后台 runner 清理复核
+
+- **网络：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页手机 `wlan0=192.168.31.135/24`。手机当前 `ip route` 只有 `192.168.31.0/24` 的直连路由，没有默认路由；Mac 到手机按默认路由经 `192.168.8.1`，一次 ICMP 无响应。production Host `47321` 无监听。本轮未启动 Host、未尝试 NSD、配对、WSS 或 RPC。
+- **设备占用：**Node `pummel` 扩展诊断通过低优先级 `NodeTestService` 后台执行，没有打开 testnode Activity、没有清空共享 logcat。suite 后已 force-stop 并从当前 Android 用户卸载 `nodejsmobile.test.testnode`；`pm path` 与进程复核为空。前台 Activity 始终是 `hg.zp.mengnews/com.zjonline.xsb.loginregister.activity.LoginPasswordActivity`，普通 `io.github.guog962464.aggregate` 包仍安装。
+- **结论：**测试后手机网络仍非同一子网且没有通往 Mac 的默认路由，不能据此继续验证 direct LAN/NSD。A5.4/A5.5 的 NSD 与 direct WSS 门槛仍开放；此前同网段的 production `host.hello`/只读 `connection.list` 作为其原时刻验收记录保留。
