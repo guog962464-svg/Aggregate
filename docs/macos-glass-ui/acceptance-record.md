@@ -1325,3 +1325,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - Widget 环境：macOS target variant；生产 `ActivityPage`、`AggregateActionButton` 与 `GlassMotionScope`，1000×720 logical px、DPR 1、手动动效时钟。fake runtime 提供一条固定时间的失败记录。
 - 操作/结果：通过 `TestDefaultBinaryMessengerBinding` 拦截 `SystemChannels.platform` 的 `Clipboard.setData`。点击“复制诊断”只产生一次剪贴板写入请求，payload 精确为 `Run failed-run · 失败 · 2026-11-19 12:34:56`，随后显示“已复制脱敏诊断”；没有读取/写入 macOS 系统剪贴板，也没有访问运行参数或结果。`flutter test --no-pub test/activity_page_test.dart`：7 项通过；`flutter analyze --no-pub` 无问题。
 - 结论：只通过组件树和内存 channel 检查 B011 点击/脱敏 payload；Profile 实窗的按钮材料、按下动画和原生剪贴板接线仍未验，B011 保持部分验收。未改生产逻辑或主题切换。
+
+### 2026-11-19 UI-6.7 B009 独立 bundle 浅色 Profile 重验
+
+- 环境：macOS 27.2.1 arm64；Flutter 3.47.8 stable / Dart 3.13.7；Profile，800×632 logical px、截图采集倍率 2×。`lib/preview/ui6_inspection_main.dart` 使用 `UI6_SEED_ACTIVITY=true` 与 `UI6_SEED_ACTIVITY_FILTER_STATES=true`，全部数据来自进程内 `Ui6InspectionRuntime`。为隔离仍在运行的 Debug App，将刚构建的 Profile `.app` 复制到 `/private/tmp/aggregate-ui6-profile-20261119b/AggregateUI6Probe.app`，只改副本的 bundle ID/name 为 `io.github.guog962464.aggregate.ui6probe` 并 ad-hoc 签名；工作区源码未改。
+- 操作/结果：在精确窗口 `w-12920` 中打开活动页，选中 MCP `add` 的失败记录，通过 AX `ScrollTo` 将 B009 带入可见区域。失败详情截图[`failure-detail-light.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-activity-reopen/failure-detail-light.png>)，1692×1356 PNG，SHA-256 `9a0c14ea3b1d169fa6c75f0043804cfb5eb394112aeb2bfed0a79e4071f07eda`。AXPress 点击“重新打开功能”后，macOS AX 快照转到“两整数相加”参数页，显示两项必填参数及“运行状态：尚未运行”；目的页截图[`reopened-capability-light.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-activity-reopen/reopened-capability-light.png>)，1692×1356 PNG，SHA-256 `15cbe65f15275af2522af09e71e4b2549ce7f86fc75aaeb88cc0c5fea7f37864`。动作只搜索能力并打开参数页，没有执行运行按钮、访问外部服务或修改数据。
+- 限制与清理：这是浅色 Profile 的静态态和路由行为证据；未用物理 MouseDown/MouseUp 采按下帧/动画时序，也未重验深色态和物理 display-present。路由后独立 Profile 窗口随后变为不可见/AX 暂不可用，已关闭进程 PID 69147；主工作区 Debug App PID 68668 未操作。临时 bundle 副本留在 `/private/tmp/aggregate-ui6-profile-20261119b/` 供本轮剩余 macOS Profile 核验复用。
+- 结论：B009 的浅色实窗静置外观、点击目标和“只打开、不运行”行为通过；按下动画、深色态及显示呈现仍待验，B009 仍部分验收。此前 B009 Widget 回归 6 项/整体活动页 7 项通过记录继续有效；本次没有运行代码测试或修改产品源码、太阳/月亮主题逻辑。
