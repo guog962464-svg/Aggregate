@@ -382,31 +382,78 @@ def validate_inventory_digest(value: object, field: str) -> str:
 
 
 def license_candidate_fields(
-    candidate: object, owner: str, has_evidence: bool
+    candidate: object, owner: str, evidence: object
 ) -> tuple[list[dict[str, object]] | None, list[dict[str, str]]]:
     if not isinstance(candidate, dict):
         raise ValueError(f"{owner} is missing its license-candidate record")
     status = candidate.get("status")
     if status == "candidate":
         expression = candidate.get("expression")
-        if (
-            not isinstance(expression, str)
-            or SPDX_EXPRESSION_PATTERN.fullmatch(expression) is None
-        ):
-            raise ValueError(f"{owner} has an invalid SPDX candidate expression")
-        if not has_evidence:
+        name = candidate.get("name")
+        text = candidate.get("text")
+        if not isinstance(evidence, (list, dict)) or not evidence:
             raise ValueError(f"{owner} has a license candidate without evidence")
         license_properties = [
             property_item("aggregate:license-candidate-status", "candidate; legal review pending"),
-            property_item("aggregate:license-candidate-expression", expression),
         ]
-        return [{"expression": expression}], license_properties
+        if "expression" in candidate:
+            if name is not None or text is not None:
+                raise ValueError(
+                    f"{owner} mixes SPDX expression and named-text license candidates"
+                )
+            if (
+                not isinstance(expression, str)
+                or SPDX_EXPRESSION_PATTERN.fullmatch(expression) is None
+            ):
+                raise ValueError(f"{owner} has an invalid SPDX candidate expression")
+            license_properties.append(
+                property_item("aggregate:license-candidate-expression", expression)
+            )
+            return [{"expression": expression}], license_properties
+        if isinstance(name, str) and name.strip() and isinstance(text, str) and text.strip():
+            text_digest = validate_inventory_digest(
+                candidate.get("textSha256"), f"{owner} license text sha256"
+            )
+            if sha256(text.encode("utf-8")) != text_digest:
+                raise ValueError(f"{owner} license text hash does not match its content")
+            text_evidence = candidate.get("textEvidence")
+            if not isinstance(text_evidence, dict):
+                raise ValueError(
+                    f"{owner} named-text license candidate requires source evidence"
+                )
+            evidence_path = text_evidence.get("path")
+            evidence_digest = validate_inventory_digest(
+                text_evidence.get("sha256"), f"{owner} license text evidence sha256"
+            )
+            evidence_rows = evidence if isinstance(evidence, list) else [evidence]
+            if not any(
+                isinstance(item, dict)
+                and item.get("path") == evidence_path
+                and item.get("sha256") == evidence_digest
+                for item in evidence_rows
+            ):
+                raise ValueError(
+                    f"{owner} named-text license evidence is not in the source evidence"
+                )
+            license_properties.extend([
+                property_item("aggregate:license-candidate-name", name),
+                property_item("aggregate:license-candidate-text-sha256", text_digest),
+            ])
+            return [
+                {
+                    "license": {
+                        "name": name,
+                        "text": {"contentType": "text/plain", "content": text},
+                    }
+                }
+            ], license_properties
+        raise ValueError(f"{owner} has an invalid license candidate")
     if status == "unresolved":
         reason = candidate.get("reason")
         if not isinstance(reason, str) or not reason.strip():
             raise ValueError(f"{owner} has no reason for its unresolved license")
-        if "expression" in candidate:
-            raise ValueError(f"{owner} has an expression marked unresolved")
+        if any(key in candidate for key in ("expression", "name", "text")):
+            raise ValueError(f"{owner} has license content marked unresolved")
         license_properties = [
             property_item("aggregate:license-candidate-status", "unresolved"),
             property_item("aggregate:license-candidate-reason", reason),
@@ -454,7 +501,7 @@ def static_link_components(
         license_entries, license_properties = license_candidate_fields(
             source_license_candidate,
             f"static-link source component {component_id}",
-            isinstance(raw.get("licenseEvidence"), list) and bool(raw["licenseEvidence"]),
+            raw.get("licenseEvidence"),
         )
         properties.extend(license_properties)
         source_root = raw.get("sourceRoot")
@@ -529,8 +576,7 @@ def static_link_components(
         license_entries, license_properties = license_candidate_fields(
             archive_license_candidate,
             f"static-link archive {name}",
-            isinstance(source_row.get("licenseEvidence"), list)
-            and bool(source_row["licenseEvidence"]),
+            source_row.get("licenseEvidence"),
         )
         properties.extend(license_properties)
         if isinstance(source_tree, str):
@@ -598,8 +644,7 @@ def static_link_components(
         license_entries, license_properties = license_candidate_fields(
             archive_license_candidate,
             f"implicit NDK archive {name}",
-            isinstance(source_row.get("licenseEvidence"), list)
-            and bool(source_row["licenseEvidence"]),
+            source_row.get("licenseEvidence"),
         )
         properties.extend(license_properties)
         if isinstance(source_tree, str):
@@ -859,7 +904,7 @@ def main() -> int:
                 license_entries, license_properties = license_candidate_fields(
                     candidate_record,
                     f"packaged binary {name}",
-                    isinstance(evidence, dict) and bool(evidence),
+                    evidence,
                 )
                 if isinstance(candidate_record, dict) and candidate_record.get("status") == "candidate":
                     evidence_path = evidence.get("path") if isinstance(evidence, dict) else None

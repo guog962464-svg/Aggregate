@@ -4,25 +4,27 @@
     "cycloneDxBoms": [
       {
         "kind": "apk",
-        "sha256": "37a8a9550a07f7ce11b6bba7f37fcadfae3b95f091425bfc638f163acb945ae6",
+        "sha256": "9562e0d839ac20fe672261acddf21fd22e7e37a4f7b98707d524542193bd993c",
         "componentCount": 95,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 54,
+        "libraryLicenseFieldCount": 56,
         "candidateLicenseExpressionCount": 52,
-        "unresolvedLicenseComponentCount": 16
+        "candidateNamedTextLicenseCount": 2,
+        "unresolvedLicenseComponentCount": 14
       },
       {
         "kind": "aab",
-        "sha256": "d9ad40ece6007b2990bb4644b5b904145467bf0a9190a6b61b48ae8d9d5efbe9",
+        "sha256": "8219e84e19158288f2326a5f6763e8a1614dc7bad564e5336c88b93b94efcb60",
         "componentCount": 95,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 54,
+        "libraryLicenseFieldCount": 56,
         "candidateLicenseExpressionCount": 52,
-        "unresolvedLicenseComponentCount": 16
+        "candidateNamedTextLicenseCount": 2,
+        "unresolvedLicenseComponentCount": 14
       }
     ],
     "libnodePackagedStrippedSha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
@@ -1046,7 +1048,8 @@
       ],
       "name": "SQLite",
       "notes": [
-        "Source ID 2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76; no standalone LICENSE file."
+        "Source ID 2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76; no standalone LICENSE file.",
+        "CycloneDX 1.6 carries the source's public-domain dedication as a named license with its exact source text; no SPDX identifier is asserted. The official SQLite copyright statement distinguishes delivered code from build scripts. Legal review remains pending."
       ],
       "sourceGitTreeObjectId": "039440245b628001127b5b033cd832105ecf71f7",
       "sourceRoot": "deps/sqlite",
@@ -1062,8 +1065,14 @@
         }
       ],
       "licenseCandidate": {
-        "status": "unresolved",
-        "reason": "The source contains a public-domain blessing but does not declare a standard SPDX identifier; no custom LicenseRef is defined."
+        "status": "candidate",
+        "name": "SQLite public-domain dedication",
+        "text": "** The author disclaims copyright to this source code.  In place of\n** a legal notice, here is a blessing:\n**\n**    May you do good and not evil.\n**    May you find forgiveness for yourself and forgive others.\n**    May you share freely, never taking more than you give.\n",
+        "textSha256": "ad89cf5f9a0ca133418eae187ae954f2805fd3261aa00716642ed93fc7f3892d",
+        "textEvidence": {
+          "path": "deps/sqlite/sqlite3.c",
+          "sha256": "0c657666d819f261cc4007526ad57e1669de9949df7a8ea847aa284a2bf0ee52"
+        }
       }
     },
     {
