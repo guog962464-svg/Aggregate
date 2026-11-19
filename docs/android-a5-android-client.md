@@ -254,3 +254,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **服务与网络：**Mac `en0=192.168.8.4/24`，LGE AN10 手机 `wlan0=192.168.31.135/24`，仍属不同子网。Mac `47321` 无 listener；没有配对、NSD、WSS 或 RPC。手机前台仍为原 LoginPasswordActivity，没有启动 testnode。
 - **运行环境与清理：**发现另一个仍运行的 Profile 预览 Flutter 会话；切换时预览窗口曾自动恢复，之后没有再关闭该会话。Debug Host 请求结束后没有 Aggregate Host listener。当前共享工作区中的 UI 文件及 `pubspec.lock` 修改均未由本轮编辑或暂存。
 - **结论：**A5.4/A5.5 仍开放。阻塞因素是 macOS Host TLS Keychain 授权未完成及当前异网段；本轮没有获得新的配对/RPC 证据。前台权限已用于本次入口检查，不需要再启动 testnode。
+
+## 2026-11-19 22:15 签名 Debug Host 钥匙串复核
+
+- **构建与签名：**`flutter build macos --no-pub --debug` 构建正式 `main.dart` 入口成功；默认 Debug app 为 ad-hoc 签名。Xcode 以 Apple Development/Manual 设置重建时，Runner 与 Flutter 插件目标要求本机没有的 `Mac Development` 证书。为避免修改工程签名配置，将 Debug app 复制到临时目录，以本机 Apple Development 身份直接签名；`codesign --verify --deep --strict` 通过，bundle identifier 与 `DebugProfile.entitlements` 均符合预期。该临时副本不属于 Release 产物。
+- **钥匙串授权：**独立打开签名副本并启动 Host 后，SecurityAgent 再次请求 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串访问。用用户已提供的凭据填写安全字段并尝试“始终允许”，提示仍未关闭；桌面物理点击被一个 `警告` 对话框遮挡而未投递。`securityd` 日志记录该服务项的 `ObjectAcl REJECTS access using ACL`。现有证据能确认 ACL 拒绝了该次访问，不能据此判断密码错误或证明授权已更新。
+- **调用路径复核：**`HostTlsIdentityChannel` 将 `loadOrCreate`/`rotate` 放在专用 `identityQueue` 执行；本次失败不足以支持“Keychain 调用阻塞 Flutter 主线程”的判断。未观察到 Host 身份轮换或条目删除。
+- **退出与范围：**Debug 进程退出后确认没有存活的 Debug Host 请求者，再取消遗留的 SecurityAgent 请求；Mac `47321` 无 listener，没有配对、NSD、WSS 或 RPC。原 Profile 预览进程保持运行并恢复到前台；手机仍在原项目，未启动 testnode。Mac `192.168.8.4/24` 与 Android `192.168.31.135/24` 仍不同子网。A5.4/A5.5 继续开放。
