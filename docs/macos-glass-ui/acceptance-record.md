@@ -1354,3 +1354,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 对预览差异的处理：revision 5 浏览器稿只作为历史资料，不再用来签收页面；后续只用 Flutter 生产页面和共享组件生成 macOS Profile 预览，避免另写 HTML 后再重画。蓝图先规定完整页面，后续代码直接依据该蓝图实施。
 - 检索复核：UI/UX Pro Max 的桌面设计查询仍推荐 Hero/Features/CTA 落地页模式及蓝/橙色板，与中文 macOS 工具和用户的玻璃控件参考不符，未采用。视觉依据使用现有 `GlassDesignTokens` 和共享背景设计，不引入网页通用模板。
 - 验证边界：完成设计文档与源码/既有阶段资料的交叉检查；本项没有修改产品 Dart/shader、没有运行测试、没有启动 App，也没有采集 macOS 实窗截图。因此只验收“蓝图已形成”，不代表 Flutter 页面已实现、用户已认可成品或 UI-5/UI-6 未完成项已通过。
+
+### 2026-11-19 UI-7.1 外壳与导航 Profile 复核
+
+- 实施范围：依照蓝图第 4 节统一 macOS 标题栏、页面标题、全局搜索与导航侧栏。隐藏重复的 Flutter 工具栏标题；侧栏宽设为 224pt、收紧分组间距并增加浅分隔线；宽窗搜索宽度为 280–360pt，窄窗为 184–248pt。未改页面功能路由或连接状态来源。
+- 材质调整：未选中导航项降低静置发光和阴影，选中项保留玻璃面与暖色边光。Shader 变化只在 action-lens 分支按导航/选中状态缩放光强；主题切换 shader 分支未变。`GlassThemeSwitch`、太阳/月亮状态映射、拖动、阈值、回调和校准源文件均未修改。
+- 生产预览证据：使用 `app/lib/preview_main.dart` 启动 macOS Profile，复用 `AggregateApp`、正式页面与共享组件，数据仅来自内存 `PreviewRuntime`。浅色音乐首页截图：[01-shell-light-profile.png](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/01-shell-light-profile.png>)，1692×1356，SHA-256 `7e461e0981373d1c56ee1e6ad819152d578ebb69b06daaf89c6deb44e0ae1ec0`。目视确认页面标题只出现一次、侧栏层级更紧凑、非选中导航光效不再彼此争抢；Profile 已正常退出。
+- 验证：`flutter analyze --no-pub` 通过；widget、玻璃按钮/动效、theme-switch realtime/calibration/simulation/optics 共 66 项测试通过；macOS Profile 构建并打开成功。`git diff --check` 通过。
+- 范围边界：本阶段只有浅色宽窗音乐首页的原生 Profile 截图；暗色实窗、窄窗、其他页面布局、各导航点击相位和系统减少动态效果仍需逐阶段核验。截图和 Flutter PreviewRuntime 只覆盖该页面状态，不作为全部功能完成或用户视觉签收的证据。UI-5/UI-6 中已记录的待办保持未完成。

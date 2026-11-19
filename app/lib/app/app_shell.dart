@@ -178,10 +178,6 @@ class AppShellState extends State<AppShell> {
     return null;
   }
 
-  String get _toolbarTitle => selected == Section.home
-      ? activeConnection?.label ?? '我的连接'
-      : selected.label;
-
   void select(Section section) => setState(() => selected = section);
 
   void selectMobileDestination(int index) {
@@ -313,7 +309,7 @@ class AppShellState extends State<AppShell> {
     children: [
       const SizedBox(height: 6),
       Padding(
-        padding: const EdgeInsets.only(left: 22, right: 12, top: 6, bottom: 14),
+        padding: const EdgeInsets.only(left: 22, right: 12, top: 8, bottom: 8),
         child: Row(
           children: [
             Expanded(
@@ -336,9 +332,9 @@ class AppShellState extends State<AppShell> {
       ),
       for (final connection in connectionHomes)
         _connectionNavigationItem(connection, compact: compact),
-      const SizedBox(height: 52),
+      const SizedBox(height: 24),
       const Divider(height: 1),
-      const SizedBox(height: 27),
+      const SizedBox(height: 16),
       for (final section in Section.values.where(
         (item) => item != Section.home && item != Section.settings,
       ))
@@ -391,7 +387,7 @@ class AppShellState extends State<AppShell> {
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         child: AggregateActionButton(
           label: connection.label,
           icon: icon,
@@ -428,10 +424,7 @@ class AppShellState extends State<AppShell> {
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       return Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: section == Section.settings ? 2 : 11,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         child: AggregateActionButton(
           label: section.label,
           icon: section.icon,
@@ -588,7 +581,12 @@ class AppShellState extends State<AppShell> {
           final hideBottomChrome =
               _mobilePlatform && MediaQuery.of(context).viewInsets.bottom > 0;
           final macOS = defaultTargetPlatform == TargetPlatform.macOS;
-          final searchWidth = (width * .24).clamp(184.0, 248.0);
+          final searchWidth = macOS
+              ? (width * .29).clamp(
+                  compact ? 184.0 : 280.0,
+                  compact ? 248.0 : 360.0,
+                )
+              : (width * .24).clamp(184.0, 248.0);
           final searchShortcut = ShortcutScheme(defaultTargetPlatform)
               .searchLabel;
           final Widget? bottomNavigationBar;
@@ -655,16 +653,12 @@ class AppShellState extends State<AppShell> {
             bottomNavigationBar: bottomNavigationBar,
             appBar: AppBar(
               toolbarHeight: macOS ? 40 : 64,
-              title: Padding(
-                padding: EdgeInsets.only(left: macOS && !compact ? 206 : 0),
-                child: Text(
-                  macOS ? _toolbarTitle : 'Aggregate',
-                  style: macOS
-                      ? Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600)
-                      : const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
+              title: macOS
+                  ? const SizedBox.shrink()
+                  : const Text(
+                      'Aggregate',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
               actions: [
                 if (macOS)
                   SizedBox(
@@ -729,12 +723,29 @@ class AppShellState extends State<AppShell> {
                   _mobileNavigationRail(extended: extendedRail)
                 else if (!_mobilePlatform && !compact)
                   SizedBox(
-                    width: macOS ? 192 : 200,
-                    child: Material(
-                      color: defaultTargetPlatform == TargetPlatform.macOS
-                          ? Colors.transparent
-                          : Theme.of(context).colorScheme.surface,
-                      child: navigation(compact: false),
+                    key: macOS ? const Key('macos-sidebar') : null,
+                    width: macOS ? 224 : 200,
+                    child: DecoratedBox(
+                      decoration: macOS
+                          ? BoxDecoration(
+                              border: Border(
+                                right: BorderSide(
+                                  color:
+                                      Theme.of(context)
+                                          .extension<GlassDesignTokens>()
+                                          ?.line
+                                          .withValues(alpha: .34) ??
+                                      Theme.of(context).dividerColor,
+                                ),
+                              ),
+                            )
+                          : const BoxDecoration(),
+                      child: Material(
+                        color: macOS
+                            ? Colors.transparent
+                            : Theme.of(context).colorScheme.surface,
+                        child: navigation(compact: false),
+                      ),
                     ),
                   ),
                 Expanded(child: pageStack),

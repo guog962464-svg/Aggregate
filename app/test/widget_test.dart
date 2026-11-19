@@ -38,6 +38,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(preview());
     await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Aggregate'),
+      ),
+      findsNothing,
+    );
+    expect(tester.getSize(find.byKey(const Key('macos-sidebar'))).width, 224);
     expect(find.text('音乐播放器'), findsOneWidget);
     expect(find.text('所有功能'), findsOneWidget);
     await tester.tap(find.text('管理连接').first);

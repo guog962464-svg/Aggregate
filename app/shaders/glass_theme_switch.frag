@@ -122,6 +122,10 @@ void paintActionLens() {
   vec2 point = (screenPoint - origin) / zoom;
   float distanceToLens = handleDistance(point);
   float vertical = clamp((point.y - handle.y + extent.y) / (2.0 * extent.y), 0.0, 1.0);
+  // Resting navigation controls share the glass material without each
+  // competing with the selected destination or the task's primary action.
+  // The theme-switch painting path does not use this action-lens branch.
+  float navigationEmission = mix(1.0, mix(0.14, 0.72, buttonSelected), buttonNavigation);
   float alpha = 1.0 - smoothstep(-0.7, 0.7, distanceToLens);
   if (alpha <= 0.0) {
     fragColor = vec4(0.0);
@@ -142,9 +146,9 @@ void paintActionLens() {
     vec3 paleGlass = mix(content, vec3(0.99), 0.5);
     vec3 glassColor = mix(shadedGlass, paleGlass, daylight);
     float glowDistance = max(stripDistance(point), 0.0);
-    float scattering = (exp(-glowDistance / 24.0) * 0.8 + exp(-glowDistance / 64.0) * 0.2) * energy;
+    float scattering = (exp(-glowDistance / 24.0) * 0.8 + exp(-glowDistance / 64.0) * 0.2) * energy * navigationEmission;
     glassColor = illuminate(glassColor, scattering * 0.8);
-    glassColor = illuminate(glassColor, exp(-depth / 2.2) * exp(-glowDistance / 40.0) * energy * 1.3);
+    glassColor = illuminate(glassColor, exp(-depth / 2.2) * exp(-glowDistance / 40.0) * energy * 1.3 * navigationEmission);
     float lighting = dot(normal, normalize(vec2(-0.35, -1.0)));
     glassColor += pow(max(lighting, 0.0), 2.0) * exp(-depth / 1.25) * mix(0.42, 0.7, daylight);
     glassColor += max(lighting, 0.0) * bevel * mix(0.07, 0.16, daylight);
@@ -154,11 +158,11 @@ void paintActionLens() {
   }
 
   float emitterDistance = stripDistance(point);
-  float emitterMask = 1.0 - smoothstep(-0.6, 0.6, emitterDistance);
+  float emitterMask = (1.0 - smoothstep(-0.6, 0.6, emitterDistance)) * navigationEmission;
   vec3 hotLamp = mix(lamp * 1.05, mix(lamp, vec3(1.0), 0.65),
       1.0 - smoothstep(-1.4, -0.2, emitterDistance));
   color = mix(color, hotLamp * (0.8 + 0.35 * energy), emitterMask);
-  color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * (1.0 - emitterMask));
+  color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * navigationEmission * (1.0 - emitterMask));
   float rim = 1.0 - smoothstep(0.0, 1.3, abs(distanceToLens + 0.75));
   color += rim * mix(mix(0.035, 0.09, vertical), mix(-0.07, 0.07, vertical), daylight);
   if (buttonHovered > 0.5 && buttonDisabled < 0.5) {

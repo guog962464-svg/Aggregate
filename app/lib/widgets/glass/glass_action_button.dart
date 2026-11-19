@@ -320,6 +320,9 @@ class _GlassActionButtonState extends State<GlassActionButton> {
             : states.contains(WidgetState.hovered) ||
                   states.contains(WidgetState.selected)
             ? .20
+            : widget.kind == GlassButtonKind.navigation ||
+                  widget.kind == GlassButtonKind.segmented
+            ? .04
             : .12;
         return Color.lerp(tokens.shadow, halo, blend)!;
       }),
@@ -329,7 +332,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         if (states.contains(WidgetState.hovered)) return 7.5;
         if (widget.kind == GlassButtonKind.navigation ||
             widget.kind == GlassButtonKind.segmented) {
-          return states.contains(WidgetState.selected) ? 4.5 : 3.5;
+          return states.contains(WidgetState.selected) ? 4.5 : 1.5;
         }
         return 5.5;
       }),
@@ -765,14 +768,21 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       (isDaylight ? -.74 : .74) +
           math.cos(phase * .8) * (isDaylight ? .035 : -.035),
     );
+    final restingLightStrength = isNavigation
+        ? isSelected
+              ? .46
+              : .14
+        : (isSelected || kind == GlassButtonKind.primary)
+        ? .62
+        : .36;
     final lightStrength = isDisabled
         ? .025
         : isPressed
         ? .88
         : isHovered
         ? .68
-        : ((isSelected || kind == GlassButtonKind.primary) ? .62 : .44) +
-              breath * .08 +
+        : restingLightStrength +
+              breath * (isNavigation ? .025 : .06) +
               motionEnergy * .22;
     final emitterGlowWidth = math.min(12.0, math.max(6.0, size.height * .12));
     final emitterBlur = math.min(5.0, math.max(3.0, size.height * .05));
