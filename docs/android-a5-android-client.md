@@ -1,6 +1,6 @@
 # A5.4 Android 配对客户端与真机验收
 
-记录日期：2026-11-13；2026-11-14 补充直接 LAN/NSD 真机验收。USB ADB 反向转发下的首次配对/批准与同网段下已授权设备的直连验收分别记录，覆盖范围不同。
+记录日期：2026-11-13；2026-11-14 与 2026-11-19 补充直接 LAN 真机验收。USB ADB 反向转发与直连 LAN 的结果分别记录，覆盖范围不同；2026-11-19 结果仅覆盖普通 Android 包首次配对、`host.hello` 和只读 `connection.list`。
 
 ## 实现
 
@@ -192,3 +192,14 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 当前真机 `wlan0=192.168.31.135/24`，Mac `en0=192.168.10.144`；端口 `47321` 当前无监听，`app-private files/` 下没有 `hosts.json`。本轮未建立新的 Host 配对或执行 production RPC。历史 Host UI 曾显示两条无法区分的只读授权；Android Keystore 轮换实现会删除旧别名，所以没有在日常包身份上执行轮换，避免使未知对应的授权失效。
 - 当前 `app/android/app/build.gradle.kts` 未为产品 Release 配置签名，注释明确 Release 包在提供正式密钥前保持 unsigned；只为隔离 `.integration` Release 指定本机 Debug signer。因此本轮不能验证正式签名权限行为。16 KB 真机仍缺。
 - **范围判定：**当前主线 Flutter 回归、静态分析、arm64 Debug 构建、APK 对齐和 4 KB 普通包启动通过；A5.4 仍待安全条件下的日常身份轮换、正式签名 Release 权限及 16 KB 实机加载/运行。A5.5 仍待 direct LAN/NSD 与适用范围内的 production Host 端到端业务验收；本轮未访问真实账号或执行业务写入。
+
+
+## 2026-11-19 当前同网段 production Mac Host 直连只读验收
+
+- **替代范围：**本节更新 [2026-11-18 LAN 可达性预检](#2026-11-18-android-to-mac-lan-reachability-preflight) 中“当前网络状态下不能 direct LAN”的结论；该结论在当时的异网段环境成立。此前 USB `adb reverse` 只读验收仍是独立历史证据，不由本节替代。
+- **环境：**当前提交基线 `1515583baec78be5ab8407279dfbd670abe2d65b`。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机 `wlan0=192.168.8.7/24`；Mac `en0=192.168.8.4/24`，两端同属 `192.168.8.0/24`。ICMP 和 Android `toybox nc` 到 `192.168.8.4:47321` 可达。Mac 运行当前主线 Aggregate Host；本次是普通包 `io.github.guog962464.aggregate` 与日常 Android Keystore 身份，没有使用 `.integration` 包、模拟器或 ADB reverse。
+- **配对：**普通 Android 设置页提交新邀请后，Mac 展示的待批准设备名与 Android 相同，确认码匹配。用户已授权启动 Host 并只读配对；Mac 上选择“批准只读”。Android 配对页随后显示该 Host 在线，认证流程中的 `host.hello` 成功。
+- **RPC：**临时集成验收入口以普通包现有 Host 记录连接同一个 `192.168.8.4:47321` endpoint；`AndroidRuntimePort` 只执行 `host.hello` 和 `connection.list`。返回 1 项，名称为“网易云音乐”。没有调用 `capability.search`、setup、CLI/TUI、HTTP/stdio MCP、账号、终端、播放或业务写入。测试命令：`flutter test --no-pub --no-uninstall --reporter expanded integration_test/a5_direct_lan_readonly_probe_test.dart -d AEMN022427001360`，结果通过。
+- **结论边界：**证明当前同网段下普通 Android 包可与 Mac Host 直连 WSS、完成配对与最小只读 RPC；不单独宣称 NSD 发现链路通过，不代表 setup/CLI/TUI/MCP、真实账号或业务闭环通过。A5.5 继续开放；A5.4 仍待日常 Keystore 身份轮换、正式签名 Release 权限及 16 KB 实体设备验收。
+- **清理：**已重新构建并安装普通 Debug APK（保留包与数据），从 Android 仅移除本轮新增的 Host 记录，并移除其空 `hosts.json`；`activity.json` 与 `preferences.json` 哈希保持不变。Mac 仅撤销本轮新建且唯一命名的只读 grant，原有两条“这台手机 · 读取连接”授权保留；Mac Host 停止、应用退出，端口 `47321` 无监听。临时测试文件、邀请二维码/载荷临时目录、预检脚本均清除，ADB reverse 为空。
+- **前置条件与授权：**本机 Mac Keychain 在 Host 启动时请求访问现有 TLS 身份；按用户先前提供的授权处理，未把凭据写入记录。有效权限范围为启动 Host、批准本轮只读设备和调用以上两项只读方法；未扩大到其他 Host 操作。
