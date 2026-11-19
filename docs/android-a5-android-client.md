@@ -231,6 +231,12 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 
 ## 2026-11-19 19:05 网络状态与后台 runner 清理复核
 
-- **网络：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页手机 `wlan0=192.168.31.135/24`。手机当前 `ip route` 只有 `192.168.31.0/24` 的直连路由，没有默认路由；Mac 到手机按默认路由经 `192.168.8.1`，一次 ICMP 无响应。production Host `47321` 无监听。本轮未启动 Host、未尝试 NSD、配对、WSS 或 RPC。
+- **网络：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页手机 `wlan0=192.168.31.135/24`。当时未指定路由表的 `ip route` 输出只列出 `192.168.31.0/24` 直连路由，尚未检查 Wi-Fi 策略路由表；后续策略表复核及更正见下一节。Mac 到手机按默认路由经 `192.168.8.1`，一次 ICMP 无响应。production Host `47321` 无监听。本轮未启动 Host、未尝试 NSD、配对、WSS 或 RPC。
 - **设备占用：**Node `pummel` 扩展诊断通过低优先级 `NodeTestService` 后台执行，没有打开 testnode Activity、没有清空共享 logcat。suite 后已 force-stop 并从当前 Android 用户卸载 `nodejsmobile.test.testnode`；`pm path` 与进程复核为空。前台 Activity 始终是 `hg.zp.mengnews/com.zjonline.xsb.loginregister.activity.LoginPasswordActivity`，普通 `io.github.guog962464.aggregate` 包仍安装。
-- **结论：**测试后手机网络仍非同一子网且没有通往 Mac 的默认路由，不能据此继续验证 direct LAN/NSD。A5.4/A5.5 的 NSD 与 direct WSS 门槛仍开放；此前同网段的 production `host.hello`/只读 `connection.list` 作为其原时刻验收记录保留。
+- **结论：**当时的未指定策略表输出未包含默认路由；不能据此判断 Wi-Fi 网络没有默认网关，后续策略表更正见下一节。两端仍非同一子网，ICMP 无响应；此前同网段的 production `host.hello`/只读 `connection.list` 作为其原时刻验收记录保留。
+
+## 2026-11-19 Android 默认路由策略表复核与更正
+
+- **路由更正：**19:05 记录中的 `adb shell ip route` 是未指定策略表的输出，只列出 `192.168.31.0/24` 直连路由；不能据此认定 Android 没有默认路由。复核 `ip rule` 后发现 Wi-Fi 使用 table `1026`；`ip route show table 1026` 明确列出 `default via 192.168.31.1 dev wlan0`，`ip route get 192.168.8.4 mark 0x103c8` 也确认到 Mac 的包会经 `192.168.31.1` 发出。ConnectivityManager 的 Wi-Fi `LinkProperties` 同样包含该默认路由。更正先前“手机没有默认路由”的表述。
+- **当前可达性：**LGE AN10 `wlan0=192.168.31.135/24`、Mac `en0=192.168.8.4/24` 仍属不同子网。当前 Mac 到手机及手机到 Mac 的 ICMP 各一次均无响应；Mac `47321` 没有 listener。本轮未启动 Host，未连接/切换网络，也未尝试 NSD、配对、WSS 或 RPC。此前 Android 到 `192.168.8.4:47321` 的 TCP 探针超时及 NSD 空发现仍是直接 LAN 的最近端到端结果。
+- **范围：**本项只修正路由表解释；默认网关存在并不证明跨子网策略允许直连。A5.4/A5.5 的 NSD/direct LAN 仍未通过本次网络状态下的复验，已完成的历史同网段只读配对继续按其原环境记录。

@@ -265,7 +265,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-19 NSD 用户反馈后复验：Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.31.135/24`，并非同一子网；手机到 Mac 的临时 TCP listener 超时。Mac `dns-sd` 可发布并本机解析 `_aggregate-host._tcp`，但隔离 `.integration` 真机调用产品 `MethodChannelAndroidHostDiscovery` 返回空 endpoint。没有配对或调用 RPC；Mac Host 已停止并退出，隔离包已卸载，普通包保留，ADB reverse 为空。NSD/direct WSS 仍待可达网络复验，A5.5 保持开放。详见 [Android NSD 实机复验记录](android-a5-android-client.md#2026-11-19-nsd-用户反馈后实机复验)。
   - 2026-11-19 地址反馈后再次只读采样：Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.31.135/24` 仍不在同一子网；Android 到 Mac 经 `192.168.31.1`，Mac 到手机按默认路由经 `192.168.8.1`，一次 ICMP 无响应。此采样未启动 Host 或配对、未调用 RPC；此前 NSD/direct TCP 失败仍为最近的端到端证据，A5.4/A5.5 未通过。详见 [网络地址再次读回](android-a5-android-client.md#2026-11-19-用户反馈后网络地址再次读回)。
-  - 2026-11-19 19:05 网络与临时 runner 清理复核：Mac `en0=192.168.8.4/24`；手机 `wlan0=192.168.31.135/24` 且当前路由表没有默认路由，Mac 到手机的 ICMP 无响应，Host 端口 `47321` 无监听。本轮未启动 Host、未配对或调用 RPC。pummel 临时 Service 已 force-stop 并卸载；无 testnode 进程，前台仍是 `hg.zp.mengnews/...LoginPasswordActivity`，Aggregate 普通包保留。直连/NSD 仍待实际网络可达时验收。
+  - 2026-11-19 19:05 网络与临时 runner 清理复核：Mac `en0=192.168.8.4/24`；手机 `wlan0=192.168.31.135/24`。当时未指定路由表的 `ip route` 输出只列直连网段，尚未检查 Wi-Fi 策略表；Mac 到手机的 ICMP 无响应，Host 端口 `47321` 无监听。本轮未启动 Host、未配对或调用 RPC。pummel 临时 Service 已 force-stop 并卸载；无 testnode 进程，前台仍是 `hg.zp.mengnews/...LoginPasswordActivity`，Aggregate 普通包保留。
+  - 2026-11-19 Android Wi-Fi 路由表解释更正：`ip rule` 显示 Wi-Fi policy table `1026`；该表有 `default via 192.168.31.1 dev wlan0`，ConnectivityManager 也显示相同默认路由，故更正“手机没有默认路由”的结论。Mac `192.168.8.4/24` 与手机 `192.168.31.135/24` 仍不同子网；双向 ICMP 无响应，Mac 未监听 47321，之前 Android 到 Host 的 TCP 探针超时且 NSD 返回空。未启动 Host、未配对或调用 RPC；这些可达性证据仍不支持当前网络下完成 direct LAN/NSD 验收。详见 [Android 默认路由策略表复核与更正](android-a5-android-client.md#2026-11-19-android-默认路由策略表复核与更正)。
 
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 
