@@ -1,0 +1,1023 @@
+{
+  "candidate": {
+    "abi": "arm64-v8a",
+    "cycloneDxBoms": [
+      {
+        "kind": "apk",
+        "sha256": "919c2a8b2bd2bcb2d74401de84f7528c24e641b531ede71188b786cb9c2b6b8a",
+        "componentCount": 95,
+        "dependencyNodeCount": 45,
+        "dependencyEdgeCount": 40,
+        "composition": "incomplete"
+      },
+      {
+        "kind": "aab",
+        "sha256": "d77b5040f8ef52477fab20a9edb956c196caf3538928d2482bfa3adc11deca56",
+        "componentCount": 95,
+        "dependencyNodeCount": 45,
+        "dependencyEdgeCount": 40,
+        "composition": "incomplete"
+      }
+    ],
+    "libnodePackagedStrippedSha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
+    "libnodeUnstrippedSha256": "b72d87ed7266fd2c02dbafb8af8a250f22ca88427bde0f688b39827e9b973e8a",
+    "licenseManifestSha256": "f078cbaea730c8bab9e4f4f3602d62440cfa34dbdc8beba6ebda7f99e1ea6d6e",
+    "linkMapBytes": 96109187,
+    "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+    "mobileRecipeCommit": "d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5",
+    "ndkRevision": "28.2.13676358",
+    "ndkSourcePropertiesSha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5",
+    "nodeMobileVersion": "24.22.3-0",
+    "nodeSourceCommit": "93d89692fe87ca2ed7895285a2d38f6a1bd3b3a4",
+    "nodeSourceCommitSubject": "mobile: correct Node 24.22.3 version metadata",
+    "nodeSourceGitObjectFormat": "SHA-1 Git tree object ID",
+    "nodeSourceGitTreeObjectId": "f693fe78e1540052404756a6c83c1b12e4c01315",
+    "nodeVersion": "24.22.3",
+    "priorArtifactsSuperseded": {
+      "inventoryPath": "docs/android-a3-node-static-link-inventory.json",
+      "nodeSourceGitTreeObjectId": "5b1a23adddf4b698abcfa45cc8d22de930c01b32",
+      "ndkRevision": "27.3.13750724",
+      "reason": "The prior inventory describes the 2026-11-15 Node tree and NDK r27d build; this candidate uses the corrected 2026-11-19 source tree and NDK r28c. Prior archive/APK/AAB hashes do not describe this candidate."
+    },
+    "releaseArtifacts": {
+      "apk": {
+        "sha256": "73194712af04098a6ae34e9b9cf4696c363e9e97a048fd0c5b5cc7bb2d9209fd",
+        "signatureStatus": "unsigned",
+        "sizeBytes": 35337207
+      },
+      "aab": {
+        "sha256": "3f98f1cc9ddc376ada3752648a10640c4d2cc24e757ee5ef722333cc161671cf",
+        "signatureStatus": "unsigned",
+        "sizeBytes": 73259443
+      }
+    },
+    "upstreamNodeCommit": "e63cab040c09d43ceef8cb35508c40044614e906",
+    "gradleRuntimeManifestSha256": "f0db6ec50c581fe5551946728b48a43741d306ac66c93ee37ac34385ffed4411",
+    "sourceArchiveSha256": "6df67207ad3c607269e09622d170e9b1e3ed58e9c3b5e399f6cc5855f835028b",
+    "testSignedApkSha256": "b13c9446eba58647077a4740ca38edfe998e815ce70ba9dbc2b811397bd5036d",
+    "testSignedApkSigner": "local Android debug keystore; verification only, not a product signature",
+    "aabConnectedSplitVerification": "Bundletool 1.18.3 debug-signed connected split installed on LGE AN10 4 KB device; Node v24.22.3/mobile 24.22.3-0, file, and loopback network checks passed"
+  },
+  "created": "2026-11-19",
+  "embeddedNdkNotices": [
+    {
+      "path": "assets/android-ndk-NOTICE.txt",
+      "sha256": "faf0dc52cf6ce9ab09a04b0c074a378dd2565ee1ed9bc1179d83793bcdba012e"
+    },
+    {
+      "path": "assets/android-ndk-llvm-NOTICE.txt",
+      "sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1"
+    },
+    {
+      "path": "assets/android-ndk-cpufeatures-NOTICE.txt",
+      "sha256": "c870d52f42a8f93023b99a85fe68d02637d6b04e5f35bbcd7f98759adb4e4d49"
+    }
+  ],
+  "format": "aggregate-node-static-link-inventory-v1",
+  "limitations": [
+    "CycloneDX compositions.aggregate remains incomplete: 11 Android/platform dynamic requirements are not individually versioned, and legal review has not approved the candidate.",
+    "Abseil and Highway provenance caveats from the exact Node source tree remain in sourceComponents; Highway contributes no retained section.",
+    "Release APK/AAB are unsigned NodeProbe experiments; a debug-keystore-signed copy used for physical verification is not a production release.",
+    "No 16 KB physical device was available; runtime/install/load behavior on 16 KB hardware remains an open release gate.",
+    "The candidate is a local Darwin-hosted cross build from a fogtape recipe and official Node source; it is not an upstream-maintained Android binary release.",
+    "The 96 MB raw linker map is retained outside the repository; this inventory records its SHA-256 and archive/member counts."
+  ],
+  "linkMap": {
+    "explicitStaticArchiveCount": 37,
+    "explicitArchiveMemberCount": 3608,
+    "archivesWithRetainedSections": 34,
+    "retainedArchiveObjectPairs": 2954,
+    "archivesWithNoRetainedSections": [
+      "libhighway.a",
+      "libv8_initializers.a",
+      "libv8_initializers_slow.a"
+    ],
+    "explicitArchiveInputs": [
+      {
+        "name": "libnode_base.a",
+        "makeInput": "$(obj).target/libnode_base.a",
+        "sha256": "126c74eedc6fa0f438b5b57b5a7d6905a68cd12aa53105edccea626a1a097813",
+        "sourceComponentId": "node",
+        "archiveMemberCount": 195,
+        "membersWithRetainedSections": 194
+      },
+      {
+        "name": "libv8_snapshot.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_snapshot.a",
+        "sha256": "388de3537f0aa913b77c9bf3ec5c4e23811e0d20299a9820ea432d92abb285bd",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 3,
+        "membersWithRetainedSections": 3
+      },
+      {
+        "name": "libv8_libplatform.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_libplatform.a",
+        "sha256": "9a00c842907cfee4dab2d3dae5e6c6cf098e6d189f511bb2a00d8b4200dfe9af",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 13,
+        "membersWithRetainedSections": 13
+      },
+      {
+        "name": "libicui18n.a",
+        "makeInput": "$(obj).target/tools/icu/libicui18n.a",
+        "sha256": "02129dd13846e18885999edc038807e41065abd41df0ec7781c69f90b6b85b17",
+        "sourceComponentId": "icu",
+        "archiveMemberCount": 254,
+        "membersWithRetainedSections": 251
+      },
+      {
+        "name": "libzlib.a",
+        "makeInput": "$(obj).target/deps/zlib/libzlib.a",
+        "sha256": "22cc5c1a113a206435c58914df6dda4cfff8bdd7a0e29d63524267427d45bae8",
+        "sourceComponentId": "zlib",
+        "archiveMemberCount": 15,
+        "membersWithRetainedSections": 15
+      },
+      {
+        "name": "libllhttp.a",
+        "makeInput": "$(obj).target/deps/llhttp/libllhttp.a",
+        "sha256": "1d4717ea5827363e89cce95a4537e2ee1cfa52bb567b23ec1f63aa99ebdb258d",
+        "sourceComponentId": "llhttp",
+        "archiveMemberCount": 3,
+        "membersWithRetainedSections": 3
+      },
+      {
+        "name": "libcares.a",
+        "makeInput": "$(obj).target/deps/cares/libcares.a",
+        "sha256": "9bfafc20957b52891aef0e993b97a023dbd87c2009d2077668d9357f7ceb85c6",
+        "sourceComponentId": "cares",
+        "archiveMemberCount": 91,
+        "membersWithRetainedSections": 85
+      },
+      {
+        "name": "libuv.a",
+        "makeInput": "$(obj).target/deps/uv/libuv.a",
+        "sha256": "2ad86d94dbe7fa389ee3b233b837e7b1237fc004d235e0a85f4cfb8868195e6e",
+        "sourceComponentId": "uv",
+        "archiveMemberCount": 36,
+        "membersWithRetainedSections": 36
+      },
+      {
+        "name": "libuvwasi.a",
+        "makeInput": "$(obj).target/deps/uvwasi/libuvwasi.a",
+        "sha256": "c76b6094e5919a8a1ef45d3ccb9d0f7598212a853999286eaaa9f48bd091a032",
+        "sourceComponentId": "uvwasi",
+        "archiveMemberCount": 9,
+        "membersWithRetainedSections": 9
+      },
+      {
+        "name": "libnghttp2.a",
+        "makeInput": "$(obj).target/deps/nghttp2/libnghttp2.a",
+        "sha256": "a9af6e131da5c5b7a40fd9fda15731943124d165814902ce21e89055ad560689",
+        "sourceComponentId": "nghttp2",
+        "archiveMemberCount": 26,
+        "membersWithRetainedSections": 26
+      },
+      {
+        "name": "libada.a",
+        "makeInput": "$(obj).target/deps/ada/libada.a",
+        "sha256": "7d789d317b0ac363590b0913d599e12217586808274a03453c9bb1155a19d8e6",
+        "sourceComponentId": "ada",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libmerve.a",
+        "makeInput": "$(obj).target/deps/merve/libmerve.a",
+        "sha256": "e9acecb9d8f85394ea079d9e8f06b5bb668765aefa093995cf1c66382d808bc1",
+        "sourceComponentId": "merve",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libsimdjson.a",
+        "makeInput": "$(obj).target/deps/simdjson/libsimdjson.a",
+        "sha256": "d8a7a55fd1aa58ea591abf9ebff2425739859a6a7a2c505c92ef848f7ef74596",
+        "sourceComponentId": "simdjson",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libsimdutf.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libsimdutf.a",
+        "sha256": "0b259f935d41c2ce6373dea72419778e296cd136f36cb7f173e485e3eba2fbb6",
+        "sourceComponentId": "simdutf",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libbrotli.a",
+        "makeInput": "$(obj).target/deps/brotli/libbrotli.a",
+        "sha256": "77e4ba2131ad6f173104a4f713d21d20e83351424ef394b6feb3282d7fe356ab",
+        "sourceComponentId": "brotli",
+        "archiveMemberCount": 35,
+        "membersWithRetainedSections": 35
+      },
+      {
+        "name": "libsqlite.a",
+        "makeInput": "$(obj).target/deps/sqlite/libsqlite.a",
+        "sha256": "bf020d8234436a0255301370dc844b0226e426ab3c807db1806910a37c2279b4",
+        "sourceComponentId": "sqlite",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libzstd.a",
+        "makeInput": "$(obj).target/deps/zstd/libzstd.a",
+        "sha256": "aff7d56f66f3b2f8116468f76c34b7a03ed00a7ff4b625dc86e1f884eeb1f089",
+        "sourceComponentId": "zstd",
+        "archiveMemberCount": 26,
+        "membersWithRetainedSections": 26
+      },
+      {
+        "name": "libopenssl.a",
+        "makeInput": "$(obj).target/deps/openssl/libopenssl.a",
+        "sha256": "489b6bedeb275978a1b544be62d46962ab8e205bd16538af281ce67da24e8ad9",
+        "sourceComponentId": "openssl",
+        "archiveMemberCount": 1107,
+        "membersWithRetainedSections": 1088
+      },
+      {
+        "name": "libabseil.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libabseil.a",
+        "sha256": "1f7b302bbf98354384fb2370e18c357e4eba4f0bb7819f7d9c6ade31ca420d33",
+        "sourceComponentId": "abseil",
+        "archiveMemberCount": 110,
+        "membersWithRetainedSections": 106
+      },
+      {
+        "name": "libhistogram.a",
+        "makeInput": "$(obj).target/deps/histogram/libhistogram.a",
+        "sha256": "30619edb8e06ec8f6b31e464aa7c3d5b23d25ba218c86e3edf349e52c2205833",
+        "sourceComponentId": "histogram",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libnbytes.a",
+        "makeInput": "$(obj).target/deps/nbytes/libnbytes.a",
+        "sha256": "2e5a87f8a3074891b74f0146c8d96a14beebf4b233dfac1b45145d7b94a528cb",
+        "sourceComponentId": "nbytes",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libcrdtp.a",
+        "makeInput": "$(obj).target/deps/inspector_protocol/libcrdtp.a",
+        "sha256": "5a0ba3d87f1ef2bbcbc217763db702b39587c4265f60752be6066ee2ba6b5b9f",
+        "sourceComponentId": "inspector_protocol",
+        "archiveMemberCount": 9,
+        "membersWithRetainedSections": 9
+      },
+      {
+        "name": "libncrypto.a",
+        "makeInput": "$(obj).target/deps/ncrypto/libncrypto.a",
+        "sha256": "135d4af7250ecf82606900369f4599e1c598a122af1ba41a1c0df9a130ed3b8b",
+        "sourceComponentId": "ncrypto",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libncrypto_engine.a",
+        "makeInput": "$(obj).target/deps/ncrypto/libncrypto_engine.a",
+        "sha256": "76baa71ae21d8e89b1160a17484389f937d761ef7aeba78a51ce474e560fc528",
+        "sourceComponentId": "ncrypto",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libzlib_data_chunk_simd.a",
+        "makeInput": "$(obj).target/deps/zlib/libzlib_data_chunk_simd.a",
+        "sha256": "b92ca458097dee16d8c703f26128450e3626b506ac967e6093afbf2684af6932",
+        "sourceComponentId": "zlib",
+        "archiveMemberCount": 2,
+        "membersWithRetainedSections": 2
+      },
+      {
+        "name": "libzlib_adler32_simd.a",
+        "makeInput": "$(obj).target/deps/zlib/libzlib_adler32_simd.a",
+        "sha256": "220bbfe0c881d554763e9b7c92dcf589a8d43fc2d9c0cc7be827ef357d0d89a5",
+        "sourceComponentId": "zlib",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libzlib_arm_crc32.a",
+        "makeInput": "$(obj).target/deps/zlib/libzlib_arm_crc32.a",
+        "sha256": "3b167123efc04f508e445c3ba2ce8e52fedb7b877e4f3c36a08106897a7e63aa",
+        "sourceComponentId": "zlib",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libicuucx.a",
+        "makeInput": "$(obj).target/tools/icu/libicuucx.a",
+        "sha256": "248a9b5d1f46d6789c0e1726cc4a2a64186c243fbd5d74d406e497df8742db43",
+        "sourceComponentId": "icu",
+        "archiveMemberCount": 202,
+        "membersWithRetainedSections": 191
+      },
+      {
+        "name": "libicudata.a",
+        "makeInput": "$(obj).target/tools/icu/libicudata.a",
+        "sha256": "5c81b6177cf163705152be91e92721bbacec45a5f0e5efb8d7bc0b5c2627c99f",
+        "sourceComponentId": "icu",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libv8_base_without_compiler.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_base_without_compiler.a",
+        "sha256": "7788e439c3073f8e6bbc718324382fb79ed7a9f44aa9f3935efeac0c5205bc71",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 923,
+        "membersWithRetainedSections": 636
+      },
+      {
+        "name": "libv8_libbase.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_libbase.a",
+        "sha256": "fe55af156c27c9fa58b291b040ef11beb4861e70be7ab8f893e1405ab3b6d6d2",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 40,
+        "membersWithRetainedSections": 39
+      },
+      {
+        "name": "libv8_zlib.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_zlib.a",
+        "sha256": "01a5cf8cf06b270383b95707592ba6081adadb39ac1d8f583cb7af379dafdd70",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 17,
+        "membersWithRetainedSections": 10
+      },
+      {
+        "name": "libndk_cpufeatures.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libndk_cpufeatures.a",
+        "sha256": "e353e2ec739fe1b9b6268fa17fb1501ca7890f3f41a34b3700227751b940745c",
+        "sourceComponentId": "ndk_cpufeatures",
+        "archiveMemberCount": 1,
+        "membersWithRetainedSections": 1
+      },
+      {
+        "name": "libhighway.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libhighway.a",
+        "sha256": "9b283f84ae70405226181d0390e94318e68405b8a57659068879889e389e2298",
+        "sourceComponentId": "highway",
+        "archiveMemberCount": 7,
+        "membersWithRetainedSections": 0
+      },
+      {
+        "name": "libv8_compiler.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_compiler.a",
+        "sha256": "675eda182474b70a518099e6f3fa45979180f2bb62fd79d494e8e60331e8275d",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 176,
+        "membersWithRetainedSections": 164
+      },
+      {
+        "name": "libv8_initializers.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_initializers.a",
+        "sha256": "739a3c9265c094e6972ef58ea500fc5d629161dd8fabd018de0c82eb0f867ef2",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 294,
+        "membersWithRetainedSections": 0
+      },
+      {
+        "name": "libv8_initializers_slow.a",
+        "makeInput": "$(obj).target/tools/v8_gypfiles/libv8_initializers_slow.a",
+        "sha256": "823356ca3422507c1b020ed388c9c7034902076783c4cc3f249e8dd4600012cf",
+        "sourceComponentId": "v8",
+        "archiveMemberCount": 2,
+        "membersWithRetainedSections": 0
+      }
+    ],
+    "implicitNdkToolchainArchives": [
+      {
+        "name": "libclang_rt.builtins-aarch64-android.a",
+        "ndkRelativePath": "toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/19/lib/linux/libclang_rt.builtins-aarch64-android.a",
+        "sha256": "9c94855d5c2e6db3797dc4b45fc4122927bd508944ac8ca4f4519c68a58f2ab1",
+        "sourceComponentId": "ndk_compiler_rt",
+        "members_with_retained_sections_in_link_map": 50
+      },
+      {
+        "name": "libunwind.a",
+        "ndkRelativePath": "toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/19/lib/linux/aarch64/libunwind.a",
+        "sha256": "cee1176cb585dbd90891470f8c40ae913922515edb225698d819290fc0132787",
+        "sourceComponentId": "ndk_libunwind",
+        "members_with_retained_sections_in_link_map": 5
+      }
+    ]
+  },
+  "scope": "Exact source and static archive evidence for the isolated arm64 NodeProbe candidate. This supplements, but does not replace, the CycloneDX APK/AAB BOM; no legal sign-off or product release is implied.",
+  "sourceComponents": [
+    {
+      "id": "abseil",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/abseil-cpp/LICENSE",
+          "path": "deps/v8/third_party/abseil-cpp/LICENSE",
+          "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747"
+        }
+      ],
+      "name": "Abseil C++",
+      "notes": [
+        "README.chromium revision fd39cfa4670a1f7995ecf0247f04bda757384ad9 is an upstream GitHub commit, while V8 DEPS pins Chromium mirror commit 3fbb10e80d80e3430224b75add53c47c7a711612. File-hash comparison: all 1,546 vendored files are byte-identical to the mirror tree; the source archive omits 21 mirror CI/collaboration files. The recorded Git tree object ID binds the exact vendored subset."
+      ],
+      "sourceGitTreeObjectId": "0c238961d286add66f17451a3a2bd6a322d52616",
+      "sourceRoot": "deps/v8/third_party/abseil-cpp",
+      "version": "N/A (revision-pinned)",
+      "versionEvidence": [
+        {
+          "path": "deps/v8/third_party/abseil-cpp/README.chromium",
+          "sha256": "0d97edaa52c93ca7406b373abbcc46ab707bf0a75043dda411f9d62675dfbe3f"
+        },
+        {
+          "path": "deps/v8/DEPS",
+          "sha256": "9a1ae8b723b4147a7d4ff124288efbe13e98fe8c961e0a2470781f4c14d7be47"
+        }
+      ]
+    },
+    {
+      "id": "ada",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/ada/LICENSE-MIT",
+          "path": "deps/ada/LICENSE-MIT",
+          "sha256": "af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160"
+        }
+      ],
+      "name": "Ada URL parser",
+      "sourceGitTreeObjectId": "d49a2b1df300c3e56a26d49423613774e3c6f28e",
+      "sourceRoot": "deps/ada",
+      "version": "4.0.0",
+      "versionEvidence": [
+        {
+          "path": "deps/ada/ada.h",
+          "sha256": "0010b17b3ff489e13998e86d921b16e1643e370ee3276c584f1b0c4b72bdf628"
+        }
+      ]
+    },
+    {
+      "id": "brotli",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/brotli/LICENSE",
+          "path": "deps/brotli/LICENSE",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+        }
+      ],
+      "name": "Brotli",
+      "sourceGitTreeObjectId": "5021321458e49c8500b65381af67f0c6a6601281",
+      "sourceRoot": "deps/brotli",
+      "version": "1.2.1",
+      "versionEvidence": [
+        {
+          "path": "deps/brotli/c/common/version.h",
+          "sha256": "67783763c494a7fa337f215c858cb4b05b346318186a11160f6382ac3fb078a0"
+        }
+      ]
+    },
+    {
+      "id": "cares",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/cares/LICENSE.md",
+          "path": "deps/cares/LICENSE.md",
+          "sha256": "460f5e768fda3752ca2169a95df062578a10fb126bfd65f3b9b1a1bed2f84807"
+        }
+      ],
+      "name": "c-ares",
+      "sourceGitTreeObjectId": "3358c1f6905466c2c596e7a9df91a2f83396dfc8",
+      "sourceRoot": "deps/cares",
+      "version": "1.34.9",
+      "versionEvidence": [
+        {
+          "path": "deps/cares/include/ares_version.h",
+          "sha256": "730d52c204f13529c679310293ae1e292a99df4300b643df44ab30063831b5f4"
+        }
+      ]
+    },
+    {
+      "id": "highway",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/highway/LICENSE",
+          "path": "deps/v8/third_party/highway/LICENSE",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1"
+        }
+      ],
+      "name": "Highway",
+      "notes": [
+        "README.chromium says upstream revision 8295336dd70f1201d42c22ab5b0861de38cf8fbf; V8 DEPS pins Chromium mirror commit 00fe003dac355b979f36157f9407c7c46448958e. File-hash comparison of the vendored src subtree against the mirror pin found 183 identical files, 57 omitted mirror build/CI files, and one content delta in hwy/ops/ppc_vsx-inl.h. The exact source tree ID is recorded; the README revision and one-file delta require maintainer provenance confirmation. Link map retains no section from libhighway.a."
+      ],
+      "sourceGitTreeObjectId": "8ff0c677454219b9e10b43d46f08f09e11466ce9",
+      "sourceRoot": "deps/v8/third_party/highway",
+      "version": "N/A (revision-pinned)",
+      "versionEvidence": [
+        {
+          "path": "deps/v8/third_party/highway/README.chromium",
+          "sha256": "ad55ed0eff57a4c8841f92db7cebc69c2ea120b4c0b5a658687bdb8accf03f4b"
+        },
+        {
+          "path": "deps/v8/DEPS",
+          "sha256": "9a1ae8b723b4147a7d4ff124288efbe13e98fe8c961e0a2470781f4c14d7be47"
+        }
+      ]
+    },
+    {
+      "id": "histogram",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/histogram/LICENSE.txt",
+          "path": "deps/histogram/LICENSE.txt",
+          "sha256": "c124afa369aae960fa33f6944c82e161e482f2e998d6f07b37ae2c018f3c6c69"
+        }
+      ],
+      "name": "HdrHistogram C",
+      "sourceGitTreeObjectId": "b7afc8aead4398054f67ea5b7b7596f864ab26e7",
+      "sourceRoot": "deps/histogram",
+      "version": "0.11.10",
+      "versionEvidence": [
+        {
+          "path": "deps/histogram/include/hdr/hdr_histogram_version.h",
+          "sha256": "3d49d6dbd5312936b5b38faac4d633413b9f077a5e95698dc0f01a96132f6dcf"
+        }
+      ]
+    },
+    {
+      "id": "icu",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/icu-small/LICENSE",
+          "path": "deps/icu-small/LICENSE",
+          "sha256": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af"
+        }
+      ],
+      "name": "ICU4C lite",
+      "notes": [
+        "Node builds ICU lite for this candidate."
+      ],
+      "sourceGitTreeObjectId": "cfffb3ac9c0d833c72cc4709e7bf5aadc6e34d3e",
+      "sourceRoot": "deps/icu-small",
+      "version": "78.3",
+      "versionEvidence": [
+        {
+          "path": "deps/icu-small/source/common/unicode/uvernum.h",
+          "sha256": "13cd24940babf5c6c1016131c9917742fc6cf198228689904d88116bb7d04118"
+        }
+      ]
+    },
+    {
+      "id": "inspector_protocol",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/inspector_protocol/LICENSE",
+          "path": "deps/inspector_protocol/LICENSE",
+          "sha256": "c3ed274b3ee226cd391aae43edd5ecccfb6e3cf39f0026d4df1200c1e9bbc097"
+        }
+      ],
+      "name": "Chromium Inspector Protocol / CRDTP",
+      "notes": [
+        "Build target libcrdtp.a uses deps/inspector_protocol; exact Node source tree object ID is recorded."
+      ],
+      "sourceGitTreeObjectId": "524fdbd1adf8e20eaa1e466b40692d06748725b4",
+      "sourceRoot": "deps/inspector_protocol",
+      "version": "0 (revision 1b1bcbbe060e8c8cd8704f00f78978c50991b307)",
+      "versionEvidence": [
+        {
+          "path": "deps/inspector_protocol/README.node",
+          "sha256": "834d3997b658d5600c3a33e26a7fa81f9176bc416b7a262472e54af9a305ab55"
+        }
+      ]
+    },
+    {
+      "id": "llhttp",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/llhttp/LICENSE",
+          "path": "deps/llhttp/LICENSE",
+          "sha256": "628168d68bb5a8a17e0bbefb3bd74e326e1edc20583d76f52f457c82c921867d"
+        },
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/llhttp/LICENSE-MIT",
+          "path": "deps/llhttp/LICENSE-MIT",
+          "sha256": "ebca854e0134cd256d673627c20499f42577eb74bacf08b9f25b626a73c91277"
+        }
+      ],
+      "name": "llhttp",
+      "sourceGitTreeObjectId": "e737e476f64059eb88fff336691c46ad1122644a",
+      "sourceRoot": "deps/llhttp",
+      "version": "9.4.4",
+      "versionEvidence": [
+        {
+          "path": "deps/llhttp/include/llhttp.h",
+          "sha256": "52a7011f979b31f761403c1a333bf7fc26dc70f5745d8488eed1609c92097100"
+        }
+      ]
+    },
+    {
+      "id": "merve",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/merve/LICENSE-MIT",
+          "path": "deps/merve/LICENSE-MIT",
+          "sha256": "cd7b1dbf8003a68f06d4fc84afa797d6e7a5d5d64b2ccd381485f711620dd60a"
+        }
+      ],
+      "name": "merve",
+      "sourceGitTreeObjectId": "af794e5328bcdea40f030f58ade509fdd513b9c8",
+      "sourceRoot": "deps/merve",
+      "version": "1.2.2",
+      "versionEvidence": [
+        {
+          "path": "deps/merve/merve.h",
+          "sha256": "572c2ac6d81aac760f659b945756e7b3d02d1010e38f9ee7425e0830f8ce19bb"
+        }
+      ]
+    },
+    {
+      "id": "nbytes",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/nbytes/LICENSE",
+          "path": "deps/nbytes/LICENSE",
+          "sha256": "782ab5b8ae1540c1a2b102fdd00990ed268d4a3a98e90ad7fe724b489d7bb0f2"
+        }
+      ],
+      "name": "Node.js nbytes",
+      "notes": [
+        "Node.js byte utility library."
+      ],
+      "sourceGitTreeObjectId": "82170c253b09d68d5fc2da7e0fc192a424777ee8",
+      "sourceRoot": "deps/nbytes",
+      "version": "0.1.4",
+      "versionEvidence": [
+        {
+          "path": "deps/nbytes/.release-please-manifest.json",
+          "sha256": "94cd7b502bc527ab18a0373f6d4461c17e1b634b110eaea30ed29d04df9a7504"
+        }
+      ]
+    },
+    {
+      "id": "ncrypto",
+      "licenseEvidence": [
+        {
+          "path": "LICENSE",
+          "sha256": "c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66",
+          "status": "mapped by Node source-project scope; inference, not a separate grant"
+        }
+      ],
+      "name": "Node.js ncrypto internal implementation",
+      "notes": [
+        "No standalone LICENSE; source README identifies the internal Node crypto implementation and root LICENSE scope is an attribution inference, not legal approval."
+      ],
+      "sourceGitTreeObjectId": "1061c6dd919700cbf86444f0f8930e4b3ed2cfe8",
+      "sourceRoot": "deps/ncrypto",
+      "version": "Node.js 24.22.3 (no independent version)",
+      "versionEvidence": [
+        {
+          "path": "deps/ncrypto/README.md",
+          "sha256": "eac7f233d33572e73765164256a7c92c207099722d59bd32c0e5e3a82b0ce292"
+        }
+      ]
+    },
+    {
+      "id": "ndk_compiler_rt",
+      "licenseEvidence": [
+        {
+          "path": "NDK:toolchains/llvm/prebuilt/darwin-x86_64/NOTICE",
+          "sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1",
+          "status": "source notice; packaged separately"
+        }
+      ],
+      "name": "Android NDK compiler-rt builtins",
+      "notes": [
+        "Implicit static toolchain runtime archive."
+      ],
+      "sourceGitTreeObjectId": null,
+      "sourceRoot": "NDK:toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/19/lib/linux",
+      "version": "28.2.13676358 / Clang 19.0.1",
+      "versionEvidence": [
+        {
+          "path": "NDK:source.properties",
+          "sha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5"
+        }
+      ]
+    },
+    {
+      "id": "ndk_cpufeatures",
+      "licenseEvidence": [
+        {
+          "path": "NDK:sources/android/cpufeatures/NOTICE",
+          "sha256": "c870d52f42a8f93023b99a85fe68d02637d6b04e5f35bbcd7f98759adb4e4d49",
+          "status": "source notice; packaged separately"
+        }
+      ],
+      "name": "Android NDK cpufeatures",
+      "notes": [
+        "Android NDK source; component NOTICE is contained in the packaged NDK root NOTICE."
+      ],
+      "sourceGitTreeObjectId": null,
+      "sourceRoot": "NDK:sources/android/cpufeatures",
+      "version": "28.2.13676358",
+      "versionEvidence": [
+        {
+          "path": "NDK:source.properties",
+          "sha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5"
+        }
+      ]
+    },
+    {
+      "id": "ndk_libunwind",
+      "licenseEvidence": [
+        {
+          "path": "NDK:toolchains/llvm/prebuilt/darwin-x86_64/NOTICE",
+          "sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1",
+          "status": "source notice; packaged separately"
+        }
+      ],
+      "name": "Android NDK libunwind",
+      "notes": [
+        "Implicit static toolchain runtime archive."
+      ],
+      "sourceGitTreeObjectId": null,
+      "sourceRoot": "NDK:toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/19/lib/linux/aarch64",
+      "version": "28.2.13676358 / Clang 19.0.1",
+      "versionEvidence": [
+        {
+          "path": "NDK:source.properties",
+          "sha256": "c00aa236fdb205e9be9edd9e2169763e48aca52735efff4e16f34205d49783b5"
+        }
+      ]
+    },
+    {
+      "id": "nghttp2",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/nghttp2/COPYING",
+          "path": "deps/nghttp2/COPYING",
+          "sha256": "6b94f3abc1aabd0c72a7c7d92a77f79dda7c8a0cb3df839a97890b4116a2de2a"
+        }
+      ],
+      "name": "nghttp2",
+      "sourceGitTreeObjectId": "b9d015e062976a207ff158c2a9d97c01c64e9258",
+      "sourceRoot": "deps/nghttp2",
+      "version": "1.70.0",
+      "versionEvidence": [
+        {
+          "path": "deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h",
+          "sha256": "53b46254a82c2075b28459e0f0cd8da7369afbd5632a71560ab75d6af920c5e1"
+        }
+      ]
+    },
+    {
+      "id": "node",
+      "licenseEvidence": [
+        {
+          "path": "LICENSE",
+          "sha256": "c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66",
+          "status": "source-project license file"
+        }
+      ],
+      "name": "Node.js",
+      "notes": [
+        "Core Node sources; runtime reports mobile version 24.22.3-0."
+      ],
+      "sourceGitTreeObjectId": "f693fe78e1540052404756a6c83c1b12e4c01315",
+      "sourceRoot": ".",
+      "version": "24.22.3",
+      "versionEvidence": [
+        {
+          "path": "src/node_version.h",
+          "sha256": "9c3400edcf0ef6f1888f3726e5bef234e70edc1c81e5641d076549496651a23c"
+        }
+      ]
+    },
+    {
+      "id": "openssl",
+      "licenseEvidence": [],
+      "name": "OpenSSL",
+      "sourceGitTreeObjectId": "1694e6b5ebfb0950a9a0a0d29e5c0ccd6aec4f30",
+      "sourceRoot": "deps/openssl/openssl",
+      "version": "3.5.9",
+      "versionEvidence": [
+        {
+          "path": "deps/openssl/openssl/VERSION.dat",
+          "sha256": "6dae52ea88792578bc22594ec2a0a26b2cf675b925ce81ce8792a1ccdf10cdb5"
+        }
+      ]
+    },
+    {
+      "id": "simdjson",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/simdjson/LICENSE",
+          "path": "deps/simdjson/LICENSE",
+          "sha256": "5fa8894e890bd77958f93b165433e0fb0dffa5bc982bfb147e4748e95bad24e5"
+        }
+      ],
+      "name": "simdjson",
+      "notes": [
+        "Version is recorded in the generated amalgamation header."
+      ],
+      "sourceGitTreeObjectId": "02fc73ee2a43d8db6f02ece6393bac460233b499",
+      "sourceRoot": "deps/simdjson",
+      "version": "4.6.11",
+      "versionEvidence": [
+        {
+          "path": "deps/simdjson/simdjson.h",
+          "sha256": "a5c467c33c7871262eb4c82775490430758939c1c516fbdaeb662f8255860a60"
+        }
+      ]
+    },
+    {
+      "id": "simdutf",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/simdutf/LICENSE",
+          "path": "deps/v8/third_party/simdutf/LICENSE",
+          "sha256": "fc8dbc04e03ad4efc08a647ffe7f995b811a95bc04c0e85a56d5277c6593fa5f"
+        }
+      ],
+      "name": "simdutf",
+      "sourceGitTreeObjectId": "4a053a9be6eed36081160f88c7d8fe5dde2bbc78",
+      "sourceRoot": "deps/v8/third_party/simdutf",
+      "version": "6.4.0",
+      "versionEvidence": [
+        {
+          "path": "deps/v8/third_party/simdutf/simdutf.h",
+          "sha256": "3db538b964facc1184193d4283c6eb5bbce23d5365355d20058d5740a7921879"
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "licenseEvidence": [
+        {
+          "path": "deps/sqlite/sqlite3.c",
+          "sha256": "0c657666d819f261cc4007526ad57e1669de9949df7a8ea847aa284a2bf0ee52",
+          "status": "source text contains copyright disclaimer and public-domain blessing"
+        },
+        {
+          "path": "deps/sqlite/sqlite3.h",
+          "sha256": "d6c84557261893439b341d2e6c35187ae3ea24fbfd843ad94616f72d89242b8c",
+          "status": "source text contains copyright disclaimer and public-domain blessing"
+        }
+      ],
+      "name": "SQLite",
+      "notes": [
+        "Source ID 2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76; no standalone LICENSE file."
+      ],
+      "sourceGitTreeObjectId": "039440245b628001127b5b033cd832105ecf71f7",
+      "sourceRoot": "deps/sqlite",
+      "version": "3.54.1",
+      "versionEvidence": [
+        {
+          "path": "deps/sqlite/sqlite3.h",
+          "sha256": "d6c84557261893439b341d2e6c35187ae3ea24fbfd843ad94616f72d89242b8c"
+        },
+        {
+          "path": "deps/sqlite/sqlite3.c",
+          "sha256": "0c657666d819f261cc4007526ad57e1669de9949df7a8ea847aa284a2bf0ee52"
+        }
+      ]
+    },
+    {
+      "id": "uv",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/uv/LICENSE",
+          "path": "deps/uv/LICENSE",
+          "sha256": "16de0c32b265cb7d46a6d3bd614f259dd4d693a5e26b3407b04aae8d73041f0c"
+        },
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/uv/LICENSE-extra",
+          "path": "deps/uv/LICENSE-extra",
+          "sha256": "262c44bd2cdba037e6d2a82fba15f5800d292bc993a6f5d6b6ea487744d02836"
+        }
+      ],
+      "name": "libuv",
+      "sourceGitTreeObjectId": "9dc5849dfaa983291527f7368e94f4e4b9407bd7",
+      "sourceRoot": "deps/uv",
+      "version": "1.52.1",
+      "versionEvidence": [
+        {
+          "path": "deps/uv/include/uv/version.h",
+          "sha256": "a859f2c21f7887d45b0372109ebc91759a6f8c408c7cbf2a12f9bbe579be403b"
+        }
+      ]
+    },
+    {
+      "id": "uvwasi",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/uvwasi/LICENSE",
+          "path": "deps/uvwasi/LICENSE",
+          "sha256": "3a94b84af77767e64afdf5fc31d4196810c9717ce2ac2be089f06fec4bfc0e99"
+        }
+      ],
+      "name": "uvwasi",
+      "sourceGitTreeObjectId": "24ad8a22a754a4dcef673b5c543808ccca28da67",
+      "sourceRoot": "deps/uvwasi",
+      "version": "0.0.23",
+      "versionEvidence": [
+        {
+          "path": "deps/uvwasi/include/uvwasi.h",
+          "sha256": "5103f54c5627dc198df9ccef6eb3d56124d16712bbb1c34baff1a793c81864d4"
+        }
+      ]
+    },
+    {
+      "id": "v8",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE",
+          "path": "deps/v8/LICENSE",
+          "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509"
+        },
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.fdlibm",
+          "path": "deps/v8/LICENSE.fdlibm",
+          "sha256": "e7115e18444dae09d17f361ddc365fb1d342640fe500796209c63f7c80dfae10"
+        },
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.strongtalk",
+          "path": "deps/v8/LICENSE.strongtalk",
+          "sha256": "6a585a9f466654abc8fc0829d56b1bc987e3a073d31faa03bba37d33640a23cd"
+        },
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.v8",
+          "path": "deps/v8/LICENSE.v8",
+          "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca"
+        }
+      ],
+      "name": "V8",
+      "notes": [
+        "V8 component tree is pinned by the Node source commit."
+      ],
+      "sourceGitTreeObjectId": "f291e09f79e4b197c356477fcdb800a22d24d038",
+      "sourceRoot": "deps/v8",
+      "version": "13.6.17",
+      "versionEvidence": [
+        {
+          "path": "deps/v8/include/v8-version.h",
+          "sha256": "7a945b923eec649417fc366a50b1439af006869ca764f37d1d07be15eed47802"
+        }
+      ]
+    },
+    {
+      "id": "zlib",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/zlib/LICENSE",
+          "path": "deps/zlib/LICENSE",
+          "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"
+        }
+      ],
+      "name": "Node zlib fork",
+      "notes": [
+        "Upstream header labels this modified source version with the motley suffix."
+      ],
+      "sourceGitTreeObjectId": "355618cc1589b1fa6d1660bd99ddbcc7bc59fae5",
+      "sourceRoot": "deps/zlib",
+      "version": "1.3.2.1-motley",
+      "versionEvidence": [
+        {
+          "path": "deps/zlib/zlib.h",
+          "sha256": "0ff41598d145693759a8322bb90bc4f2c57dcdcb3635fdf5b2195bf13df15b54"
+        }
+      ]
+    },
+    {
+      "id": "zstd",
+      "licenseEvidence": [
+        {
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/zstd/LICENSE",
+          "path": "deps/zstd/LICENSE",
+          "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+        }
+      ],
+      "name": "Zstandard",
+      "sourceGitTreeObjectId": "1b72d05ed53f5e535178f4ea21dcc764f3a5e3c2",
+      "sourceRoot": "deps/zstd",
+      "version": "1.5.7",
+      "versionEvidence": [
+        {
+          "path": "deps/zstd/lib/zstd.h",
+          "sha256": "9b4bc8245565c98ccfc61c07749928b57e7c0f6fddb0530c4f6aa1971893d88b"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "cycloneDxSchema": "1.6",
+    "cycloneDxSchemaSha256": "1ebcb88a2c845ecb6ff7bee7aeabdff9422cb0347f3d6875b241bd444b7e098f",
+    "cycloneDxSchemaValidation": "passed for APK and AAB; 0 schema errors and 0 unresolved dependency references",
+    "aabBundletoolValidate": "passed with Bundletool 1.18.3",
+    "aabNativeLibraryAlignment": "PAGE_ALIGNMENT_16K",
+    "apkZipalign": "passed: zipalign -c -P 16 4",
+    "licenseAssetHashCheck": "passed: 24 native dependency license files, Node license manifest, two Gradle runtime components using the bundled Apache-2.0 text, and 3 NDK notices match recorded hashes in APK and AAB",
+    "nodeRuntimeElfAlignment": "passed: 11 PT_LOAD segments across 3 arm64 libraries in both APK and AAB; each p_align=0x4000",
+    "bomDependencyClosure": "passed: 95 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete",
+    "physicalNodeProbeRelease": "passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages using a debug-key-signed test APK"
+  }
+}

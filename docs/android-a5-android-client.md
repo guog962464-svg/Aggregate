@@ -222,3 +222,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 
 - 再次读取系统网络接口：Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页手机 `wlan0=192.168.31.135/24`，仍不是同一子网。手机连接 `ws-5g`，其到 Mac 的路由经 `192.168.31.1`；Mac 到手机按默认路由经 `192.168.8.1`。
 - 一次 Mac 到手机的 ICMP 探测无响应。该轮没有启动 Mac Host 或运行 NSD/WSS；既有 Host listener 已停止，没有配对或 RPC。用户反馈后的这一读回仍不能证明两端地址已一致或 LAN 可达，NSD/direct WSS 验收保持开放。
+
+## 2026-11-19 14:33 网络地址与 Host listener 复读
+
+- **接口与路由：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页设备 `wlan0=192.168.31.135/24`。两端仍不在同一子网；Android 到 Mac 经 `192.168.31.1`，Mac 到 Android 经默认网关 `192.168.8.1`。Android 对 Mac 执行一次 ICMP 探测，1 包发送、0 包收到。
+- **服务与清理：**Mac `47321` 无 TCP listener，未启动 Host；没有配对、NSD、WSS 或 RPC。本轮读取时 NodeProbe 未安装/运行，设备临时 Node 目录已清理。
+- **结论：**这次用户反馈后的实际读回仍未证明 IP 同网段或 LAN 可达，A5.4/A5.5 当前 NSD/direct LAN 验收保持开放。既有同网段 direct WSS 只读验收仍作为原时刻的历史结果，不被这次网络状态追溯性否定。
