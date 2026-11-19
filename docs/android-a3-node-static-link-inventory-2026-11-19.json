@@ -1094,6 +1094,7 @@
     "licenseAssetHashCheck": "passed: 24 native dependency license files, Node license manifest, two Gradle runtime components using the bundled Apache-2.0 text, and 3 NDK notices match recorded hashes in APK and AAB; OpenSSL source LICENSE.txt maps to the packaged Node top-level license asset in both APK and AAB",
     "nodeRuntimeElfAlignment": "passed: 11 PT_LOAD segments across 3 arm64 libraries in both APK and AAB; each p_align=0x4000",
     "bomDependencyClosure": "passed: 95 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete",
-    "physicalNodeProbeRelease": "passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages using a debug-key-signed test APK"
+    "physicalNodeProbeRelease": "passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages using a debug-key-signed test APK",
+    "sourceEvidenceHashCheck": "passed: 26 sourceComponents; 32 license-source hashes, 29 version-source hashes, and 50 packaged APK/AAB license-asset hashes matched (111/111 total). This does not validate all 95 CycloneDX components, OS library symbol compatibility, or legal approval."
   }
 }
