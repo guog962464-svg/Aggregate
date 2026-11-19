@@ -24,6 +24,7 @@ class CapabilityRunPage extends StatefulWidget {
     this.musicSession,
     this.onSearchAll,
     this.onOpenMusic,
+    this.onRunSettled,
     this.embedded = false,
   });
   final RuntimePort runtime;
@@ -31,6 +32,7 @@ class CapabilityRunPage extends StatefulWidget {
   final MusicSession? musicSession;
   final VoidCallback? onSearchAll;
   final VoidCallback? onOpenMusic;
+  final VoidCallback? onRunSettled;
   final bool embedded;
   @override
   State<CapabilityRunPage> createState() => _CapabilityRunPageState();
@@ -79,6 +81,18 @@ bool _isActiveRunState(RunState? state) => switch (state) {
   RunState.cancelled ||
   RunState.timedOut ||
   RunState.outcomeUnknown => false,
+};
+
+bool _isSettledRunState(RunState state) => switch (state) {
+  RunState.succeeded ||
+  RunState.failed ||
+  RunState.cancelled ||
+  RunState.timedOut ||
+  RunState.outcomeUnknown => true,
+  RunState.created ||
+  RunState.validating ||
+  RunState.awaitingPermission ||
+  RunState.running => false,
 };
 
 Object? _redactNestedValue(Object? value) {
@@ -316,6 +330,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
             ];
             state = RunState.succeeded;
           });
+          widget.onRunSettled?.call();
         }
         return;
       }
@@ -334,6 +349,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
             ];
             state = RunState.succeeded;
           });
+          widget.onRunSettled?.call();
         }
         return;
       }
@@ -349,6 +365,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
           state = RunState.failed;
           failure = RuntimeFailure(RuntimeErrorCode.internal, '$cause');
         });
+        widget.onRunSettled?.call();
       }
     }
   }
@@ -463,6 +480,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
         '未能收到运行终态：$cause',
       );
     });
+    widget.onRunSettled?.call();
   }
 
   void _watchRun(RunId runId) {
@@ -473,11 +491,16 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
           .listen(
             (event) {
               if (!mounted || event.runId.value != runId.value) return;
+              final previousState = state;
               setState(() {
                 state = event.state;
                 if (event.blocks.isNotEmpty) blocks = event.blocks;
                 failure = event.failure;
               });
+              if (previousState != event.state &&
+                  _isSettledRunState(event.state)) {
+                widget.onRunSettled?.call();
+              }
               widget.musicSession?.observe(widget.capability, event);
             },
             onError: (Object cause) => _markOutcomeUnknown(cause),

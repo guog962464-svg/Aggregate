@@ -487,7 +487,7 @@ Future<void> _verifyScenario(
     };
     await tester.tap(find.text('所有功能').first);
     await tester.pumpAndSettle();
-    textRegions['workspace title'] = tester.getRect(find.text('工作台').last);
+    textRegions['workspace title'] = tester.getRect(find.text('所有功能').last);
 
     await tester.tap(find.text('管理连接').first);
     await tester.pumpAndSettle();

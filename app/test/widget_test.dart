@@ -82,6 +82,7 @@ void main() {
     await tester.pumpWidget(preview());
     await tester.pumpAndSettle();
     await openAll(tester);
+    expect(find.text('搜索功能…'), findsNothing);
     await tester.enterText(find.byKey(const Key('global-search')), '整数');
     await tester.pumpAndSettle();
     expect(find.text('两个整数相加'), findsOneWidget);
@@ -99,8 +100,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 250));
     expect(find.text('运行成功'), findsOneWidget);
     expect(find.textContaining('"sum": 12'), findsOneWidget);
-    await tester.pageBack();
+    await tester.enterText(find.byKey(const Key('global-search')), '');
     await tester.pumpAndSettle();
+    expect(find.text('最近使用'), findsOneWidget);
     await tester.tap(find.text('活动').first);
     await tester.pumpAndSettle();
     expect(find.text('add'), findsWidgets);
@@ -182,7 +184,7 @@ void main() {
     await openAll(tester);
     await tester.enterText(find.byKey(const Key('global-search')), 'Git');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('查看 Git 状态'));
+    await tester.tap(find.text('查看 Git 状态').first);
     await tester.pumpAndSettle();
     expect(find.text('参数'), findsOneWidget);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);

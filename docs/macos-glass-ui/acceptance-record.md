@@ -1372,3 +1372,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 深色证据：[深色设置 Profile 截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/03-settings-appearance-dark.png>)，2536×1816 PNG，SHA-256 `0f81c9eadeb177b4582e53844d7fc4c96d949e5bac8d13c56095f4765cd6ede0`。截图来自本轮 UI-7.2 原生 Profile、点击生产主题控件后的深色状态；它早于最后一次把模式提示移到“外观”标题行的微调，因此只用来签收深色玻璃色调、开关和共享背景连续性，不作为最终标题行布局证据。最终代码版本的深色启动 Profile 已成功构建，但 macOS 没有呈现可见窗口；未改系统外观，也没有强行切换用户工作桌面。
 - 验证：`flutter analyze --no-pub` 无问题；`widget_test.dart`、`macos_reduce_motion_test.dart`、`macos_dynamic_backdrop_text_contrast_test.dart`、`glass_theme_switch_test.dart` 共 30 项通过。新增宽窗设置分类轨、主题状态和分类跳转断言；既有窄窗设置布局回归通过。最终浅色版本 Profile 窗口正常截图并退出；深色构建进程也已退出。`git diff --check` 通过。
 - 限制：截图使用 `PreviewRuntime` 内存样例，不连真实连接、Host、账号或服务。没有对最终版本深色标题行做原生截图，也未覆盖 Mac Host 配对/邀请、其他设置类别的完整交互、减少动态效果实窗或用户视觉签收。UI-5/UI-6 既有待办继续有效。
+
+
+### 2026-11-19 UI-7.3 macOS 工作台目录与内嵌调用
+
+- 设计先行：蓝图 §5.2 规定宽内容区以独立滚动的功能目录配右侧调用面板、窄宽度保留原完整调用页；目录宽约 34% 并限制在 220–360pt，标题/搜索/筛选固定在两列上方，收藏和最近使用分组不改变原调用动作。
+- 实施：macOS 内容宽度 ≥760pt 时目录与生产 `CapabilityRunPage` 嵌入态并排；搜索、类型筛选、收藏、最近使用仍通过现有 RuntimePort 与 preferences；运行终态会刷新最近使用、活动和连接首页。能力目录的选中对象在搜索刷新期间保持，来源连接删除后清空选择。较窄窗口与其他平台仍走原目录和完整调用路由。
+- 一致性修正：工作台页内搜索承接 `⌘K` 全局搜索；工具栏仅在其他页面显示搜索入口，避免两个外观相似的入口指向同一个输入框。`GlassThemeSwitch`、太阳/月亮状态映射、拖动阈值、提交回调和相关 shader 未改；权限确认与 Runtime 调用流程复用原组件。
+- 原生视觉证据：使用 `preview_main.dart` 的进程内 `PreviewRuntime`，隔离预览 bundle ID `io.github.guog962464.aggregate.ui7preview`，窗口逻辑尺寸 1260×860pt。最终浅色宽窗截图：[工作台目录与调用面板](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/05-workspace-inline-execution-final.png>)，2612×1812 PNG，SHA-256 `174d411ce59e6fe4748d27738998a35002fbd8a73cddde806dc3285b11aa6354`。仅捕获 Aggregate 窗口；AX 搜索确认工具栏重复入口不存在，页内搜索和右侧调用表单仍存在。临时 bundle ID 与初始窗口尺寸改动已还原，Profile 已退出。
+- 验证：`flutter test --no-pub test/widget_test.dart test/workspace_search_semantics_test.dart test/connection_experience_test.dart test/capability_run_page_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart` 共 39 项通过；`flutter analyze --no-pub` 无问题；`flutter build macos --profile --no-pub -t lib/preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` 成功；`git diff --check` 通过。测试覆盖目录搜索、筛选、收藏、选中调用、参数校验、PreviewRuntime 运行结果、最近使用与活动刷新、⌘K 和布局宽度。
+- 边界：静态 Profile 图是浅色 PreviewRuntime 样例，不连真实服务；没有在原生窗口中实际运行能力，也没有本阶段暗色/窄窗 Profile 截图或用户视觉签收。Widget 测试的截图渲染器无法正确呈现 GlassScene/系统中文字体，所以不把测试 golden 当作视觉证据。UI-5/UI-6 的既有未完成项继续开放。

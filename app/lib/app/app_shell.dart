@@ -512,6 +512,11 @@ class AppShellState extends State<AppShell> {
           onAddConnection: addConnection,
           favoriteKeys: widget.preferences.favoriteCapabilityKeys,
           onFavoriteChanged: setFavorite,
+          musicSession: widget.musicSession,
+          onRunSettled: () {
+            activityKey.currentState?.reload();
+            unawaited(reloadConnectionHomes());
+          },
           autofocusSearch: selected == Section.workspace,
         ),
       ),
@@ -660,7 +665,7 @@ class AppShellState extends State<AppShell> {
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
               actions: [
-                if (macOS)
+                if (macOS && selected != Section.workspace)
                   SizedBox(
                     width: searchWidth,
                     height: 40,
@@ -693,7 +698,7 @@ class AppShellState extends State<AppShell> {
                       ],
                     ),
                   )
-                else
+                else if (!macOS)
                   AggregateIconButton(
                     tooltip: mobileInput ? '搜索所有功能' : '搜索所有功能（$searchShortcut）',
                     onPressed: searchAll,

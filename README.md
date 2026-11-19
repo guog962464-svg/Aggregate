@@ -105,6 +105,8 @@ flutter run -d macos
 - [连接器作者指南](docs/connector-author-guide.md)：动作清单与 MCP Server 接入约定。
 - [发布检查](docs/release-checklist.md)：当前构建、签名和发布验收状态。
 - [Android 适配计划](docs/android-adaptation-plan.md)：Android 实验阶段与验收门槛。
+- [macOS 全功能界面蓝图](docs/macos-glass-ui/design-blueprint-v2.md)：页面布局、玻璃材质、搜索与调用交互的统一设计基准。
+- [macOS UI 阶段验收记录](docs/macos-glass-ui/acceptance-record.md)：各阶段的测试、Profile 画面和未完成边界。
 
 ## 项目镜像
 

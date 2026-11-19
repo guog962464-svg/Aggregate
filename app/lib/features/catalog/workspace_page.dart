@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +14,8 @@ import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
+import '../invocation/capability_run_page.dart';
+import '../music/music_session.dart';
 
 class WorkspacePage extends StatefulWidget {
   const WorkspacePage({
@@ -20,6 +25,8 @@ class WorkspacePage extends StatefulWidget {
     required this.onAddConnection,
     required this.favoriteKeys,
     required this.onFavoriteChanged,
+    this.musicSession,
+    this.onRunSettled,
     this.autofocusSearch = true,
   });
 
@@ -28,6 +35,8 @@ class WorkspacePage extends StatefulWidget {
   final ValueChanged<ConnectionKind> onAddConnection;
   final List<String> favoriteKeys;
   final void Function(Capability, bool) onFavoriteChanged;
+  final MusicSession? musicSession;
+  final VoidCallback? onRunSettled;
   final bool autofocusSearch;
 
   @override
@@ -43,6 +52,8 @@ class WorkspacePageState extends State<WorkspacePage> {
   CapabilityKind? filter;
   Object? error;
   int generation = 0;
+  String? selectedCapabilityKey;
+  Capability? _selectedCapability;
 
   bool _usesGlassButtons(BuildContext context) =>
       defaultTargetPlatform == TargetPlatform.macOS &&
@@ -79,10 +90,36 @@ class WorkspacePageState extends State<WorkspacePage> {
         connections = loadedConnections;
         capabilities = loadedCapabilities;
         recent = loadedRecent;
+        final selected = _selectedCapability;
+        if (selected != null &&
+            !loadedConnections.any(
+              (connection) =>
+                  connection.id.value == selected.id.connection.value,
+            )) {
+          selectedCapabilityKey = null;
+          _selectedCapability = null;
+        } else if (selected != null) {
+          for (final capability in loadedCapabilities) {
+            if (capability.id.key == selected.id.key) {
+              _selectedCapability = capability;
+              break;
+            }
+          }
+        }
       });
     } catch (cause) {
       if (!mounted || current != generation) return;
       setState(() => error = cause);
+    }
+  }
+
+  Future<void> refreshRecent() async {
+    try {
+      final loadedRecent = await widget.runtime.listRecentRuns();
+      if (!mounted) return;
+      setState(() => recent = loadedRecent);
+    } catch (_) {
+      // The catalog remains usable when the activity source is unavailable.
     }
   }
 
@@ -114,8 +151,30 @@ class WorkspacePageState extends State<WorkspacePage> {
     }
   }
 
+  Capability? get selectedCapability => _selectedCapability;
+
+  void _openCapability(Capability capability, {required bool embedded}) {
+    if (embedded) {
+      setState(() {
+        selectedCapabilityKey = capability.id.key;
+        _selectedCapability = capability;
+      });
+    } else {
+      widget.onOpen(capability);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (_usesGlassButtons(context) && constraints.maxWidth >= 760) {
+        return _buildMacDesktop(context, constraints);
+      }
+      return _buildCompact(context);
+    },
+  );
+
+  Widget _buildCompact(BuildContext context) {
     final mobileInput = switch (defaultTargetPlatform) {
       TargetPlatform.android || TargetPlatform.iOS => true,
       _ => false,
@@ -137,7 +196,7 @@ class WorkspacePageState extends State<WorkspacePage> {
       }
     }
     return PageFrame(
-      title: '工作台',
+      title: defaultTargetPlatform == TargetPlatform.macOS ? '所有功能' : '工作台',
       subtitle: widget.runtime.isPreview
           ? '搜索所有连接中的功能。当前使用预览数据。'
           : '从一个地方找到并运行 CLI 与 MCP 功能。',
@@ -209,9 +268,6 @@ class WorkspacePageState extends State<WorkspacePage> {
           runSpacing: 8,
           children: [
             _filterChip('全部', null),
-            _filterChip('工具', CapabilityKind.mcpTool),
-            _filterChip('资源', CapabilityKind.mcpResource),
-            _filterChip('提示', CapabilityKind.mcpPrompt),
             if (widget.runtime.features.canAdd(ConnectionKind.cli) ||
                 visible.any(
                   (item) =>
@@ -219,6 +275,9 @@ class WorkspacePageState extends State<WorkspacePage> {
                       item.id.kind == CapabilityKind.cliAction,
                 ))
               _filterChip('CLI', CapabilityKind.cliCommand),
+            _filterChip('MCP 工具', CapabilityKind.mcpTool),
+            _filterChip('资源', CapabilityKind.mcpResource),
+            _filterChip('提示', CapabilityKind.mcpPrompt),
           ],
         ),
         const SizedBox(height: 28),
@@ -329,6 +388,347 @@ class WorkspacePageState extends State<WorkspacePage> {
       ],
     );
   }
+
+  Widget _buildMacDesktop(BuildContext context, BoxConstraints constraints) {
+    final width = math.min(1080.0, constraints.maxWidth);
+    final sourceLabels = {
+      for (final connection in connections)
+        connection.id.value: connection.label,
+    };
+    final visible = visibleCapabilities;
+    final favorites = visible
+        .where((item) => widget.favoriteKeys.contains(item.id.key))
+        .toList();
+    final recentCapabilities = <Capability>[];
+    if (search.text.isEmpty && filter == null && capabilities != null) {
+      final seen = <String>{};
+      for (final run in recent) {
+        if (!seen.add(run.capability.key)) continue;
+        for (final capability in capabilities!) {
+          if (capability.id.key == run.capability.key) {
+            recentCapabilities.add(capability);
+          }
+        }
+        if (recentCapabilities.length >= 3) break;
+      }
+    }
+    final directoryWidth = math.min(360.0, math.max(220.0, (width - 96) * .34));
+    final selected = selectedCapability;
+
+    return Center(
+      child: SizedBox(
+        width: width,
+        height: constraints.maxHeight,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(30, 24, 30, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('所有功能', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 6),
+              Text(
+                widget.runtime.isPreview
+                    ? '搜索所有连接中的功能。当前使用预览数据。'
+                    : '从一个地方找到并运行 CLI 与 MCP 功能。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: math.min(600.0, width - 60),
+                child: _desktopSearch(context),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _filterChip('全部', null),
+                  if (widget.runtime.features.canAdd(ConnectionKind.cli) ||
+                      visible.any(
+                        (item) =>
+                            item.id.kind == CapabilityKind.cliCommand ||
+                            item.id.kind == CapabilityKind.cliAction,
+                      ))
+                    _filterChip('CLI', CapabilityKind.cliCommand),
+                  _filterChip('MCP 工具', CapabilityKind.mcpTool),
+                  _filterChip('资源', CapabilityKind.mcpResource),
+                  _filterChip('提示', CapabilityKind.mcpPrompt),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: directoryWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '功能目录',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const Spacer(),
+                              Text(
+                                capabilities == null
+                                    ? '…'
+                                    : '${visible.length} 项',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: _desktopCatalog(
+                              context,
+                              visible: visible,
+                              favorites: favorites,
+                              recentCapabilities: recentCapabilities,
+                              sourceLabels: sourceLabels,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    const VerticalDivider(width: 1),
+                    const SizedBox(width: 28),
+                    Expanded(
+                      child: selected == null
+                          ? Center(
+                              child: Text(
+                                '从目录选择功能，查看参数、权限和运行结果。',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            )
+                          : CapabilityRunPage(
+                              key: ValueKey('workspace-run-${selected.id.key}'),
+                              runtime: widget.runtime,
+                              capability: selected,
+                              musicSession: widget.musicSession,
+                              onSearchAll: focusSearch,
+                              onRunSettled: () {
+                                unawaited(refreshRecent());
+                                widget.onRunSettled?.call();
+                              },
+                              embedded: true,
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _desktopSearch(BuildContext context) => CallbackShortcuts(
+    bindings: {
+      const SingleActivator(LogicalKeyboardKey.enter): () {
+        if (visibleCapabilities.isNotEmpty) {
+          _openCapability(visibleCapabilities.first, embedded: true);
+        }
+      },
+    },
+    child: TextField(
+      key: const Key('global-search'),
+      controller: search,
+      focusNode: searchFocus,
+      autofocus: widget.autofocusSearch,
+      style: Theme.of(context).textTheme.titleMedium,
+      decoration: InputDecoration(
+        labelText: '搜索功能',
+        hintText: '名称、说明或来源',
+        prefixIcon: SizedBox(
+          width: 48,
+          child: Center(
+            child: GlassGlyphMark(glyph: GlassGlyph.search, size: 18),
+          ),
+        ),
+        suffixIcon: search.text.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    ShortcutScheme(defaultTargetPlatform).searchLabel,
+                  ),
+                ),
+              )
+            : AggregateIconButton(
+                tooltip: '清除搜索',
+                icon: Icons.close,
+                onPressed: () {
+                  search.clear();
+                  reloadCatalog();
+                  focusSearch();
+                },
+              ),
+      ),
+      onChanged: (_) => reloadCatalog(),
+      onSubmitted: (_) {
+        if (visibleCapabilities.isNotEmpty) {
+          _openCapability(visibleCapabilities.first, embedded: true);
+        }
+      },
+    ),
+  );
+
+  Widget _desktopCatalog(
+    BuildContext context, {
+    required List<Capability> visible,
+    required List<Capability> favorites,
+    required List<Capability> recentCapabilities,
+    required Map<String, String> sourceLabels,
+  }) {
+    if (error != null) {
+      return PageState.error('加载功能失败：$error', onRetry: reloadCatalog);
+    }
+    if (capabilities == null) return const PageState.loading();
+    if (connections.isEmpty && !widget.runtime.isPreview) {
+      final message = widget.runtime.features.connectionKinds.isEmpty
+          ? '当前运行端尚无可添加的连接。'
+          : widget.runtime.features.canAdd(ConnectionKind.cli) ||
+                widget.runtime.features.canAdd(ConnectionKind.mcpStdio)
+          ? '还没有连接。添加第一个 CLI 或 MCP，功能会出现在这里。'
+          : '还没有连接。添加第一个 HTTP MCP，功能会出现在这里。';
+      return PageState.empty(
+        message,
+        actions: [
+          if (widget.runtime.features.canAdd(ConnectionKind.cli))
+            AggregateActionButton(
+              label: '添加 CLI',
+              icon: Icons.terminal,
+              style: AggregateActionStyle.primary,
+              onPressed: () => widget.onAddConnection(ConnectionKind.cli),
+            ),
+          if (widget.runtime.features.canAdd(ConnectionKind.mcpStdio))
+            AggregateActionButton(
+              label: '添加 MCP',
+              icon: Icons.hub_outlined,
+              onPressed: () => widget.onAddConnection(ConnectionKind.mcpStdio),
+            )
+          else if (widget.runtime.features.canAdd(ConnectionKind.mcpHttp))
+            AggregateActionButton(
+              label: '添加 HTTP MCP',
+              icon: Icons.hub_outlined,
+              onPressed: () => widget.onAddConnection(ConnectionKind.mcpHttp),
+            ),
+        ],
+      );
+    }
+    if (visible.isEmpty) {
+      return PageState.empty(
+        search.text.isEmpty ? '当前筛选下没有可用功能。' : '没有找到“${search.text}”对应的功能。',
+        actions: [
+          AggregateActionButton(
+            label: '清除筛选',
+            icon: Icons.close,
+            style: AggregateActionStyle.quiet,
+            onPressed: () {
+              search.clear();
+              setState(() => filter = null);
+              reloadCatalog();
+            },
+          ),
+        ],
+      );
+    }
+
+    final includeGroups = search.text.isEmpty && filter == null;
+    return CustomScrollView(
+      key: const Key('workspace-capability-directory'),
+      slivers: [
+        if (includeGroups && favorites.isNotEmpty)
+          ..._capabilitySlivers(context, '收藏的功能', favorites, sourceLabels),
+        if (recentCapabilities.isNotEmpty)
+          ..._capabilitySlivers(
+            context,
+            '最近使用',
+            recentCapabilities,
+            sourceLabels,
+          ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8, top: 2),
+            child: Text(
+              '全部功能 · ${visible.length}',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final capability = visible[index];
+            return Padding(
+              key: ValueKey('workspace-capability-${capability.id.key}'),
+              padding: const EdgeInsets.only(bottom: 5),
+              child: CapabilityRow(
+                capability: capability,
+                source: sourceLabels[capability.id.connection.value] ?? '未知来源',
+                compactDirectory: true,
+                selected: selectedCapabilityKey == capability.id.key,
+                onOpen: () => _openCapability(capability, embedded: true),
+                isFavorite: widget.favoriteKeys.contains(capability.id.key),
+                onFavoriteChanged: (value) =>
+                    widget.onFavoriteChanged(capability, value),
+              ),
+            );
+          }, childCount: visible.length),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _capabilitySlivers(
+    BuildContext context,
+    String title,
+    List<Capability> items,
+    Map<String, String> sourceLabels,
+  ) => [
+    SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8, top: 2),
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    ),
+    SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final capability = items[index];
+        return Padding(
+          key: ValueKey('workspace-${title.hashCode}-${capability.id.key}'),
+          padding: const EdgeInsets.only(bottom: 5),
+          child: CapabilityRow(
+            capability: capability,
+            source: sourceLabels[capability.id.connection.value] ?? '未知来源',
+            compactDirectory: true,
+            selected: selectedCapabilityKey == capability.id.key,
+            onOpen: () => _openCapability(capability, embedded: true),
+            isFavorite: widget.favoriteKeys.contains(capability.id.key),
+            onFavoriteChanged: (value) =>
+                widget.onFavoriteChanged(capability, value),
+          ),
+        );
+      }, childCount: items.length),
+    ),
+    const SliverToBoxAdapter(child: SizedBox(height: 18)),
+  ];
 
   Widget _filterChip(String label, CapabilityKind? kind) {
     final selected = filter == kind;
