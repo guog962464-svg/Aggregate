@@ -1388,6 +1388,15 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 验证：`flutter analyze --no-pub` 无问题；`widget_test.dart`、`macos_reduce_motion_test.dart`、`macos_dynamic_backdrop_text_contrast_test.dart`、`glass_theme_switch_test.dart` 共 30 项通过。新增宽窗设置分类轨、主题状态和分类跳转断言；既有窄窗设置布局回归通过。最终浅色版本 Profile 窗口正常截图并退出；深色构建进程也已退出。`git diff --check` 通过。
 - 限制：截图使用 `PreviewRuntime` 内存样例，不连真实连接、Host、账号或服务。没有对最终版本深色标题行做原生截图，也未覆盖 Mac Host 配对/邀请、其他设置类别的完整交互、减少动态效果实窗或用户视觉签收。UI-5/UI-6 既有待办继续有效。
 
+### 2026-11-19 UI-7.1 设计稿 v3.1 与生产外壳复核
+
+- 版本/环境：以设计稿 v3 commit `3b5c4f9` 为基线；macOS 27.2.1 Profile，Flutter 3.47.8 stable / Dart 3.13.7，arm64；应用窗口请求并由 `agent-desktop resize-window` 验证为 1360×900 logical px，显示器 DPR 2。数据来自 `preview_main.dart` 的进程内 `PreviewRuntime`，没有连接外部服务。
+- 设计修订：生产窗口保留 macOS 原生左对齐标题与交通灯位置；21 张画板统一按该窗口几何重绘。浅/深/系统偏好同时驱动 macOS 窗口原生 appearance，使标题栏和 Flutter `GlassScene` 同步。
+- 实施：侧栏新增点阵品牌标记和 Aggregate 字样；每个连接按钮加入真实 `ConnectionStatus` 状态点，AX 名称同时报告连接状态。主题按钮文件、太阳/月亮点阵、拖动处理、阈值、提交时机、shader 与校准配置均未修改。
+- Profile 目视：浅色音乐首页 [截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-profile-ui71-final.png>)，SHA-256 `6eb32705ce06a6f72ba5bf5bdf8f3b4e19329646c183b18d31b3b68acac6ef9d`；浅色工作台 [截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-profile-workspace-light-final.png>)，SHA-256 `1a33181cfd7e088c0dfe0900253dc0ee6c272de34b03fff195bbdc7b068134f6`；浅色设置 [截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-profile-settings-light-final.png>)，SHA-256 `caf24fb6e5e9e9ebd2845452c26c7c59226a9971ca4a14dd4f9097fb2d351588`；深色设置 [截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-profile-settings-dark.png>)，SHA-256 `66dfa7d2ad53ba5598b7df9a03753fe89801b77f7d79d6edeeca5d3b20086573`。分别核对侧栏层级、品牌/状态点和窗口标题栏明暗。AX 回读连接状态名称，并在设置页切换浅→深→浅后回读对应主题值；macOS 原生标题栏随之变暗、恢复变亮。
+- 自动验收：`flutter analyze` 指定的 5 个改动 Dart 文件通过；`flutter test --no-pub test/glass_action_button_test.dart test/glass_theme_switch_test.dart test/theme_switch_realtime_test.dart test/theme_switch_calibration_test.dart` 共 33 项通过；macOS Profile 构建通过；v3.1 生成器语法检查通过、21 张 SVG 均解析且由 `sips` 成功渲染为 1360×900；`git diff --check` 通过。
+- 结果/边界：UI-7.1 的共享外壳和导航通过本轮复核；设置页内容的分区、当前模式说明与开关位置仍有明显差异，已留给 UI-7.2。音乐会话当前为空，因此 02 音乐画板中的播放样例与本次运行时状态不同，UI-7.4 会按真实 PreviewRuntime 状态收敛。全页面逐项比对、窄窗和用户视觉签收尚未完成；UI-5/UI-6 原有待办保持未完成。
+
 
 ### 2026-11-19 UI-7.3 macOS 工作台目录与内嵌调用
 

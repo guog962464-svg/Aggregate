@@ -15,6 +15,7 @@ import '../features/music/music_session.dart';
 import '../widgets/glass/aggregate_buttons.dart';
 import '../widgets/glass/glass_action_button.dart';
 import '../widgets/glass/glass_design_tokens.dart';
+import '../widgets/glass/glass_glyph.dart';
 import '../widgets/glass/glass_motion.dart';
 import 'shortcut_scheme.dart';
 
@@ -307,6 +308,21 @@ class AppShellState extends State<AppShell> {
 
   Widget navigation({required bool compact}) => Column(
     children: [
+      if (defaultTargetPlatform == TargetPlatform.macOS)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 10, 16, 16),
+          child: Row(
+            children: [
+              GlassGlyphMark(glyph: GlassGlyph.grid, size: 18),
+              const SizedBox(width: 9),
+              Text(
+                'Aggregate',
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
       const SizedBox(height: 6),
       Padding(
         padding: const EdgeInsets.only(left: 22, right: 12, top: 8, bottom: 8),
@@ -386,16 +402,37 @@ class AppShellState extends State<AppShell> {
     }
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
+      final statusLabel = _connectionStatusLabel(connection.status);
+      final tokens = Theme.of(context).extension<GlassDesignTokens>();
+      final statusColor = switch (connection.status) {
+        ConnectionStatus.ready =>
+          tokens?.status ?? Theme.of(context).colorScheme.tertiary,
+        ConnectionStatus.connecting =>
+          tokens?.warm ?? Theme.of(context).colorScheme.primary,
+        ConnectionStatus.unavailable =>
+          tokens?.danger ?? Theme.of(context).colorScheme.error,
+      };
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         child: AggregateActionButton(
           label: connection.label,
+          semanticsLabel: '${connection.label}，$statusLabel',
           icon: icon,
           onPressed: activate,
           style: AggregateActionStyle.quiet,
           size: GlassButtonSize.navigation,
           expand: true,
           selected: isSelected,
+          trailing: ExcludeSemantics(
+            child: Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -762,3 +799,9 @@ class AppShellState extends State<AppShell> {
     );
   }
 }
+
+String _connectionStatusLabel(ConnectionStatus status) => switch (status) {
+  ConnectionStatus.ready => '已连接',
+  ConnectionStatus.connecting => '连接中',
+  ConnectionStatus.unavailable => '暂不可用',
+};

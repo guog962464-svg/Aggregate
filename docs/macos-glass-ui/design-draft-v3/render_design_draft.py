@@ -284,9 +284,9 @@ def shell(page_title, active="全部功能", global_search=True, subtitle=None, 
     out.append('<rect x="16" y="16" width="1328" height="868" rx="18" fill="url(#sceneWarm)"/>')
     out.append('<rect x="16" y="16" width="1328" height="42" rx="18" fill="#ededf1" fill-opacity=".80"/>')
     out.append('<path d="M16 58H1344" stroke="#cdccd3" stroke-opacity=".72"/>')
-    for x, color in [(40, "#ee655a"), (65, "#efbe42"), (90, "#41b86b")]:
+    for x, color in [(31, "#ee655a"), (56, "#efbe42"), (81, "#41b86b")]:
         out.append(f'<circle cx="{x}" cy="37" r="7" fill="{color}"/>')
-    out.append(t(680, 42, "Aggregate", 15, "#555560", 620, "middle"))
+    out.append(t(100, 42, "Aggregate", 15, "#555560", 620))
     out.append('<path d="M240 58V884" stroke="#c9c9d2" stroke-opacity=".72"/>')
     out.append(t(42, 103, "▦  Aggregate", 21, "#282832", 680))
     out.append(t(42, 152, "我的连接", 12, "#666671", 580))
@@ -733,9 +733,9 @@ def board_dark_reference():
     p.append("</g>")
     p.append('<rect x="16" y="16" width="1328" height="868" rx="18" fill="#202126" stroke="#454751"/>')
     p.append('<rect x="16" y="16" width="1328" height="42" rx="18" fill="#26272e"/>')
-    for x, color in [(40, "#ee655a"), (65, "#efbe42"), (90, "#41b86b")]:
+    for x, color in [(31, "#ee655a"), (56, "#efbe42"), (81, "#41b86b")]:
         p.append(f'<circle cx="{x}" cy="37" r="7" fill="{color}"/>')
-    p.append(t(680, 42, "Aggregate", 15, "#d5d6de", 620, "middle"))
+    p.append(t(100, 42, "Aggregate", 15, "#d5d6de", 620))
     p.append('<path d="M16 58H1344M240 58V884" stroke="#454751"/>')
     p.append(t(42, 103, "▦  Aggregate", 21, "#efeff3", 680))
     p.append(t(42, 152, "我的连接", 12, "#b8bac5", 580))

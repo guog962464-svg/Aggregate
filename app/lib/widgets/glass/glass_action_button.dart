@@ -43,6 +43,7 @@ class GlassActionButton extends StatefulWidget {
     this.busyLabel,
     this.description,
     this.source,
+    this.trailing,
     this.semanticsLabel,
     this.kind = GlassButtonKind.secondary,
     this.size = GlassButtonSize.secondary,
@@ -62,6 +63,7 @@ class GlassActionButton extends StatefulWidget {
   final String? busyLabel;
   final String? description;
   final String? source;
+  final Widget? trailing;
   final String? semanticsLabel;
   final GlassButtonKind kind;
   final GlassButtonSize size;
@@ -543,6 +545,10 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               ),
             ),
           ),
+          if (widget.trailing case final trailing?) ...[
+            const SizedBox(width: 8),
+            trailing,
+          ],
         ],
       );
     }
@@ -572,6 +578,10 @@ class _GlassActionButtonState extends State<GlassActionButton> {
             ),
           ),
         ),
+        if (widget.trailing case final trailing?) ...[
+          const SizedBox(width: 8),
+          trailing,
+        ],
       ],
     );
   }

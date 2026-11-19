@@ -17,6 +17,7 @@ class AggregateActionButton extends StatelessWidget {
     required this.onPressed,
     this.description,
     this.source,
+    this.trailing,
     this.busyLabel,
     this.semanticsLabel,
     this.style = AggregateActionStyle.secondary,
@@ -34,6 +35,7 @@ class AggregateActionButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String? description;
   final String? source;
+  final Widget? trailing;
   final String? busyLabel;
   final String? semanticsLabel;
   final AggregateActionStyle style;
@@ -56,6 +58,7 @@ class AggregateActionButton extends StatelessWidget {
         busyLabel: busyLabel,
         description: description,
         source: source,
+        trailing: trailing,
         semanticsLabel: semanticsLabel,
         onPressed: action,
         enabled: enabled,
@@ -74,7 +77,17 @@ class AggregateActionButton extends StatelessWidget {
       );
     }
 
-    final child = Text(busy ? busyLabel ?? '$label中' : label);
+    final text = Text(busy ? busyLabel ?? '$label中' : label);
+    final child = trailing == null
+        ? text
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: text),
+              const SizedBox(width: 8),
+              trailing!,
+            ],
+          );
     final button = switch (style) {
       AggregateActionStyle.primary => FilledButton.icon(
         onPressed: action,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../features/invocation/capability_run_page.dart';
 import '../features/music/music_session.dart';
+import '../platform/macos/window_appearance.dart';
 import '../widgets/glass/glass_motion.dart';
 import '../widgets/glass/glass_scene.dart';
 import 'app_shell.dart';
@@ -74,6 +75,7 @@ class _AggregateAppState extends State<AggregateApp> {
     try {
       final loaded = await widget.runtime.loadPreferences();
       if (mounted) setState(() => preferences = loaded);
+      unawaited(MacWindowAppearance.apply(loaded.appearance));
     } catch (cause) {
       messengerKey.currentState?.showSnackBar(
         SnackBar(content: Text('加载偏好设置失败：$cause')),
@@ -84,6 +86,7 @@ class _AggregateAppState extends State<AggregateApp> {
   Future<void> _savePreferences(UserPreferences next) async {
     final previous = preferences;
     setState(() => preferences = next);
+    unawaited(MacWindowAppearance.apply(next.appearance));
     try {
       await widget.runtime.savePreferences(next);
     } catch (cause) {
