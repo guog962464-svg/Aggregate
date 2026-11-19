@@ -92,7 +92,7 @@
 | B077 | `app/lib/features/music/music_player_page.dart:512` | 网易云音乐：播放器与搜索入口 | 2026-11-18 暗色播放启动图 `06-music-starting-dark.png`；仅见 busy 状态的停止按钮，未测可用点击 |
 | B078 | `app/lib/features/music/music_player_page.dart:603` | 网易云音乐：播放器与搜索入口 | 暗色音乐图 `05-music-search-results-dark.png`、`06-music-starting-dark.png`；浅色 `49-music-light.png`；`connection_experience_test.dart` 覆盖 PreviewRuntime 搜索样例并从结果播放，非真实服务 |
 | B079 | `app/lib/features/music/music_search_results.dart:180` | 网易云音乐：搜索结果操作 | 暗色非空搜索图 `05-music-search-results-dark.png`；`music_search_results_lazy_test.dart` 与 `music_queue_controls_test.dart` 覆盖列表播放/加入下一首的 Widget 回调；玻璃动态与浅色原生状态待核 |
-| B080 | `app/lib/features/settings/appearance_selector.dart:48` | 设置：明暗主题选择器 | 浅色 `38-settings-light.png` 可见主题控件；`glass_theme_switch_test.dart` 回归覆盖拖动满 450 ms 后仅在释放时提交、取消/隐藏拖动及减少动态效果；原生连续画面仍待核 |
+| B080 | `app/lib/features/settings/appearance_selector.dart:44` | 设置：明暗主题选择器 | 浅色 `38-settings-light.png` 可见主题控件；`glass_theme_switch_test.dart` 回归覆盖拖动满 450 ms 后仅在释放时提交、取消/隐藏拖动及减少动态效果；原生连续画面仍待核 |
 | B081 | `app/lib/features/settings/settings_page.dart:39` | 设置：清空活动确认框取消按钮 | 2026-11-18 深色清理确认图 `clear-dialog-dark-confirm.png`；实际取消后预置的成功/失败/已取消三条内存活动仍存在；浅深确认框见验收记录；按下动画关键帧待核 |
 | B082 | `app/lib/features/settings/settings_page.dart:45` | 设置：清空活动确认框危险按钮 | 2026-11-18 浅色清理确认图 `clear-dialog-light.png`；确认后隔离 `PreviewRuntime` 活动列表为空，见 `activity-empty-after-confirm-light.png`；不触碰持久数据；按下动画关键帧待核 |
 | B083 | `app/lib/features/settings/settings_page.dart:279` | 设置：本机数据清空活动按钮 | 2026-11-18 设置页清空按钮在浅/深主题均可见并打开确认弹窗；截图 `local-data-light-before.png`、`local-data-dark-before.png`；只测试内存预览回调 |
@@ -115,13 +115,13 @@
 | B100 | `app/lib/platform/macos/mac_host_settings_panel.dart:957` | 设置：Mac Host 配对和权限操作 | 2026-11-18 编辑假 grant 后实际点击“保存权限”；AX scope 更新为读取连接、连接向导、连接管理。动作及保存后 AX 证据见 UI-6.7 Host 配对/权限验收；写入仅在 fake control 内存中 |
 | B101 | `app/lib/platform/macos/mac_host_settings_panel.dart:982` | 设置：Mac Host 配对和权限操作 | 2026-11-18 在自定义批准与已配对编辑弹窗中点选 Git CLI 的本机控制、外部写入；AX 读回对应选择及自动包含的读取权限。静态弹窗图 `custom-permission-dialog-dark.png`、`edit-permission-dialog-dark.png`；实际操作为 fake grant |
 | B102 | `app/lib/widgets/capability_row.dart:40` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“两个整数相加”行后打开参数页，结果状态仍为“尚未运行”；`feature-open-form-dark.png`。没有点运行，未调用 Runtime。 |
-| B103 | `app/lib/widgets/capability_row.dart:50` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“收藏 两个整数相加”，出现收藏分组和“取消收藏”按钮；随后取消并确认空收藏恢复。收藏仅改动 `PreviewRuntime` 内存偏好；截图 `workspace-actions-dark.png`、`workspace-favorite-added-dark.png`。 |
+| B103 | `app/lib/widgets/capability_row.dart:57` | 工作台/搜索：功能行 | 2026-11-18 暗色 Profile 点击“收藏 两个整数相加”，出现收藏分组和“取消收藏”按钮；随后取消并确认空收藏恢复。收藏仅改动 `PreviewRuntime` 内存偏好；截图 `workspace-actions-dark.png`、`workspace-favorite-added-dark.png`。 |
 | B104 | `app/lib/widgets/page_state.dart:47` | 通用页面：空态/错误态动作 | 2026-11-18 临时暗色 Profile 夹具呈现生产 `PageState.error`，点击“重试”后 AX 计数由 0 变为 1；截图 `page-state-error-dark.png`。回调仅递增夹具计数，不代表真实数据重试；无按下关键帧、浅色图或帧率数据 |
 | B105 | `app/lib/widgets/result_panel.dart:88` | 调用结果：复制、展开与结果操作 | 暗色原生成功结果图 `04-run-result-dark.png`。新增 macOS Widget 回归：点击“复制结果”后测试 messenger 仅在内存截获一次 `Clipboard.setData`，文本/JSON 拼接格式正确并显示“已复制结果”；未读写系统剪贴板。原生 Profile 的系统剪贴板动作仍未验收 |
-| B106 | `app/lib/widgets/result_panel.dart:349` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色 Profile 新图 `failure-recovery-scrolled-dark.png` 显示“检查活动状态”和错误详情入口完整位于 MiniPlayer 上方。点击后状态不变：本地模拟 `inspection-error` 在返回 `RunHandle` 前抛错，`_checkActivityStatus` 因 handle 为空直接返回；不证明真实 Runtime 活动查询。先前浅色滚动验收与错误详情图见本表前文；无按下帧或 FrameTiming |
-| B107 | `app/lib/widgets/result_panel.dart:399` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色隔离 Profile 恢复内存中的 `outcomeUnknown` 活动；点“检查活动状态”后 AX 状态仍“结果待确认”，提示先在执行端确认且不要直接重跑。图 `unknown-outcome-recovery-dark.png`；fake 查询只读进程内状态，无真实执行端、按下帧或 FrameTiming |
-| B108 | `app/lib/widgets/result_panel.dart:477` | 调用结果：复制、展开与结果操作 | 2026-11-18 临时暗色 Profile 呈现生产 ResultPanel 文件结果；点“预览文件”后 AX 显示 fake PreviewRuntime 返回的 `预览文件：/tmp/aggregate-preview-report.txt`。图 `local-file-preview-dark.png`；未读取真实文件，无按下帧/FrameTiming |
-| B109 | `app/lib/widgets/result_panel.dart:491` | 调用结果：复制、展开与结果操作 | 2026-11-18 同一夹具点“在访达中显示”；fake `revealLocalFile` 为空实现，AX 无错误/状态变化且 Finder 前后均无窗口。只验到控件触发，不覆盖生产揭示行为；图 `local-file-preview-dark.png` |
+| B106 | `app/lib/widgets/result_panel.dart:348` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色 Profile 新图 `failure-recovery-scrolled-dark.png` 显示“检查活动状态”和错误详情入口完整位于 MiniPlayer 上方。点击后状态不变：本地模拟 `inspection-error` 在返回 `RunHandle` 前抛错，`_checkActivityStatus` 因 handle 为空直接返回；不证明真实 Runtime 活动查询。先前浅色滚动验收与错误详情图见本表前文；无按下帧或 FrameTiming |
+| B107 | `app/lib/widgets/result_panel.dart:398` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色隔离 Profile 恢复内存中的 `outcomeUnknown` 活动；点“检查活动状态”后 AX 状态仍“结果待确认”，提示先在执行端确认且不要直接重跑。图 `unknown-outcome-recovery-dark.png`；fake 查询只读进程内状态，无真实执行端、按下帧或 FrameTiming |
+| B108 | `app/lib/widgets/result_panel.dart:474` | 调用结果：复制、展开与结果操作 | 2026-11-18 临时暗色 Profile 呈现生产 ResultPanel 文件结果；点“预览文件”后 AX 显示 fake PreviewRuntime 返回的 `预览文件：/tmp/aggregate-preview-report.txt`。图 `local-file-preview-dark.png`；未读取真实文件，无按下帧/FrameTiming |
+| B109 | `app/lib/widgets/result_panel.dart:486` | 调用结果：复制、展开与结果操作 | 2026-11-18 同一夹具点“在访达中显示”；fake `revealLocalFile` 为空实现，AX 无错误/状态变化且 Finder 前后均无窗口。只验到控件触发，不覆盖生产揭示行为；图 `local-file-preview-dark.png` |
 
 ## 当前结论
 
