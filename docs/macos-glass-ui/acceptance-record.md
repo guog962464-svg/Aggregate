@@ -1286,3 +1286,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 对照 `app/lib/features/music/music_mini_player.dart:333–438` 与 `app/lib/features/invocation/capability_run_page.dart:714–719`：B072 指向 `MusicRunPanel` 中循环生成的音乐动作按钮，不是全局迷你播放器的展开按钮。它涵盖可用的上一首、暂停/继续、下一首、停止、刷新状态动作；代码按 capability、播放队列/当前曲目与 busy 状态筛选。
 - `music_mini_player_test.dart` 的相关用例查到的是 `MusicMiniPlayer`（顶部类）桌面/移动控件，不呈现该 `MusicRunPanel`，所以移除它作为 B072 的验收证据。矩阵明确 B072 的 macOS Profile 静态态与点击态仍未验证。
 - 仅更新 B072 矩阵与本记录，`git diff --check` 通过；无代码或测试变更。本次是源码映射校正，不签收视觉、交互或业务执行，UI-6.7 保持部分验收。
+
+
+### 2026-11-19 UI-6.7 B072 音乐能力动作行浅色 Profile
+
+- 环境：隔离 `ui6_inspection_main.dart` macOS Profile 的 `Ui6InspectionRuntime`/`PreviewRuntime` 样例。通过“所有功能”打开“上一首”能力页，仅展示，不点“运行”。真实账号、音乐服务与播放命令未连接。
+- `CapabilityRunPage` 对该 `music.*` 非搜索能力展示 `MusicRunPanel`。macOS AX 快照读到动作行：暂停 87×40 pt、停止播放 113×40 pt、刷新状态 113×40 pt。隔离窗口截图：[B072 音乐动作行](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B072-music-run-panel-idle.png>)，SHA-256 `2cd43925b7c652f8c39ad716ceda9e2d939215dc0fe429f425fb70af0d0015af`。
+- 只签收浅色静态动作行及 AX 边界；没有点行内动作、运行能力、验证暗色态或按下动画。AX 窗口随后失去可访问性，故停止该界面的进一步交互；不把无法确认目标的后续坐标输入算作 B072 交互证据。Profile 已正常退出，未运行测试或改产品代码；UI-6.7 继续部分验收。
