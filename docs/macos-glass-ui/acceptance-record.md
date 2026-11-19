@@ -460,8 +460,15 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 环境：macOS 27.2.1（Mac17,9 arm64），Flutter 3.47.8 / Dart 3.13.7、engine revision `cf636b1dfb`；Profile 800×632 logical px、Impeller MetalSDF。临时入口只包含一个禁用生产 `GlassActionButton`、一个显式禁用 `Semantics`、一个禁用标准 `TextButton` 和一个启用玻璃控制；无 Runtime、网络或业务回调。入口完成复现后已移除源码，源文件和查询脚本保存在[本地诊断证据](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui5-4-disabled-ax-probe/results.md>)。
 - 原生结果：`agent-desktop` 的精确标签 AX 查询连续 3 次报告禁用玻璃按钮 `enabled=true`。独立 Swift `AXUIElementCopyAttributeValue(kAXEnabledAttribute)` 直接读取结果：玻璃按钮、显式 `Semantics`、标准 Material 按钮均为 `AXEnabled=1`；启用玻璃按钮也是 `1`（`AXError=0`）。因此排除 agent-desktop 单独误读及 GlassActionButton 单独包裹方式。
 - Framework 对照：`flutter test --no-pub test/glass_action_button_test.dart test/accessibility_test.dart` 共 16 项通过。新增 `null callback keeps disabled framework semantics` 用例覆盖最小组件调用，Flutter Semantics `isEnabled=false`、无 tap action；已有 busy/disabled 回归继续验证业务回调不触发。框架语义测试不是原生 AX 修复，原生树的 enabled 状态仍不正确。
-- 版本及来源：本次 3.47.8 结果与此前 3.50.0 Profile 结果呈现方式不同，但两者都不能提供可读且准确的禁用原生节点；后者的精确记录见上方 2026-11-17 小节。Flutter 3.50.0 官方发布说明列出 [PR #190353](https://github.com/flutter/flutter/pull/190353)，其目标是将禁用/只读状态映射到 AX node restriction；这一 upstream 变更没有推翻本项目对实际 Profile 窗口的观测。当前证据把差异定位在 Flutter framework semantics 到 macOS AX 的导出边界，具体 engine/AppKit 函数仍未单独定位。没有通过加入可操作 tap、隐藏禁用项或重复原生控件做视觉/语义妥协，因此 UI-5.4 仍部分验收；VoiceOver 朗读也未完成。
+- 版本及来源：本次 3.47.8 结果与此前 3.50.0 Profile 结果呈现方式不同，但两者都不能提供可读且准确的禁用原生节点；后者的精确记录见上方 2026-11-17 小节。Flutter 3.50.0 官方发布说明列出 [PR #190353](https://github.com/flutter/flutter/pull/190353)，其目标是将禁用/只读状态映射到 AX node restriction；这一 upstream 变更没有推翻本项目对实际 Profile 窗口的观测。该次记录之后的 2026-11-19 源码追踪已定位本机 3.47.8 公共 AccessibilityBridge 的 restriction 转换缺口，见下方新增记录。没有通过加入可操作 tap、隐藏禁用项或重复原生控件做视觉/语义妥协，因此 UI-5.4 仍部分验收；VoiceOver 朗读也未完成。
 - 测试夹具没有改系统 VoiceOver 或 AXEnhancedUserInterface 设置。临时 Profile app 与 runner 已关闭，入口源码已移除；主题切换和生产业务逻辑未改。
+
+### 2026-11-19 Flutter 3.47.8 engine AX restriction conversion source
+
+- 环境版本：Flutter framework revision `0efc2569fa1568dd21312c74d02393d7f98e20dd`、engine artifact revision `cf636b1dfb818dd6a3ff16e390e93b1a036969c8`、Dart 3.13.7。检查的是该 SDK 附带的 `engine/src/flutter` 源码，没有修改 Flutter SDK。
+- 语义输入链：`shell/platform/embedder/embedder_semantics_update.cc:37` 将 `source.isEnabled` 传入 `FlutterSemanticsFlags::is_enabled`；macOS 的 `AccessibilityBridgeMac` 继承公共 `AccessibilityBridge`。`AccessibilityBridge::ConvertFlutterUpdate` 在 `shell/platform/common/accessibility_bridge.cc:283–310` 构建 `AXNodeData` 并调用各属性转换器，但 `SetStateFromFlutterUpdate`（`:364–386`）、`SetBooleanAttributesFromFlutterUpdate`（`:432–456`）及 `SetIntAttributesFromFlutterUpdate`（`:458–493`）均未将 `is_enabled=false` 转为 `AXNodeData::SetRestriction(kDisabled)`。其中 `kClickable` 由 tap action 单独决定，不会代替 enabled restriction。
+- 原生读取链：`third_party/accessibility/ax/platform/ax_platform_node_mac.mm:627–629` 的 `AXEnabledInternal` 以 `GetRestriction() != kDisabled` 计算值，`:758–759` 再将其作为 `isAccessibilityEnabled` 返回。与最小 Profile fixture 中框架 `isEnabled=false`、无 tap action但原生 `AXEnabled=1` 的实测吻合。
+- 结论与范围：禁用态语义在 Flutter framework/Embedder 输入端正确，遗漏发生在本机 SDK 公共 engine AX bridge 转换路径。该定位解释当前 3.47.8 的原生 enabled 假阳性，但没有修复已安装 SDK、也不证明 3.50.0 实窗表现；不通过伪造 tap、隐藏节点或额外原生控件修补。UI-5.4 仍部分验收，需在包含 restriction 映射的 SDK/engine 上重跑最小原生 AX fixture；VoiceOver 主流程仍未通过。
 
 ### 2026-11-17 macOS 系统减少动态效果接线
 
