@@ -580,7 +580,7 @@ nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 n
 - **verified_scope：**Node 24.22.3 候选文件与官方 Node 文件 SHA-256/逐字节比较；Node 官方 `DEPS`、`README.chromium`；Chromium pin 文件；Google Highway 上游提交与文件历史；Node v24.x 文件历史及 cherry-pick patch。没有构建或运行 Node/Android tests。
 - **retrieval_feedback：**沿用本文件 2026-11-15 Highway revision 对照的 183/184 文件结果作为检索起点；重新核对当前 Node 24.22.3 候选、Node 官方 source commit、V8 `DEPS`、`README.chromium`，并查阅精确 Chromium pin、Google Highway 的 `dcc0ca1` 文件历史及 Node 的 `e54975e` cherry-pick 记录。先前“单文件差异来源未确认”仅就该 VSX 转换补丁更新为已确认；旧 README/DEPS 元数据差异仍保留。
 
-### Android FLAKY status 项补验（2026-11-19）
+### 2026-11-19 Android FLAKY status 补验
 
 - **规则分类：**对照 Node `24.22.3-0` 源码树中 Android arm64 的 `parallel.status`、`sequential.status` 与对应文件，8 条 `PASS, FLAKY` 规则中，4 项另有 Android `SKIP` 规则（`test-debugger-heap-profiler`、`test-cpu-prof-dir-worker`、`test-watch-mode`、`test-watch-mode-inspect`）；1 项 `test-repl-user-error-handler` 在当前树无对应测试文件；其余 3 项可运行。
 - **执行与结果：**同一候选、LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机，用 `tools/test.py -j 1 --flaky-tests=dontcare --timeout=300 --arch android --progress=verbose --time` 对可运行项串行补验。`test-fs-read-stream-concurrent-reads`、`test-worker-cleanup-handles`、`test-http2-large-file` 全部通过，耗时 6.862 秒。完整输出 `/private/tmp/aggregate-node24-darwin-2026-11-19/android-bg-shards/flaky-arm64-selected-final.log`，SHA-256 `e0235e10bee03dddddfaa160d2a3e9dcd2f2f36e2ce3d00dcc6ddeb8dc80fdca`。测试通过低优先级后台 Service 执行，没有启动 testnode Activity 或切换前台；收尾后隔离包已卸载。
@@ -588,7 +588,7 @@ nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 n
 - **verified_scope：**精确候选与 Android status 文件、8 条 arm64 `PASS, FLAKY` 规则的文件存在性/skip 归类、3 项真机通过日志、结束时 testnode 清理状态；不把 4 条 `SKIP` 或无文件的规则描述为通过。
 - **retrieval_feedback：**分别合并候选源码的 Android `parallel`/`sequential` status 规则、查验测试文件存在性，再对可执行项单独覆盖 `FLAKY` 状态运行；不把同一候选的 `parallel sequential` gate 通过外推到 status 排除项。
 
-### NodeProbe Release 直接 Android 平台动态依赖映射（2026-11-19）
+### 2026-11-19 NodeProbe Release Android 平台依赖映射
 
 - **对象与方法：**从隔离 NodeProbe 测试签名 APK SHA-256 `b13c9446eba58647077a4740ca38edfe998e815ce70ba9dbc2b811397bd5036d` 提取 3 个 arm64 ELF，以 NDK r28c `llvm-readelf -dW` 读取 `DT_NEEDED`；该构建 `minSdk=24`。APK 内另有前两项中的 `libnode.so` 与 `libc++_shared.so`，共 2 条打包库边。
 - **映射结果：**`libaggregate_node_probe.so`（SHA-256 `98a9351dfc6020299f10c6e80027ae0bfeceaa4e41fcce531ca7d9a43e2e6654`）依赖打包的 `libnode.so`，并依赖系统 `libc.so`、`libdl.so`、`liblog.so`、`libm.so`；`libc++_shared.so`（`cd61762848882a16c8244c964a6f396c0caa0b440588a210ce9cc4ab0e6d9f0c`）依赖系统 `libc.so`、`libdl.so`、`libm.so`；`libnode.so`（`51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418`）依赖打包的 `libc++_shared.so`，并依赖系统 `libc.so`、`libdl.so`、`liblog.so`、`libm.so`。合计 11 条系统库边、4 个唯一系统库名。
