@@ -203,3 +203,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **结论边界：**证明当前同网段下普通 Android 包可与 Mac Host 直连 WSS、完成配对与最小只读 RPC；不单独宣称 NSD 发现链路通过，不代表 setup/CLI/TUI/MCP、真实账号或业务闭环通过。A5.5 继续开放；A5.4 仍待日常 Keystore 身份轮换、正式签名 Release 权限及 16 KB 实体设备验收。
 - **清理：**已重新构建并安装普通 Debug APK（保留包与数据），从 Android 仅移除本轮新增的 Host 记录，并移除其空 `hosts.json`；`activity.json` 与 `preferences.json` 哈希保持不变。Mac 仅撤销本轮新建且唯一命名的只读 grant，原有两条“这台手机 · 读取连接”授权保留；Mac Host 停止、应用退出，端口 `47321` 无监听。临时测试文件、邀请二维码/载荷临时目录、预检脚本均清除，ADB reverse 为空。
 - **前置条件与授权：**本机 Mac Keychain 在 Host 启动时请求访问现有 TLS 身份；按用户先前提供的授权处理，未把凭据写入记录。有效权限范围为启动 Host、批准本轮只读设备和调用以上两项只读方法；未扩大到其他 Host 操作。
+
+## 2026-11-19 NSD 复验准备时网络状态变更
+
+- 这是上一节 direct WSS 只读验收之后单独准备验证 NSD 的状态记录；没有把直连结果当作 NSD 证据。源码检查确认 `AndroidHostManager._connectHost()` 会先调用 `discovery.discover(hostId)`，仅在发现结果为空时才回退到已保存 endpoint；上一节配对与连接成功不足以证明实际发现到 NSD 服务。
+- 重新打开当前主线 macOS Debug app 并启动 Host 后，listener 读回绑定 `192.168.10.144:47321`，与刚才 direct LAN 验收的 `192.168.8.4:47321` 不同。Android 最后一次可读地址是 `192.168.8.7/24`；随后 `adb devices -l` 为空，无法取得同一时刻的手机地址或运行 NSD 客户端探测。
+- 未生成邀请、未配对、未调用任何 RPC。发现网络条件不匹配后立即从 Mac UI 停止 Host 并优雅退出 app；复核 `47321` 无 listener、无 Aggregate 进程。当前 Mac `en0=192.168.10.144`，Android IP 当前未知，NSD 发现待设备重新连接且两端网络条件一致时补验。
