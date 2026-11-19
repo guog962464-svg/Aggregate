@@ -513,3 +513,9 @@ nativeLibraryDir 中的 Bionic PIE 执行、Node execPath self-spawn 和通过 n
 - **A3.6 结论：**Schema 合规只证明当前两份基础 BOM 符合 CycloneDX 1.6 JSON 结构；它不补足缺失的 Node 源码/recipe 身份与静态 libnode 链接闭包、Gradle runtime graph、平台库版本、法律批准，也不改变旧预发布 Node 版本、完整 mobile suite、签名与 16 KB 真机门槛。A3.6 继续开放，产品 Node/npm/CLI 入口保持关闭。
 - **verified_scope：**仓库 HEAD `5578056a7c8e6e5ccc8fbcc4c142f9d19a25bbb1` 上现存的 unsigned NodeProbe Release APK/AAB 与 `/tmp` 中重生成的两份 BOM；仅完成归档 SHA、JSON Schema 结构与生成器统计检查。未构建或签名产品、未安装 NodeProbe、未运行 Node suite、未验证 16 KB 系统或生产服务。
 - **retrieval_feedback：**查询 `A3.6 CycloneDX 1.6 schema validation`；采用本对话既有 `2026-11-18/aggregate/01a1c4f2-53d2-7c80-889d-ea988fc30461__Android 适配与 Release 冷启动.md` 的 archive 身份与 incomplete composition 边界，并按本轮实际归档 SHA 重跑生成器。官方 schema 和引用文件按 `$id` 在本地 registry 解析，未访问任何被测 BOM 声明的外部服务；schema 通过不视为 SBOM 完整或法律批准。
+
+## 2026-11-19 Node 官方安全线与 Android mobile 发行时效复核
+
+- **Node 官方基线：**Node 官方 v24.22.3 与 v26.13.1 页面均标为 2026-11-11 安全发布，release-status 页将 v24、v26 列为 LTS。[Node v24.22.3](https://nodejs.org/en/blog/release/v24.22.3)、[Node v26.13.1](https://nodejs.org/en/blog/release/v26.13.1)、[Node 发行状态](https://nodejs.org/en/about/previous-releases)
+- **Android 移动包：**截至本次页面核对，fogtape Releases 列出的 Node 24 最新 Android 包仍为 `v24.22.1-0` prerelease，Node 26 为 `v26.12.1-0` prerelease，均早于相应 Node 官方安全版；原始 nodejs-mobile Releases 仍将 `v18.20.4` 标为 Latest，其 Node 18 线已 EOL。[fogtape releases](https://github.com/fogtape/nodejs-mobile/releases)、[nodejs-mobile releases](https://github.com/nodejs-mobile/nodejs-mobile/releases)
+- **结论与范围：**本轮只读官方 Node 发布页与两份移动运行时 GitHub Releases 页面，没有下载或构建二进制。上一节 2026-11-18 的官方材料复核结论在 2026-11-19 仍成立：目前未见与官方当前 v24/v26 安全线匹配的维护方 Android archive。A3.6 的来源/provenance、完整 suite、完整二进制 SBOM/许可与 16 KB 真机门槛继续开放，不改变产品 Node/npm/CLI 关闭状态。
