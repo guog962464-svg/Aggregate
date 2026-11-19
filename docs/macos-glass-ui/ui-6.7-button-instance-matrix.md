@@ -83,7 +83,7 @@
 | B068 | `app/lib/features/music/music_account_control.dart:507` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证扫码登录、取消与完成登录；仅使用内存测试 runtime |
 | B069 | `app/lib/features/music/music_mini_player.dart:23` | 音乐控制确认（由全局迷你播放器触发） | 暗色暂停确认图 `27-mini-player-pause-confirm-dark.png`；取消按钮可见并取消，未执行播放控制 |
 | B070 | `app/lib/features/music/music_mini_player.dart:29` | 音乐控制确认（由全局迷你播放器触发） | macOS 隔离 Profile 原生确认框静态图 [`B070-pause-confirmation-window.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B070-pause-confirmation-window.png>)；AX 读到“取消”“执行”各 87×41 pt，取消后确认框消失。未点“执行”；深色对应态、按钮点击动效与真实播放仍未验收 |
-| B071 | `app/lib/features/music/music_mini_player.dart:68` | 全局迷你播放器 | 暗色图 `26-mini-player-dark.png` 与浅色 `38-settings-light.png`、`49-music-light.png` 显示样例播放态；`music_mini_player_test.dart` 的 macOS 变体验证同一玻璃播放按钮在暂停/继续图案间切换；样例状态不是实际播放 |
+| B071 | `app/lib/features/music/music_mini_player.dart:68` | 全局迷你播放器 | macOS 隔离 Profile 浅色静态图 [`B071-mini-player-idle.png`](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B071-mini-player-idle.png>)；AX 为“暂停”46×46 pt，播放样例中点按进入 B070 确认框后取消。无按下相位/点阵动画采样，未触发真实播放 |
 | B072 | `app/lib/features/music/music_mini_player.dart:407` | 全局迷你播放器：展开控制区 | 暗色图 `26-mini-player-dark.png` 与浅色 `38-settings-light.png`、`49-music-light.png`；`music_mini_player_test.dart` 验证播放器控件与溢出区、桌面停止/刷新入口；未触发真实播放控制 |
 | B073 | `app/lib/features/music/music_player_page.dart:201` | 网易云音乐：搜索授权确认 | 暗色授权图 `23-music-search-confirm-dark.png`；`music_search_permission_test.dart` 验证取消不授权；当前/Profile 真实画面未重验 |
 | B074 | `app/lib/features/music/music_player_page.dart:207` | 网易云音乐：搜索授权确认 | 暗色授权图 `23-music-search-confirm-dark.png`；`music_search_permission_test.dart` 验证允许后仅用 PreviewRuntime 返回样例结果 |

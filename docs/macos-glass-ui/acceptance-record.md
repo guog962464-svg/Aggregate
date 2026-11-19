@@ -1272,3 +1272,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 从全局迷你播放器点击“暂停”后，生产 `confirmMusicControl` 呈现“暂停？”确认框。macOS AX 快照读到“取消”和“执行”两个按钮，边界各为 87×41 pt。按源码路径只点击“取消”；随后等待并确认 `button:取消` 已从 AX 树消失。没有点“执行”，没有授权或调用播放操作。
 - 原生窗口截图：[B070 暂停确认](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B070-pause-confirmation-window.png>)，SHA-256 `af632e4c8cc5ed45a7f64d20a31dbb9d3f68a484e01d6a32c5fc544a766b9357`。截图含底层预览样例和确认框；AX 尺寸以单独快照读取为准。
 - Profile 已由 `agent-desktop close-app` 正常退出；Flutter runner 随后自行结束。仅更新 B070 矩阵和本记录，`git diff --check` 通过；没有改产品代码或运行测试。B070 目前只补浅底样例中的原生静态确认框与取消路径；深色对应态、取消/执行按钮按下相位和真实播放仍未验收，UI-6.7 继续部分验收。
+
+
+### 2026-11-19 UI-6.7 B071 迷你播放器暂停按钮浅色 Profile
+
+- 环境：同一 macOS `ui6_inspection_main.dart` 隔离 Profile 和内存 PreviewRuntime 音乐样例。窗口内容 AX 边界 800×632 pt；真实账号、服务与播放进程未连接。
+- 原生 AX 快照读到迷你播放器的“暂停”按钮，边界 46×46 pt。静态窗口截图：[B071 迷你播放器播放态](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B071-mini-player-idle.png>)，SHA-256 `24dad5dc7d7684986b6cb6c1a49847c8738d43f7b80d9d0e22c4127bbbcbfe2a`。生产代码在播放样例时传入暂停图标并将 `selected` 设为真；点击进入 B070 暂停确认，不执行控制。
+- 仅签收浅色样例静态外观、按钮 AX 名称/边界及安全确认路由；没有采集按下过程或光点动画关键帧，也没有验证暗色对应态或真实播放。Profile 由 `agent-desktop close-app` 正常退出，Flutter runner 无残留。只更新 B071 矩阵与本记录，`git diff --check` 通过；未改产品代码或运行测试，UI-6.7 仍部分验收。
