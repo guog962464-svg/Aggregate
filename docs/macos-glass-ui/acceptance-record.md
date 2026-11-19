@@ -1293,3 +1293,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 环境：隔离 `ui6_inspection_main.dart` macOS Profile 的 `Ui6InspectionRuntime`/`PreviewRuntime` 样例。通过“所有功能”打开“上一首”能力页，仅展示，不点“运行”。真实账号、音乐服务与播放命令未连接。
 - `CapabilityRunPage` 对该 `music.*` 非搜索能力展示 `MusicRunPanel`。macOS AX 快照读到动作行：暂停 87×40 pt、停止播放 113×40 pt、刷新状态 113×40 pt。隔离窗口截图：[B072 音乐动作行](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-music-confirmation/B072-music-run-panel-idle.png>)，SHA-256 `2cd43925b7c652f8c39ad716ceda9e2d939215dc0fe429f425fb70af0d0015af`。
 - 只签收浅色静态动作行及 AX 边界；没有点行内动作、运行能力、验证暗色态或按下动画。AX 窗口随后失去可访问性，故停止该界面的进一步交互；不把无法确认目标的后续坐标输入算作 B072 交互证据。Profile 已正常退出，未运行测试或改产品代码；UI-6.7 继续部分验收。
+
+
+### 2026-11-19 UI-6.7 按钮实例矩阵源码路径复核
+
+- 对照当前 Dart 构造点校正既有矩阵中的错位行：B002 侧栏连接按钮 `app_shell.dart:395`（旧行 364 是工作空间状态圆点），B003 分区导航 `app_shell.dart:435`（旧行 399 落在连接按钮样式参数）；B048/B049 权限框取消/执行分别 `capability_run_page.dart:402/408`；B050 运行、B051 终端、B052 运行取消分别为 `capability_run_page.dart:582/599/606`；B053 JSON 格式化图标、B054 JSON 编辑器展开分别 `schema_form.dart:342/397`；B081/B082 清空确认取消/危险按钮分别 `settings_page.dart:39/45`，B083 设置页清空按钮为 `settings_page.dart:279`；B102 功能行玻璃按钮为 `capability_row.dart:40`。
+- 这些是文档定位校正，不新增截图、行为或外观通过项，也没有改产品代码。既有截图和回归证据仍按原行保留，按钮的未验收状态不变。`git diff --check` 通过；未运行测试。
