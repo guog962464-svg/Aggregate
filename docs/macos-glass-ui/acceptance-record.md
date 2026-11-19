@@ -1362,3 +1362,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 生产预览证据：使用 `app/lib/preview_main.dart` 启动 macOS Profile，复用 `AggregateApp`、正式页面与共享组件，数据仅来自内存 `PreviewRuntime`。浅色音乐首页截图：[01-shell-light-profile.png](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/01-shell-light-profile.png>)，1692×1356，SHA-256 `7e461e0981373d1c56ee1e6ad819152d578ebb69b06daaf89c6deb44e0ae1ec0`。目视确认页面标题只出现一次、侧栏层级更紧凑、非选中导航光效不再彼此争抢；Profile 已正常退出。
 - 验证：`flutter analyze --no-pub` 通过；widget、玻璃按钮/动效、theme-switch realtime/calibration/simulation/optics 共 66 项测试通过；macOS Profile 构建并打开成功。`git diff --check` 通过。
 - 范围边界：本阶段只有浅色宽窗音乐首页的原生 Profile 截图；暗色实窗、窄窗、其他页面布局、各导航点击相位和系统减少动态效果仍需逐阶段核验。截图和 Flutter PreviewRuntime 只覆盖该页面状态，不作为全部功能完成或用户视觉签收的证据。UI-5/UI-6 中已记录的待办保持未完成。
+
+### 2026-11-19 UI-7.2 设置与外观布局
+
+- 设计先行：在蓝图 §5.6 增加可对照布局图与尺寸约束。macOS 设置页使用 176pt 分类栏、右侧连续内容和单条细分隔；内容宽度低于 760pt 时分类移到内容上方。外观区保留原 `AppearanceSelector`/`GlassThemeSwitch`，开关最大宽度 440pt、绘制比例 0.46；不为开关另铺底色，直接显示共享 `GlassScene`。
+- 实施：以 `AggregateActionButton` 点阵玻璃按钮连接四个设置类别；外观页让“外观”标题、当前模式、说明与开关形成清楚层级；系统主题按钮仍调用原来的 `onChanged(AppearancePreference.system)`。没有改 `glass_theme_switch.dart`、`theme_switch_simulation.dart`、校准配置或 `glass_theme_switch.frag`，实时拖动、点阵变化、阈值、提交回调均未触及。
+- 预览入口：`preview_main.dart` 支持 `--dart-define=PREVIEW_APPEARANCE=light|dark`，只预置进程内 `PreviewRuntime` 的初始偏好；默认值仍跟随系统，发布入口不受影响。
+- 浅色证据：[最终浅色设置 Profile 截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/02-settings-appearance-light.png>)，2536×1684 PNG，SHA-256 `237ac67a8e9ece0db57b8fd6419f8ba3bbb3e721ec2038a37cbea254b093e061`。在 macOS Profile 窗口 1202×842pt 目视确认：左侧设置分类、右侧玻璃开关和系统入口；开关周围与全窗背景连续。
+- 深色证据：[深色设置 Profile 截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/03-settings-appearance-dark.png>)，2536×1816 PNG，SHA-256 `0f81c9eadeb177b4582e53844d7fc4c96d949e5bac8d13c56095f4765cd6ede0`。截图来自本轮 UI-7.2 原生 Profile、点击生产主题控件后的深色状态；它早于最后一次把模式提示移到“外观”标题行的微调，因此只用来签收深色玻璃色调、开关和共享背景连续性，不作为最终标题行布局证据。最终代码版本的深色启动 Profile 已成功构建，但 macOS 没有呈现可见窗口；未改系统外观，也没有强行切换用户工作桌面。
+- 验证：`flutter analyze --no-pub` 无问题；`widget_test.dart`、`macos_reduce_motion_test.dart`、`macos_dynamic_backdrop_text_contrast_test.dart`、`glass_theme_switch_test.dart` 共 30 项通过。新增宽窗设置分类轨、主题状态和分类跳转断言；既有窄窗设置布局回归通过。最终浅色版本 Profile 窗口正常截图并退出；深色构建进程也已退出。`git diff --check` 通过。
+- 限制：截图使用 `PreviewRuntime` 内存样例，不连真实连接、Host、账号或服务。没有对最终版本深色标题行做原生截图，也未覆盖 Mac Host 配对/邀请、其他设置类别的完整交互、减少动态效果实窗或用户视觉签收。UI-5/UI-6 既有待办继续有效。

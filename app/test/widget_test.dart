@@ -147,6 +147,33 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
+  testWidgets('wide macOS settings show category rail and theme state', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(preview());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置').first);
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(
+      find.byKey(const Key('macos-settings-category-rail')),
+      findsOneWidget,
+    );
+    expect(find.text('跟随 macOS'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('外观主题'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('深色外观'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('设置分类：快捷键'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('运行当前功能'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
   testWidgets('command K focuses accessible workspace search from run', (
     tester,
   ) async {

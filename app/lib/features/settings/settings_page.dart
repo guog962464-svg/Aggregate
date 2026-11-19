@@ -84,48 +84,66 @@ class SettingsPage extends StatelessWidget {
           animation: controller,
           builder: (context, _) => PageFrame(
             title: '设置',
+            subtitle: '让材质、光线和工作方式保持一致。',
+            headerSpacing: 32,
             children: [
-              TabBar(
-                controller: controller,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                dividerColor: Colors.transparent,
-                labelColor: Theme.of(context).colorScheme.onSurface,
-                unselectedLabelColor: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant,
-                labelStyle: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
-                unselectedLabelStyle: Theme.of(context).textTheme.bodySmall,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                indicatorSize: TabBarIndicatorSize.label,
-                indicatorPadding: const EdgeInsets.only(bottom: 3),
-                indicator: BoxDecoration(
-                  color: glassTokens.raised.withValues(alpha: .42),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: glassTokens.glow.withValues(alpha: .60),
-                      width: 1.2,
-                    ),
-                  ),
-                ),
-                tabs: const [
-                  Tab(height: 38, text: '外观'),
-                  Tab(height: 38, text: 'Mac Host'),
-                  Tab(height: 38, text: '快捷键'),
-                  Tab(height: 38, text: '本机数据'),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 760;
+                  final content = switch (controller.index) {
+                    0 => _appearanceTab(context),
+                    1 => _macHostTab(),
+                    2 => _shortcutsTab(context),
+                    _ => _localDataTab(context),
+                  };
+                  final navigation = _settingsNavigation(
+                    context,
+                    controller,
+                    compact: compact,
+                  );
+
+                  if (compact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        navigation,
+                        const SizedBox(height: 20),
+                        Divider(
+                          height: 1,
+                          color: glassTokens.line.withValues(alpha: .38),
+                        ),
+                        const SizedBox(height: 24),
+                        content,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        key: const Key('macos-settings-category-rail'),
+                        width: 176,
+                        child: navigation,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.only(left: 28),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: glassTokens.line.withValues(alpha: .38),
+                              ),
+                            ),
+                          ),
+                          child: content,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 20),
-              const Divider(height: 1),
-              const SizedBox(height: 24),
-              switch (controller.index) {
-                0 => _appearanceTab(context),
-                1 => _macHostTab(),
-                2 => _shortcutsTab(context),
-                _ => _localDataTab(context),
-              },
             ],
           ),
         );
@@ -133,25 +151,84 @@ class SettingsPage extends StatelessWidget {
     ),
   );
 
+  Widget _settingsNavigation(
+    BuildContext context,
+    TabController controller, {
+    required bool compact,
+  }) {
+    const categories = [
+      ('外观', Icons.brightness_auto_outlined),
+      ('Mac Host', Icons.devices_outlined),
+      ('快捷键', Icons.tune_outlined),
+      ('本机数据', Icons.folder_open_outlined),
+    ];
+
+    final buttons = [
+      for (var index = 0; index < categories.length; index++)
+        AggregateActionButton(
+          label: categories[index].$1,
+          icon: categories[index].$2,
+          style: AggregateActionStyle.quiet,
+          selected: controller.index == index,
+          expand: !compact,
+          semanticsLabel: '设置分类：${categories[index].$1}',
+          onPressed: () => controller.animateTo(index),
+        ),
+    ];
+
+    if (compact) {
+      return Wrap(spacing: 4, runSpacing: 4, children: buttons);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final button in buttons) ...[button, const SizedBox(height: 4)],
+      ],
+    );
+  }
+
   Widget _appearanceTab(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('外观', style: Theme.of(context).textTheme.titleMedium),
+      Row(
+        children: [
+          Text('外观', style: Theme.of(context).textTheme.titleMedium),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              switch (preferences.appearance) {
+                AppearancePreference.system => '跟随 macOS',
+                AppearancePreference.light => '浅色外观',
+                AppearancePreference.dark => '深色外观',
+              },
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
       const SizedBox(height: 8),
       const Text('选择浅色、深色，或跟随 macOS。'),
-      const SizedBox(height: 60),
-      SizedBox(
-        width: 440,
-        child: Center(
-          child: AppearanceSelector(
-            switchWidth: 440,
-            switchHeightFactor: .46,
-            calibration: ThemeSwitchCalibration.reference,
-            appearance: preferences.appearance,
-            systemLabel: '跟随 macOS 系统',
-            onChanged: (appearance) => onPreferencesChanged(
-              preferences.copyWith(appearance: appearance),
-            ),
+      const SizedBox(height: 28),
+      Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppearanceSelector(
+                switchWidth: 440,
+                switchHeightFactor: .46,
+                calibration: ThemeSwitchCalibration.reference,
+                appearance: preferences.appearance,
+                systemLabel: '跟随 macOS 系统',
+                onChanged: (appearance) => onPreferencesChanged(
+                  preferences.copyWith(appearance: appearance),
+                ),
+              ),
+            ],
           ),
         ),
       ),
