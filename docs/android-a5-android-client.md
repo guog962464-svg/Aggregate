@@ -183,3 +183,12 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - LGE AN10 / Android 15 / API 35 / arm64 真机报告 `PAGE_SIZE=4096`。隔离 APK 安装成功；显式启动 MainActivity 返回 `Status: ok`、`Complete`，后续核对进程存活且 MainActivity 为 resumed。最近 400 条 logcat 未见 `FATAL EXCEPTION`；另有一条 Android `queued-work-loo` 的 ART profile 路径 SELinux read-denied 警告，未单独诊断。
 - 清理：`.integration` 已卸载；普通 `io.github.guog962464.aggregate` 仍安装；ADB reverse 为空；Host 端口 `47321` 无监听；临时 detached worktree 与测试构建目录已删除。未启动 Host、未触碰日常包数据/身份或连接。
 - **范围判定：**这补充当前主线代码在 4 KB Android 15 上的 test-signed Release 安装与冷启动证据。测试证书和隔离包名不代表正式签名/日常身份，也不覆盖 CAMERA 权限路径之外的交互、16 KB 系统或 A3.6 Node/npm 产品门槛；A5.4 与 A8 分发验收仍开放。
+
+## 2026-11-19 当前工作树 Android 构建与 4 KB 真机启动复核
+
+- 基线为当前主线 `030aab57e61149d032f89064fe5ca2193bb33d23`。在 `app/` 运行 `flutter test --no-pub`，328 项全部通过；`flutter analyze --no-pub` 无问题；`flutter build apk --debug --no-pub --target-platform android-arm64` 成功。构建日志有 Android SDK XML v4 与本机工具最高支持 v3 的兼容性提示，但未影响构建。
+- APK 包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、targetSdk 36，SHA-256 `869e9351a2cb2560d466cb844722a8a7af1a028435fcae2eec440c76ea538ca5`。Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；7 个 arm64 native library 的 21 个 `PT_LOAD` 全部 `p_align >= 0x4000` 且 offset/virtual-address 余数相符。这是 APK 的静态 16 KB 对齐结果。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页实体机上，安装包更新前后 APK signer SHA-256 相同（Android Debug `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`）；`adb install -r` 成功。启动后 Aggregate PID 存活，`MainActivity` 为 top-resumed。没有卸载普通包或清除应用数据。
+- 当前真机 `wlan0=192.168.31.135/24`，Mac `en0=192.168.10.144`；端口 `47321` 当前无监听，`app-private files/` 下没有 `hosts.json`。本轮未建立新的 Host 配对或执行 production RPC。历史 Host UI 曾显示两条无法区分的只读授权；Android Keystore 轮换实现会删除旧别名，所以没有在日常包身份上执行轮换，避免使未知对应的授权失效。
+- 当前 `app/android/app/build.gradle.kts` 未为产品 Release 配置签名，注释明确 Release 包在提供正式密钥前保持 unsigned；只为隔离 `.integration` Release 指定本机 Debug signer。因此本轮不能验证正式签名权限行为。16 KB 真机仍缺。
+- **范围判定：**当前主线 Flutter 回归、静态分析、arm64 Debug 构建、APK 对齐和 4 KB 普通包启动通过；A5.4 仍待安全条件下的日常身份轮换、正式签名 Release 权限及 16 KB 实机加载/运行。A5.5 仍待 direct LAN/NSD 与适用范围内的 production Host 端到端业务验收；本轮未访问真实账号或执行业务写入。
