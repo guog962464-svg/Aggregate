@@ -240,3 +240,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **路由更正：**19:05 记录中的 `adb shell ip route` 是未指定策略表的输出，只列出 `192.168.31.0/24` 直连路由；不能据此认定 Android 没有默认路由。复核 `ip rule` 后发现 Wi-Fi 使用 table `1026`；`ip route show table 1026` 明确列出 `default via 192.168.31.1 dev wlan0`，`ip route get 192.168.8.4 mark 0x103c8` 也确认到 Mac 的包会经 `192.168.31.1` 发出。ConnectivityManager 的 Wi-Fi `LinkProperties` 同样包含该默认路由。更正先前“手机没有默认路由”的表述。
 - **当前可达性：**LGE AN10 `wlan0=192.168.31.135/24`、Mac `en0=192.168.8.4/24` 仍属不同子网。当前 Mac 到手机及手机到 Mac 的 ICMP 各一次均无响应；Mac `47321` 没有 listener。本轮未启动 Host，未连接/切换网络，也未尝试 NSD、配对、WSS 或 RPC。此前 Android 到 `192.168.8.4:47321` 的 TCP 探针超时及 NSD 空发现仍是直接 LAN 的最近端到端结果。
 - **范围：**本项只修正路由表解释；默认网关存在并不证明跨子网策略允许直连。A5.4/A5.5 的 NSD/direct LAN 仍未通过本次网络状态下的复验，已完成的历史同网段只读配对继续按其原环境记录。
+
+## 2026-11-19 19:54 Mac Host 启动钥匙串授权复核
+
+- **启动：**从当前工作树启动 Debug Aggregate，在“设置 → Mac Host”点击“启动 Host”后，macOS 弹出 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串授权框。按用户先前提供的凭据输入后，授权框仍未关闭；随后取消该次请求，设置页恢复“启动 Host”，没有批准或改变现存 Host 身份。
+- **网络与服务：**Mac `en0=192.168.8.4/24`，LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 手机 `wlan0=192.168.31.135/24`，仍属不同子网。Host `47321` 无 listener；本轮未配对、未运行 NSD/WSS、未调用任何 RPC。
+- **清理：**已优雅退出本轮 Debug Aggregate，未安装或启动 testnode，手机原测试项目仍在前台；未改动 Android 配对记录、Mac TLS 身份或网络设置。该次启动未能完成钥匙串授权，不能作为 Host 启动或 LAN 验收通过。
