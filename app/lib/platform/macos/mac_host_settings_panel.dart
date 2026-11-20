@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart' show GlassButtonSize;
 import 'host/host_control_port.dart';
 import 'host/host_pairing_authority.dart';
 import 'host/host_tls_identity.dart';
@@ -432,305 +433,523 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     final theme = Theme.of(context);
     final running = _status.phase == HostPhase.running;
     final invitation = _invitation;
-    return Card.outlined(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final heading = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.lan_outlined,
-                  color: _statusColor(theme.colorScheme),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Mac Host', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 4),
-                      Text(
-                        '允许已批准的 Android 设备使用这台 Mac 上登记的连接。关闭应用或停止 Host 后，手机显示离线。',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                AggregateActionButton(
-                  label: running ? '停止 Host' : '启动 Host',
-                  icon: running
-                      ? Icons.stop_circle_outlined
-                      : Icons.play_circle_outline,
-                  busyLabel: running ? '正在停止…' : '正在启动…',
-                  style: running
-                      ? AggregateActionStyle.danger
-                      : AggregateActionStyle.primary,
-                  onPressed: _busy ? null : () => _setRunning(!running),
-                  enabled: !_busy,
-                  busy: _busy,
-                ),
+                Text('Mac Host', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text('让已配对设备安全连接到这台 Mac。', style: theme.textTheme.bodySmall),
               ],
-            ),
-            const SizedBox(height: 16),
-            Semantics(
+            );
+            final status = Semantics(
               liveRegion: true,
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    running ? Icons.check_circle_outline : Icons.info_outline,
-                    size: 18,
-                    color: _statusColor(theme.colorScheme),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _statusColor(theme.colorScheme),
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text('状态：${_phaseLabel(_status)}'),
+                  Text(_phaseLabel(_status)),
                 ],
               ),
-            ),
-            if (_status.phase == HostPhase.unavailable)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text('配对认证组件尚未就绪，Host 未开放网络监听。'),
-              ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: AggregateActionButton(
-                label: '轮换 Mac Host 身份',
-                icon: Icons.vpn_key_outlined,
-                style: AggregateActionStyle.danger,
-                onPressed: _busy || !running ? null : _rotateHostIdentity,
-                enabled: !_busy && running,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                running
-                    ? '轮换会撤销全部配对授权并停止 Host，所有手机都需要重新配对。'
-                    : '请先启动 Host，才能读取并撤销当前设备授权。',
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ),
-            ],
-            if (running) ...[
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 16),
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 12,
-                runSpacing: 12,
+            );
+            final helper = Text(
+              running ? '轮换身份会撤销全部配对授权并停止 Host。' : '请先启动 Host，才能读取并撤销设备授权。',
+              style: theme.textTheme.bodySmall,
+            );
+            final startStopAction = AggregateActionButton(
+              label: running ? '停止 Host' : '启动 Host',
+              icon: running
+                  ? Icons.stop_circle_outlined
+                  : Icons.play_circle_outline,
+              busyLabel: running ? '正在停止…' : '正在启动…',
+              style: running
+                  ? AggregateActionStyle.danger
+                  : AggregateActionStyle.primary,
+              onPressed: _busy ? null : () => _setRunning(!running),
+              enabled: !_busy,
+              busy: _busy,
+              size: GlassButtonSize.compactAction,
+              expand: true,
+            );
+            final rotateAction = AggregateActionButton(
+              label: '轮换 Mac Host 身份',
+              icon: Icons.vpn_key_outlined,
+              style: AggregateActionStyle.danger,
+              onPressed: _busy || !running ? null : _rotateHostIdentity,
+              enabled: !_busy && running,
+              size: GlassButtonSize.compactAction,
+              expand: true,
+            );
+
+            if (constraints.maxWidth >= 720) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        heading,
+                        const SizedBox(height: 12),
+                        status,
+                        const SizedBox(height: 16),
+                        helper,
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const SizedBox(height: 29),
+                      SizedBox(width: 120, height: 40, child: startStopAction),
+                      const SizedBox(height: 12),
+                      SizedBox(width: 180, height: 40, child: rotateAction),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                heading,
+                const SizedBox(height: 12),
+                status,
+                const SizedBox(height: 8),
+                helper,
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [startStopAction, rotateAction],
+                ),
+              ],
+            );
+          },
+        ),
+        if (_status.phase == HostPhase.unavailable)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text('配对认证组件尚未就绪，Host 未开放网络监听。'),
+          ),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              _error!,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ),
+        ],
+        if (running) ...[
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 9),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final description = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('配对邀请', style: theme.textTheme.titleSmall),
+                  Text(
+                    '二维码只包含短时邀请和 Host 地址，不含长期设备密钥。',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              );
+              final action = AggregateActionButton(
+                label: '生成新邀请',
+                icon: Icons.add,
+                onPressed: _busy ? null : _createInvitation,
+                enabled: !_busy,
+                size: GlassButtonSize.compactAction,
+                expand: true,
+              );
+              if (constraints.maxWidth >= 720) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 9),
+                        child: description,
+                      ),
+                    ),
+                    SizedBox(width: 141, height: 40, child: action),
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  description,
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: action),
+                ],
+              );
+            },
+          ),
+          if (invitation != null) ...[
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final qrSize = constraints.maxWidth < 520 ? 128.0 : 160.0;
+                final qr = Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: QrImageView(
+                    data: invitation.qrPayload,
+                    size: qrSize,
+                    backgroundColor: Colors.white,
+                    semanticsLabel: 'Aggregate Mac Host 配对二维码',
+                  ),
+                );
+                final details = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '邀请于 ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(invitation.invitation.expiresAt.toLocal()))} 到期',
+                    ),
+                    const SizedBox(height: 8),
+                    Text('${invitation.endpoints.length} 个本机网络地址'),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 138,
+                      height: 40,
+                      child: AggregateActionButton(
+                        label: '复制配对信息',
+                        icon: Icons.copy_outlined,
+                        style: AggregateActionStyle.quiet,
+                        onPressed: _copyInvitation,
+                        size: GlassButtonSize.compactAction,
+                        expand: true,
+                      ),
+                    ),
+                  ],
+                );
+                if (constraints.maxWidth < 520) {
+                  return Container(
+                    key: const Key('host-invitation-card'),
+                    padding: const EdgeInsets.all(12),
+                    decoration: _hostPanelDecoration(theme),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [qr, const SizedBox(height: 12), details],
+                    ),
+                  );
+                }
+                return Container(
+                  key: const Key('host-invitation-card'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 12,
+                  ),
+                  decoration: _hostPanelDecoration(theme),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('配对邀请', style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 4),
-                      Text(
-                        '二维码只包含短时邀请和 Host 地址，不含长期设备密钥。',
-                        style: theme.textTheme.bodySmall,
+                      qr,
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: SizedBox(
+                          height: 176,
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: details,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  AggregateActionButton(
-                    label: '生成新邀请',
-                    icon: Icons.qr_code_2,
-                    onPressed: _busy ? null : _createInvitation,
-                    enabled: !_busy,
-                  ),
-                ],
-              ),
-              if (invitation != null) ...[
-                const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final qr = Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: QrImageView(
-                        data: invitation.qrPayload,
-                        size: 220,
-                        backgroundColor: Colors.white,
-                        semanticsLabel: 'Aggregate Mac Host 配对二维码',
-                      ),
-                    );
-                    final details = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '有效期至 ${invitation.invitation.expiresAt.toLocal()}',
-                        ),
-                        const SizedBox(height: 8),
-                        Text('${invitation.endpoints.length} 个本机网络地址'),
-                        const SizedBox(height: 12),
-                        AggregateActionButton(
-                          label: '复制配对信息',
-                          icon: Icons.copy_outlined,
-                          style: AggregateActionStyle.quiet,
-                          onPressed: _copyInvitation,
-                        ),
-                      ],
-                    );
-                    if (constraints.maxWidth < 520) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [qr, const SizedBox(height: 12), details],
-                      );
-                    }
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        qr,
-                        const SizedBox(width: 20),
-                        Expanded(child: details),
-                      ],
-                    );
-                  },
-                ),
-              ],
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('待处理设备', style: theme.textTheme.titleSmall),
-                  ),
-                  AggregateIconButton(
-                    tooltip: '刷新配对设备',
-                    icon: Icons.refresh,
-                    onPressed: _busy ? null : _refreshPairings,
-                    enabled: !_busy,
-                  ),
-                ],
-              ),
-              if (_pending.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text('暂时没有待批准的设备。', style: theme.textTheme.bodySmall),
-                )
-              else
-                for (final request in _pending) _pendingCard(request, theme),
-              if (_paired.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text('已配对设备', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                for (final grant in _paired) _pairedCard(grant, theme),
-              ],
-            ],
+                );
+              },
+            ),
           ],
+          SizedBox(height: invitation == null ? 16 : 33),
+          const Divider(),
+          if (invitation == null) const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Transform.translate(
+                  offset: const Offset(0, 11),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('待处理设备', style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 4),
+                      Text('核对设备与确认码后再审批', style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ),
+              AggregateIconButton(
+                tooltip: '刷新配对设备',
+                icon: Icons.refresh,
+                onPressed: _busy ? null : _refreshPairings,
+                enabled: !_busy,
+              ),
+            ],
+          ),
+          if (_pending.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text('暂时没有待批准的设备。', style: theme.textTheme.bodySmall),
+            )
+          else
+            for (final request in _pending) _pendingCard(request, theme),
+          if (_paired.isNotEmpty) ...[
+            const SizedBox(height: 23),
+            Text('已配对设备', style: theme.textTheme.titleSmall),
+            Text('权限可随时编辑或撤销', style: theme.textTheme.bodySmall),
+            for (final grant in _paired) _pairedCard(grant, theme),
+          ],
+        ],
+      ],
+    );
+  }
+
+  BoxDecoration _hostPanelDecoration(ThemeData theme) => BoxDecoration(
+    color: theme.colorScheme.surfaceContainerLow.withValues(alpha: .42),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(
+      color: theme.colorScheme.outlineVariant.withValues(alpha: .58),
+    ),
+  );
+
+  Widget _pendingCard(HostPendingPairing request, ThemeData theme) {
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(request.displayName, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(
+          '${request.platform} · 确认码 ${request.confirmationCode}',
+          style: theme.textTheme.bodySmall,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
+      ],
+    );
+    final actions =
+        <
+          ({
+            String label,
+            IconData icon,
+            AggregateActionStyle style,
+            double width,
+            VoidCallback onPressed,
+          })
+        >[
+          (
+            label: '拒绝',
+            icon: Icons.close,
+            style: AggregateActionStyle.danger,
+            width: 84,
+            onPressed: () => _reject(request),
+          ),
+          (
+            label: '批准只读',
+            icon: Icons.visibility_outlined,
+            style: AggregateActionStyle.secondary,
+            width: 107,
+            onPressed: () => _approve(
+              request,
+              scopes: const {HostGrantScope.readConnections},
+            ),
+          ),
+          (
+            label: '允许连接向导',
+            icon: Icons.settings_outlined,
+            style: AggregateActionStyle.primary,
+            width: 143,
+            onPressed: () => _approve(
+              request,
+              scopes: const {
+                HostGrantScope.readConnections,
+                HostGrantScope.connectionSetup,
+              },
+            ),
+          ),
+          (
+            label: '自定义权限',
+            icon: Icons.tune,
+            style: AggregateActionStyle.secondary,
+            width: 125,
+            onPressed: () => _configureApproval(request),
+          ),
+        ];
+
+    Widget buildAction(
+      ({
+        String label,
+        IconData icon,
+        AggregateActionStyle style,
+        double width,
+        VoidCallback onPressed,
+      })
+      action, {
+      required bool fixedWidth,
+    }) {
+      final button = AggregateActionButton(
+        label: action.label,
+        icon: action.icon,
+        style: action.style,
+        onPressed: _busy ? null : action.onPressed,
+        enabled: !_busy,
+        size: GlassButtonSize.compactAction,
+        expand: fixedWidth,
+      );
+      return fixedWidth
+          ? SizedBox(width: action.width, height: 40, child: button)
+          : button;
+    }
+
+    return Container(
+      key: Key('host-pending-card-${request.deviceId}'),
+      decoration: _hostPanelDecoration(theme),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 720;
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: wide ? 14 : 10,
+            ),
+            child: wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(width: 194, child: details),
+                      const SizedBox(width: 16),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final action in actions)
+                            buildAction(action, fixedWidth: true),
+                        ],
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      details,
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final action in actions)
+                            buildAction(action, fixedWidth: false),
+                        ],
+                      ),
+                    ],
+                  ),
+          );
+        },
       ),
     );
   }
 
-  Widget _pendingCard(HostPendingPairing request, ThemeData theme) => Card(
-    color: theme.colorScheme.surfaceContainerLow,
-    child: Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(request.displayName, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text(
-            '${request.platform} · 确认码 ${request.confirmationCode}',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              AggregateActionButton(
-                label: '拒绝',
-                icon: Icons.close,
-                style: AggregateActionStyle.danger,
-                onPressed: _busy ? null : () => _reject(request),
-                enabled: !_busy,
-              ),
-              AggregateActionButton(
-                label: '批准只读',
-                icon: Icons.visibility_outlined,
-                onPressed: _busy
-                    ? null
-                    : () => _approve(
-                        request,
-                        scopes: const {HostGrantScope.readConnections},
-                      ),
-                enabled: !_busy,
-              ),
-              AggregateActionButton(
-                label: '允许连接向导',
-                icon: Icons.settings_outlined,
-                style: AggregateActionStyle.primary,
-                onPressed: _busy
-                    ? null
-                    : () => _approve(
-                        request,
-                        scopes: const {
-                          HostGrantScope.readConnections,
-                          HostGrantScope.connectionSetup,
-                        },
-                      ),
-                enabled: !_busy,
-              ),
-              AggregateActionButton(
-                label: '自定义权限',
+  Widget _pairedCard(HostDeviceGrant grant, ThemeData theme) => Container(
+    key: Key('host-paired-card-${grant.deviceId}'),
+    decoration: _hostPanelDecoration(theme),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final actions = Wrap(
+          spacing: 6,
+          children: [
+            SizedBox(
+              width: 112,
+              height: 40,
+              child: AggregateActionButton(
+                label: '修改权限',
                 icon: Icons.tune,
-                onPressed: _busy ? null : () => _configureApproval(request),
+                onPressed: _busy ? null : () => _configurePairedGrant(grant),
                 enabled: !_busy,
+                size: GlassButtonSize.compactAction,
+                expand: true,
               ),
-            ],
+            ),
+            SizedBox(
+              width: 111,
+              height: 40,
+              child: AggregateActionButton(
+                label: '撤销',
+                icon: Icons.link_off,
+                style: AggregateActionStyle.danger,
+                onPressed: _busy ? null : () => _revoke(grant),
+                enabled: !_busy,
+                size: GlassButtonSize.compactAction,
+                expand: true,
+              ),
+            ),
+          ],
+        );
+        final details = Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              grant.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              grant.scopes.map(_scopeLabel).join(' · '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+            ),
+          ],
+        );
+        if (constraints.maxWidth >= 720) {
+          return SizedBox(
+            height: 64,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 14),
+              child: Row(
+                children: [
+                  Expanded(child: details),
+                  actions,
+                ],
+              ),
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [details, const SizedBox(height: 10), actions],
           ),
-        ],
-      ),
-    ),
-  );
-
-  Widget _pairedCard(HostDeviceGrant grant, ThemeData theme) => ListTile(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-    leading: const Icon(Icons.devices_outlined),
-    title: Text(grant.displayName),
-    subtitle: Text(
-      grant.scopes.map(_scopeLabel).join(' · '),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-    ),
-    trailing: Wrap(
-      spacing: 8,
-      children: [
-        AggregateActionButton(
-          label: '修改权限',
-          icon: Icons.tune,
-          onPressed: _busy ? null : () => _configurePairedGrant(grant),
-          enabled: !_busy,
-        ),
-        AggregateActionButton(
-          label: '撤销',
-          icon: Icons.link_off,
-          style: AggregateActionStyle.danger,
-          onPressed: _busy ? null : () => _revoke(grant),
-          enabled: !_busy,
-        ),
-      ],
+        );
+      },
     ),
   );
 }

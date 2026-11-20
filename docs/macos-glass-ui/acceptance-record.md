@@ -1429,3 +1429,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：重新生成 22 张 SVG，XML 解析 22/22 通过；将修订后的 Host 画板渲染为 1360×900 PNG 并目视复核。源代码确认 HostStatus、HostDeviceGrant 目前没有被删除字段；本阶段只更改设计文档/画板/生成器，没有改产品逻辑。
 - 证据：[v3.5 Mac Host 画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v35/06-settings-host.png>)；源文件为 `docs/macos-glass-ui/design-draft-v3/06-settings-host.svg`。
 - 结论/边界：v3.5 先修正 06 画板与数据契约的冲突，再作为 UI-7.2 Host 页面实施基准。实现页面的 Profile 对照和用户视觉签收仍未完成，UI-7.2 不因此结项。
+
+### 2026-11-20 UI-7.2 设置与 Mac Host 按 v3.5 布局实施
+
+- 基准：使用全功能设计稿 v3.5 的 05 外观、06 Host、15 快捷键、22 本机数据画板；主题开关仍以生产 `GlassThemeSwitch` 为准。Host 示例只展示 `HostStatus` / `HostPendingPairing` / `HostDeviceGrant` 可提供的状态、设备与授权信息。
+- 实施：外观控件框维持 490×245pt、系统跟随入口 166×40pt，切换仍回调既有 `onChanged(AppearancePreference.system)`；设置导航行距与标题/副标题按画板修订。Host 启停、身份轮换、邀请生成、审批与撤销仍调用原业务函数；宽窗操作按钮和待审批/已配对设备卡片按画板固定宽度排布，预览 fixture 使用 Pixel 9 / Android 与只读授权。没有修改 `GlassThemeSwitch`、主题切换 shader、拖动/阈值/提交逻辑。
+- 几何验收：1360×900 macOS Widget 画布中，停止 Host 120×40pt、身份轮换 180×40pt、生成邀请 141×40pt 的 x 坐标与 v3.5 画板一致；审批按钮组和配对操作横向偏差不超过 1pt。二维码卡片高度为 202pt（目标 200pt），待处理卡片 71pt（目标 68pt），已配对卡片在目标 ±3pt 内。800×600 Widget 窄窗 Host 页面生成邀请后无布局异常。
+- 回归：10 个改动 Dart 文件 `flutter analyze --no-pub` 通过；`widget_test.dart`、`mac_host_settings_panel_test.dart`、`macos_dynamic_backdrop_text_contrast_test.dart`、`macos_reduce_motion_test.dart` 共 27 项通过，含 800pt Host 紧凑布局。背景动态过渡的像素矩阵曾在 daylight 0.535 测得 4.43:1；将文字 halo 区间终点从 0.53 延至 0.54 后，全矩阵通过。该调整只保护切换过渡时的正文对比度，不影响开关模拟、手势或偏好回调。`flutter build macos --profile --no-pub -t lib/preview_main.dart` 构建成功（Profile app 69.6MB）；`git diff --check` 通过。
+- 视觉证据边界：本轮没有取得独立 Profile 窗口截图；测试渲染器在整页截图导出时卡住，后台 Profile 窗口捕获也未返回图像。没有操作桌面上包含非 Preview 数据的 Aggregate 窗口。因此本条只签收 Widget 几何、交互回调来源和构建/自动化结果，不签收原生实窗材质、最终像素或用户视觉认可；UI-7.2 仍待 Profile 同尺寸逐页对照，并在 UI-7.7 完成全稿收敛。

@@ -67,7 +67,7 @@ void main() {
     expect(identity.calls, 1);
     expect(events, ['revoke', 'stop', 'rotate']);
     expect(host.status.phase, HostPhase.stopped);
-    expect(find.text('状态：已关闭'), findsOneWidget);
+    expect(find.text('已关闭'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -204,7 +204,7 @@ void main() {
     await tester.tap(find.text('启动 Host'));
     await tester.pumpAndSettle();
     expect(host.startCalls, 1);
-    expect(find.text('状态：运行中'), findsOneWidget);
+    expect(find.text('运行中'), findsOneWidget);
     expect(find.text('Pixel 9'), findsOneWidget);
 
     await tester.tap(find.text('生成新邀请'));

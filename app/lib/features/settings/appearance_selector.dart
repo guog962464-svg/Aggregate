@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/glass/glass_motion.dart';
 import 'glass_theme_switch.dart';
 import 'theme_switch_calibration.dart';
@@ -53,12 +54,17 @@ class AppearanceSelector extends StatelessWidget {
         const SizedBox(height: 8),
         if (defaultTargetPlatform == TargetPlatform.macOS &&
             GlassMotionScope.maybeOf(context) != null)
-          AggregateActionButton(
-            label: systemLabel,
-            icon: Icons.brightness_auto_outlined,
-            semanticsLabel: systemLabel,
-            selected: followsSystem,
-            onPressed: () => onChanged(AppearancePreference.system),
+          SizedBox(
+            width: 166,
+            child: AggregateActionButton(
+              label: systemLabel,
+              icon: Icons.brightness_auto_outlined,
+              semanticsLabel: systemLabel,
+              selected: followsSystem,
+              size: GlassButtonSize.compactAction,
+              expand: true,
+              onPressed: () => onChanged(AppearancePreference.system),
+            ),
           )
         else
           Semantics(

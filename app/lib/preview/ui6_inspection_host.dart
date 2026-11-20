@@ -24,6 +24,7 @@ final class Ui6InspectionHost
   var _grantCounter = 0;
 
   String get _deviceId => HostPairingProtocol.deviceIdForPublicKey(_publicKey);
+  String get inspectionDeviceId => _deviceId;
 
   @override
   HostStatus get status => _status;
@@ -35,15 +36,20 @@ final class Ui6InspectionHost
   Future<void> start() async {
     _setStatus(const HostStatus(HostPhase.running));
     if (_paired.isEmpty) {
-      _paired.add(_grant(scopes: const {HostGrantScope.readConnections}));
+      _paired.add(
+        _grant(
+          displayName: 'LGE AN10',
+          scopes: const {HostGrantScope.readConnections},
+        ),
+      );
     }
     if (_pending.isEmpty) {
       final now = DateTime.now().toUtc();
       _pending.add(
         HostPendingPairing(
           deviceId: _deviceId,
-          displayName: 'UI 检查 Android',
-          platform: 'android',
+          displayName: 'Pixel 9',
+          platform: 'Android',
           confirmationCode: '482 193',
           requestedAt: now,
           expiresAt: now.add(const Duration(minutes: 5)),
@@ -99,8 +105,16 @@ final class Ui6InspectionHost
     Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) async {
+    var displayName = '预览设备 ${++_grantCounter}';
+    for (final request in _pending) {
+      if (request.deviceId == deviceId) {
+        displayName = request.displayName;
+        break;
+      }
+    }
     _pending.removeWhere((item) => item.deviceId == deviceId);
     final grant = _grant(
+      displayName: displayName,
       scopes: scopes,
       connectionPermissions: connectionPermissions,
     );
@@ -115,7 +129,15 @@ final class Ui6InspectionHost
     required Set<HostGrantScope> scopes,
     required Map<String, Set<PermissionLevel>> connectionPermissions,
   }) async {
+    var displayName = '预览设备 ${++_grantCounter}';
+    for (final grant in _paired) {
+      if (grant.deviceId == deviceId) {
+        displayName = grant.displayName;
+        break;
+      }
+    }
     final grant = _grant(
+      displayName: displayName,
       scopes: scopes,
       connectionPermissions: connectionPermissions,
     );
@@ -134,12 +156,13 @@ final class Ui6InspectionHost
   }
 
   HostDeviceGrant _grant({
+    required String displayName,
     Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) => HostDeviceGrant(
     deviceId: _deviceId,
     publicKeySpki: _publicKey,
-    displayName: '已配对预览设备 ${++_grantCounter}',
+    displayName: displayName,
     platform: 'android',
     approvedAt: DateTime.now().toUtc(),
     scopes: scopes,

@@ -84,7 +84,12 @@ class SettingsPage extends StatelessWidget {
           animation: controller,
           builder: (context, _) => PageFrame(
             title: '设置',
-            subtitle: '让材质、光线和工作方式保持一致。',
+            subtitle: switch (controller.index) {
+              0 => '让材质、光线和工作方式保持一致',
+              1 => '管理配对 Mac 与访问权限',
+              2 => '快捷键',
+              _ => '本机数据',
+            },
             headerSpacing: 32,
             children: [
               LayoutBuilder(
@@ -124,12 +129,15 @@ class SettingsPage extends StatelessWidget {
                       SizedBox(
                         key: const Key('macos-settings-category-rail'),
                         width: 176,
-                        child: navigation,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: navigation,
+                        ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.only(left: 28),
+                          padding: const EdgeInsets.only(left: 23),
                           decoration: BoxDecoration(
                             border: Border(
                               left: BorderSide(
@@ -182,7 +190,10 @@ class SettingsPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final button in buttons) ...[button, const SizedBox(height: 4)],
+        for (var index = 0; index < buttons.length; index++) ...[
+          if (index > 0) const SizedBox(height: 9),
+          buttons[index],
+        ],
       ],
     );
   }
@@ -190,37 +201,44 @@ class SettingsPage extends StatelessWidget {
   Widget _appearanceTab(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      Text(
+        '外观',
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(fontSize: 17, height: 1.2),
+      ),
+      const SizedBox(height: 8),
+      Text('拖动玻璃控件，在浅色和深色之间切换。', style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 25),
       Row(
         children: [
-          Text('外观', style: Theme.of(context).textTheme.titleMedium),
-          const Spacer(),
-          Flexible(
-            child: Text(
-              switch (preferences.appearance) {
-                AppearancePreference.system => '跟随 macOS',
-                AppearancePreference.light => '浅色外观',
-                AppearancePreference.dark => '深色外观',
-              },
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+          Text(
+            '当前模式',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
+          ),
+          const SizedBox(width: 24),
+          Text(
+            switch (preferences.appearance) {
+              AppearancePreference.system => '跟随 macOS',
+              AppearancePreference.light => '浅色',
+              AppearancePreference.dark => '深色',
+            },
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
-      const SizedBox(height: 8),
-      const Text('选择浅色、深色，或跟随 macOS。'),
-      const SizedBox(height: 28),
-      Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
+      const SizedBox(height: 32),
+      ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 774),
+        child: Center(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AppearanceSelector(
-                switchWidth: 440,
-                switchHeightFactor: .46,
+                switchWidth: 490,
+                switchHeightFactor: .5,
                 calibration: ThemeSwitchCalibration.reference,
                 appearance: preferences.appearance,
                 systemLabel: '跟随 macOS 系统',
@@ -235,14 +253,17 @@ class SettingsPage extends StatelessWidget {
     ],
   );
 
-  Widget _macHostTab() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      for (var i = 0; i < platformSections.length; i++) ...[
-        if (i > 0) const SizedBox(height: 20),
-        platformSections[i],
+  Widget _macHostTab() => Padding(
+    padding: const EdgeInsets.only(left: 13),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < platformSections.length; i++) ...[
+          if (i > 0) const SizedBox(height: 20),
+          platformSections[i],
+        ],
       ],
-    ],
+    ),
   );
 
   Widget _shortcutsTab(BuildContext context) => Column(
@@ -250,7 +271,7 @@ class SettingsPage extends StatelessWidget {
     children: [
       Text('快捷键', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
-      const Text('用键盘快速打开常用操作。'),
+      const Text('常用操作始终使用同一组系统组合键。'),
       const SizedBox(height: 18),
       _shortcutRow(
         context,
@@ -264,7 +285,7 @@ class SettingsPage extends StatelessWidget {
         ShortcutScheme(defaultTargetPlatform).runLabel,
       ),
       const Divider(height: 1),
-      _shortcutRow(context, '返回', 'Esc'),
+      _shortcutRow(context, '返回或关闭', 'Esc'),
     ],
   );
 
@@ -287,7 +308,7 @@ class SettingsPage extends StatelessWidget {
   Widget _localDataTab(BuildContext context) {
     final dropdownDecoration = InputDecoration(
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     );
     return Column(
@@ -318,6 +339,7 @@ class SettingsPage extends StatelessWidget {
               width: 108,
               child: DropdownButtonFormField<int>(
                 initialValue: preferences.activityRetentionDays,
+                isExpanded: true,
                 decoration: dropdownDecoration,
                 items: const [
                   DropdownMenuItem(value: 7, child: Text('7 天')),

@@ -154,7 +154,7 @@ class GlassSceneScope extends InheritedWidget {
 /// samples the same grain time and theme-interpolation value.
 class GlassSceneFrame extends ChangeNotifier {
   static const _textContrastHaloStartDaylight = 0.46;
-  static const _textContrastHaloEndDaylight = 0.53;
+  static const _textContrastHaloEndDaylight = 0.54;
 
   double _seconds = 0;
   double? _switchDaylight;

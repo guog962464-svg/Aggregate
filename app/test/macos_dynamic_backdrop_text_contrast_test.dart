@@ -39,6 +39,9 @@ const _samples = [
   0.525,
   0.53,
   0.535,
+  0.54,
+  0.545,
+  0.55,
 ];
 
 void main() {
@@ -503,7 +506,7 @@ Future<void> _verifyScenario(
     textRegions.addAll({
       'settings title': tester.getRect(find.text('设置').last),
       'section title': tester.getRect(find.text('外观').last),
-      'appearance description': tester.getRect(find.text('选择浅色、深色，或跟随 macOS。')),
+      'appearance description': tester.getRect(find.text('拖动玻璃控件，在浅色和深色之间切换。')),
     });
     await tester.tap(find.text('快捷键').first);
     await tester.pumpAndSettle();
@@ -573,7 +576,7 @@ Future<void> _verifyScenario(
       frame.publishThemeSwitch(shaderSeconds, daylight);
       await tester.pump();
       final useDarkForeground = daylight >= 0.5;
-      final needsHalo = daylight >= 0.46 && daylight <= 0.53;
+      final needsHalo = daylight >= 0.46 && daylight <= 0.54;
       final foreground = useDarkForeground ? Colors.black : Colors.white;
       final halo = useDarkForeground ? Colors.white : Colors.black;
       final textTheme = AggregateTheme.withMacOSBackdropTextContrast(
