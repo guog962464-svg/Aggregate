@@ -331,8 +331,7 @@ def screen_connection_home(mcp=False):
                 row(p,280,y,306,name,sub,icon,name=="两个整数相加",height=58); y+=64
             y+=16
     else:
-        for i,(name,sub,icon) in enumerate((("查看 Git 状态","显示当前分支与工作区状态","terminal"),("读取项目说明","输出 README 主要内容","document"),("查看最近提交","列出最近提交记录","history"))):
-            row(p,280,236+i*68,306,name,sub,icon,i==0,height=60)
+        row(p,280,236,306,"查看 Git 状态","显示当前分支与工作区状态","terminal",True,height=60)
     p.append(line(609,204,609,775))
     p.append(txt(642,242,"两个整数相加" if mcp else "查看 Git 状态",20,"var(--ink)",680))
     p.append(tag(642,269,"预览连接 · 仅内存数据"))

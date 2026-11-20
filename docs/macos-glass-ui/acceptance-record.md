@@ -1531,3 +1531,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：生成器语法通过；27/27 SVG 均通过 XML 解析且画布为 1360×900；macOS `sips` 将 27/27 输出为 1360×900 PNG。结构检查确认 6 张常驻播放器画板锚点一致、独立播放器含七项样例控制、MCP 首页不含未支持的资源模板、工作台不重复显示全局搜索。逐屏总览目视复核，重点放大检查工作台与迷你播放器；`git diff --check` 通过。此为设计阶段，不运行产品测试或构建。
 - 视觉证据：[27 张画板总览](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v61/contact-sheet.png>)，SHA-256 `1f4c0fce77c2c15b23937f3761833419d506e2a68dd58787a0004f3e69da72b9`；[工作台](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v61/01-workspace.png>)；[迷你播放器](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v61/18-mini-player.png>)，SHA-256 `711a4ce12a89699fa7fde82351204ccd5d78f3ce9789e617ead0a7ac7b7a26aa`。
 - 结果/边界：v6.1 是 UI-8.2～UI-8.6 的视觉实施基准。此提交只更新设计文件；现有 UI-8.2 生产改动仍待按同尺寸 Profile 逐屏验收，迷你播放器的 1048×58pt 生产几何尚未实现。SVG 只定义布局和样例，最终玻璃质感、动效及状态仍以生产 Flutter/Profile 对照验收；没有声称生产 UI 已与稿件一致，也没有取得用户最终视觉签收。
+
+### 2026-11-21 UI-8.0 v6.2 画板数据绑定
+
+- 基准：将 v6.1 的 27 张画板与 `preview_main.dart`、`createPreviewRuntime()`、`ui6_inspection_main.dart` 及内存 Host fixture 逐项核对。CLI 首页画板原有三项能力，但标准预览 Runtime 只提供「查看 Git 状态」一项，造成相同页面、相同连接仍无法同状态对照。
+- 修订：CLI 首页画板改为唯一的预览能力；v6.2 新增画板到预览入口/状态绑定表，约定工作台选中 MCP 工具、CLI/MCP 实际目录、活动种子、检查版运行时的适用场景。未在 Runtime 或检查 fixture 中出现的样例，不再单独画进目录填充留白。
+- 自验：生成器运行成功；27/27 SVG XML 解析通过，27/27 由 macOS `sips` 输出为 1360×900 PNG；结构断言确认 CLI 画板仅有一项能力；总览及 CLI 页面逐图检查；`git diff --check` 通过。仅为设计校准，未运行产品测试或构建。
+- 视觉证据：[v6.2 画板总览](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v62/contact-sheet.png>)，SHA-256 `f83bc63e05eac777f4a027769047535ad0a6f386c2a2a98b6fc15a5fa69a89c6`；[CLI 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v62/17-connection-home.png>)，SHA-256 `d4b85b11e4334a0dfe4d8840eafaf496fcae0c06b7402e884c37d664dbfb3eb7`。
+- 结果/边界：v6.2 继续作为 UI-8.2～UI-8.6 的设计基准。截图复现必须按表使用同一预览入口、数据、选中状态、主题和窗口尺寸。该修订未改变生产 Runtime、用户功能或主题开关；生产页面与视觉签收仍需逐阶段完成。
