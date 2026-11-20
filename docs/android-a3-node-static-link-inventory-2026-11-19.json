@@ -4,32 +4,32 @@
     "cycloneDxBoms": [
       {
         "kind": "apk",
-        "sha256": "9562e0d839ac20fe672261acddf21fd22e7e37a4f7b98707d524542193bd993c",
-        "componentCount": 95,
+        "sha256": "bdda0a64b991b2884524e40f93f29ae514db35045e8dc393cf61dcfebfc56c71",
+        "componentCount": 96,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 56,
-        "candidateLicenseExpressionCount": 52,
+        "libraryLicenseFieldCount": 66,
+        "candidateLicenseExpressionCount": 62,
         "candidateNamedTextLicenseCount": 2,
-        "unresolvedLicenseComponentCount": 14
+        "unresolvedLicenseComponentCount": 4
       },
       {
         "kind": "aab",
-        "sha256": "8219e84e19158288f2326a5f6763e8a1614dc7bad564e5336c88b93b94efcb60",
-        "componentCount": 95,
+        "sha256": "dd4add58b6d30d887f0092f7a1f03d73bee8756531e95a980efdc1def994d8aa",
+        "componentCount": 96,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 56,
-        "candidateLicenseExpressionCount": 52,
+        "libraryLicenseFieldCount": 66,
+        "candidateLicenseExpressionCount": 62,
         "candidateNamedTextLicenseCount": 2,
-        "unresolvedLicenseComponentCount": 14
+        "unresolvedLicenseComponentCount": 4
       }
     ],
     "libnodePackagedStrippedSha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
     "libnodeUnstrippedSha256": "b72d87ed7266fd2c02dbafb8af8a250f22ca88427bde0f688b39827e9b973e8a",
-    "licenseManifestSha256": "f078cbaea730c8bab9e4f4f3602d62440cfa34dbdc8beba6ebda7f99e1ea6d6e",
+    "licenseManifestSha256": "12f8362376bbbc8e42ffaece5395784b743003eb9b6b3229a3dfe59f373c393f",
     "linkMapBytes": 96109187,
     "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
     "mobileRecipeCommit": "d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5",
@@ -49,20 +49,20 @@
     },
     "releaseArtifacts": {
       "apk": {
-        "sha256": "73194712af04098a6ae34e9b9cf4696c363e9e97a048fd0c5b5cc7bb2d9209fd",
+        "sha256": "46948e43a2a892ed1b806b30e38996bf42dcb8a6266f5f2a493086c0a8c46bfb",
         "signatureStatus": "unsigned",
-        "sizeBytes": 35337207
+        "sizeBytes": 35337962
       },
       "aab": {
-        "sha256": "3f98f1cc9ddc376ada3752648a10640c4d2cc24e757ee5ef722333cc161671cf",
+        "sha256": "413d3c343b26214051f47c7ff6225ad7e5a2e312f08711c3680265e39f4d0ad4",
         "signatureStatus": "unsigned",
-        "sizeBytes": 73259443
+        "sizeBytes": 73260252
       }
     },
     "upstreamNodeCommit": "e63cab040c09d43ceef8cb35508c40044614e906",
     "gradleRuntimeManifestSha256": "f0db6ec50c581fe5551946728b48a43741d306ac66c93ee37ac34385ffed4411",
     "sourceArchiveSha256": "6df67207ad3c607269e09622d170e9b1e3ed58e9c3b5e399f6cc5855f835028b",
-    "testSignedApkSha256": "b13c9446eba58647077a4740ca38edfe998e815ce70ba9dbc2b811397bd5036d",
+    "testSignedApkSha256": "f16497c63370c0c191a76a507931e392464d252dc12d6cc112e8aeb20473093d",
     "testSignedApkSigner": "local Android debug keystore; verification only, not a product signature",
     "aabConnectedSplitVerification": "Bundletool 1.18.3 debug-signed connected split installed on LGE AN10 4 KB device; Node v24.22.3/mobile 24.22.3-0, file, and loopback network checks passed",
     "runtimeDynamicDependencyInspection": {
@@ -140,7 +140,8 @@
     "Release APK/AAB are unsigned NodeProbe experiments; a debug-keystore-signed copy used for physical verification is not a production release.",
     "No 16 KB physical device was available; runtime/install/load behavior on 16 KB hardware remains an open release gate.",
     "The candidate is a local Darwin-hosted cross build from a fogtape recipe and official Node source; it is not an upstream-maintained Android binary release.",
-    "The 96 MB raw linker map is retained outside the repository; this inventory records its SHA-256 and archive/member counts."
+    "The 96 MB raw linker map is retained outside the repository; this inventory records its SHA-256 and archive/member counts.",
+    "The exact V8 vendored zlib notice is added to the regenerated candidate package and manifest; this is an experimental candidate asset update, not a legal sign-off."
   ],
   "linkMap": {
     "explicitStaticArchiveCount": 37,
@@ -167,7 +168,24 @@
         "sha256": "388de3537f0aa913b77c9bf3ec5c4e23811e0d20299a9820ea432d92abb285bd",
         "sourceComponentId": "v8",
         "archiveMemberCount": 3,
-        "membersWithRetainedSections": 3
+        "membersWithRetainedSections": 3,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "BSD-3-Clause",
+          "review": "Pinned V8 LICENSE supplies the BSD-3-Clause candidate for this V8 archive. The retained members resolve to V8-owned source objects."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 3,
+          "basis": "retained object paths are under deps/v8/src"
+        }
       },
       {
         "name": "libv8_libplatform.a",
@@ -175,7 +193,24 @@
         "sha256": "9a00c842907cfee4dab2d3dae5e6c6cf098e6d189f511bb2a00d8b4200dfe9af",
         "sourceComponentId": "v8",
         "archiveMemberCount": 13,
-        "membersWithRetainedSections": 13
+        "membersWithRetainedSections": 13,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "BSD-3-Clause",
+          "review": "Pinned V8 LICENSE supplies the BSD-3-Clause candidate for this V8 archive. The retained members resolve to V8-owned source objects."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 13,
+          "basis": "retained object paths are under deps/v8/src"
+        }
       },
       {
         "name": "libicui18n.a",
@@ -391,7 +426,37 @@
         "sha256": "7788e439c3073f8e6bbc718324382fb79ed7a9f44aa9f3935efeac0c5205bc71",
         "sourceComponentId": "v8",
         "archiveMemberCount": 923,
-        "membersWithRetainedSections": 636
+        "membersWithRetainedSections": 636,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "BSD-3-Clause",
+          "review": "The linker map records 627 retained V8 source objects and 9 retained CRDTP objects; V8, Inspector Protocol and the applicable Strongtalk notice provide BSD-3-Clause candidates. Legal review remains pending."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          },
+          {
+            "path": "deps/v8/LICENSE.strongtalk",
+            "sha256": "6a585a9f466654abc8fc0829d56b1bc987e3a073d31faa03bba37d33640a23cd",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.strongtalk"
+          },
+          {
+            "path": "deps/inspector_protocol/LICENSE",
+            "sha256": "c3ed274b3ee226cd391aae43edd5ecccfb6e3cf39f0026d4df1200c1e9bbc097",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/inspector_protocol/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 636,
+          "sourceObjectCounts": {
+            "deps/v8/src": 627,
+            "deps/v8/third_party/inspector_protocol/crdtp": 9
+          }
+        }
       },
       {
         "name": "libv8_libbase.a",
@@ -399,7 +464,29 @@
         "sha256": "fe55af156c27c9fa58b291b040ef11beb4861e70be7ab8f893e1405ab3b6d6d2",
         "sourceComponentId": "v8",
         "archiveMemberCount": 40,
-        "membersWithRetainedSections": 39
+        "membersWithRetainedSections": 39,
+        "licenseCandidate": {
+          "status": "unresolved",
+          "reason": "The linker map retains deps/v8/src/base/ieee754.o; ieee754.cc states it is adapted from fdlibm under a separate custom Sun permission notice. This archive combines that source with V8-licensed objects; retain unresolved pending scoped license modeling."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          },
+          {
+            "path": "deps/v8/LICENSE.fdlibm",
+            "sha256": "e7115e18444dae09d17f361ddc365fb1d342640fe500796209c63f7c80dfae10",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.fdlibm"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 39,
+          "unresolvedRetainedObject": "deps/v8/src/base/ieee754.o",
+          "reason": "ieee754.cc states it is adapted from fdlibm; its custom Sun permission notice has no selected SPDX mapping here."
+        }
       },
       {
         "name": "libv8_zlib.a",
@@ -407,7 +494,24 @@
         "sha256": "01a5cf8cf06b270383b95707592ba6081adadb39ac1d8f583cb7af379dafdd70",
         "sourceComponentId": "v8",
         "archiveMemberCount": 17,
-        "membersWithRetainedSections": 10
+        "membersWithRetainedSections": 10,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "Zlib",
+          "review": "The link map retains 10 objects, all under deps/v8/third_party/zlib; the pinned vendored zlib LICENSE supports the Zlib candidate. Legal review remains pending."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/third_party/zlib/LICENSE",
+            "sha256": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/zlib/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 10,
+          "sourceObjectPrefix": "deps/v8/third_party/zlib/"
+        }
       },
       {
         "name": "libndk_cpufeatures.a",
@@ -431,7 +535,24 @@
         "sha256": "675eda182474b70a518099e6f3fa45979180f2bb62fd79d494e8e60331e8275d",
         "sourceComponentId": "v8",
         "archiveMemberCount": 176,
-        "membersWithRetainedSections": 164
+        "membersWithRetainedSections": 164,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "BSD-3-Clause",
+          "review": "Pinned V8 LICENSE supplies the BSD-3-Clause candidate for this V8 archive. The retained members resolve to V8-owned source objects."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 164,
+          "basis": "retained object paths are under deps/v8/src"
+        }
       },
       {
         "name": "libv8_initializers.a",
@@ -439,7 +560,24 @@
         "sha256": "739a3c9265c094e6972ef58ea500fc5d629161dd8fabd018de0c82eb0f867ef2",
         "sourceComponentId": "v8",
         "archiveMemberCount": 294,
-        "membersWithRetainedSections": 0
+        "membersWithRetainedSections": 0,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "BSD-3-Clause",
+          "review": "Pinned V8 LICENSE supplies the BSD-3-Clause candidate for this V8 archive. The exact linker map retains no members from this archive."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 0,
+          "basis": "V8 project source archive; zero retained sections"
+        }
       },
       {
         "name": "libv8_initializers_slow.a",
@@ -447,7 +585,24 @@
         "sha256": "823356ca3422507c1b020ed388c9c7034902076783c4cc3f249e8dd4600012cf",
         "sourceComponentId": "v8",
         "archiveMemberCount": 2,
-        "membersWithRetainedSections": 0
+        "membersWithRetainedSections": 0,
+        "licenseCandidate": {
+          "status": "candidate",
+          "expression": "BSD-3-Clause",
+          "review": "Pinned V8 LICENSE supplies the BSD-3-Clause candidate for this V8 archive. The exact linker map retains no members from this archive."
+        },
+        "licenseEvidence": [
+          {
+            "path": "deps/v8/LICENSE",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE"
+          }
+        ],
+        "retainedObjectLicenseScope": {
+          "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+          "membersWithRetainedSections": 0,
+          "basis": "V8 project source archive; zero retained sections"
+        }
       }
     ],
     "implicitNdkToolchainArchives": [
@@ -465,7 +620,68 @@
         "sourceComponentId": "ndk_libunwind",
         "members_with_retained_sections_in_link_map": 5
       }
-    ]
+    ],
+    "archiveLicenseAudit": {
+      "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+      "scope": "Retained object paths were parsed from the candidate 96,109,187-byte linker map; archive hashes and final libnode hashes match this inventory.",
+      "archives": [
+        {
+          "name": "libv8_base_without_compiler.a",
+          "retainedObjects": 636,
+          "groups": {
+            "deps/v8/src": 627,
+            "deps/v8/third_party/inspector_protocol/crdtp": 9
+          }
+        },
+        {
+          "name": "libv8_compiler.a",
+          "retainedObjects": 164,
+          "groups": {
+            "deps/v8/src": 164
+          }
+        },
+        {
+          "name": "libv8_libbase.a",
+          "retainedObjects": 39,
+          "groups": {
+            "deps/v8/src": 39
+          },
+          "specialObject": "deps/v8/src/base/ieee754.o"
+        },
+        {
+          "name": "libv8_libplatform.a",
+          "retainedObjects": 13,
+          "groups": {
+            "deps/v8/src": 13
+          }
+        },
+        {
+          "name": "libv8_snapshot.a",
+          "retainedObjects": 3,
+          "groups": {
+            "deps/v8/src": 3
+          }
+        },
+        {
+          "name": "libv8_zlib.a",
+          "retainedObjects": 10,
+          "groups": {
+            "deps/v8/third_party/zlib": 10
+          }
+        },
+        {
+          "name": "libv8_initializers.a",
+          "retainedObjects": 0,
+          "archiveMembers": 294
+        },
+        {
+          "name": "libv8_initializers_slow.a",
+          "retainedObjects": 0,
+          "archiveMembers": 2
+        }
+      ],
+      "remainingScope": "libv8_libbase.a remains unresolved because fdlibm-derived ieee754.o uses a custom Sun permission notice; aggregate libnode.so remains unresolved because it combines multiple components."
+    }
   },
   "scope": "Exact source and static archive evidence for the isolated arm64 NodeProbe candidate. This supplements, but does not replace, the CycloneDX APK/AAB BOM; no legal sign-off or product release is implied.",
   "sourceComponents": [
@@ -794,12 +1010,12 @@
         {
           "path": "LICENSE",
           "sha256": "c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66",
-          "status": "mapped by Node source-project scope; inference, not a separate grant"
+          "status": "source-project license file"
         }
       ],
       "name": "Node.js ncrypto internal implementation",
       "notes": [
-        "No standalone LICENSE; source README identifies the internal Node crypto implementation and root LICENSE scope is an attribution inference, not legal approval."
+        "No standalone license file exists. The pinned README describes ncrypto as an extraction of Node.js internal crypto implementation; Node LICENSE applies to Node.js parts that are not externally maintained libraries. Treat MIT as a source-scope candidate for these Node-maintained files; OpenSSL remains a separate component. Legal review is pending."
       ],
       "sourceGitTreeObjectId": "1061c6dd919700cbf86444f0f8930e4b3ed2cfe8",
       "sourceRoot": "deps/ncrypto",
@@ -811,8 +1027,9 @@
         }
       ],
       "licenseCandidate": {
-        "status": "unresolved",
-        "reason": "The source has no standalone grant; mapping the Node project license would rely on an unconfirmed project-scope inference."
+        "status": "candidate",
+        "expression": "MIT",
+        "review": "The pinned README identifies this as Node.js internal implementation, and the Node project license scope covers non-external Node.js parts; candidate only, legal review pending."
       }
     },
     {
@@ -1156,7 +1373,7 @@
       ],
       "name": "V8",
       "notes": [
-        "V8 component tree is pinned by the Node source commit."
+        "The aggregate deps/v8 source group includes V8 BSD-3-Clause code, a retained fdlibm-derived ieee754.o with a separate Sun permission notice, and external vendored components. Per-archive mappings use the exact candidate linker map; libv8_libbase.a remains unresolved because it combines V8 code with fdlibm-derived code."
       ],
       "sourceGitTreeObjectId": "f291e09f79e4b197c356477fcdb800a22d24d038",
       "sourceRoot": "deps/v8",
@@ -1169,7 +1386,7 @@
       ],
       "licenseCandidate": {
         "status": "unresolved",
-        "reason": "The aggregate includes V8 and externally maintained portions with multiple license texts; a single expression would overstate scope."
+        "reason": "The source tree contains separately licensed external code and fdlibm-derived code with a custom notice; the aggregate source component cannot be represented by one supported SPDX expression."
       }
     },
     {
@@ -1233,12 +1450,12 @@
     "aabBundletoolValidate": "passed with Bundletool 1.18.3",
     "aabNativeLibraryAlignment": "PAGE_ALIGNMENT_16K",
     "apkZipalign": "passed: zipalign -c -P 16 4",
-    "licenseAssetHashCheck": "passed: 24 native dependency license files, Node license manifest, two Gradle runtime components using the bundled Apache-2.0 text, and 3 NDK notices match recorded hashes in APK and AAB; OpenSSL source LICENSE.txt maps to the packaged Node top-level license asset in both APK and AAB",
+    "licenseAssetHashCheck": "Passed after isolated candidate rebuild: all 25 Node native dependency license/notice files, Node project LICENSE, the V8 vendored zlib LICENSE, two Gradle runtime components using the bundled Apache-2.0 text, and three NDK notices match recorded hashes in APK and AAB.",
     "nodeRuntimeElfAlignment": "passed: 11 PT_LOAD segments across 3 arm64 libraries in both APK and AAB; each p_align=0x4000",
-    "bomDependencyClosure": "Passed: 95 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete.",
-    "physicalNodeProbeRelease": "passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB pages using a debug-key-signed test APK",
-    "sourceEvidenceHashCheck": "passed: 26 sourceComponents; 32 license-source hashes, 29 version-source hashes, and 50 packaged APK/AAB license-asset hashes matched (111/111 total). This does not validate all 95 CycloneDX components, OS library symbol compatibility, or legal approval.",
-    "bomLicenseDeclarationCoverage": "APK and AAB each contain 95 components: 70 library and 25 license/notice file components. The two Maven libraries retain Apache-2.0; 52 of the other 68 library components now carry source-evidence-based candidate SPDX expressions and 16 are explicitly marked unresolved. Candidate mappings are not legal approval; source-license hashes remain evidence properties."
+    "bomDependencyClosure": "Passed: 96 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete.",
+    "physicalNodeProbeRelease": "Passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB using debug-key-signed APK SHA-256 f16497c63370c0c191a76a507931e392464d252dc12d6cc112e8aeb20473093d: foreground ProbeActivity returned Node v24.22.3/mobile 24.22.3-0, file=ok, loopback network=network-ok (522 ms). Isolated package uninstalled afterward; previous app restored.",
+    "sourceEvidenceHashCheck": "Passed: 26 source components plus eight archive-level license-scope records; 55 distinct source file/hash pairs and 72 source-derived APK/AAB license-asset/hash checks matched. This does not validate all 96 BOM components or legal approval.",
+    "bomLicenseDeclarationCoverage": "APK and AAB each contain 96 components: 70 libraries and 26 license/notice files. 66/70 library components have license fields: 62 SPDX-expression candidates and two named-text candidates; four library rows remain unresolved. Candidate mappings are not legal approval."
   },
   "binaryLicenseMappings": [
     {

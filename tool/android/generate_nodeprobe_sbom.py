@@ -572,13 +572,25 @@ def static_link_components(
             property_item("aggregate:members-with-retained-sections", retained_members),
             property_item("aggregate:archive-make-input", raw.get("makeInput", "")),
         ]
-        archive_license_candidate = source_row.get("licenseCandidate")
+        archive_license_candidate = raw.get(
+            "licenseCandidate", source_row.get("licenseCandidate")
+        )
+        archive_license_evidence = raw.get(
+            "licenseEvidence", source_row.get("licenseEvidence")
+        )
         license_entries, license_properties = license_candidate_fields(
             archive_license_candidate,
             f"static-link archive {name}",
-            source_row.get("licenseEvidence"),
+            archive_license_evidence,
         )
         properties.extend(license_properties)
+        if "licenseEvidence" in raw:
+            properties.append(
+                property_item(
+                    "aggregate:archive-license-evidence",
+                    json.dumps(archive_license_evidence, sort_keys=True),
+                )
+            )
         if isinstance(source_tree, str):
             properties.append(property_item("aggregate:source-git-tree-object-id", source_tree))
         archive_component: dict[str, object] = {
@@ -866,6 +878,28 @@ def main() -> int:
                         ]
                         if len(matching_source_licenses) != 1:
                             raise ValueError("packaged Node source license does not match the inventory")
+            link_map = static_inventory["linkMap"]
+            assert isinstance(link_map, dict)
+            explicit_archives = link_map.get("explicitArchiveInputs")
+            assert isinstance(explicit_archives, list)
+            for archive_row in explicit_archives:
+                if not isinstance(archive_row, dict):
+                    raise ValueError("static-link archive input must be an object")
+                for evidence in archive_row.get("licenseEvidence", []):
+                    if not isinstance(evidence, dict):
+                        continue
+                    packaged_asset = evidence.get("packagedAsset")
+                    if not isinstance(packaged_asset, str):
+                        continue
+                    packaged_path = archive_member_by_suffix(names, packaged_asset)
+                    expected_packaged_digest = validate_inventory_digest(
+                        evidence.get("packagedAssetSha256", evidence.get("sha256")),
+                        "static archive license asset sha256",
+                    )
+                    if sha256(archive.read(packaged_path)) != expected_packaged_digest:
+                        raise ValueError(
+                            f"packaged static archive license asset hash mismatch: {packaged_path}"
+                        )
             for notice in static_inventory.get("embeddedNdkNotices", []):
                 if not isinstance(notice, dict) or not isinstance(notice.get("path"), str):
                     continue
