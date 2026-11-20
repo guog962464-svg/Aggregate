@@ -320,6 +320,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-19 当前主线 Release arm64 APK/AAB 重建：APK 27,713,728 bytes（`e89b25d4…eeaffe1`），AAB 25,471,282 bytes（`8b5d9160…c51c00`）；两者各 7 个 arm64 原生库，21 个 `PT_LOAD` 通过 16 KB ELF 对齐，APK zipalign、Bundletool 1.18.3 `validate` 与 `PAGE_ALIGNMENT_16K` 通过。产物未签名、不含 Node/npm、未安装运行；ADB 无设备。正式签名、16 KB 真机和 production Host/音乐端到端仍开放。详见 [当前主线 Release 静态门禁](android-a8-acceptance.md#2026-11-19-当前主线-release-重建与静态门禁)。
 
+  - 2026-11-20 `fbe9fce` 当前主线 Release 干净工作树重建：arm64 APK/AAB 均构建成功，Bundletool 1.18.3 validate、AAB `PAGE_ALIGNMENT_16K`、APK zipalign 和 21 个 ELF `PT_LOAD` 的 16 KB 静态对齐通过；未签名、未安装运行。哈希及精确范围见 [A8 Release 静态复验](android-a8-acceptance.md#2026-11-20-fbe9fce-主线-release-apkaab-静态复验)。正式签名、16 KB 真机和 production Host/音乐闭环继续开放。
+
 **交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成；最新主线 Release 在 LGE AN10 4 KB 冷启动验收通过。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
 
 ## 5. UI 验收矩阵

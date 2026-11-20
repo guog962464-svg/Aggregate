@@ -175,9 +175,17 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **范围：**本节证明当前 Debug APK 在这台 4 KB 设备的安装/冷启动，以及包内原生库的 16 KB 静态对齐。没有运行产品 Release，也没有正式签名或 16 KB 系统设备；静态对齐不表示 16 KB 系统实机兼容。production Host 业务和音乐闭环仍未验收；TalkBack 专项测试不在当前验收范围。`pubspec.lock` 的工作区修改未暂存；构建未执行 pub 解析。ADB reverse 为空，Host 47321/47322 无监听。
 
 
-## 2026-11-20 当前提交 Release APK/AAB 干净工作树复建
+## 2026-11-20 基线 02855aa Release APK/AAB 干净工作树复建
 
 - **源码与依赖输入：**从 `02855aa49e0546eee8ae9ecbe6ae352e3e8b0f01` 创建独立 detached worktree；为满足该提交当前 pubspec 的约束，将主工作区未提交的 `pubspec.lock` 复制到临时 worktree，并以 `flutter pub get --enforce-lockfile` 校验成功。当前未提交的 Dart UI 文件未进入这次构建。
 - **产物：**`flutter build apk --release --no-pub --target-platform android-arm64` 与 `flutter build appbundle --release --no-pub --target-platform android-arm64` 均通过。APK 为 27,713,920 bytes，SHA-256 `f5afb195e9e866e36b65e11aa8f3a13f62cf4e6777bdfb69a31c35af31f0af8e`；AAB 为 25,478,659 bytes，SHA-256 `8681295f929f5e272f4a4ce35d18c02a505e6599be725b3060ce86511d9eeb86`。包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36、arm64。
 - **静态门禁：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过且 `uncompressNativeLibraries.alignment=PAGE_ALIGNMENT_16K`。APK/AAB 各含 7 个 arm64 原生库，全部 21 个 `PT_LOAD` 均满足至少 16 KB 对齐与文件偏移/虚拟地址同余。没有 NodeProbe、NodeBridge、`libnode.so` 或 npm 载荷。
 - **签名与验收边界：**APK `apksigner verify` 报缺少 `META-INF/MANIFEST.MF`，APK/AAB 均无签名条目，符合当前产品 Release 尚未配置正式签名的状态。此次只做干净源码树的 Release 构建和静态检查，没有安装/启动该 unsigned 产物；不代表 16 KB Android 系统实机运行验收。16 KB 真机、正式签名、生产 Host/音乐闭环仍是 A8 发布门槛。
+
+
+## 2026-11-20 fbe9fce 主线 Release APK/AAB 静态复验
+
+- **源码与依赖输入：**在 `fbe9fce`（`按 v3.5 对齐工作台与连接首页`）创建独立 detached worktree；将主工作区未提交的 `pubspec.lock` 复制到临时 worktree，`flutter pub get --enforce-lockfile` 通过。此构建包含该提交中的 UI 调整，不包含临时工作区改动。
+- **产物：**arm64 Release APK/AAB 构建成功。APK 27,713,920 bytes，SHA-256 `2fbed8a69c2069d1f6bdf075c95fc6964e1ba500785c555648966eac0f9b9422`；AAB 25,482,492 bytes，SHA-256 `3860d32a33a3b9379449dac4768da22a9dfe26fdf415ac9583101ff816809b1a`。包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36、arm64。
+- **静态门禁：**Build Tools 36.0.0 APK `zipalign -c -P 16 4` 通过；官方 Bundletool 1.18.3（SHA-256 `a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29`）`validate` 通过，AAB 配置为 `PAGE_ALIGNMENT_16K`。APK 与 AAB 各含 7 个 arm64 原生库，21 个 `PT_LOAD` 全部满足至少 16 KB 对齐及 offset/virtual-address 余数相符；无 NodeProbe、NodeBridge、`libnode.so` 或 npm 载荷。
+- **签名与验收边界：**APK/AAB 没有签名条目，APK `apksigner verify` 因缺少 `META-INF/MANIFEST.MF` 而失败，符合当前未配置产品 Release 正式签名的状态。产物未安装或运行，不表示 16 KB 系统实机兼容。正式签名、16 KB 真机和 production Host/音乐闭环仍是 A8 发布门槛。
