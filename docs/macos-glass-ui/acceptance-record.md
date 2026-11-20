@@ -1472,3 +1472,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 视觉证据：[03 连接管理 v3.6 SVG 栅格预览](</Users/guo/.codex/visualizations/2026/11/20/aggregate-ui7-design-revision-03-connections-v36.png>)，1360×900 PNG，SHA-256 `bfabd8cfee9ac92e685030fb1bbc2ef7bfc8f8635274ee4e63475b03530a7c97`。
 - 验证：`render_design_draft.py` 已运行；Python XML 解析 22/22 SVG 通过；macOS `sips` 将 03 画板渲染为 PNG 并完成目视检查。Profile 材质截图、深浅主题及窄窗预览尚未取得，本阶段不声明产品页面视觉通过或用户签收。
 - 范围：只改设计说明、生成器与 03 SVG；未修改产品 Dart、shader、Runtime、主题开关或 `pubspec.lock`。
+
+
+### 2026-11-20 UI-7.0 v3.7 连接管理能力入口补全
+
+- 对照 `ConnectionsPage._detail` 和 `onOpen` 回调后发现，连接管理详情支持直接打开能力运行页；v3.6 的 03 画板只展示了数量，没有可点击能力项。v3.7 补齐能力列表和打开说明，并把 `ConnectionStatus.ready` 的示例文案改成当前源码使用的“就绪”。
+- 自验：重新生成 22 张 SVG，XML 解析 22/22 通过；03 画板栅格图在 1360×900 下经 macOS `sips` 渲染并目视复核，能力标题、辅助说明、可点击行、检查结果、动作和危险区无重叠。设计中的能力数量/状态只作占位，生产文本和条目由 Runtime 返回。
+- 证据：[03 连接管理 v3.7 预览](</Users/guo/.codex/visualizations/2026/11/20/aggregate-ui7-design-revision-03-connections-v37.png>)，1360×900 PNG，SHA-256 `c89d1341c65f5f917a1f9237488c33172b0b80db8fd0c6f0ddef5586e9480a39`。
+- 本阶段只改静态画板、生成器和设计文档；尚未做 Flutter Profile 材质验收或生产页面修改，不代表 UI-7.5 已完成。主题切换逻辑未修改。
