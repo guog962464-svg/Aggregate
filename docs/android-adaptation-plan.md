@@ -327,6 +327,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
   - 2026-11-20 `fbe9fce` test-signed `.integration` Release 在 LGE AN10 4 KB 真机冷启动复核：一次初次检查未看到 MainActivity resumed，随后受控观察与官方 runner 连续 3 次通过；未找到 crash-buffer 记录，初次瞬时偏差原因未知。只补充 4 KB 测试签名运行证据，不代表正式签名/16 KB 系统通过；详情见 [A8 Release 4 KB 冷启动复核](android-a8-acceptance.md#2026-11-20-fbe9fce-test-signed-release-4-kb-cold-start-recheck)。
 
+  - 2026-11-20 `6507c92` 当前主线产品 Release APK/AAB 在干净 worktree 重建，analyze、zipalign、Bundletool `PAGE_ALIGNMENT_16K` 和 21 个 ELF LOAD 静态对齐通过；产物未签名且未安装。随后基于文档提交 `df0ddfd` 的同一应用源码，隔离 `.integration` test-signed Release 在 LGE AN10 4 KB 真机冷启动通过（`LaunchState: COLD`，进程存活、MainActivity resumed）；runner 卸载隔离包并保留普通包。此项不代表正式签名或 16 KB 系统运行通过；哈希和范围见 [当前 Release 静态复建](android-a8-acceptance.md#2026-11-20-6507c92-当前提交-release-apkaab-静态复建)及 [当前提交 4 KB 冷启动](android-a8-acceptance.md#2026-11-20-df0ddfd-当前提交-test-signed-release-4-kb-冷启动)。无障碍/TalkBack 测试按用户决定排除。
+
 **交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成；最新主线 Release 在 LGE AN10 4 KB 冷启动验收通过。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
 
 ## 5. UI 验收矩阵

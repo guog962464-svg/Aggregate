@@ -205,3 +205,11 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **产物：**APK 27,779,456 bytes，SHA-256 `1b50fbd9e595b55c3ff5435f64345541ba0208ceab592dcb29239818f48e9c46`；AAB 25,502,275 bytes，SHA-256 `8fe2340230e3635d6342ea4d59b1a2befd1296e5dc22c46a0d737954dfb9bf4d`。`aapt dump badging` 显示包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36，arm64-v8a only。
 - **静态门禁：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过，`dump config` 报告 `PAGE_ALIGNMENT_16K`。APK/AAB 各有 7 个 arm64 原生库、21 个 `PT_LOAD`，全部满足至少 16 KB 对齐和 offset/virtual-address 同余。两种压缩包均无 NodeProbe、NodeBridge、`libnode.so`、nodejs-mobile 或 npm `node_modules` 载荷。
 - **签名与范围：**APK/AAB 没有签名条目，保持 unsigned；未在 4 KB 或 16 KB 设备安装/运行。本项证明当前提交的产品 Release 可构建并通过 16 KB 静态检查，不代表正式签名、16 KB 系统运行或 production Host/音乐验收。16 KB 实机、正式签名及生产 Host/音乐闭环仍开放。
+
+
+## 2026-11-20 `df0ddfd` 当前提交 test-signed Release 4 KB 冷启动
+
+- **构建输入：**在 `df0ddfd1e7dc739e6f6e956597ce09db1312bc15` 的 detached worktree 构建 arm64 `.integration` Release APK。复制主工作区 `pubspec.lock`（SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`）到 workspace 根目录后，`flutter pub get --enforce-lockfile` 通过；当前未提交 Dart UI 改动未进入构建。构建使用 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true flutter build apk --release --target-platform android-arm64 --no-pub --build-name=0.3.7 --build-number=8`。
+- **产物：**APK package `io.github.guog962464.aggregate.integration`、versionCode 8、versionName 0.3.7，大小 27,787,660 bytes，SHA-256 `a7721d97010f56b93d63bde25e16ec03a1a1aaa8db8e83dd9772dbfd3736b8b8`。由本机 Android Debug test signer 签名，证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`；Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。
+- **设备验收：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。官方隔离冷启动 runner 返回 `Status: ok`、`LaunchState: COLD`，`MainActivity` resumed 且进程存活（PID 22864，`am start -W` WaitTime 1,539 ms）；没有匹配该包的新 crash-buffer 记录。脚本 force-stop 并卸载仅属于本次的 `.integration` 包；普通 Aggregate 仍安装，启动前台的 `hg.zp.mengnews/.MainActivity` 在验收后保持前台，ADB reverse 为空，Mac Host 端口 47321/47322 无 listener。
+- **结论范围：**当前提交的 test-signed Release 在这台 4 KB 真机冷启动通过；不代表产品正式签名或 16 KB 系统运行通过。未启动 NodeProbe/testnode，也未执行无障碍/TalkBack 测试（按用户决定不在验收范围）。正式签名、16 KB 真机及 production Host/音乐闭环仍开放。
