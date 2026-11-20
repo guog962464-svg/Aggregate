@@ -48,7 +48,11 @@ DARK = {
 RENDER_GLYPH_ENUMS = {
     "back": "arrowBack",
     "connection": "network",
+    "error": "error",
     "history": "activity",
+    "hourglass": "hourglass",
+    "inbox": "inbox",
+    "info": "info",
     "lock": "lock",
     "moon": "appearance",
     "spark": "flash",
@@ -84,6 +88,7 @@ def load_flutter_glyphs():
     renderer_names = set(RENDER_GLYPH_ENUMS) | {
         "play", "pause", "next", "previous", "plus", "stop", "copy", "playlist",
         "grid", "chat", "device", "terminal", "check", "close", "folder", "trash",
+        "error", "hourglass", "inbox", "info",
         "star", "document", "filter", "expand", "music", "settings", "search", "refresh",
     }
     for renderer_name in renderer_names:
@@ -92,45 +97,6 @@ def load_flutter_glyphs():
         if row_name is None or row_name not in rows:
             raise KeyError(f"No Flutter dot mask for renderer glyph {renderer_name!r}")
         glyphs[renderer_name] = rows[row_name]
-    glyphs.update(
-        {
-            # v6.6 design proposal: remove isolated stem/noise from the three
-            # high-frequency symbols while keeping the shared rounded grid.
-            "play": (
-                "100000000",
-                "110000000",
-                "111100000",
-                "111111000",
-                "111111111",
-                "111111000",
-                "111100000",
-                "110000000",
-                "100000000",
-            ),
-            "refresh": (
-                "000111000",
-                "001000100",
-                "010000010",
-                "010000011",
-                "010000010",
-                "001000100",
-                "000111000",
-                "000000000",
-                "000000000",
-            ),
-            "search": (
-                "000111000",
-                "001000100",
-                "010000010",
-                "010000010",
-                "010000010",
-                "001000100",
-                "000111100",
-                "000000010",
-                "000000001",
-            ),
-        }
-    )
     invalid = {
         name: pattern
         for name, pattern in glyphs.items()
@@ -519,26 +485,78 @@ def screen_connections():
     return p+["</g></svg>"]
 
 
-def screen_activity():
-    p=shell("活动","活动","查看近期运行状态；活动不保存参数或结果正文",mini=True,fixture="inspection")
+def activity_header(p):
+    heading(p,280,186,"运行记录","最近 100 条")
+    p.append(button(1264,169,44,"","refresh",h=44,icon_only=True))
+    filters=(
+        ("全部",72,"grid",True),
+        ("成功",72,"check",False),
+        ("失败",74,"error",False),
+        ("取消",72,"close",False),
+        ("超时",72,"error",False),
+        ("运行中",84,"hourglass",False),
+        ("结果待确认",110,"info",False),
+    )
     cursor=280
-    for label,width,selected in (("全部",66,1),("运行中",78,0),("成功",66,0),("失败",66,0),("取消",66,0),("超时",66,0),("待确认",84,0)):
-        p.append(button(cursor,181,width,label,selected=bool(selected),h=34))
+    for label,width,icon,selected in filters:
+        p.append(button(cursor,217,width,label,icon,selected=selected,h=34))
         cursor+=width+8
-    heading(p,280,251,"运行记录","按发生时间倒序")
-    for i,(name,sub,state) in enumerate((("查看 Git 状态","刚刚 · UI 检查 · Git CLI","超时"),("查看 Git 状态","刚刚 · UI 检查 · Git CLI","待确认"),("查看 Git 状态","刚刚 · UI 检查 · Git CLI","取消"),("两个整数相加","刚刚 · UI 检查 · MCP","失败"),("查看 Git 状态","刚刚 · UI 检查 · Git CLI","成功"))):
-        y=277+i*66
-        row(p,280,y,370,name,sub,"document",i==0,state,58)
-    p.append(line(672,249,672,764))
-    p.append(txt(708,286,"查看 Git 状态",19,"var(--ink)",650))
-    p.append(tag(708,314,"超时","warn")); p.append(txt(768,314,"刚刚 · UI 检查 · Git CLI",11,"var(--muted)",430))
-    p.append(line(708,342,1298,342))
-    heading(p,708,378,"运行信息")
-    for i,(k,v) in enumerate((("来源","UI 检查 · Git CLI"),("时间","刚刚"),("运行 ID","ui6-inspection-timed-out"))):
-        y=411+i*38; p.append(txt(708,y,k,11,"var(--muted)",450)); p.append(txt(816,y,v,12,"var(--ink)",480))
-    p.append(txt(708,553,"参数与结果正文不会写入活动记录。",11,"var(--muted)",430))
-    small_button(p,708,592,"重新打开功能","folder",primary=True,w=164)
-    small_button(p,882,592,"复制诊断","document",w=126)
+
+
+def activity_row(p,y,title,timestamp,state,icon,selected=False):
+    x,w,h=280,361,72
+    p.append(f'<rect x="{x+1}" y="{y+3}" width="{w-1}" height="{h}" rx="15" fill="var(--shadow)" opacity=".26" filter="url(#softShadow)"/>')
+    p.append(rect(x,y,w,h,"url(#buttonFace)",15,"var(--warmEdge)" if selected else "var(--panelEdge)"))
+    if selected:
+        p.append(f'<rect x="{x+1}" y="{y+1}" width="{w-2}" height="{h-2}" rx="14" fill="url(#warmGlow)" opacity=".18"/>')
+    p.append(glyph(icon,x+14,y+20,18,"var(--muted)"))
+    p.append(txt(x+46,y+24,title,13,"var(--ink)",570 if selected else 500))
+    p.append(txt(x+46,y+42,timestamp,10,"var(--muted)",430))
+    p.append(txt(x+46,y+59,state,10,"var(--muted)",480))
+
+
+def activity_content(p,has_runs):
+    activity_header(p)
+    if not has_runs:
+        p.append(glyph("inbox",781,306,26,"var(--muted)"))
+        p.append(txt(794,356,"还没有运行记录。",14,"var(--ink)",450,"middle"))
+        return p
+
+    timestamp="2026-11-21 12:00:00"
+    rows=(
+        ("查看 Git 状态","超时","error",True),
+        ("查看 Git 状态","结果待确认","info",False),
+        ("查看 Git 状态","已取消","close",False),
+        ("两个整数相加","失败","error",False),
+        ("查看 Git 状态","成功","check",False),
+    )
+    for index,(name,state,icon,selected) in enumerate(rows):
+        activity_row(p,272+index*82,name,timestamp,state,icon,selected)
+
+    p.append(txt(708,301,"查看 Git 状态",19,"var(--ink)",650))
+    p.append(tag(708,330,"超时","warn"))
+    p.append(txt(754,330,"2026-11-21 12:00:00 · UI 检查 · Git CLI",11,"var(--muted)",430))
+    p.append(txt(708,397,"运行信息",16,"var(--ink)",650))
+    p.append(txt(708,415,"活动只保留状态元数据",11,"var(--muted)",430))
+    for index,(label,value) in enumerate((
+        ("功能","查看 Git 状态"),
+        ("来源","UI 检查 · Git CLI"),
+        ("状态","超时"),
+        ("时间",timestamp),
+        ("运行 ID","ui6-inspection-timed-out"),
+    )):
+        y=438+index*38
+        p.append(txt(708,y,label,11,"var(--muted)",450))
+        p.append(txt(809,y,value,12,"var(--ink)",480))
+    p.append(txt(708,654,"参数和结果正文未写入活动记录。",11,"var(--muted)",430))
+    small_button(p,708,704,"重新打开功能","folder",primary=True,w=124)
+    small_button(p,842,704,"复制诊断","document",w=100)
+    return p
+
+
+def screen_activity():
+    p=shell("活动","活动","查看最近调用状态；参数和结果正文不写入历史",mini=True,fixture="inspection")
+    activity_content(p,has_runs=True)
     return p+["</g></svg>"]
 
 
@@ -943,13 +961,8 @@ def screen_account():
 
 
 def screen_mini():
-    p=shell("迷你播放器","活动","非音乐页的底部会话控制；仅在存在可见会话时显示",mini=True)
-    p.append(txt(280,211,"跨页播放控制",19,"var(--ink)",650))
-    p.append(txt(280,239,"播放器收在主内容区底部，侧栏保持独立；正文预留空间，不遮挡输入与焦点。",11,"var(--muted)",430))
-    p.append(rect(280,282,1028,106,"url(#panel)",16,"var(--panelEdge)"))
-    p.append(txt(302,315,"控制项随真实会话能力出现",14,"var(--ink)",570))
-    p.append(txt(302,339,"上一首 / 下一首需有对应动作和目标曲目；停止、刷新、打开和收起保留原有条件。",11,"var(--muted)",430))
-    p.append(txt(302,363,"无可见播放会话或输入法打开时隐藏。",11,"var(--muted)",430))
+    p=shell("活动","活动","查看最近调用状态；参数和结果正文不写入历史",mini=True,fixture="preview")
+    activity_content(p,has_runs=False)
     return p+["</g></svg>"]
 
 
