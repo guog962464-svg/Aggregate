@@ -53,13 +53,13 @@ class PageFrame extends StatelessWidget {
           contentPadding ??
           EdgeInsets.fromLTRB(
             macOS
-                ? 30
+                ? 59
                 : constraints.maxWidth < 600
                 ? 20
                 : 32,
             28,
             macOS
-                ? 30
+                ? 51
                 : constraints.maxWidth < 600
                 ? 20
                 : 32,

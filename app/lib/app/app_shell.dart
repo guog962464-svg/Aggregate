@@ -310,7 +310,7 @@ class AppShellState extends State<AppShell> {
     children: [
       if (defaultTargetPlatform == TargetPlatform.macOS)
         Padding(
-          padding: const EdgeInsets.fromLTRB(22, 10, 16, 16),
+          padding: const EdgeInsets.fromLTRB(42, 10, 16, 16),
           child: Row(
             children: [
               GlassGlyphMark(glyph: GlassGlyph.grid, size: 18),
@@ -325,7 +325,7 @@ class AppShellState extends State<AppShell> {
         ),
       const SizedBox(height: 6),
       Padding(
-        padding: const EdgeInsets.only(left: 22, right: 12, top: 8, bottom: 8),
+        padding: const EdgeInsets.only(left: 42, right: 16, top: 8, bottom: 8),
         child: Row(
           children: [
             Expanded(
@@ -349,18 +349,30 @@ class AppShellState extends State<AppShell> {
       for (final connection in connectionHomes)
         _connectionNavigationItem(connection, compact: compact),
       const SizedBox(height: 24),
-      const Divider(height: 1),
+      if (defaultTargetPlatform == TargetPlatform.macOS)
+        const Padding(
+          padding: EdgeInsets.only(left: 32, right: 16),
+          child: Divider(height: 1),
+        )
+      else
+        const Divider(height: 1),
       const SizedBox(height: 16),
       for (final section in Section.values.where(
         (item) => item != Section.home && item != Section.settings,
       ))
         _navigationItem(section, compact: compact),
       const Spacer(),
-      const Divider(height: 1),
+      if (defaultTargetPlatform == TargetPlatform.macOS)
+        const Padding(
+          padding: EdgeInsets.only(left: 32, right: 16),
+          child: Divider(height: 1),
+        )
+      else
+        const Divider(height: 1),
       _navigationItem(Section.settings, compact: compact),
       if (defaultTargetPlatform == TargetPlatform.macOS)
         Padding(
-          padding: const EdgeInsets.fromLTRB(22, 1, 12, 14),
+          padding: const EdgeInsets.fromLTRB(42, 1, 16, 14),
           child: Row(
             children: [
               Container(
@@ -413,14 +425,14 @@ class AppShellState extends State<AppShell> {
           tokens?.danger ?? Theme.of(context).colorScheme.error,
       };
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        padding: const EdgeInsets.fromLTRB(32, 4.5, 16, 4.5),
         child: AggregateActionButton(
           label: connection.label,
           semanticsLabel: '${connection.label}，$statusLabel',
           icon: icon,
           onPressed: activate,
           style: AggregateActionStyle.quiet,
-          size: GlassButtonSize.navigation,
+          size: GlassButtonSize.connectionNavigation,
           expand: true,
           selected: isSelected,
           trailing: ExcludeSemantics(
@@ -461,7 +473,7 @@ class AppShellState extends State<AppShell> {
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        padding: const EdgeInsets.fromLTRB(32, 4.5, 16, 4.5),
         child: AggregateActionButton(
           label: section.label,
           icon: section.icon,
@@ -766,7 +778,7 @@ class AppShellState extends State<AppShell> {
                 else if (!_mobilePlatform && !compact)
                   SizedBox(
                     key: macOS ? const Key('macos-sidebar') : null,
-                    width: macOS ? 224 : 200,
+                    width: macOS ? 240 : 200,
                     child: DecoratedBox(
                       decoration: macOS
                           ? BoxDecoration(

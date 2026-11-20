@@ -45,7 +45,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(tester.getSize(find.byKey(const Key('macos-sidebar'))).width, 224);
+    expect(tester.getSize(find.byKey(const Key('macos-sidebar'))).width, 240);
     expect(find.text('音乐播放器'), findsOneWidget);
     expect(find.text('所有功能'), findsOneWidget);
     await tester.tap(find.text('管理连接').first);

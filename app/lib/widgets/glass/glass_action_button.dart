@@ -27,6 +27,7 @@ enum GlassButtonSize {
   compactAction,
   directory,
   navigation,
+  connectionNavigation,
   icon,
   playback,
   reference,
@@ -289,6 +290,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         widget.size == GlassButtonSize.compactAction ||
         widget.size == GlassButtonSize.directory ||
         widget.size == GlassButtonSize.navigation ||
+        widget.size == GlassButtonSize.connectionNavigation ||
         widget.size == GlassButtonSize.icon ||
         widget.size == GlassButtonSize.playback;
     final padding = widget.iconOnly
@@ -464,7 +466,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       GlassButtonSize.reference => 32.0,
       GlassButtonSize.primary => 22.0,
       GlassButtonSize.compactAction => 20.0,
-      GlassButtonSize.navigation => 16.0,
+      GlassButtonSize.navigation ||
+      GlassButtonSize.connectionNavigation => 16.0,
       GlassButtonSize.secondary ||
       GlassButtonSize.directory ||
       GlassButtonSize.icon ||
@@ -510,6 +513,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                       fontSize:
                           widget.size == GlassButtonSize.directory ||
                               widget.size == GlassButtonSize.navigation ||
+                              widget.size ==
+                                  GlassButtonSize.connectionNavigation ||
                               widget.size == GlassButtonSize.compactAction
                           ? 12
                           : 13,
@@ -571,7 +576,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
                     : FontWeight.w500,
                 fontSize:
                     widget.size == GlassButtonSize.compactAction ||
-                        widget.size == GlassButtonSize.navigation
+                        widget.size == GlassButtonSize.navigation ||
+                        widget.size == GlassButtonSize.connectionNavigation
                     ? 12
                     : 13,
               ),
@@ -592,7 +598,8 @@ double _heightFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.secondary => GlassDesignTokens.secondaryHeight,
   GlassButtonSize.compactAction => 40,
   GlassButtonSize.directory => 58,
-  GlassButtonSize.navigation => 36,
+  GlassButtonSize.navigation => 38,
+  GlassButtonSize.connectionNavigation => 40,
   GlassButtonSize.icon => GlassDesignTokens.iconButtonSize,
   GlassButtonSize.playback => GlassDesignTokens.iconButtonSize,
   GlassButtonSize.reference => GlassDesignTokens.referenceHeight,
@@ -604,7 +611,8 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.secondary => 13,
   GlassButtonSize.compactAction => 12,
   GlassButtonSize.directory => 11,
-  GlassButtonSize.navigation => 10,
+  GlassButtonSize.navigation => 11,
+  GlassButtonSize.connectionNavigation => 11,
   GlassButtonSize.icon || GlassButtonSize.playback => 14,
 };
 
