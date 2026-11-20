@@ -1437,3 +1437,16 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 几何验收：1360×900 macOS Widget 画布中，停止 Host 120×40pt、身份轮换 180×40pt、生成邀请 141×40pt 的 x 坐标与 v3.5 画板一致；审批按钮组和配对操作横向偏差不超过 1pt。二维码卡片高度为 202pt（目标 200pt），待处理卡片 71pt（目标 68pt），已配对卡片在目标 ±3pt 内。800×600 Widget 窄窗 Host 页面生成邀请后无布局异常。
 - 回归：10 个改动 Dart 文件 `flutter analyze --no-pub` 通过；`widget_test.dart`、`mac_host_settings_panel_test.dart`、`macos_dynamic_backdrop_text_contrast_test.dart`、`macos_reduce_motion_test.dart` 共 27 项通过，含 800pt Host 紧凑布局。背景动态过渡的像素矩阵曾在 daylight 0.535 测得 4.43:1；将文字 halo 区间终点从 0.53 延至 0.54 后，全矩阵通过。该调整只保护切换过渡时的正文对比度，不影响开关模拟、手势或偏好回调。`flutter build macos --profile --no-pub -t lib/preview_main.dart` 构建成功（Profile app 69.6MB）；`git diff --check` 通过。
 - 视觉证据边界：本轮没有取得独立 Profile 窗口截图；测试渲染器在整页截图导出时卡住，后台 Profile 窗口捕获也未返回图像。没有操作桌面上包含非 Preview 数据的 Aggregate 窗口。因此本条只签收 Widget 几何、交互回调来源和构建/自动化结果，不签收原生实窗材质、最终像素或用户视觉认可；UI-7.2 仍待 Profile 同尺寸逐页对照，并在 UI-7.7 完成全稿收敛。
+
+### 2026-11-20 UI-7.3 工作台与 CLI/MCP 连接首页按 v3.5 校准
+
+- 依据：用户指出实际软件与预览差异大，要求完整设计先于实施。按 v3.5 的 01/17/21 画板与 `design-draft.md` §4 对照生产 `WorkspacePage`、`ConnectionHomePage` 和嵌入式 `CapabilityRunPage`。发现 CLI/MCP 首页左栏实现只有约 190pt（目标约 252–260pt），整页标题/边距也从 x=270 起；工作台详情分栏与画板 inset 同样不匹配。
+- 实施：CLI/MCP 首页内容起点校到 x=299；1360×900 画布下目录 252.5pt、分隔线 x=575.5、详情 x=606.5；标题/副标题、能力状态摘要、154×40pt 刷新按钮和横分隔线按 17 号画板布局。首次进入首页默认显示目录第一项详情，刷新仍调用原 `onRefresh`，选择/运行仍交给同一 Runtime。
+- 工作台：内容起点 x=299，600×42pt 搜索框、32pt 分类按钮；目录约 343.4pt、分隔线 x=642.4、详情面板 x=689.4；宽屏详情标题和参数 inset 27pt 到 x=716.4，结果分隔区保持从 x=689.4 起。目录动作尺寸由58pt校到56pt、分类控件由38pt校到32pt，新增 `segmented` 只改变共享玻璃按钮尺寸/圆角/点阵规格。
+- 不可变边界：此阶段只改变工作台、连接首页布局和首个详情的显示状态；没有触碰 `GlassThemeSwitch`、主题状态机、手势、阈值、内部太阳/月亮、shader、偏好回调或连接/运行 Runtime 语义。嵌入运行页新增的 `embeddedContentInset` 默认0，只有 v3.5 工作台宽屏实例显式使用27pt。
+- 几何验收：`widget_test.dart` 与 `connection_experience_test.dart` 在 1360×900 Widget viewport 断言题头、搜索框、分类、目录、分隔线、详情、结果区坐标/尺寸。Widget viewport 不包含 AppKit 原生标题栏，故这些结果只签收 Flutter 内容几何，不替代整个原生窗口的像素比较。
+- 回归：`flutter analyze --no-pub` 对本阶段页面、共享控件及测试文件无问题；工作台、连接体验、运行页面、共享玻璃按钮五个测试文件共 53 项通过，覆盖宽屏几何、CLI/MCP 目录、收藏/搜索快捷键、参数运行/恢复、紧凑列表和按钮状态。`flutter build macos --profile --no-pub -t lib/preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` 成功（69.6MB）。
+- 原生视觉边界：Profile 已以当前 `preview_main.dart` 构建；隔离实例列表可见，但本机 `agent-desktop list-displays` 返回空列表，窗口截图报 `CoreGraphics returned no active displays`。没有获得 Profile PNG、暗色实窗或 Native AX，因而本阶段仍未完成原生逐像素目视签收；需在显示器可用的桌面会话再次按同一 1360×900 尺寸对照。没有操作真实业务窗口或连接服务。
+- `retrieval_feedback`：按当前任务中的“先完整设计、生产页面必须与画板同尺寸对照、太阳/月亮切换逻辑冻结”约束，复核本项目 `2026-11-19/aggregate/01a1d606-f887-7930-ad30-645440d89f65__daily-task.md`、v3.5 设计稿 01/17/21、当前 PreviewRuntime 和页面源码；采纳布局/运行语义约束，并将原生截图不可用单列为未验收，不以 Widget 结果替代实窗。
+- `prerequisites`：Flutter 3.47.8/macOS Profile 工具链。当前系统窗口状态：`agent-desktop permissions` 三项授权均 granted，但 `list-displays` 为空；原生截图恢复依赖有活动显示器的桌面会话。
+- `verified_scope`：Flutter 1360×900 Widget viewport 几何、工作台/连接相关 53 项自动化、页面和共享控件分析器、当前 PreviewRuntime macOS Profile 构建。UI-7.2 的原生截图、UI-7.3 原生整窗/材质/像素签收、深色/其他窗口尺寸、UI-7.4～UI-7.7、UI-5/UI-6 未完成项仍未验收。

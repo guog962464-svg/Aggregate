@@ -125,6 +125,64 @@ void main() {
     expect(find.text('参数'), findsOneWidget);
   }, variant: _macOS);
 
+  testWidgets('v3.5 macOS workspace geometry follows its design board', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(preview());
+    await tester.pumpAndSettle();
+    await openAll(tester);
+
+    final title = tester.getRect(find.byKey(const Key('workspace-page-title')));
+    expect(title.left, 299);
+    expect(title.top, 72);
+
+    final search = tester.getRect(find.byKey(const Key('global-search')));
+    expect(search.left, 299);
+    expect(search.top, 147);
+    expect(search.width, 600);
+    expect(search.height, 42);
+
+    final allFilter = tester.getRect(find.bySemanticsLabel('按类型筛选：全部'));
+    expect(allFilter.left, 299);
+    expect(allFilter.top, 201);
+    expect(allFilter.height, 32);
+
+    final directory = tester.getRect(
+      find.byKey(const Key('workspace-capability-directory-panel')),
+    );
+    final divider = tester.getRect(
+      find.byKey(const Key('workspace-capability-directory-divider')),
+    );
+    final details = tester.getRect(
+      find.byKey(const Key('workspace-capability-details')),
+    );
+    expect(directory.left, 299);
+    expect(directory.width, closeTo(343.4, 1));
+    expect(divider.left, closeTo(642.4, 1));
+    expect(details.left, closeTo(689.4, 1));
+    expect(details.right, 1309);
+
+    await tester.tap(find.text('两个整数相加').first);
+    await tester.pumpAndSettle();
+    final detailTitle = tester.getRect(
+      find.descendant(
+        of: find.byKey(const Key('workspace-capability-details')),
+        matching: find.text('两个整数相加'),
+      ),
+    );
+    final result = tester.getRect(
+      find.byKey(const Key('macos-embedded-result-pane')),
+    );
+    expect(detailTitle.left, closeTo(716.4, 1));
+    expect(result.left, closeTo(689.4, 1));
+    expect(result.right, 1309);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
   for (final width in [800.0, 1024.0, 1440.0]) {
     testWidgets('shell fits ${width.toInt()} width', (tester) async {
       tester.view.physicalSize = Size(width, 600);

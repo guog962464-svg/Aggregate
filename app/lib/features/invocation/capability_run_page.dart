@@ -26,6 +26,7 @@ class CapabilityRunPage extends StatefulWidget {
     this.onOpenMusic,
     this.onRunSettled,
     this.embedded = false,
+    this.embeddedContentInset = 0,
   });
   final RuntimePort runtime;
   final Capability capability;
@@ -34,6 +35,7 @@ class CapabilityRunPage extends StatefulWidget {
   final VoidCallback? onOpenMusic;
   final VoidCallback? onRunSettled;
   final bool embedded;
+  final double embeddedContentInset;
   @override
   State<CapabilityRunPage> createState() => _CapabilityRunPageState();
 }
@@ -721,6 +723,9 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
           child: PageFrame(
             title: widget.capability.title,
             contentPadding: macEmbedded ? EdgeInsets.zero : null,
+            headerContentPadding: macEmbedded
+                ? EdgeInsets.only(left: widget.embeddedContentInset)
+                : EdgeInsets.zero,
             titleStyle: macEmbedded
                 ? Theme.of(context).textTheme.titleMedium
                 : null,
@@ -731,14 +736,24 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                       '${widget.runtime.isPreview ? ' · 预览数据' : ''}',
             children: [
               if (!compactReadOnlyTool) ...[
-                _executionContext(),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: macEmbedded ? widget.embeddedContentInset : 0,
+                  ),
+                  child: _executionContext(),
+                ),
                 const SizedBox(height: 20),
               ],
               if (widget.capability.presentation?.startsWith('music.') ==
                       true &&
                   widget.capability.presentation != 'music.search' &&
                   widget.musicSession != null) ...[
-                MusicRunPanel(session: widget.musicSession!),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: macEmbedded ? widget.embeddedContentInset : 0,
+                  ),
+                  child: MusicRunPanel(session: widget.musicSession!),
+                ),
               ],
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -895,6 +910,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                         );
                   final resultPane = macEmbedded
                       ? Container(
+                          key: const Key('macos-embedded-result-pane'),
                           decoration: BoxDecoration(
                             border: Border(
                               top: BorderSide(
@@ -922,7 +938,12 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        formPane,
+                        Padding(
+                          padding: EdgeInsets.only(
+                            left: macEmbedded ? widget.embeddedContentInset : 0,
+                          ),
+                          child: formPane,
+                        ),
                         SizedBox(height: macEmbedded ? 34 : 28),
                         resultPane,
                       ],

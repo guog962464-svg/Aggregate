@@ -73,7 +73,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text(capability.title));
+    await tester.tap(find.text(capability.title).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('运行'));
     await tester.pump();

@@ -390,7 +390,7 @@ class WorkspacePageState extends State<WorkspacePage> {
   }
 
   Widget _buildMacDesktop(BuildContext context, BoxConstraints constraints) {
-    final width = math.min(1080.0, constraints.maxWidth);
+    final width = math.min(1080.0, constraints.maxWidth - 110);
     final sourceLabels = {
       for (final connection in connections)
         connection.id.value: connection.label,
@@ -412,19 +412,24 @@ class WorkspacePageState extends State<WorkspacePage> {
         if (recentCapabilities.length >= 3) break;
       }
     }
-    final directoryWidth = math.min(360.0, math.max(220.0, (width - 96) * .34));
+    final directoryWidth = math.min(360.0, math.max(220.0, width * .34));
     final selected = selectedCapability;
 
-    return Center(
+    return Align(
+      alignment: Alignment.topLeft,
       child: SizedBox(
-        width: width,
+        width: width + 110,
         height: constraints.maxHeight,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(30, 24, 30, 24),
+          padding: const EdgeInsets.fromLTRB(59, 32, 51, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('所有功能', style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                '所有功能',
+                key: const Key('workspace-page-title'),
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
                 widget.runtime.isPreview
@@ -435,11 +440,12 @@ class WorkspacePageState extends State<WorkspacePage> {
               const SizedBox(height: 20),
               SizedBox(
                 width: math.min(600.0, width - 60),
+                height: 42,
                 child: _desktopSearch(context),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Wrap(
-                spacing: 8,
+                spacing: 10,
                 runSpacing: 8,
                 children: [
                   _filterChip('全部', null),
@@ -455,12 +461,13 @@ class WorkspacePageState extends State<WorkspacePage> {
                   _filterChip('提示', CapabilityKind.mcpPrompt),
                 ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 16),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SizedBox(
+                      key: const Key('workspace-capability-directory-panel'),
                       width: directoryWidth,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -494,30 +501,38 @@ class WorkspacePageState extends State<WorkspacePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 18),
-                    const VerticalDivider(width: 1),
-                    const SizedBox(width: 28),
+                    const VerticalDivider(
+                      key: Key('workspace-capability-directory-divider'),
+                      width: 1,
+                    ),
+                    const SizedBox(width: 46),
                     Expanded(
-                      child: selected == null
-                          ? Center(
-                              child: Text(
-                                '从目录选择功能，查看参数、权限和运行结果。',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodySmall,
+                      child: KeyedSubtree(
+                        key: const Key('workspace-capability-details'),
+                        child: selected == null
+                            ? Center(
+                                child: Text(
+                                  '从目录选择功能，查看参数、权限和运行结果。',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              )
+                            : CapabilityRunPage(
+                                key: ValueKey(
+                                  'workspace-run-${selected.id.key}',
+                                ),
+                                runtime: widget.runtime,
+                                capability: selected,
+                                musicSession: widget.musicSession,
+                                onSearchAll: focusSearch,
+                                onRunSettled: () {
+                                  unawaited(refreshRecent());
+                                  widget.onRunSettled?.call();
+                                },
+                                embedded: true,
+                                embeddedContentInset: width >= 900 ? 27 : 0,
                               ),
-                            )
-                          : CapabilityRunPage(
-                              key: ValueKey('workspace-run-${selected.id.key}'),
-                              runtime: widget.runtime,
-                              capability: selected,
-                              musicSession: widget.musicSession,
-                              onSearchAll: focusSearch,
-                              onRunSettled: () {
-                                unawaited(refreshRecent());
-                                widget.onRunSettled?.call();
-                              },
-                              embedded: true,
-                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -544,12 +559,16 @@ class WorkspacePageState extends State<WorkspacePage> {
       autofocus: widget.autofocusSearch,
       style: Theme.of(context).textTheme.titleMedium,
       decoration: InputDecoration(
-        labelText: '搜索功能',
-        hintText: '名称、说明或来源',
+        hintText: '搜索名称、说明或来源',
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
         prefixIcon: SizedBox(
           width: 48,
           child: Center(
-            child: GlassGlyphMark(glyph: GlassGlyph.search, size: 18),
+            child: GlassGlyphMark(glyph: GlassGlyph.search, size: 16),
           ),
         ),
         suffixIcon: search.text.isEmpty
@@ -672,7 +691,7 @@ class WorkspacePageState extends State<WorkspacePage> {
             final capability = visible[index];
             return Padding(
               key: ValueKey('workspace-capability-${capability.id.key}'),
-              padding: const EdgeInsets.only(bottom: 5),
+              padding: const EdgeInsets.only(bottom: 9),
               child: CapabilityRow(
                 capability: capability,
                 source: sourceLabels[capability.id.connection.value] ?? '未知来源',
@@ -713,7 +732,7 @@ class WorkspacePageState extends State<WorkspacePage> {
         final capability = items[index];
         return Padding(
           key: ValueKey('workspace-${title.hashCode}-${capability.id.key}'),
-          padding: const EdgeInsets.only(bottom: 5),
+          padding: const EdgeInsets.only(bottom: 9),
           child: CapabilityRow(
             capability: capability,
             source: sourceLabels[capability.id.connection.value] ?? '未知来源',
@@ -748,7 +767,7 @@ class WorkspacePageState extends State<WorkspacePage> {
         onPressed: () => setState(() => filter = kind),
         selected: selected,
         kind: GlassButtonKind.segmented,
-        size: GlassButtonSize.navigation,
+        size: GlassButtonSize.segmented,
       );
     }
     return ChoiceChip(

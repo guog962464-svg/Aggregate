@@ -89,6 +89,14 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
   String? selectedCapabilityKey;
   bool refreshing = false;
 
+  @override
+  void initState() {
+    super.initState();
+    selectedCapabilityKey = widget.capabilities.isEmpty
+        ? null
+        : widget.capabilities.first.id.key;
+  }
+
   Future<void> _refreshConnection() async {
     final refresh = widget.onRefresh;
     if (refresh == null || refreshing) return;
@@ -125,7 +133,9 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
         !widget.capabilities.any(
           (item) => item.id.key == selectedCapabilityKey,
         )) {
-      selectedCapabilityKey = null;
+      selectedCapabilityKey = widget.capabilities.isEmpty
+          ? null
+          : widget.capabilities.first.id.key;
     }
   }
 
@@ -146,9 +156,12 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
         Theme.of(context).extension<GlassDesignTokens>() ??
         GlassDesignTokens.forBrightness(Theme.of(context).brightness);
     final selected = selectedCapability;
-    final directoryWidth = math.min(190.0, math.max(152.0, width * .185));
+    final directoryWidth = math.min(
+      320.0,
+      math.max(220.0, (width - 110) * .25),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(30, 6, 30, 24),
+      padding: const EdgeInsets.fromLTRB(59, 32, 51, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -161,63 +174,85 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                   children: [
                     Text(
                       widget.connection.label,
+                      key: const Key('connection-home-header-title'),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _connectionTypeLabel(widget.connection.kind, isCli),
+                      '连接首页按来源展示命令、工具、资源与提示',
+                      key: const Key('connection-home-header-subtitle'),
                       style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ExcludeSemantics(
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: tokens.status,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    Text(
-                      _connectionStatusLabel(widget.connection.status),
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: tokens.status),
-                    ),
-                    const SizedBox(width: 12),
-                    AggregateActionButton(
-                      label: refreshing ? '刷新中…' : '刷新',
-                      icon: Icons.refresh,
-                      style: AggregateActionStyle.secondary,
-                      busy: refreshing,
-                      enabled: !refreshing && widget.onRefresh != null,
-                      size: GlassButtonSize.compactAction,
-                      onPressed: _refreshConnection,
                     ),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 2),
+          SizedBox(
+            height: 40,
+            child: Row(
+              children: [
+                ExcludeSemantics(
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: tokens.status,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  _connectionStatusLabel(widget.connection.status),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: tokens.status),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  '${_connectionTypeLabel(widget.connection.kind, isCli)} · '
+                  '${widget.capabilities.length} 项功能',
+                  key: const Key('connection-home-capability-summary'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const Spacer(),
+                SizedBox(
+                  key: const Key('connection-home-refresh'),
+                  width: 154,
+                  height: 40,
+                  child: AggregateActionButton(
+                    label: refreshing ? '刷新中…' : '刷新能力',
+                    icon: Icons.refresh,
+                    style: AggregateActionStyle.secondary,
+                    busy: refreshing,
+                    enabled: !refreshing && widget.onRefresh != null,
+                    size: GlassButtonSize.compactAction,
+                    expand: true,
+                    onPressed: _refreshConnection,
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (widget.connection.diagnostic case final diagnostic?) ...[
             const SizedBox(height: 8),
             Text(diagnostic, style: TextStyle(color: scheme.error)),
           ],
-          const SizedBox(height: 26),
+          const SizedBox(height: 14),
+          Divider(
+            key: const Key('connection-home-header-divider'),
+            height: 1,
+            thickness: 1,
+            color: Theme.of(context).dividerColor.withValues(alpha: .62),
+          ),
+          const SizedBox(height: 24),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
+                  key: const Key('connection-home-directory'),
                   width: directoryWidth,
                   child: CustomScrollView(
                     slivers: widget.capabilities.isEmpty
@@ -234,6 +269,7 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                             context,
                             '命令与动作',
                             widget.capabilities,
+                            detail: '此连接提供 ${widget.capabilities.length} 项功能',
                             embedded: true,
                           )
                         : [
@@ -258,24 +294,30 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                           ],
                   ),
                 ),
-                const SizedBox(width: 19),
-                const VerticalDivider(width: 1),
-                const SizedBox(width: 28),
+                const SizedBox(width: 24),
+                const VerticalDivider(
+                  key: Key('connection-home-directory-divider'),
+                  width: 1,
+                ),
+                const SizedBox(width: 30),
                 Expanded(
-                  child: selected == null
-                      ? Center(
-                          child: Text(
-                            '从左侧目录选择一个功能',
-                            style: Theme.of(context).textTheme.bodySmall,
+                  child: KeyedSubtree(
+                    key: const Key('connection-home-run-pane'),
+                    child: selected == null
+                        ? Center(
+                            child: Text(
+                              '从左侧目录选择一个功能',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          )
+                        : CapabilityRunPage(
+                            key: ValueKey('embedded-run-${selected.id.key}'),
+                            runtime: widget.runtime,
+                            capability: selected,
+                            musicSession: widget.musicSession,
+                            embedded: true,
                           ),
-                        )
-                      : CapabilityRunPage(
-                          key: ValueKey('embedded-run-${selected.id.key}'),
-                          runtime: widget.runtime,
-                          capability: selected,
-                          musicSession: widget.musicSession,
-                          embedded: true,
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -362,6 +404,7 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
     BuildContext context,
     String title,
     List<Capability> items, {
+    String? detail,
     required bool embedded,
   }) {
     if (items.isEmpty) return const [];
@@ -369,12 +412,21 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (detail case final value?) ...[
+                const SizedBox(height: 3),
+                Text(value, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ],
           ),
         ),
       ),

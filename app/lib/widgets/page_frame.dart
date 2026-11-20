@@ -8,6 +8,7 @@ class PageFrame extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.contentPadding,
+    this.headerContentPadding = EdgeInsets.zero,
     this.titleStyle,
     this.headerSpacing = 24,
     required this.children,
@@ -17,6 +18,7 @@ class PageFrame extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final EdgeInsets? contentPadding;
+  final EdgeInsets headerContentPadding;
   final TextStyle? titleStyle;
   final double headerSpacing;
   final List<Widget> children;
@@ -90,6 +92,9 @@ class PageFrame extends StatelessWidget {
                 ],
               ],
             );
+      final paddedHeader = headerContentPadding == EdgeInsets.zero
+          ? header
+          : Padding(padding: headerContentPadding, child: header);
       if (!lazyChildren) {
         return SingleChildScrollView(
           padding: padding,
@@ -100,7 +105,7 @@ class PageFrame extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  header,
+                  paddedHeader,
                   SizedBox(height: headerSpacing),
                   ...children,
                 ],
@@ -116,7 +121,7 @@ class PageFrame extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 final child = switch (index) {
-                  0 => header,
+                  0 => paddedHeader,
                   1 => SizedBox(height: headerSpacing),
                   _ => children[index - 2],
                 };

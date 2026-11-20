@@ -111,13 +111,76 @@ void main() {
     await tester.tap(find.text('示例 Git CLI').first);
     await tester.pumpAndSettle();
     expect(find.text('命令与动作'), findsWidgets);
-    expect(find.text('查看 Git 状态'), findsOneWidget);
+    expect(find.text('查看 Git 状态'), findsWidgets);
     await tester.tap(find.text('示例 MCP').first);
     await tester.pumpAndSettle();
     expect(find.text('工具'), findsOneWidget);
     expect(find.text('资源'), findsOneWidget);
     expect(find.text('提示'), findsOneWidget);
-    expect(find.text('两个整数相加'), findsOneWidget);
+    expect(find.text('两个整数相加'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
+  testWidgets('v3.5 macOS connection home geometry follows its design board', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = createPreviewRuntime();
+    addTearDown(runtime.dispose);
+
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('示例 Git CLI').first);
+    await tester.pumpAndSettle();
+
+    final title = tester.getRect(
+      find.byKey(const Key('connection-home-header-title')),
+    );
+    final subtitle = tester.getRect(
+      find.byKey(const Key('connection-home-header-subtitle')),
+    );
+    final refresh = tester.getRect(
+      find.byKey(const Key('connection-home-refresh')),
+    );
+    final headerDivider = tester.getRect(
+      find.byKey(const Key('connection-home-header-divider')),
+    );
+    final directory = tester.getRect(
+      find.byKey(const Key('connection-home-directory')),
+    );
+    final directoryDivider = tester.getRect(
+      find.byKey(const Key('connection-home-directory-divider')),
+    );
+    final runPane = tester.getRect(
+      find.byKey(const Key('connection-home-run-pane')),
+    );
+
+    expect(title.left, 299);
+    expect(title.top, 72);
+    expect(subtitle.left, 299);
+    expect(subtitle.top, 110);
+    expect(refresh, const Rect.fromLTWH(1155, 129, 154, 40));
+    expect(headerDivider, const Rect.fromLTWH(299, 183, 1010, 1));
+    expect(directory.left, 299);
+    expect(directory.width, closeTo(252.5, 1));
+    expect(directory.top, 208);
+    expect(directoryDivider.left, closeTo(575.5, 1));
+    expect(runPane.left, closeTo(606.5, 1));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('connection-home-run-pane')),
+        matching: find.text('查看 Git 状态'),
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
