@@ -142,12 +142,13 @@ def tag(x, y, label, color="good"):
     return f'<circle cx="{x+4}" cy="{y-4}" r="3" fill="{c}"/>' + txt(x+13, y, label, 11, c, 520)
 
 
-def mini_player(p):
+def mini_player(p, fixture="preview"):
     x, y, w, h = 270, 812, 1048, 58
     p.append(rect(x, y, w, h, "url(#panel)", 15, "var(--panelEdge)"))
     p.append(glyph("music", x + 20, y + 18, 22))
     p.append(txt(x + 52, y + 24, "示例歌曲", 13, "var(--ink)", 570))
-    p.append(txt(x + 52, y + 42, "网易云音乐 · 示例歌手 · 0:12 / 3:20", 10, "var(--muted)", 430))
+    connection = "UI 检查 · 音乐" if fixture == "inspection" else "示例网易云音乐"
+    p.append(txt(x + 52, y + 42, f"{connection} · 示例歌手 · 0:12 / 3:20", 10, "var(--muted)", 430))
     controls = ("previous", "pause", "next", "stop", "refresh", "expand", "close")
     right = x + w - 14
     for index, icon in enumerate(controls):
@@ -207,7 +208,7 @@ def defs(dark=False):
     """
 
 
-def shell(title, active="全部功能", subtitle=None, dark=False, search=True, mini=False):
+def shell(title, active="全部功能", subtitle=None, dark=False, search=True, mini=False, fixture="preview"):
     p = ['<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="900" viewBox="0 0 1360 900">', defs(dark)]
     p.append('<rect width="1360" height="900" fill="#151519"/>')
     p.append('<g clip-path="url(#windowClip)"><rect x="16" y="16" width="1328" height="868" fill="url(#scene)"/><rect x="16" y="16" width="1328" height="868" fill="url(#skyGlow)"/><rect x="16" y="16" width="1328" height="868" fill="url(#sceneGrain)" opacity=".42"/>')
@@ -218,7 +219,12 @@ def shell(title, active="全部功能", subtitle=None, dark=False, search=True, 
     p.append(glyph("connection",42,91,17))
     p.append(txt(67,106,"Aggregate",19,"var(--ink)",680))
     p.append(txt(40,153,"我的连接",11,"var(--muted)",560))
-    for i, (label, icon) in enumerate((("网易云音乐","music"),("Git CLI","terminal"),("项目 MCP","connection"))):
+    connections = (
+        (("UI 检查 · 音乐", "music"), ("UI 检查 · Git CLI", "terminal"), ("UI 检查 · MCP", "connection"))
+        if fixture == "inspection"
+        else (("示例网易云音乐", "music"), ("示例 Git CLI", "terminal"), ("示例 MCP", "connection"))
+    )
+    for i, (label, icon) in enumerate(connections):
         y=176+i*42
         p.append(txt(49,y+17,label,13,"var(--ink)",480))
         p.append(f'<circle cx="219" cy="{y+12}" r="2.5" fill="var(--good)"/>')
@@ -247,7 +253,7 @@ def shell(title, active="全部功能", subtitle=None, dark=False, search=True, 
     if subtitle:
         p.append(txt(281,153,subtitle,12,"var(--muted)",440))
     if mini:
-        mini_player(p)
+        mini_player(p, fixture=fixture)
     return p
 
 
@@ -295,7 +301,7 @@ def screen_workspace():
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
     workspace_directory_header(p)
-    for i,(name,sub,icon) in enumerate((("上一首","CLI · 网易云音乐","previous"),("下一首","CLI · 网易云音乐","next"),("两个整数相加","MCP 工具 · 示例 MCP","spark"),("停止播放","CLI · 网易云音乐","stop"),("搜索歌曲","CLI · 网易云音乐","music"),("播放歌曲","CLI · 网易云音乐","play"),("播放状态","CLI · 网易云音乐","music"))):
+    for i,(name,sub,icon) in enumerate((("上一首","CLI · 示例网易云音乐","previous"),("下一首","CLI · 示例网易云音乐","next"),("两个整数相加","MCP 工具 · 示例 MCP","spark"),("停止播放","CLI · 示例网易云音乐","stop"),("搜索歌曲","CLI · 示例网易云音乐","music"),("播放歌曲","CLI · 示例网易云音乐","play"),("播放状态","CLI · 示例网易云音乐","music"))):
         row(p,280,354+i*60,295,name,sub,icon,i==2, "☆",56)
     p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"两个整数相加",20,"var(--ink)",680))
@@ -316,7 +322,7 @@ def screen_workspace():
 
 def screen_connection_home(mcp=False):
     title="示例 MCP" if mcp else "示例 Git CLI"
-    active="项目 MCP" if mcp else "Git CLI"
+    active=title
     p=shell(title,active,"查看当前连接提供的能力与最近结果",mini=True)
     # The connection page exposes its real refresh action in the page header.
     # Keep it separate from the global search in the app toolbar.
@@ -358,7 +364,7 @@ def screen_connection_home(mcp=False):
 
 
 def screen_connections():
-    p=shell("管理连接","管理连接","查看连接状态、诊断与可执行的管理操作",mini=True)
+    p=shell("管理连接","管理连接","查看连接状态、诊断与可执行的管理操作",mini=True,fixture="inspection")
     small_button(p,1160,115,"添加连接","plus",primary=True,w=148)
     heading(p,280,203,"连接列表","选择连接查看详情 · 使用操作调整顺序")
     for i,(name,sub) in enumerate((("UI 检查 · Git CLI","CLI 程序 · 本机 · 就绪"),("UI 检查 · MCP","远程 MCP · 本机 · 就绪"),("UI 检查 · 音乐","CLI 程序 · 本机 · 就绪"))):
@@ -388,7 +394,7 @@ def screen_connections():
 
 
 def screen_activity():
-    p=shell("活动","活动","查看近期运行状态；活动不保存参数或结果正文",mini=True)
+    p=shell("活动","活动","查看近期运行状态；活动不保存参数或结果正文",mini=True,fixture="inspection")
     cursor=280
     for label,width,selected in (("全部",66,1),("运行中",78,0),("成功",66,0),("失败",66,0),("取消",66,0),("超时",66,0),("待确认",84,0)):
         p.append(button(cursor,181,width,label,selected=bool(selected),h=34))
@@ -410,8 +416,8 @@ def screen_activity():
     return p+["</g></svg>"]
 
 
-def settings_shell(title, selected):
-    p=shell("设置","设置","让材质、光线和工作方式保持一致")
+def settings_shell(title, selected, fixture="preview"):
+    p=shell("设置","设置","让材质、光线和工作方式保持一致",fixture=fixture)
     p.append(line(489,182,489,780))
     for i,label in enumerate(("外观","Mac Host","快捷键","本机数据")):
         y=206+i*50
@@ -446,7 +452,7 @@ def switch_art(x,y,w,h):
 
 
 def screen_host():
-    p=settings_shell("Mac Host","Mac Host")
+    p=settings_shell("Mac Host","Mac Host",fixture="inspection")
     p.append(tag(523,233,"运行中"))
     p.append(txt(523,265,"允许已配对设备在 Mac 上运行获准的功能。",12,"var(--muted)",440))
     p.append(button(1178,214,120,"停止 Host","stop",danger=True,h=40))
@@ -524,7 +530,7 @@ def screen_local_data():
 
 
 def screen_setup_variant(kind):
-    p=shell("添加连接","管理连接","设置连接类型、执行目标与认证信息")
+    p=shell("添加连接","管理连接","设置连接类型、执行目标与认证信息",fixture="inspection")
     p.append('<rect x="16" y="58" width="1328" height="826" fill="#242329" opacity=".24"/>')
     x,y,w,h=356,116,648,668
     config = {
@@ -613,7 +619,7 @@ def overlay(title,subtitle,w,h,background="01-workspace"):
 
 
 def screen_permission():
-    p,x,y,w,h=overlay("确认执行","检查执行目标与参数后再继续。",560,520)
+    p,x,y,w,h=overlay("确认执行","检查执行目标与参数后再继续。",560,520,background="inspection-permission")
     fields=(("功能","演示写入权限确认"),("来源","UI 检查 · Git CLI"),("执行目标","本机 Mac"),("权限","需要外部写入"))
     yy=y+105
     for label,value in fields:
@@ -643,7 +649,7 @@ def screen_danger_confirmation():
 
 
 def screen_target():
-    p,x,y,w,h=overlay("选择执行目标","选择此连接实际可用的设备。",585,390,background="03-connections")
+    p,x,y,w,h=overlay("选择执行目标","选择此连接实际可用的设备。",585,390,background="inspection-connections")
     row(p,x+28,y+103,w-56,"本机 Mac","默认目标 · 在此设备运行","connection",True,None,61)
     row(p,x+28,y+171,w-56,"Pixel 9","已配对 · 连接管理","connection",False,None,61)
     p.append(txt(x+30,y+273,"设备状态与授权说明来自当前运行时。",10,"var(--muted)",430))
@@ -653,7 +659,7 @@ def screen_target():
 
 
 def screen_action_editor():
-    p,x,y,w,h=overlay("编辑动作 · 示例 Git CLI","清单版本 1 · 参数以数组传递。",680,700,background="03-connections")
+    p,x,y,w,h=overlay("编辑动作 · UI 检查 · Git CLI","清单版本 1 · 参数以数组传递。",680,700,background="inspection-connections")
     small_button(p,x+30,y+88,"新增动作","plus",primary=True,w=134)
     small_button(p,x+175,y+88,"导入","folder",w=102)
     small_button(p,x+287,y+88,"导出","document",w=102)
@@ -680,7 +686,14 @@ def screen_terminal():
     p.append(txt(48,166,"执行端：本机 Mac · 权限：读取连接 · 交互会话",10,"var(--muted)",430))
     p.append(button(1270,78,42,"","stop",danger=True,h=42,icon_only=True))
     p.append(rect(32,184,1296,508,"#17181c",15,"#555660",1))
-    for i,line_ in enumerate(("$ git status --short"," M README.md","?? draft.md","","█")):
+    for i,line_ in enumerate((
+        "UI 检查终端：全内存模拟，不会运行外部命令。",
+        "$ git status --short",
+        " M README.md",
+        "?? draft.md",
+        "",
+        "█",
+    )):
         p.append(txt(58,226+i*27,line_,13,"#d7dccf" if i else "#d8bd8c",450))
     labels=(("Ctrl",64),("Esc",64),("Tab",64),("↑",52),("↓",52),("←",52),("→",52),("复制",90),("粘贴",90))
     cursor=32
@@ -691,12 +704,21 @@ def screen_terminal():
 
 
 def screen_result():
-    p=shell("所有功能","所有功能","查看当前能力本次调用的实际状态和输出",search=False,mini=True)
+    p=shell("所有功能","所有功能","查看当前能力本次调用的实际状态和输出",search=False,mini=True,fixture="inspection")
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
-    workspace_directory_header(p, count="2 项")
-    row(p,280,354,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","terminal",True,"☆",56)
-    row(p,280,414,295,"读取项目说明","资源 · UI 检查 · MCP","document",False,"☆",56)
+    workspace_directory_header(p, count="17 项")
+    result_rows=(
+        ("查看 Git 状态","CLI · UI 检查 · Git CLI","terminal"),
+        ("演示写入权限确认","CLI · UI 检查 · Git CLI","lock"),
+        ("打开预览终端","命令 · UI 检查 · Git CLI","terminal"),
+        ("两个整数相加","MCP 工具 · UI 检查 · MCP","spark"),
+        ("编辑 JSON 参数","MCP 工具 · UI 检查 · MCP","document"),
+        ("演示恢复状态","MCP 工具 · UI 检查 · MCP","refresh"),
+        ("读取预览说明","资源 · UI 检查 · MCP","folder"),
+    )
+    for index,(name,sub,icon) in enumerate(result_rows):
+        row(p,280,354+index*60,295,name,sub,icon,index==0,"☆",56)
     p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"查看 Git 状态",20,"var(--ink)",680))
     p.append(tag(624,380,"UI 检查 · Git CLI · 成功"))
@@ -705,8 +727,7 @@ def screen_result():
     p.append(tag(1152,468,"成功"))
     p.append(button(1247,437,46,"","document",h=40,icon_only=True))
     p.append(rect(624,486,684,244,"url(#inset)",12,"var(--insetEdge)"))
-    for i,line_ in enumerate(("{","  \"branch\": \"main\",","  \"clean\": false,","  \"changes\": 2","}")):
-        p.append(txt(646,523+i*27,line_,13,"var(--ink)",460))
+    p.append(txt(646,523,"预览结果：工作区干净",13,"var(--ink)",460))
     return p+["</g></svg>"]
 
 
@@ -756,22 +777,25 @@ def screen_dark():
 
 
 def screen_music():
-    p=shell("网易云音乐","网易云音乐","播放、搜索和账号状态来自同一音乐会话")
+    p=shell("示例网易云音乐","示例网易云音乐","播放、搜索和账号状态来自同一音乐会话")
     p.append(rect(280,188,468,530,"url(#panel)",19,"var(--panelEdge)"))
     p.append(txt(310,224,"播放器",16,"var(--ink)",620)); p.append(tag(672,224,"播放中"))
     p.append(rect(310,248,150,150,"url(#inset)",18,"var(--insetEdge)")); p.append(glyph("music",354,292,60))
     p.append(txt(482,300,"示例歌曲",18,"var(--ink)",650)); p.append(txt(482,330,"示例歌手",12,"var(--muted)",450)); p.append(txt(482,356,"0:12 / 3:20",11,"var(--muted)",430))
     for i,ico in enumerate(("previous","pause","next","stop")): p.append(button(314+i*78,432,64,"",ico,primary=(ico=="pause"),h=58,icon_only=True))
-    p.append(txt(310,534,"播放信息",11,"var(--muted)",500)); p.append(txt(310,558,"网易云音乐 · 本机输出",12,"var(--ink)",470))
-    small_button(p,310,612,"刷新状态","refresh",w=132); small_button(p,452,612,"账号","connection",w=104)
+    p.append(txt(310,534,"播放信息",11,"var(--muted)",500)); p.append(txt(310,558,"示例网易云音乐 · 声音由此设备输出",12,"var(--ink)",470))
+    small_button(p,310,612,"刷新状态","refresh",w=132)
     heading(p,786,220,"找音乐","搜索歌曲并查看结果")
     p.append(field(786,245,522,"","搜索歌曲",44,"search")); small_button(p,1174,299,"搜索","search",primary=True,w=134)
-    for i,(name,sub) in enumerate((("示例歌曲一","示例歌手 · 3:20"),("示例歌曲二","示例歌手 · 4:02"),("示例歌曲三","示例歌手 · 2:48"))): row(p,786,365+i*70,522,name,sub,"music",False,"播放",62)
+    p.append(txt(786,360,"歌曲 · 2 首",12,"var(--ink)",560))
+    p.append(txt(1308,360,"由当前连接提供",10,"var(--muted)",430,"end"))
+    row(p,786,374,522,"示例歌曲","示例歌手 · 可播放","music",False,"播放",62)
+    row(p,786,444,522,"暂不可播放的歌曲","示例歌手 · 当前音源不可播放","music",False,"不可播放",62)
     return p+["</g></svg>"]
 
 
 def screen_account():
-    p,x,y,w,h=overlay("音乐账号","连接端支持时才会显示账号管理。",520,420,background="02-music")
+    p,x,y,w,h=overlay("音乐账号","连接端支持时才会显示账号管理。",520,420,background="inspection-music")
     p.append(rect(x+30,y+95,w-60,90,"url(#inset)",13,"var(--insetEdge)"))
     p.append(glyph("connection",x+49,y+124,24)); p.append(txt(x+88,y+127,"尚未登录",14,"var(--ink)",560)); p.append(txt(x+88,y+151,"使用扫码登录并等待连接端确认。",10,"var(--muted)",430))
     p.append(rect(x+30,y+207,160,150,"#f2f0ec",12,"var(--panelEdge)")); p.append(txt(x+110,y+286,"二维码预览",10,"var(--muted)",440,"middle"))
@@ -819,7 +843,7 @@ def screen_host_permissions():
 
 
 def screen_terminal_state():
-    p=shell("所有功能","所有功能","先确认执行端状态，再决定是否重跑",search=False,mini=True)
+    p=shell("所有功能","所有功能","先确认执行端状态，再决定是否重跑",search=False,fixture="inspection")
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
     workspace_directory_header(p, count="1 项", selected="最近使用")
@@ -840,7 +864,65 @@ def screen_mcp():
     return screen_connection_home(True)
 
 
+def screen_inspection_workspace(permission=False):
+    p=shell("所有功能","所有功能","搜索并运行当前连接提供的功能",search=False,mini=True,fixture="inspection")
+    p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
+    workspace_type_filters(p)
+    workspace_directory_header(p,count="17 项",selected="全部")
+    rows=(
+        ("查看 Git 状态","CLI · UI 检查 · Git CLI","terminal"),
+        ("演示写入权限确认","CLI · UI 检查 · Git CLI","lock"),
+        ("打开预览终端","命令 · UI 检查 · Git CLI","terminal"),
+        ("两个整数相加","MCP 工具 · UI 检查 · MCP","spark"),
+        ("编辑 JSON 参数","MCP 工具 · UI 检查 · MCP","document"),
+        ("演示恢复状态","MCP 工具 · UI 检查 · MCP","refresh"),
+        ("读取预览说明","资源 · UI 检查 · MCP","folder"),
+    )
+    for i,(name,sub,icon) in enumerate(rows):
+        row(p,280,354+i*60,295,name,sub,icon,i==(1 if permission else 0),"☆",56)
+    p.append(line(596,344,596,776,"var(--line)"))
+    title="演示写入权限确认" if permission else "查看 Git 状态"
+    p.append(txt(624,353,title,20,"var(--ink)",680))
+    p.append(tag(624,380,"UI 检查 · Git CLI · 需要外部写入" if permission else "UI 检查 · Git CLI · 只读"))
+    p.append(txt(624,415,"仅用于检查确认界面，不会执行外部命令。" if permission else "显示当前分支与工作区状态",12,"var(--muted)",430))
+    if permission:
+        heading(p,624,450,"参数","确认前检查输入内容")
+        p.append(field(624,486,684,"备注","输入预览备注"))
+        target_status(p,624,547)
+        p.append(button(776,544,104,"运行","play",primary=True,h=46))
+    else:
+        heading(p,624,450,"运行结果","最近一次调用 · 预览数据")
+        p.append(rect(624,486,684,105,"url(#inset)",12,"var(--insetEdge)"))
+        p.append(txt(646,519,"预览结果：工作区干净",13,"var(--ink)",460))
+    return p+["</g></svg>"]
+
+
+def screen_inspection_music():
+    p=shell("UI 检查 · 音乐","UI 检查 · 音乐","播放、搜索和账号状态来自同一音乐会话",fixture="inspection")
+    p.append(rect(280,188,468,530,"url(#panel)",19,"var(--panelEdge)"))
+    p.append(txt(310,224,"播放器",16,"var(--ink)",620)); p.append(tag(672,224,"播放中"))
+    p.append(rect(310,248,150,150,"url(#inset)",18,"var(--insetEdge)")); p.append(glyph("music",354,292,60))
+    p.append(txt(482,300,"示例歌曲",18,"var(--ink)",650)); p.append(txt(482,330,"示例歌手",12,"var(--muted)",450)); p.append(txt(482,356,"0:12 / 3:20",11,"var(--muted)",430))
+    for i,ico in enumerate(("previous","pause","next","stop")): p.append(button(314+i*78,432,64,"",ico,primary=(ico=="pause"),h=58,icon_only=True))
+    p.append(txt(310,534,"播放信息",11,"var(--muted)",500)); p.append(txt(310,558,"UI 检查 · 音乐 · 声音由此设备输出",12,"var(--ink)",470))
+    small_button(p,310,612,"刷新状态","refresh",w=132)
+    small_button(p,454,612,"音乐账号","connection",w=132)
+    heading(p,786,220,"找音乐","搜索歌曲并查看结果")
+    p.append(field(786,245,522,"","搜索歌曲",44,"search")); small_button(p,1174,299,"搜索","search",primary=True,w=134)
+    p.append(txt(786,360,"歌曲 · 2 首",12,"var(--ink)",560))
+    row(p,786,374,522,"示例歌曲","示例歌手 · 可播放","music",False,"播放",62)
+    row(p,786,444,522,"暂不可播放的歌曲","示例歌手 · 当前音源不可播放","music",False,"不可播放",62)
+    return p+["</g></svg>"]
+
+
 def screen_by_name(name):
+    inspection_screens={
+        "inspection-permission":lambda:screen_inspection_workspace(permission=True),
+        "inspection-connections":screen_connections,
+        "inspection-music":screen_inspection_music,
+    }
+    if name in inspection_screens:
+        return inspection_screens[name]()
     mapping={
         "01-workspace":screen_workspace,
         "02-music":screen_music,

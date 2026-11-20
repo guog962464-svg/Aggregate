@@ -80,7 +80,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
           widget.session.connection?.value != widget.connection.id.value) {
         return;
       }
-      if (widget.showPreviewSample && widget.runtime.isPreview) {
+      if (widget.showPreviewSample) {
         _loadPreviewSample();
       } else if (!widget.runtime.isPreview &&
           widget.session.accountState != AccountState.signedOut &&

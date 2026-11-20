@@ -16,11 +16,15 @@ final class Ui6InspectionRuntime
         ConnectionAccountPort {
   Ui6InspectionRuntime({
     bool emptyWorkspace = false,
+    bool resultUnknownFixture = false,
     RuntimeFeatures features = RuntimeFeatures.localDesktop,
-  }) : _features = features,
+  }) : _resultUnknownFixture = resultUnknownFixture,
+       _features = features,
        _preview = PreviewRuntime(
          connections: emptyWorkspace ? const <Connection>[] : _seedConnections,
-         capabilities: _seedCapabilities,
+         capabilities: resultUnknownFixture
+             ? const <Capability>[_resultUnknownCapability]
+             : _seedCapabilities,
          latency: const Duration(milliseconds: 240),
          features: features,
        ),
@@ -29,6 +33,7 @@ final class Ui6InspectionRuntime
            : List.of(_seedConnections);
 
   final PreviewRuntime _preview;
+  final bool _resultUnknownFixture;
   final RuntimeFeatures _features;
   final List<Connection> _connections;
   final Map<String, ConnectionSetupDraft> _drafts = {};
@@ -36,11 +41,13 @@ final class Ui6InspectionRuntime
   final Map<String, List<String>> _terminalInitialOutput = {};
   final Map<String, JsonMap> _actionManifests = {};
   final List<RunSummary> _filterStateInspectionActivities = [];
+  final Map<String, RunSummary> _outcomeUnknownRuns = {};
   StreamController<RunEvent>? _inspectionRunEvents;
   var _target = ExecutionTarget.device;
   var _draftCounter = 0;
   var _connectionCounter = 0;
   var _terminalCounter = 0;
+  var _outcomeUnknownRunCounter = 0;
   var _activitySeeded = false;
   var _filterStateActivitiesSeeded = false;
   RunSummary? _runningInspectionActivity;
@@ -56,6 +63,16 @@ final class Ui6InspectionRuntime
     _gitId,
     CapabilityKind.cliAction,
     'status',
+  );
+  static const _resultUnknownCapability = Capability(
+    id: CapabilityId(
+      _gitId,
+      CapabilityKind.cliAction,
+      'inspection-outcome-unknown',
+    ),
+    title: '查看 Git 状态',
+    description: '仅内存预览结果待确认状态',
+    permission: PermissionLevel.read,
   );
 
   /// Seeds local, disposable ActivityPage states for visual inspection.
@@ -158,7 +175,7 @@ final class Ui6InspectionRuntime
     Capability(
       id: CapabilityId(_gitId, CapabilityKind.cliAction, 'status'),
       title: '查看 Git 状态',
-      description: '在隔离预览中返回本地样例结果',
+      description: '显示当前分支与工作区状态',
       permission: PermissionLevel.read,
     ),
     Capability(
@@ -194,13 +211,13 @@ final class Ui6InspectionRuntime
     Capability(
       id: CapabilityId(_mcpId, CapabilityKind.mcpTool, 'add'),
       title: '两个整数相加',
-      description: '在隔离预览中返回结构化结果',
+      description: '读取两个数字并返回结果',
       permission: PermissionLevel.read,
       inputSchema: {
         'type': 'object',
         'properties': {
-          'a': {'type': 'integer', 'title': '第一个整数'},
-          'b': {'type': 'integer', 'title': '第二个整数'},
+          'a': {'type': 'integer', 'title': '第一个整数', 'example': 12},
+          'b': {'type': 'integer', 'title': '第二个整数', 'example': 30},
         },
         'required': ['a', 'b'],
       },
@@ -439,6 +456,7 @@ final class Ui6InspectionRuntime
     await _preview.clearActivity();
     _runningInspectionActivity = null;
     _filterStateInspectionActivities.clear();
+    _outcomeUnknownRuns.clear();
     _filterStateActivitiesSeeded = false;
     _activitySeeded = false;
     await _inspectionRunEvents?.close();
@@ -502,7 +520,28 @@ final class Ui6InspectionRuntime
     CapabilityId id,
     JsonMap arguments, {
     bool permissionGranted = false,
-  }) {
+  }) async {
+    if (_resultUnknownFixture && id.name == 'inspection-outcome-unknown') {
+      final runId = RunId(
+        'ui6-inspection-outcome-unknown-${++_outcomeUnknownRunCounter}',
+      );
+      final event = RunEvent(
+        runId: runId,
+        sequence: 1,
+        state: RunState.outcomeUnknown,
+        occurredAt: DateTime.now(),
+        failure: const RuntimeFailure(
+          RuntimeErrorCode.outcomeUnknown,
+          '仅内存预览结果待确认',
+        ),
+      );
+      _outcomeUnknownRuns[runId.value] = RunSummary(
+        runId,
+        _resultUnknownCapability.id,
+        event,
+      );
+      return RunHandle(runId);
+    }
     if (id.name == 'inspection-error') {
       throw StateError('预览错误态：未联系任何执行端');
     }
@@ -511,6 +550,8 @@ final class Ui6InspectionRuntime
 
   @override
   Stream<RunEvent> watchRun(RunId id) {
+    final unknownRun = _outcomeUnknownRuns[id.value];
+    if (unknownRun != null) return Stream.value(unknownRun.latest);
     final heldRun = _runningInspectionActivity;
     if (heldRun == null || heldRun.id.value != id.value) {
       return _preview.watchRun(id);
@@ -528,11 +569,17 @@ final class Ui6InspectionRuntime
   Future<List<RunSummary>> listRecentRuns() async {
     final runs = await _preview.listRecentRuns();
     final activity = _runningInspectionActivity;
-    return [?activity, ..._filterStateInspectionActivities, ...runs];
+    return [
+      ?activity,
+      ..._filterStateInspectionActivities,
+      ..._outcomeUnknownRuns.values,
+      ...runs,
+    ];
   }
 
   @override
   Future<void> cancel(RunId id) async {
+    if (_outcomeUnknownRuns.containsKey(id.value)) return;
     final activity = _runningInspectionActivity;
     if (activity?.id.value != id.value) {
       await _preview.cancel(id);
@@ -574,6 +621,10 @@ final class Ui6InspectionRuntime
     _terminalInitialOutput[session.id] = [
       'UI 检查终端：全内存模拟，不会运行外部命令。\n',
       '\$ ${command.arguments.join(' ')}\n',
+      if (command.arguments.join(' ') == 'git status --short') ...[
+        ' M README.md\n',
+        '?? draft.md\n',
+      ],
     ];
     return session;
   }

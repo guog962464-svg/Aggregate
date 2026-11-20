@@ -32,7 +32,7 @@ PreviewRuntime createPreviewRuntime() => PreviewRuntime(
         'status',
       ),
       title: '查看 Git 状态',
-      description: '以预览结果演示 CLI 动作',
+      description: '显示当前分支与工作区状态',
       permission: PermissionLevel.read,
     ),
     Capability(
@@ -42,13 +42,13 @@ PreviewRuntime createPreviewRuntime() => PreviewRuntime(
         'add',
       ),
       title: '两个整数相加',
-      description: '以预览结果演示 MCP 工具与结构化输出',
+      description: '读取两个数字并返回结果',
       permission: PermissionLevel.read,
       inputSchema: {
         'type': 'object',
         'properties': {
-          'a': {'type': 'integer', 'title': '第一个整数'},
-          'b': {'type': 'integer', 'title': '第二个整数'},
+          'a': {'type': 'integer', 'title': '第一个整数', 'example': 12},
+          'b': {'type': 'integer', 'title': '第二个整数', 'example': 30},
         },
         'required': ['a', 'b'],
       },

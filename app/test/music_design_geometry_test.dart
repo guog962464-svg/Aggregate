@@ -4,6 +4,7 @@ import 'package:aggregate/features/music/music_session.dart';
 import 'package:aggregate/app/aggregate_app.dart';
 import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/preview/ui6_inspection_runtime.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,43 @@ import 'package:flutter_test/flutter_test.dart';
 const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
+  testWidgets(
+    'UI inspection runtime loads the music sample only when design preview is enabled',
+    (tester) async {
+      final runtime = Ui6InspectionRuntime();
+      final connection = (await runtime.listConnections()).singleWhere(
+        (item) => item.id.value == 'ui6-review-music',
+      );
+      final capabilities = await runtime.searchCapabilities(
+        const SearchQuery(''),
+      );
+      final session = MusicSession(runtime);
+      addTearDown(session.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MusicPlayerPage(
+              connection: connection,
+              capabilities: capabilities,
+              runtime: runtime,
+              session: session,
+              showPreviewSample: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(session.title, '示例歌曲');
+      expect(session.artist, '示例歌手');
+      expect(find.text('歌曲 · 2 首'), findsOneWidget);
+      expect(find.text('暂不可播放的歌曲'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    variant: _macOS,
+  );
+
   testWidgets('music home matches the wide v3.5 board geometry', (
     tester,
   ) async {
