@@ -388,21 +388,21 @@ def screen_connections():
 
 
 def screen_activity():
-    p=shell("活动","活动","查看近期运行状态；活动不保存参数或结果正文")
+    p=shell("活动","活动","查看近期运行状态；活动不保存参数或结果正文",mini=True)
     cursor=280
     for label,width,selected in (("全部",66,1),("运行中",78,0),("成功",66,0),("失败",66,0),("取消",66,0),("超时",66,0),("待确认",84,0)):
         p.append(button(cursor,181,width,label,selected=bool(selected),h=34))
         cursor+=width+8
     heading(p,280,251,"运行记录","按发生时间倒序")
-    for i,(name,sub,state) in enumerate((("查看 Git 状态","今天 16:42 · UI 检查 · Git CLI","成功"),("两个整数相加","今天 15:18 · UI 检查 · MCP","成功"),("搜索歌曲","今天 14:52 · UI 检查 · 音乐","取消"),("读取项目说明","昨天 18:06 · UI 检查 · MCP","失败"),("查看最近提交","昨天 17:44 · UI 检查 · Git CLI","超时"))):
+    for i,(name,sub,state) in enumerate((("查看 Git 状态","刚刚 · UI 检查 · Git CLI","超时"),("查看 Git 状态","刚刚 · UI 检查 · Git CLI","待确认"),("查看 Git 状态","刚刚 · UI 检查 · Git CLI","取消"),("两个整数相加","刚刚 · UI 检查 · MCP","失败"),("查看 Git 状态","刚刚 · UI 检查 · Git CLI","成功"))):
         y=277+i*66
         row(p,280,y,370,name,sub,"document",i==0,state,58)
     p.append(line(672,249,672,764))
     p.append(txt(708,286,"查看 Git 状态",19,"var(--ink)",650))
-    p.append(tag(708,314,"成功")); p.append(txt(768,314,"今天 16:42 · 示例 Git CLI",11,"var(--muted)",430))
+    p.append(tag(708,314,"超时","warn")); p.append(txt(768,314,"刚刚 · UI 检查 · Git CLI",11,"var(--muted)",430))
     p.append(line(708,342,1298,342))
     heading(p,708,378,"运行信息")
-    for i,(k,v) in enumerate((("来源","示例 Git CLI"),("时间","今天 16:42"),("运行 ID","run-preview-001"))):
+    for i,(k,v) in enumerate((("来源","UI 检查 · Git CLI"),("时间","刚刚"),("运行 ID","ui6-inspection-timed-out"))):
         y=411+i*38; p.append(txt(708,y,k,11,"var(--muted)",450)); p.append(txt(816,y,v,12,"var(--ink)",480))
     p.append(txt(708,553,"参数与结果正文不会写入活动记录。",11,"var(--muted)",430))
     small_button(p,708,592,"重新打开功能","folder",primary=True,w=164)

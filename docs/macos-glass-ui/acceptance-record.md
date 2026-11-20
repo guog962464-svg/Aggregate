@@ -1539,3 +1539,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：生成器运行成功；27/27 SVG XML 解析通过，27/27 由 macOS `sips` 输出为 1360×900 PNG；结构断言确认 CLI 画板仅有一项能力；总览及 CLI 页面逐图检查；`git diff --check` 通过。仅为设计校准，未运行产品测试或构建。
 - 视觉证据：[v6.2 画板总览](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v62/contact-sheet.png>)，SHA-256 `f83bc63e05eac777f4a027769047535ad0a6f386c2a2a98b6fc15a5fa69a89c6`；[CLI 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v62/17-connection-home.png>)，SHA-256 `d4b85b11e4334a0dfe4d8840eafaf496fcae0c06b7402e884c37d664dbfb3eb7`。
 - 结果/边界：v6.2 继续作为 UI-8.2～UI-8.6 的设计基准。截图复现必须按表使用同一预览入口、数据、选中状态、主题和窗口尺寸。该修订未改变生产 Runtime、用户功能或主题开关；生产页面与视觉签收仍需逐阶段完成。
+
+### 2026-11-21 UI-8.0 v6.3 活动状态样例
+
+- 基准：Profile 用 `Ui6InspectionRuntime` 开启活动状态样例后，与活动画板核对。实际 fixture 含超时、结果待确认、取消、失败、成功五种记录，且可见音乐会话会显示跨页播放器；此前活动画板用了两个成功项、不同连接/能力名，并漏了播放器。
+- 修订：活动画板改成检查 Runtime 的五种真实内存状态和顺序，选中超时记录，并呈现可见 MusicSession 的迷你播放器。预览映射明确活动种子开关、浅色外观参数及设置页隐藏播放器的样例前置状态。
+- 自验：生成器运行成功；27/27 SVG 通过 XML/1360×900 检查并由 `sips` 渲染；结构断言确认活动页五种状态、选中超时运行 ID 和播放器锚点；总览与活动画板逐图检查；`git diff --check` 通过。此处只改设计稿，未运行产品测试或构建。
+- 视觉证据：[v6.3 全稿总览](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v63/contact-sheet.png>)，SHA-256 `34b64455b0cae53318dbad0f1893eb53f890019d520d6c4d06262e2a992b7631`；[活动画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v63/04-activity.png>)，SHA-256 `a7696058061b01b9c739920289ce2d88b901026ffb643cba57d79f96bc2a9310`。
+- 结果/边界：v6.3 固定活动画板内容与预览条件。首次 Profile 抽查默认跟随系统显示深色，因此同尺寸浅色视觉比较需由检查入口 `PREVIEW_APPEARANCE=light` 显式固定；此预览参数将在 UI-8.2 验收工具中接入。该设计修订不改变生产活动逻辑、权限或音乐会话。
