@@ -1414,3 +1414,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验操作/结果：执行 `python3 docs/macos-glass-ui/design-draft-v3/render_design_draft.py` 重新生成 22 张画板；Python `xml.etree.ElementTree` 解析 22/22 张 SVG 成功；用 macOS SVG 渲染生成整套缩略图，对工作台、音乐、连接、活动、设置、终端、权限、状态、按钮、Host 和深色页面做全稿目视检查。生成器无残留坐标变换，设置分类宽度均为 176pt。
 - 证据：[22 张画板总览](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v33/all-22-boards.png>)、[Mac Host 设计稿](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v33/06-host.png>)、[外观设置设计稿](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v33/05-appearance.png>)。生成器与 SVG 画板对应 `docs/macos-glass-ui/design-draft-v3/`。
 - 结果/限制：UI-7.0 设计稿自验通过。此结果不代表 Flutter 页面已与 v3.3 对齐，也不替代生产 Profile 截图、双主题状态检查或用户视觉签收；后续实施按 UI-7.1–UI-7.7 单独验收。
+
+### 2026-11-20 UI-7.0 全功能设计稿 v3.4 控件与侧栏复核
+
+- 依据：用户指出预览稿与实际软件观感不一致。逐项核对 v3.3 设计稿和 macOS Profile 后，发现外观画板还在用旧尺寸开关截图，侧栏也漏画了真实“添加连接”入口；连接行和主导航行的内外边距、行高与实际目标稿不一致。
+- 修订：太阳/月亮截图均从 `GlassThemeSwitch` 490×245pt 生产控件框重新截取，文件为 980×490 PNG；外观画板继续按 490×245pt 使用并通过遮罩隐藏窗口外部区域。共享浅色与深色画板加入连接组加号。设计基准明确侧栏宽 240pt、品牌/标题左边距 42pt、连接和主导航内容 x=32…224pt、连接行 40pt、主导航行 38pt。
+- 自验：浅色与深色主题均由同一个 macOS Profile 窗口中的真实 `GlassThemeSwitch` 提供；AX 读取到开关边界 490×245pt 和浅色值，切换后截图可见深色月亮点阵与蓝色边缘光。执行生成器后，22/22 SVG 通过 XML 解析；macOS AppKit 生成 [全稿缩略图](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/all-22-boards.png>)，并逐页目视检查；[外观画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/05-settings-appearance.png>)、[Host 画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/06-settings-host.png>) 和 [深色画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/12-dark-reference.png>)已单独复核。
+- 状态/限制：v3.4 设计基准自验通过，可开始逐页实施。真实控件截图只用于设计档案，正式 UI 仍绘制实时控件；本记录不代表产品侧栏、设置或 Host 已达到 v3.4。 Profile 窗口点击主题后，桌面清单出现另一 Debug 实例；没有操作或关闭该实例。产品阶段继续分开验收和提交。

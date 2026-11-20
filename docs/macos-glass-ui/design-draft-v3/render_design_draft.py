@@ -158,7 +158,8 @@ def button(x, y, w, label, icon=None, primary=False, selected=False, quiet=False
     )
     fill = "url(#quiet)" if quiet or danger else "url(#glass)"
     icon_size = 24 if primary else 22
-    icon_part = glyph(x + 15, y + (h - icon_size) / 2, icon, size=icon_size) if icon else ""
+    icon_color = "#a54b45" if danger else "#6f695d"
+    icon_part = glyph(x + 15, y + (h - icon_size) / 2, icon, size=icon_size, color=icon_color) if icon else ""
     text_x = x + (39 if icon else 16)
     label_color = "#a54b45" if danger else "#413b30" if primary else "#303039"
     shadow = f'<rect x="{x+1}" y="{y+4}" width="{w-2}" height="{h}" rx="13" fill="#706d78" fill-opacity=".11"/>'
@@ -174,7 +175,7 @@ def button(x, y, w, label, icon=None, primary=False, selected=False, quiet=False
     )
 
 
-def icon_button(x, y, icon, label, primary=False, size=46, enabled=True):
+def icon_button(x, y, icon, label, primary=False, size=46, enabled=True, icon_size=24):
     glow = (
         f'<rect x="{x-5}" y="{y-4}" width="{size+10}" height="{size+8}" rx="16" '
         f'fill="url(#warmGlow)" opacity=".54"/>'
@@ -193,7 +194,7 @@ def icon_button(x, y, icon, label, primary=False, size=46, enabled=True):
         + face
         + f'<path d="M{x+12} {y+1}H{x+size-12}" stroke="#ffffff" stroke-opacity=".95" stroke-width="1.4"/>'
         + glyph(
-            x + (size - 24) / 2, y + (size - 24) / 2, icon, size=24,
+            x + (size - icon_size) / 2, y + (size - icon_size) / 2, icon, size=icon_size,
             color="#6f695d" if enabled else "#a6a6af",
         )
         + f'<title>{escape(label)}</title>'
@@ -290,7 +291,7 @@ def shell(
         out.append(
             '<defs><mask id="switchReferenceMask" maskUnits="objectBoundingBox" '
             'maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="black"/>'
-            '<rect x=".20" y=".17" width=".70" height=".74" rx=".19" ry=".37" '
+        '<rect x=".16" y=".16" width=".68" height=".68" rx=".15" ry=".30" '
             'fill="white"/></mask></defs>'
         )
     out.append('<rect width="1360" height="900" fill="#16161a"/>')
@@ -304,6 +305,7 @@ def shell(
     out.append('<path d="M240 58V884" stroke="#c9c9d2" stroke-opacity=".72"/>')
     out.append(t(42, 103, "▦  Aggregate", 21, "#282832", 680))
     out.append(t(42, 152, "我的连接", 12, "#666671", 580))
+    out.append(icon_button(188, 132, "plus", "添加连接", size=36, icon_size=16))
     for idx, (label, icon, status) in enumerate([
         ("示例 Git CLI", "terminal", "good"),
         ("示例 MCP", "link", "good"),
@@ -555,8 +557,8 @@ def board_settings():
     p.append(t(584, 274, "浅色", 13, "#3c3c45", 560))
     # The crop shows the production switch in its shared scene. Runtime uses
     # GlassThemeSwitch directly; this static image is documentation only.
-    p.append(embedded_image("theme-switch-light.png", 710, 312, 380, 190))
-    p.append(button(817, 523, 166, "跟随 macOS 系统", "settings", False, h=40))
+    p.append(embedded_image("theme-switch-light.png", 655, 312, 490, 245))
+    p.append(button(817, 565, 166, "跟随 macOS 系统", "settings", False, h=40))
     save("05-settings-appearance", p)
 
 
@@ -756,6 +758,8 @@ def board_dark_reference():
     p.append('<path d="M16 58H1344M240 58V884" stroke="#454751"/>')
     p.append(t(42, 103, "▦  Aggregate", 21, "#efeff3", 680))
     p.append(t(42, 152, "我的连接", 12, "#b8bac5", 580))
+    p.append(r(188, 132, 36, 36, "#292b32", 11, "#454751"))
+    p.append(glyph(198, 142, "plus", size=16, color="#c4c5ce"))
     for idx, (label, icon) in enumerate([("示例 Git CLI", "terminal"), ("示例 MCP", "link"), ("示例网易云音乐", "music")]):
         yy = 169 + idx * 49
         p.append(f'<rect x="32" y="{yy}" width="192" height="40" rx="11" fill="#292b32" stroke="#454751"/>')
