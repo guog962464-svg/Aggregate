@@ -39,6 +39,8 @@ Aggregate 是桌面工作台，核心顺序是：找到功能、确认来源和�
 | 迷你播放器 | x=270, y=812, w=1048, h=58 pt | 固定在主内容区底部；距窗口内沿 14 pt；不跨入侧栏 |
 | 全局搜索 | x=976, y=32, w=360, h=40 pt | 右边距 24 pt；使用与生产一致的玻璃操作按钮和 ⌘K 标签；工作台隐藏 |
 
+设置页在正文内再分为分类栏和内容区：分类栏左缘 x=299、宽 178 pt，分隔线 x=489，设置正文左缘 x=523；05 外观画板中的主题控件为 `(670, 326, 490, 245)`，说明文字左缘 x=523、y=662，系统主题按钮为 `(523, 699, 178, 40)`。这是设置页面的固定内缩规则，不能直接沿用其他页面的正文左缘 x=280。
+
 ### 常驻外壳
 
 - 主导航顺序：连接列表、所有功能、管理连接、活动、设置、本机工作空间状态。
@@ -160,9 +162,9 @@ Aggregate 是桌面工作台，核心顺序是：找到功能、确认来源和�
 | 画板 | 预览入口与状态 |
 | --- | --- |
 | 01、02、17、21 | `preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` + `createPreviewRuntime()`。连接标签固定为「示例网易云音乐 / 示例 Git CLI / 示例 MCP」；01 有 12 项能力，目录沿 `CapabilityCatalog.search` 的标题顺序显示，首屏七项从「上一首」到「播放状态」，选中 MCP「两个整数相加」；17 只有一项 Git 状态能力，21 展示一个工具、一个资源和一个提示。02 是音乐连接主页：歌曲为「示例歌曲」，本机输出；搜索结果为两首，第一首可播放、第二首不可播放；`PreviewRuntime` 不提供账号管理端口，因此这里没有账号入口。要复现 01/17/21 画板的底部播放器，先进入音乐页生成预览会话，再切到目标页；02 本身不显示跨页播放器。 |
-| 03、06–09、13、14、16、19、20、25–27 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light` + `Ui6InspectionRuntime`/`Ui6InspectionHost`；连接标签固定为「UI 检查 · 音乐 / Git CLI / MCP」，操作只影响当前进程。03 有三条连接、17 项能力；07、25–27 从连接管理的添加流程进入。08 从「打开预览终端」提交 `git status --short`，只显示内存 stub 输出。09 在工作台选择「演示写入权限确认」、填写备注，停在确认前；弹窗背景就是该工作台状态。14 进入音乐页，在账号面板选择「切换账号」并确认；检查 Runtime 退出内存样例账号后启动一个保持等待的登录 stub，在手机扫码前截图。预览登录 stub 不产生可扫描的链接，也不访问命令、网络或真实账号；画板中的二维码块是等待态占位。16 先进入 UI 检查音乐页建立同一 `MusicSession`，回到全部功能目录，将目录滚动到「查看 Git 状态」并运行；成功结果、17 项总数和当前选中项保持不变。目录顺序由 `CapabilityCatalog.search` 按标题排序；画板显示其第 5–11 项（「刷新播放状态」至选中的「查看 Git 状态」），不是按连接分组的人工顺序。要复现 03/09/13/16/19 的底部播放器，先进入 UI 检查音乐页生成同一 `MusicSession` 再前往目标页；06/20 和连接配置画板按无可见音乐会话截图。 |
-| 04 | 使用上述 UI 检查入口并加入 `--dart-define=UI6_SEED_ACTIVITY=true --dart-define=UI6_SEED_ACTIVITY_FILTER_STATES=true`。仅内存生成超时、结果待确认、取消、失败、成功五项；按该顺序选中超时记录。检查 Runtime 为记录提供「查看 Git 状态 / 两个整数相加」显示名和「UI 检查 · Git CLI / MCP」来源名；固定展示时间为 `2026-11-21 12:00:00`。进入音乐页生成样例会话，再打开活动页，播放器与活动数据都来自同一检查进程。 |
-| 18 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light`，不启用活动种子。先进入 UI 检查音乐连接页生成可见 `MusicSession`，再切到**活动页**。样例没有运行记录；`PageState.empty` 按内容自然宽度布局，图标位于文案上方并从正文 x=280pt 开始，不扩展到整页居中。播放器保持同一会话并由主内容区底部布局定位，侧栏与播放器文本使用「UI 检查 · 音乐 / Git CLI / MCP」和「示例歌曲」。此画板展示活动空态与跨页播放器共存，不是新的“播放器介绍页”。生产会话仍以连接端返回的队列为准。 |
+| 03、06–09、13、14、16、19、20、25–27 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true` + `Ui6InspectionRuntime`/`Ui6InspectionHost`；连接标签固定为「示例网易云音乐 / 示例 Git CLI / 示例 MCP」，操作只影响当前进程。03 有三条连接、17 项能力；07、25–27 从连接管理的添加流程进入。08 从「打开预览终端」提交 `git status --short`，只显示内存 stub 输出。09 在工作台选择「演示写入权限确认」、填写备注，停在确认前；弹窗背景就是该工作台状态。14 进入音乐页，在账号面板选择「切换账号」并确认；检查 Runtime 退出内存样例账号后启动一个保持等待的登录 stub，在手机扫码前截图。预览登录 stub 不产生可扫描的链接，也不访问命令、网络或真实账号；画板中的二维码块是等待态占位。16 先进入示例网易云音乐页建立同一 `MusicSession`，回到全部功能目录，将目录滚动到「查看 Git 状态」并运行；成功结果、17 项总数和当前选中项保持不变。目录顺序由 `CapabilityCatalog.search` 按标题排序；画板显示其第 5–11 项（「刷新播放状态」至选中的「查看 Git 状态」），不是按连接分组的人工顺序。要复现 03/09/13/16/19 的底部播放器，先进入示例网易云音乐页生成同一 `MusicSession` 再前往目标页；06/20 和连接配置画板按无可见音乐会话截图。 |
+| 04 | 使用上述 UI 检查入口并加入 `--dart-define=UI6_SEED_ACTIVITY=true --dart-define=UI6_SEED_ACTIVITY_FILTER_STATES=true`。仅内存生成超时、结果待确认、取消、失败、成功五项；按该顺序选中超时记录。检查 Runtime 为记录提供「查看 Git 状态 / 两个整数相加」显示名和「示例 Git CLI / 示例 MCP」来源名；固定展示时间为 `2026-11-21 12:00:00`。进入示例网易云音乐页生成样例会话，再打开活动页，播放器与活动数据都来自同一检查进程。 |
+| 18 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true`，不启用活动种子。先进入示例网易云音乐连接页生成可见 `MusicSession`，再切到**活动页**。样例没有运行记录；`PageState.empty` 按内容自然宽度布局，图标位于文案上方并从正文 x=280pt 开始，不扩展到整页居中。播放器保持同一会话并由主内容区底部布局定位，侧栏与播放器文本使用「示例网易云音乐 / 示例 Git CLI / 示例 MCP」和「示例歌曲」。此画板展示活动空态与跨页播放器共存，不是新的“播放器介绍页”。生产会话仍以连接端返回的队列为准。 |
 | 24 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_RESULT_UNKNOWN_FIXTURE=true`。此专用入口仅展示一个 Git 状态样例能力；点击运行后由内存 Runtime 发出一次 `outcomeUnknown` 终态，不启动命令、网络或 Host；没有音乐能力，因此不显示播放器。 |
 | 05、15、22 | `preview_main.dart --dart-define=PREVIEW_APPEARANCE=light`；截图前收起音乐会话。 |
 | 10、11、12、23 | 规范/状态展示画板；交互条件仍以页面行为表和生产回调为准，画板中的状态示意不表示已执行业务操作。 |
