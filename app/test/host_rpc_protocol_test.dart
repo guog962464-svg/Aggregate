@@ -723,6 +723,58 @@ void main() {
       }
     });
 
+    test('rejects new operations without changing a full ledger', () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'aggregate-host-ledger-full-',
+      );
+      final ledgerFile = File('${directory.path}/operations.json');
+      try {
+        final ledger = await FileHostOperationLedger.open(
+          ledgerFile,
+          maxEntries: 1,
+        );
+        final first = await ledger.begin(
+          deviceId: 'device-1',
+          operationId: 'op-1',
+          payloadHash: _hashA,
+        );
+        expect(first.shouldExecute, isTrue);
+        final beforeRejectedMutation = await ledgerFile.readAsString();
+
+        await expectLater(
+          ledger.begin(
+            deviceId: 'device-2',
+            operationId: 'op-2',
+            payloadHash: _hashB,
+          ),
+          throwsA(
+            isA<HostOperationLedgerException>().having(
+              (error) => error.code,
+              'code',
+              HostRpcErrorCode.operationLedgerFull,
+            ),
+          ),
+        );
+        expect(await ledgerFile.readAsString(), beforeRejectedMutation);
+
+        final restarted = await FileHostOperationLedger.open(
+          ledgerFile,
+          maxEntries: 1,
+        );
+        final interrupted = await restarted.read(
+          deviceId: 'device-1',
+          operationId: 'op-1',
+        );
+        expect(interrupted?.state, HostOperationState.outcomeUnknown);
+        expect(
+          await restarted.read(deviceId: 'device-2', operationId: 'op-2'),
+          isNull,
+        );
+      } finally {
+        await directory.delete(recursive: true);
+      }
+    });
+
     test('recovers an interrupted operation as outcome unknown', () async {
       final directory = await Directory.systemTemp.createTemp(
         'aggregate-host-recovery-',

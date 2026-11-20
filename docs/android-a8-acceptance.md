@@ -45,7 +45,7 @@ A8.2 普通 arm64 APK 与固定 Node Debug 探针曾通过静态对齐检查。�
 | ID | 原严重性 | 本轮处置与剩余边界 |
 | --- | --- | --- |
 | A8SEC-1 | 中 | **已缓解。** Android Runtime 拒绝所有非回环 `http://` MCP 地址（无论是否带 Token）；Android Network Security Config 全局禁用明文，仅对精确 `localhost` 与 `127.0.0.1` 开放。新建和旧存储配置均经过相同校验；错误配置会备份并拒绝加载。单测与 LGE AN10 实机验证远程 HTTP 拒绝、回环 HTTP 仍可用。 |
-| A8SEC-2 | 中 | **攻击放大路径已修复，账本容量仍有限。** 已配对且获 `connectionSetup` 的设备对不存在/过期草稿执行 `setup.discard` 时直接返回幂等成功，不写持久 operation ledger；200 个不同 operation ID 回归测试确认不创建记录。真实授权 mutation 仍受全 Host 共享的 10,000 条/4 MiB 硬上限约束，达到上限后新 mutation 安全失败。下方定义了人工恢复步骤；操作流程尚未在生产 Host 演练，没有自动压缩或管理员恢复 UI。 |
+| A8SEC-2 | 中 | **攻击放大路径已修复，账本容量仍有限。** 已配对且获 `connectionSetup` 的设备对不存在/过期草稿执行 `setup.discard` 时直接返回幂等成功，不写持久 operation ledger；200 个不同 operation ID 回归测试确认不创建记录。新增临时文件单测将 `maxEntries` 设为 1，验证满额后新的真实 mutation 返回 `operationLedgerFull` 且不改写原账本；重开账本时未完成的旧记录仍变为 `outcomeUnknown`。生产默认仍受全 Host 共享的 10,000 条/4 MiB 硬上限约束。下方定义了人工恢复步骤；操作流程尚未在生产 Host 演练，没有自动压缩或管理员恢复 UI。 |
 | A8SEC-3 | 低 | **已缓解并覆盖边界测试。** Android MCP HTTP transport 在 JSON/SSE 解码前限制每个响应 8 MiB、取消超限流并拒绝重定向；跨所有 Android 会话的并发 POST 上限为 16，超额请求在发送前失败。MCP operation/discovery 使用协议级 deadline；超时时触发请求 abort 并关闭该会话，调用仍记录为结果未知，不自动重放。发现层限制每类最多 20 页、总能力 1,000 个、目录总量 4 MiB、schema 256 KiB、字段 16 KiB、cursor 4 KiB、提示参数 64 个。自动化测试覆盖 1,001 个工具目录拒绝、跨客户端并发上限、deadline 后 AbortableRequest 中止；既有 LGE AN10 真机曾验证 8 MiB+1 响应在解码前被拒绝。 |
 
 #### Host operation ledger 达到容量后的人工恢复
@@ -237,3 +237,9 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **结果：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机整份集成文件 5 项全部通过，包括外部 HTTPS 测试；它验证 HTTPS setup、保存配置、发现 `get_site_info` 并成功调用。其余四项本地 HTTP/安全存储/响应上限/401 与超时测试也通过。
 - **测试服务与边界：**使用 [Bommel Bot Agent Gateway](https://bommel.bot/agents) 公布的 `https://bommel.bot/api/mcp`。服务方将该入口说明为公开只读、无需账号或 API key；本测试没有 Token，只调用 `get_site_info`，并在测试 finally 中删除临时连接。该结果验证公开 HTTPS MCP endpoint 的当前客户端路径，不代表任何用户生产 endpoint 或业务数据。
 - **清理与未覆盖：**测试使用隔离 `.integration` Debug 包；测试前后普通 `io.github.guog962464.aggregate` 包均未安装且没有被 runner 操作，测试后的 `.integration` 包已卸载，ADB reverse 为空。测试未设置 `A2_WIFI_SWITCH_TEST`，所以没有切换 Wi-Fi；不把测试名中的 network recovery 外推为本轮网络切换验收。没有运行 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
+
+## 2026-11-20 Host operation ledger 容量保护单测
+
+- **实现范围：**只在 `app/test/host_rpc_protocol_test.dart` 增加临时文件回归，未更改 ledger 运行时代码。使用 `maxEntries: 1` 写入第一项后，验证第二项被 `operationLedgerFull` 拒绝且 `operations.json` 字节内容未变；重新打开后旧 `started` 记录转为 `outcomeUnknown`，被拒绝的 operation 不存在。
+- **验证：**`flutter test --no-pub test/host_rpc_protocol_test.dart --plain-name 'rejects new operations without changing a full ledger'` 通过；整份 `host_rpc_protocol_test.dart` 22 项通过；`dart format test/host_rpc_protocol_test.dart` 检查 0 变更。没有启动生产 Host、读取/更改真实账本或执行无障碍测试。
+- **范围限制：**确认本地账本容量拒绝与进程重启语义；文档中的真实 Host 管理员恢复流程仍未在生产 Host 演练，也未执行设备撤权/配对密钥轮换。
