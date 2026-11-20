@@ -1,5 +1,9 @@
+import 'package:aggregate/app/theme.dart';
+import 'package:aggregate/features/connections/action_editor_dialog.dart';
 import 'package:aggregate/features/connections/connections_page.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -113,6 +117,72 @@ void main() {
     await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('macOS action editor follows the v4 preview geometry', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1360, 868);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final runtime = _ActionRuntime();
+    await tester.pumpWidget(
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ActionEditorDialog(
+                      runtime: runtime,
+                      connection: runtime.connection,
+                    ),
+                  ),
+                  child: const Text('打开编辑器'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('打开编辑器'));
+    await tester.pumpAndSettle();
+
+    final panel = tester.getRect(find.byKey(const Key('action-editor-panel')));
+    final manifest = tester.getRect(
+      find.byKey(const Key('action-manifest-json')),
+    );
+    final sample = tester.getRect(
+      find.byKey(const Key('action-editor-sample-json')),
+    );
+    final previewButton = tester.getRect(
+      find.byKey(const Key('action-editor-preview-button')),
+    );
+    expect(panel.size, const Size(664, 713));
+    expect(manifest.size, const Size(594, 283));
+    expect(manifest.left, closeTo(panel.left + 35, .1));
+    expect(manifest.top, closeTo(panel.top + 161, .1));
+    expect(sample.size, const Size(297, 72));
+    expect(previewButton.size, const Size(179, 40));
+    expect(panel.top, inInclusiveRange(50, 80));
+    final renderError = tester.takeException();
+    debugDefaultTargetPlatformOverride = null;
+    expect(renderError, isNull);
   });
 }
 

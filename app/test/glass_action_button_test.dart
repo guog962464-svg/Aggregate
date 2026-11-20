@@ -538,6 +538,27 @@ void main() {
                   size: GlassButtonSize.reference,
                   onPressed: () {},
                 ),
+                GlassActionButton(
+                  key: const ValueKey('activity-row'),
+                  label: '查看 Git 状态',
+                  glyph: GlassGlyph.history,
+                  size: GlassButtonSize.activityRow,
+                  onPressed: () {},
+                ),
+                GlassActionButton(
+                  key: const ValueKey('capability-row'),
+                  label: '查看 Git 状态',
+                  glyph: GlassGlyph.play,
+                  size: GlassButtonSize.capabilityRow,
+                  onPressed: () {},
+                ),
+                GlassActionButton(
+                  key: const ValueKey('target-option'),
+                  label: '此 Mac',
+                  glyph: GlassGlyph.device,
+                  size: GlassButtonSize.targetOption,
+                  onPressed: () {},
+                ),
               ],
             ),
           ),
@@ -555,6 +576,18 @@ void main() {
       expect(
         tester.getSize(find.byKey(const ValueKey('reference'))),
         const Size.square(GlassDesignTokens.referenceHeight),
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('activity-row'))).height,
+        72,
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('capability-row'))).height,
+        48,
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('target-option'))).height,
+        76,
       );
       expect(
         tester

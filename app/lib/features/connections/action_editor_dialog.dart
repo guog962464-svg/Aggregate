@@ -3,9 +3,13 @@ import 'dart:convert';
 import 'package:aggregate_connectors/aggregate_connectors.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_motion.dart';
+import '../../widgets/glass/glass_panel_surface.dart';
 
 class ActionEditorDialog extends StatefulWidget {
   const ActionEditorDialog({
@@ -230,53 +234,277 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text('编辑动作 · ${widget.connection.label}'),
-    content: SizedBox(
-      width: 640,
-      child: SingleChildScrollView(
-        child: !loaded
-            ? const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '清单版本 1 · 参数以数组传递，{{变量名}} 从输入规则取值。',
-                    style: Theme.of(context).textTheme.bodySmall,
+  Widget build(BuildContext context) {
+    final macDesign =
+        defaultTargetPlatform == TargetPlatform.macOS &&
+        GlassMotionScope.maybeOf(context) != null;
+    if (macDesign) return _macDialog(context);
+    return AlertDialog(
+      title: Text('编辑动作 · ${widget.connection.label}'),
+      content: SizedBox(
+        width: 640,
+        child: SingleChildScrollView(
+          child: !loaded
+              ? const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '清单版本 1 · 参数以数组传递，{{变量名}} 从输入规则取值。',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        AggregateActionButton(
+                          label: '新增动作',
+                          icon: Icons.add,
+                          onPressed: busy ? null : _addAction,
+                        ),
+                        AggregateActionButton(
+                          label: '导入',
+                          icon: Icons.file_open_outlined,
+                          style: AggregateActionStyle.quiet,
+                          onPressed: busy ? null : _import,
+                        ),
+                        AggregateActionButton(
+                          label: '导出',
+                          icon: Icons.save_alt,
+                          style: AggregateActionStyle.quiet,
+                          onPressed: busy ? null : _export,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      key: const Key('action-manifest-json'),
+                      controller: manifestText,
+                      onChanged: (_) => setState(() => preview = null),
+                      maxLines: 14,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: '动作清单 JSON',
+                        alignLabelWithHint: true,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Builder(
+                      builder: (context) {
+                        final actions = _availableActions();
+                        final current =
+                            actions.any((action) => action.id == selectedAction)
+                            ? selectedAction
+                            : actions.isEmpty
+                            ? null
+                            : actions.first.id;
+                        return DropdownButtonFormField<String>(
+                          key: Key(
+                            'preview-action-${current ?? 'none'}-${actions.length}',
+                          ),
+                          initialValue: current,
+                          decoration: const InputDecoration(labelText: '预览动作'),
+                          items: [
+                            for (final action in actions)
+                              DropdownMenuItem(
+                                value: action.id,
+                                child: Text('${action.title} · ${action.id}'),
+                              ),
+                          ],
+                          onChanged: actions.isEmpty
+                              ? null
+                              : (value) => setState(() {
+                                  selectedAction = value;
+                                  preview = null;
+                                }),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: sampleText,
+                      maxLines: 3,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: '预览输入 JSON',
+                        helperText: '例如 {"keyword":"示例"}；只预览，不执行。',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    AggregateActionButton(
+                      label: '检查并预览参数',
+                      icon: Icons.preview_outlined,
+                      onPressed: busy ? null : _preview,
+                    ),
+                    if (preview != null) ...[
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        preview!,
+                        style: const TextStyle(fontFamily: 'monospace'),
+                      ),
+                    ],
+                    if (notice != null) ...[
+                      const SizedBox(height: 8),
+                      Text(notice!),
+                    ],
+                    if (error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+        ),
+      ),
+      actions: [
+        AggregateActionButton(
+          label: '取消',
+          icon: Icons.close,
+          style: AggregateActionStyle.quiet,
+          onPressed: busy ? null : () => Navigator.of(context).pop(false),
+        ),
+        AggregateActionButton(
+          label: '保存动作',
+          icon: Icons.save_outlined,
+          style: AggregateActionStyle.primary,
+          onPressed: busy || !loaded ? null : _save,
+          enabled: !busy && loaded,
+        ),
+      ],
+    );
+  }
+
+  Widget _macDialog(BuildContext context) {
+    if (!loaded) {
+      return Dialog(
+        alignment: const Alignment(-0.01, -0.25),
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: SizedBox(
+          width: 664,
+          height: 713,
+          child: GlassPanelSurface(
+            borderRadius: BorderRadius.circular(18),
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      );
+    }
+
+    final actions = _availableActions();
+    final current = actions.any((action) => action.id == selectedAction)
+        ? selectedAction
+        : actions.isEmpty
+        ? null
+        : actions.first.id;
+    final theme = Theme.of(context);
+    return Dialog(
+      alignment: const Alignment(-0.01, -0.25),
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: SizedBox(
+        key: const Key('action-editor-panel'),
+        width: 664,
+        height: 713,
+        child: GlassPanelSurface(
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(35, 35, 35, 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 24,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '编辑动作 · ${widget.connection.label}',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontSize: 20,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      AggregateActionButton(
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 17,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '清单版本 1 · 参数以数组传递，{{变量名}} 从输入规则取值。',
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 112,
+                      height: 40,
+                      child: AggregateActionButton(
                         label: '新增动作',
                         icon: Icons.add,
                         onPressed: busy ? null : _addAction,
+                        size: GlassButtonSize.compactAction,
                       ),
-                      AggregateActionButton(
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 88,
+                      height: 40,
+                      child: AggregateActionButton(
                         label: '导入',
                         icon: Icons.file_open_outlined,
                         style: AggregateActionStyle.quiet,
                         onPressed: busy ? null : _import,
+                        size: GlassButtonSize.compactAction,
                       ),
-                      AggregateActionButton(
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 88,
+                      height: 40,
+                      child: AggregateActionButton(
                         label: '导出',
                         icon: Icons.save_alt,
                         style: AggregateActionStyle.quiet,
                         onPressed: busy ? null : _export,
+                        size: GlassButtonSize.compactAction,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 35),
+                SizedBox(
+                  height: 283,
+                  child: TextField(
                     key: const Key('action-manifest-json'),
                     controller: manifestText,
                     onChanged: (_) => setState(() => preview = null),
-                    maxLines: 14,
+                    expands: true,
+                    maxLines: null,
+                    minLines: null,
                     style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 12,
@@ -287,27 +515,37 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Builder(
-                    builder: (context) {
-                      final actions = _availableActions();
-                      final current =
-                          actions.any((action) => action.id == selectedAction)
-                          ? selectedAction
-                          : actions.isEmpty
-                          ? null
-                          : actions.first.id;
-                      return DropdownButtonFormField<String>(
+                ),
+                const SizedBox(height: 49),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 274,
+                      height: 40,
+                      child: DropdownButtonFormField<String>(
                         key: Key(
                           'preview-action-${current ?? 'none'}-${actions.length}',
                         ),
                         initialValue: current,
-                        decoration: const InputDecoration(labelText: '预览动作'),
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: '预览动作',
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          border: OutlineInputBorder(),
+                        ),
                         items: [
                           for (final action in actions)
                             DropdownMenuItem(
                               value: action.id,
-                              child: Text('${action.title} · ${action.id}'),
+                              child: Text(
+                                '${action.title} · ${action.id}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                         ],
                         onChanged: actions.isEmpty
@@ -316,66 +554,118 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                                 selectedAction = value;
                                 preview = null;
                               }),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: sampleText,
-                    maxLines: 3,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
+                      ),
                     ),
-                    decoration: const InputDecoration(
-                      labelText: '预览输入 JSON',
-                      helperText: '例如 {"keyword":"示例"}；只预览，不执行。',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  AggregateActionButton(
-                    label: '检查并预览参数',
-                    icon: Icons.preview_outlined,
-                    onPressed: busy ? null : _preview,
-                  ),
-                  if (preview != null) ...[
-                    const SizedBox(height: 8),
-                    SelectableText(
-                      preview!,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ],
-                  if (notice != null) ...[
-                    const SizedBox(height: 8),
-                    Text(notice!),
-                  ],
-                  if (error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                    const SizedBox(width: 23),
+                    SizedBox(
+                      width: 297,
+                      height: 72,
+                      child: TextField(
+                        key: const Key('action-editor-sample-json'),
+                        controller: sampleText,
+                        expands: true,
+                        minLines: null,
+                        maxLines: null,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: '预览输入 JSON',
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(10),
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
                   ],
-                ],
-              ),
+                ),
+                const SizedBox(height: 11),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      key: const Key('action-editor-preview-button'),
+                      width: 179,
+                      height: 40,
+                      child: AggregateActionButton(
+                        label: '检查并预览参数',
+                        icon: Icons.preview_outlined,
+                        onPressed: busy ? null : _preview,
+                        size: GlassButtonSize.compactAction,
+                        expand: true,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    SizedBox(
+                      width: 401,
+                      height: 62,
+                      child: GlassPanelSurface(
+                        borderRadius: BorderRadius.circular(9),
+                        child: SizedBox(
+                          height: 62,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: SingleChildScrollView(
+                              child: SelectableText(
+                                error ?? preview ?? notice ?? '检查后显示最终参数数组。',
+                                style: TextStyle(
+                                  fontFamily: preview == null
+                                      ? null
+                                      : 'monospace',
+                                  fontSize: 12,
+                                  color: error == null
+                                      ? null
+                                      : theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 33),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 113,
+                      height: 40,
+                      child: AggregateActionButton(
+                        label: '取消',
+                        icon: Icons.close,
+                        style: AggregateActionStyle.quiet,
+                        onPressed: busy
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                        size: GlassButtonSize.compactAction,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    SizedBox(
+                      width: 150,
+                      height: 40,
+                      child: AggregateActionButton(
+                        label: '保存动作',
+                        icon: Icons.save_outlined,
+                        style: AggregateActionStyle.primary,
+                        onPressed: busy || !loaded ? null : _save,
+                        enabled: !busy && loaded,
+                        size: GlassButtonSize.compactAction,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-    ),
-    actions: [
-      AggregateActionButton(
-        label: '取消',
-        icon: Icons.close,
-        style: AggregateActionStyle.quiet,
-        onPressed: busy ? null : () => Navigator.of(context).pop(false),
-      ),
-      AggregateActionButton(
-        label: '保存动作',
-        icon: Icons.save_outlined,
-        style: AggregateActionStyle.primary,
-        onPressed: busy || !loaded ? null : _save,
-        enabled: !busy && loaded,
-      ),
-    ],
-  );
+    );
+  }
 }

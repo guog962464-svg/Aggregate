@@ -31,6 +31,9 @@ enum GlassButtonSize {
   segmented,
   icon,
   playback,
+  capabilityRow,
+  activityRow,
+  targetOption,
   reference,
 }
 
@@ -45,6 +48,7 @@ class GlassActionButton extends StatefulWidget {
     this.busyLabel,
     this.description,
     this.source,
+    this.leading,
     this.trailing,
     this.semanticsLabel,
     this.kind = GlassButtonKind.secondary,
@@ -65,6 +69,7 @@ class GlassActionButton extends StatefulWidget {
   final String? busyLabel;
   final String? description;
   final String? source;
+  final Widget? leading;
   final Widget? trailing;
   final String? semanticsLabel;
   final GlassButtonKind kind;
@@ -294,10 +299,13 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         widget.size == GlassButtonSize.connectionNavigation ||
         widget.size == GlassButtonSize.segmented ||
         widget.size == GlassButtonSize.icon ||
-        widget.size == GlassButtonSize.playback;
+        widget.size == GlassButtonSize.playback ||
+        widget.size == GlassButtonSize.capabilityRow;
     final padding = widget.iconOnly
         ? EdgeInsets.zero
-        : EdgeInsets.symmetric(horizontal: small ? 12 : 16);
+        : EdgeInsets.symmetric(
+            horizontal: widget.leading == null ? (small ? 12 : 16) : 16,
+          );
     final content = _buildContent(
       tokens,
       height,
@@ -474,7 +482,10 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       GlassButtonSize.secondary ||
       GlassButtonSize.directory ||
       GlassButtonSize.icon ||
-      GlassButtonSize.playback => 20.0,
+      GlassButtonSize.playback ||
+      GlassButtonSize.capabilityRow ||
+      GlassButtonSize.activityRow ||
+      GlassButtonSize.targetOption => 20.0,
     };
     final visibleLabel = widget.label ?? widget.semanticsLabel!;
     // Keep status cues on the glyph and face while preserving label contrast.
@@ -488,6 +499,14 @@ class _GlassActionButtonState extends State<GlassActionButton> {
           ? tokens.danger
           : tokens.ink,
     );
+    final leading = widget.leading == null
+        ? mark
+        : ExcludeSemantics(child: widget.leading!);
+    final leadingSpacing = widget.leading != null
+        ? 6.0
+        : widget.description != null || widget.source != null
+        ? 10.0
+        : 8.0;
     if (widget.iconOnly) {
       return Center(child: mark);
     }
@@ -495,8 +514,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          mark,
-          const SizedBox(width: 10),
+          leading,
+          SizedBox(width: leadingSpacing),
           Flexible(
             child: RepaintBoundary(
               child: Column(
@@ -564,8 +583,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        mark,
-        const SizedBox(width: 8),
+        leading,
+        SizedBox(width: leadingSpacing),
         Flexible(
           child: RepaintBoundary(
             child: Text(
@@ -602,7 +621,10 @@ double _heightFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.primary => GlassDesignTokens.primaryHeight,
   GlassButtonSize.secondary => GlassDesignTokens.secondaryHeight,
   GlassButtonSize.compactAction => 40,
+  GlassButtonSize.capabilityRow => 48,
   GlassButtonSize.directory => 56,
+  GlassButtonSize.activityRow => 72,
+  GlassButtonSize.targetOption => 76,
   GlassButtonSize.navigation => 38,
   GlassButtonSize.connectionNavigation => 40,
   GlassButtonSize.segmented => 32,
@@ -616,7 +638,10 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.reference => 22,
   GlassButtonSize.secondary => 13,
   GlassButtonSize.compactAction => 12,
+  GlassButtonSize.capabilityRow => 12,
   GlassButtonSize.directory => 11,
+  GlassButtonSize.activityRow => 12,
+  GlassButtonSize.targetOption => 14,
   GlassButtonSize.navigation => 11,
   GlassButtonSize.connectionNavigation => 11,
   GlassButtonSize.segmented => 10,

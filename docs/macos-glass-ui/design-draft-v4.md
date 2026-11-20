@@ -27,7 +27,7 @@ Aggregate 是连接 CLI、MCP、本机音乐和 Mac Host 的工作台。界面�
 3. 先在该预览中完成视觉探索和页面排布，再将确认的同一 Widget 布局接入真实 Runtime。不要另建 HTML/CSS 或手绘的“最终预览”。
 4. 每阶段保存浅色、深色及关键交互截图；屏幕截图是设计版本的可见表达。结构 SVG 用来核对功能遗漏，不以它代替 Profile 画面。
 
-当前隔离入口为 [UI 检查预览](../../app/lib/preview/ui6_inspection_main.dart)，运行时为 [Ui6InspectionRuntime](../../app/lib/preview/ui6_inspection_runtime.dart)。正式实施时将入口/标记升级为 UI-7 设计预览，但继续复用相同生产 Widget 与内存 stub。
+当前隔离入口为 [UI-7 设计预览](../../app/lib/preview/ui7_design_preview_main.dart)，它委托给 [UI 检查入口](../../app/lib/preview/ui6_inspection_main.dart)，并继续使用 [Ui6InspectionRuntime](../../app/lib/preview/ui6_inspection_runtime.dart) 和进程内 Host stub。
 
 ## 3. 视觉系统
 

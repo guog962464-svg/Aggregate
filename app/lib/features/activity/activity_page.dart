@@ -103,121 +103,193 @@ class ActivityPageState extends State<ActivityPage> {
       run.capability.connection.value;
 
   @override
-  Widget build(BuildContext context) => PageFrame(
-    title: '活动',
-    subtitle: widget.runtime.isPreview
-        ? '本次启动中的预览调用记录。'
-        : '最近 100 条运行状态。记录只保留状态和时间，不包含参数和结果正文。',
-    children: [
-      Row(
-        children: [
-          Text('运行记录', style: Theme.of(context).textTheme.titleMedium),
-          const Spacer(),
-          AggregateIconButton(
-            tooltip: '刷新活动',
-            icon: Icons.refresh,
-            onPressed: reload,
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Wrap(
-        spacing: 8,
-        children: [
-          _filter('全部', null),
-          _filter('成功', RunState.succeeded),
-          _filter('失败', RunState.failed),
-          _filter('取消', RunState.cancelled),
-          _filter('超时', RunState.timedOut),
-          _filter('运行中', RunState.running),
-          _filter('结果待确认', RunState.outcomeUnknown),
-        ],
-      ),
-      const SizedBox(height: 20),
-      FutureBuilder<List<RunSummary>>(
-        future: pending,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return PageState.error('加载活动失败：${snapshot.error}', onRetry: reload);
-          }
-          if (!snapshot.hasData) return const PageState.loading();
-          final runs = snapshot.data!
-              .where(
-                (run) => stateFilter == null || run.latest.state == stateFilter,
-              )
-              .toList();
-          if (snapshot.data!.isEmpty) return const PageState.empty('还没有运行记录。');
-          if (runs.isEmpty) return const PageState.empty('当前筛选下没有运行记录。');
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 680;
-              final current = selected == null
-                  ? (wide ? runs.first : null)
-                  : runs
-                        .where((run) => run.id.value == selected!.id.value)
-                        .firstOrNull;
-              if (!wide && current != null) {
-                return _detail(current, compact: true);
-              }
-              final list = SizedBox(
-                height: _runListViewportHeight(context),
-                child: ListView.builder(
-                  primary: false,
-                  padding: EdgeInsets.zero,
-                  itemCount: runs.length * 2,
-                  itemBuilder: (context, index) {
-                    if (index.isOdd) return const Divider(height: 1);
-                    final run = runs[index ~/ 2];
-                    if (_usesGlassButtons(context)) {
-                      return AggregateActionButton(
-                        label: _capabilityName(run),
-                        description: _time(run.latest.occurredAt),
-                        source: _state(run.latest.state),
-                        semanticsLabel:
-                            '${_capabilityName(run)}，${_state(run.latest.state)}，'
-                            '${_time(run.latest.occurredAt)}',
-                        icon: _stateIcon(run.latest.state),
-                        style: AggregateActionStyle.quiet,
-                        onPressed: () => setState(() => selected = run),
-                        selected: current?.id.value == run.id.value,
-                        expand: true,
-                      );
-                    }
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      selected: current?.id.value == run.id.value,
-                      title: Text(
-                        _capabilityName(run),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(_time(run.latest.occurredAt)),
-                      trailing: Text(_state(run.latest.state)),
-                      onTap: () => setState(() => selected = run),
-                    );
-                  },
-                ),
-              );
-              if (!wide) return list;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 4, child: list),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    flex: 5,
-                    child: current == null
-                        ? const SizedBox.shrink()
-                        : _detail(current),
+  Widget build(BuildContext context) {
+    final macDesign = _usesGlassButtons(context);
+    return PageFrame(
+      title: '活动',
+      subtitle: macDesign
+          ? '查看最近调用状态；参数和结果正文不写入历史'
+          : widget.runtime.isPreview
+          ? '本次启动中的预览调用记录。'
+          : '最近 100 条运行状态。记录只保留状态和时间，不包含参数和结果正文。',
+      headerSpacing: macDesign ? 6 : 24,
+      children: [
+        if (macDesign)
+          SizedBox(
+            height: 48,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '运行记录',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          '最近 100 条',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
+                AggregateIconButton(
+                  tooltip: '刷新活动',
+                  icon: Icons.refresh,
+                  onPressed: reload,
+                ),
+              ],
+            ),
+          )
+        else
+          Row(
+            children: [
+              Text('运行记录', style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              AggregateIconButton(
+                tooltip: '刷新活动',
+                icon: Icons.refresh,
+                onPressed: reload,
+              ),
+            ],
+          ),
+        if (!macDesign) const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          children: [
+            _filter('全部', null),
+            _filter('成功', RunState.succeeded),
+            _filter('失败', RunState.failed),
+            _filter('取消', RunState.cancelled),
+            _filter('超时', RunState.timedOut),
+            _filter('运行中', RunState.running),
+            _filter('结果待确认', RunState.outcomeUnknown),
+          ],
+        ),
+        const SizedBox(height: 23),
+        FutureBuilder<List<RunSummary>>(
+          future: pending,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return PageState.error(
+                '加载活动失败：${snapshot.error}',
+                onRetry: reload,
               );
-            },
-          );
-        },
-      ),
-    ],
-  );
+            }
+            if (!snapshot.hasData) return const PageState.loading();
+            final runs = snapshot.data!
+                .where(
+                  (run) =>
+                      stateFilter == null || run.latest.state == stateFilter,
+                )
+                .toList();
+            if (snapshot.data!.isEmpty) {
+              return const PageState.empty('还没有运行记录。');
+            }
+            if (runs.isEmpty) return const PageState.empty('当前筛选下没有运行记录。');
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 680;
+                final current = selected == null
+                    ? (wide ? runs.first : null)
+                    : runs
+                          .where((run) => run.id.value == selected!.id.value)
+                          .firstOrNull;
+                if (!wide && current != null) {
+                  return _detail(current, compact: true);
+                }
+                final list = SizedBox(
+                  height: _runListViewportHeight(context),
+                  child: ListView.builder(
+                    primary: false,
+                    padding: EdgeInsets.zero,
+                    itemCount: runs.length * 2,
+                    itemBuilder: (context, index) {
+                      if (index.isOdd) {
+                        return _usesGlassButtons(context)
+                            ? const SizedBox(height: 11)
+                            : const Divider(height: 1);
+                      }
+                      final run = runs[index ~/ 2];
+                      if (_usesGlassButtons(context)) {
+                        return AggregateActionButton(
+                          label: _capabilityName(run),
+                          description: _time(run.latest.occurredAt),
+                          source: _state(run.latest.state),
+                          semanticsLabel:
+                              '${_capabilityName(run)}，${_state(run.latest.state)}，'
+                              '${_time(run.latest.occurredAt)}',
+                          icon: _stateIcon(run.latest.state),
+                          style: AggregateActionStyle.quiet,
+                          onPressed: () => setState(() => selected = run),
+                          selected: current?.id.value == run.id.value,
+                          size: GlassButtonSize.activityRow,
+                          expand: true,
+                        );
+                      }
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        selected: current?.id.value == run.id.value,
+                        title: Text(
+                          _capabilityName(run),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(_time(run.latest.occurredAt)),
+                        trailing: Text(_state(run.latest.state)),
+                        onTap: () => setState(() => selected = run),
+                      );
+                    },
+                  ),
+                );
+                if (!wide) return list;
+                if (_usesGlassButtons(context) && constraints.maxWidth >= 760) {
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1010),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 361, child: list),
+                        const SizedBox(width: 67),
+                        Expanded(
+                          child: current == null
+                              ? const SizedBox.shrink()
+                              : Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: _macDetail(current),
+                                ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 4, child: list),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 5,
+                      child: current == null
+                          ? const SizedBox.shrink()
+                          : _detail(current),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
 
   double _runListViewportHeight(BuildContext context) =>
       (MediaQuery.sizeOf(context).height - 336).clamp(220.0, 560.0).toDouble();
@@ -236,7 +308,7 @@ class ActivityPageState extends State<ActivityPage> {
         }),
         selected: isSelected,
         kind: GlassButtonKind.segmented,
-        size: GlassButtonSize.secondary,
+        size: GlassButtonSize.segmented,
       );
     }
     return ChoiceChip(
@@ -248,6 +320,97 @@ class ActivityPageState extends State<ActivityPage> {
       }),
     );
   }
+
+  Widget _macDetail(RunSummary run) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(_capabilityName(run), style: Theme.of(context).textTheme.titleLarge),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 16,
+        runSpacing: 6,
+        children: [
+          Text(_state(run.latest.state)),
+          Text(
+            '${_time(run.latest.occurredAt)} · ${_connectionName(run)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+      const SizedBox(height: 42),
+      Text('运行信息', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 4),
+      Text('活动只保留状态元数据', style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 0),
+      _macLine('功能', _capabilityName(run)),
+      _macLine('来源', _connectionName(run)),
+      _macLine('状态', _state(run.latest.state)),
+      _macLine('时间', _time(run.latest.occurredAt)),
+      _macLine('运行 ID', run.id.value),
+      const SizedBox(height: 26),
+      Text('参数和结果正文未写入活动记录。', style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 48),
+      Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        children: [
+          AggregateActionButton(
+            label:
+                _canCancel(run.latest.state) ||
+                    run.latest.state == RunState.outcomeUnknown
+                ? '查看运行'
+                : '重新打开功能',
+            icon: Icons.open_in_new,
+            onPressed: () => reopen(run),
+            size: GlassButtonSize.compactAction,
+          ),
+          if (_canCancel(run.latest.state))
+            AggregateActionButton(
+              label: cancellingRunIds.contains(run.id.value) ? '取消中…' : '取消运行',
+              icon: Icons.stop_circle_outlined,
+              style: AggregateActionStyle.danger,
+              onPressed: cancellingRunIds.contains(run.id.value)
+                  ? null
+                  : () => _cancel(run),
+              enabled: !cancellingRunIds.contains(run.id.value),
+              size: GlassButtonSize.compactAction,
+            ),
+          AggregateActionButton(
+            label: '复制诊断',
+            icon: Icons.copy_outlined,
+            style: AggregateActionStyle.quiet,
+            onPressed: () async {
+              await Clipboard.setData(
+                ClipboardData(
+                  text:
+                      'Run ${run.id.value} · ${_state(run.latest.state)} · ${_time(run.latest.occurredAt)}',
+                ),
+              );
+              if (mounted) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('已复制脱敏诊断')));
+              }
+            },
+            size: GlassButtonSize.compactAction,
+          ),
+        ],
+      ),
+    ],
+  );
+
+  Widget _macLine(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 18),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 101,
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ),
+        Expanded(child: SelectableText(value)),
+      ],
+    ),
+  );
 
   Widget _detail(RunSummary run, {bool compact = false}) => Container(
     padding: const EdgeInsets.all(20),
