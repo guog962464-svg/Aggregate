@@ -1421,3 +1421,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 修订：太阳/月亮截图均从 `GlassThemeSwitch` 490×245pt 生产控件框重新截取，文件为 980×490 PNG；外观画板继续按 490×245pt 使用并通过遮罩隐藏窗口外部区域。共享浅色与深色画板加入连接组加号。设计基准明确侧栏宽 240pt、品牌/标题左边距 42pt、连接和主导航内容 x=32…224pt、连接行 40pt、主导航行 38pt。
 - 自验：浅色与深色主题均由同一个 macOS Profile 窗口中的真实 `GlassThemeSwitch` 提供；AX 读取到开关边界 490×245pt 和浅色值，切换后截图可见深色月亮点阵与蓝色边缘光。执行生成器后，22/22 SVG 通过 XML 解析；macOS AppKit 生成 [全稿缩略图](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/all-22-boards.png>)，并逐页目视检查；[外观画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/05-settings-appearance.png>)、[Host 画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/06-settings-host.png>) 和 [深色画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v34/12-dark-reference.png>)已单独复核。
 - 状态/限制：v3.4 设计基准自验通过，可开始逐页实施。真实控件截图只用于设计档案，正式 UI 仍绘制实时控件；本记录不代表产品侧栏、设置或 Host 已达到 v3.4。 Profile 窗口点击主题后，桌面清单出现另一 Debug 实例；没有操作或关闭该实例。产品阶段继续分开验收和提交。
+
+### 2026-11-20 UI-7.0 v3.5 Mac Host 数据契约复核
+
+- 依据：用户指出设计预览与成品不一致；将 Host 画板 06 和预览实现逐项对照 `HostStatus`、`HostPendingPairing`、`HostDeviceGrant` 及 `MacHostSettingsPanel`。
+- 修订：Host 状态仅有运行阶段和可选原因，因此删除画板中没有来源的端口及“局域网可用”；配对授权没有在线/最后活跃字段，因此删除设备“已连接”状态；配对设备授权范围示例改为预览 fixture 实际提供的“读取连接”；待处理样例名称改为 Pixel 9，并与 Android 平台一致。Host 操作和授权流程位置不变。
+- 自验：重新生成 22 张 SVG，XML 解析 22/22 通过；将修订后的 Host 画板渲染为 1360×900 PNG 并目视复核。源代码确认 HostStatus、HostDeviceGrant 目前没有被删除字段；本阶段只更改设计文档/画板/生成器，没有改产品逻辑。
+- 证据：[v3.5 Mac Host 画板](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v35/06-settings-host.png>)；源文件为 `docs/macos-glass-ui/design-draft-v3/06-settings-host.svg`。
+- 结论/边界：v3.5 先修正 06 画板与数据契约的冲突，再作为 UI-7.2 Host 页面实施基准。实现页面的 Profile 对照和用户视觉签收仍未完成，UI-7.2 不因此结项。
