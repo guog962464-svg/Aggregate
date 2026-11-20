@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/glass/glass_glyph.dart';
@@ -222,9 +223,9 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     final connectionId = widget.connection.id.value;
     setState(() => confirmingSearch = true);
     try {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showGlassDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (_) => GlassAlertDialog(
           title: const Text('允许搜索歌曲？'),
           content: Text(
             '搜索词将交给 ${widget.connection.label} 的 CLI 执行。'
@@ -260,9 +261,9 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       return true;
     }
     final confirmed =
-        await showDialog<bool>(
+        await showGlassDialog<bool>(
           context: context,
-          builder: (_) => AlertDialog(
+          builder: (_) => GlassAlertDialog(
             title: Text('$action ${song.name}？'),
             content: Text('通过 ${widget.connection.label} 控制播放。'),
             actions: [

@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart' show GlassButtonSize;
 import 'host/host_control_port.dart';
 import 'host/host_pairing_authority.dart';
@@ -186,7 +187,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
-    final selection = await showDialog<_HostGrantSelection>(
+    final selection = await showGlassDialog<_HostGrantSelection>(
       context: context,
       builder: (context) => _HostGrantDialog(connections: connections),
     );
@@ -214,7 +215,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
-    final selection = await showDialog<_HostGrantSelection>(
+    final selection = await showGlassDialog<_HostGrantSelection>(
       context: context,
       builder: (context) => _HostGrantDialog(
         connections: connections,
@@ -259,9 +260,9 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
   }
 
   Future<void> _revoke(HostDeviceGrant grant) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => GlassAlertDialog(
         title: const Text('撤销设备配对？'),
         content: Text('撤销后，${grant.displayName} 的 Host 会话会立即断开，相关向导草稿也会清理。'),
         actions: [
@@ -297,9 +298,9 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
 
   Future<void> _rotateHostIdentity() async {
     if (_busy || widget.hostControl.status.phase != HostPhase.running) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => GlassAlertDialog(
         title: const Text('轮换 Mac Host 身份？'),
         content: const Text(
           '此操作会撤销所有已配对设备的授权并断开会话，然后更换 Host ID 和 TLS 证书。Host 会保持停止；请在重新启动后删除手机里保存的旧 Host 并重新配对、审批。',
@@ -1059,10 +1060,11 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
     final theme = Theme.of(context);
     final canApprove =
         !_needsConnectionSelection || _connectionPermissions.isNotEmpty;
-    return AlertDialog(
+    return GlassAlertDialog(
       title: const Text('配置设备权限'),
+      constraints: const BoxConstraints(maxWidth: 720),
       content: SizedBox(
-        width: 520,
+        width: 640,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.sizeOf(context).height * 0.65,

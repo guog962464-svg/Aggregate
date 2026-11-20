@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/glass/glass_panel_surface.dart';
@@ -11,12 +12,8 @@ Future<ExecutionTarget?> showConnectionSetupTargetDialog(
   BuildContext context,
   List<ConnectionSetupTargetOption> options,
 ) {
-  final macDesign =
-      defaultTargetPlatform == TargetPlatform.macOS &&
-      GlassMotionScope.maybeOf(context) != null;
-  return showDialog<ExecutionTarget>(
+  return showGlassDialog<ExecutionTarget>(
     context: context,
-    barrierColor: macDesign ? const Color(0x3825252B) : null,
     builder: (_) => _ConnectionSetupTargetDialog(options: options),
   );
 }

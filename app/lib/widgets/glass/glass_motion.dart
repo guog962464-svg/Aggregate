@@ -556,7 +556,7 @@ class _GlassIdleMotion {
 
 const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
   GlassMotionAction.play: _GlassMotionProfile(
-    duration: Duration(milliseconds: 520),
+    duration: Duration(milliseconds: 160),
     idle: _GlassIdlePattern.forwardSweep,
     light: _GlassLightPattern.scanX,
     translation: Offset(1.3, 0),
@@ -652,7 +652,7 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     idleDrift: Offset(.04, -.04),
   ),
   GlassMotionAction.close: _GlassMotionProfile(
-    duration: Duration(milliseconds: 460),
+    duration: Duration(milliseconds: 130),
     idle: _GlassIdlePattern.checker,
     light: _GlassLightPattern.centerPulse,
     scaleX: -.11,
@@ -661,7 +661,7 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     idleDrift: Offset(-.05, .04),
   ),
   GlassMotionAction.search: _GlassMotionProfile(
-    duration: Duration(milliseconds: 560),
+    duration: Duration(milliseconds: 160),
     idle: _GlassIdlePattern.radial,
     light: _GlassLightPattern.scanX,
     scaleX: .11,
@@ -670,7 +670,7 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     idleDrift: Offset(.04, .02),
   ),
   GlassMotionAction.refresh: _GlassMotionProfile(
-    duration: Duration(milliseconds: 680),
+    duration: Duration(milliseconds: 220),
     idle: _GlassIdlePattern.orbit,
     light: _GlassLightPattern.radialSweep,
     rotationRadians: math.pi * 2,
@@ -736,7 +736,7 @@ const _glassMotionProfiles = <GlassMotionAction, _GlassMotionProfile>{
     idleDrift: Offset(.06, -.06),
   ),
   GlassMotionAction.remove: _GlassMotionProfile(
-    duration: Duration(milliseconds: 640),
+    duration: Duration(milliseconds: 140),
     idle: _GlassIdlePattern.ring,
     light: _GlassLightPattern.rimSweep,
     scaleX: -.12,

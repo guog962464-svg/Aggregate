@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/shortcut_scheme.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/result_panel.dart';
@@ -377,9 +378,9 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
     Capability? capability,
     bool retryingUnknownOutcome = false,
   }) async =>
-      await showDialog<bool>(
+      await showGlassDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (_) => GlassAlertDialog(
           title: Text(retryingUnknownOutcome ? '确认重新执行' : '确认执行'),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440, maxHeight: 480),

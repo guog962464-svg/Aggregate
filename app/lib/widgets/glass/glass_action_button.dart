@@ -330,25 +330,25 @@ class _GlassActionButtonState extends State<GlassActionButton> {
             : tokens.glow;
         final halo = accent.withValues(alpha: tokens.daylight > .5 ? .38 : .42);
         final blend = states.contains(WidgetState.pressed)
-            ? .32
+            ? .28
             : states.contains(WidgetState.hovered) ||
                   states.contains(WidgetState.selected)
-            ? .20
+            ? .14
             : widget.kind == GlassButtonKind.navigation ||
                   widget.kind == GlassButtonKind.segmented
-            ? .04
-            : .12;
+            ? .025
+            : .06;
         return Color.lerp(tokens.shadow, halo, blend)!;
       }),
       elevation: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) return 0;
         if (states.contains(WidgetState.pressed)) return 1.8;
-        if (states.contains(WidgetState.hovered)) return 7.5;
+        if (states.contains(WidgetState.hovered)) return 6.5;
         if (widget.kind == GlassButtonKind.navigation ||
             widget.kind == GlassButtonKind.segmented) {
-          return states.contains(WidgetState.selected) ? 4.5 : 1.5;
+          return states.contains(WidgetState.selected) ? 4.0 : 1.0;
         }
-        return 5.5;
+        return widget.kind == GlassButtonKind.primary ? 5.0 : 4.0;
       }),
       shape: WidgetStatePropertyAll(shape),
       side: const WidgetStatePropertyAll(BorderSide.none),
@@ -634,7 +634,7 @@ double _heightFor(GlassButtonSize size) => switch (size) {
 };
 
 double _radiusFor(GlassButtonSize size) => switch (size) {
-  GlassButtonSize.primary => 16,
+  GlassButtonSize.primary => 14,
   GlassButtonSize.reference => 22,
   GlassButtonSize.secondary => 13,
   GlassButtonSize.compactAction => 12,
@@ -820,19 +820,19 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     );
     final restingLightStrength = isNavigation
         ? isSelected
-              ? .46
-              : .14
+              ? .34
+              : .08
         : (isSelected || kind == GlassButtonKind.primary)
-        ? .62
-        : .36;
+        ? .40
+        : .12;
     final lightStrength = isDisabled
         ? .025
         : isPressed
-        ? .88
+        ? .86
         : isHovered
-        ? .68
+        ? .56
         : restingLightStrength +
-              breath * (isNavigation ? .025 : .06) +
+              breath * (isNavigation ? .018 : .035) +
               motionEnergy * .22;
     final emitterGlowWidth = math.min(12.0, math.max(6.0, size.height * .12));
     final emitterBlur = math.min(5.0, math.max(3.0, size.height * .05));
@@ -855,12 +855,12 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           displayRatio: displayRatio,
           zoom: size.height / 198,
           radius: radius,
-          energy: lightStrength * 1.89,
+          energy: lightStrength * 1.45,
           angle: (isDaylight ? -.72 : 2.42) + math.sin(phase) * .045,
           refraction: 40,
           frost: .76,
           pixelGlow: .64,
-          stripHalfAngle: .92,
+          stripHalfAngle: .62,
           top: isPressed
               ? Color.lerp(tokens.glassTop, tokens.inset, .10)!
               : Color.alphaBlend(
@@ -980,15 +980,12 @@ class _GlassButtonSurfacePainter extends CustomPainter {
               colors: [
                 accent.withValues(
                   alpha:
-                      (isPressed
-                          ? .42
-                          : isDaylight
-                          ? .36 + breath * .06
-                          : .22 + breath * .06) *
+                      math.min(.72, lightStrength * (isDaylight ? .90 : .82)) *
                       materialWeight,
                 ),
                 accent.withValues(
-                  alpha: (isDaylight ? .17 : .08) * materialWeight,
+                  alpha:
+                      lightStrength * (isDaylight ? .42 : .36) * materialWeight,
                 ),
                 Colors.transparent,
               ],

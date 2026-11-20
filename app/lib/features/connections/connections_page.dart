@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/glass/glass_panel_surface.dart';
@@ -73,9 +74,9 @@ class ConnectionsPageState extends State<ConnectionsPage> {
     setState(() => addingConnection = true);
     try {
       if (widget.runtime.isPreview) {
-        await showDialog<void>(
+        await showGlassDialog<void>(
           context: context,
-          builder: (_) => const AlertDialog(
+          builder: (_) => const GlassAlertDialog(
             title: Text('添加连接'),
             content: Text('预览模式不能添加真实连接。'),
           ),
@@ -113,7 +114,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         if (!allowedKinds.contains(initialKind)) {
           initialKind = ConnectionKind.values.firstWhere(allowedKinds.contains);
         }
-        connection = await showDialog<Connection>(
+        connection = await showGlassDialog<Connection>(
           context: context,
           builder: (_) => ConnectionSetupDialog(
             setup: selectedSetup,
@@ -128,7 +129,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         if (!allowedKinds.contains(initialKind)) {
           initialKind = ConnectionKind.values.firstWhere(allowedKinds.contains);
         }
-        final spec = await showDialog<ConnectionSpec>(
+        final spec = await showGlassDialog<ConnectionSpec>(
           context: context,
           builder: (_) => AddConnectionDialog(
             initialKind: initialKind,
@@ -162,9 +163,9 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   }
 
   Future<void> remove(Connection connection) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => GlassAlertDialog(
         title: Text('删除 ${connection.label}？'),
         content: Text(
           connection.executionTarget.kind == ExecutionTargetKind.host
@@ -196,9 +197,8 @@ class ConnectionsPageState extends State<ConnectionsPage> {
   }
 
   Future<void> editActions(Connection connection) async {
-    final saved = await showDialog<bool>(
+    final saved = await showGlassDialog<bool>(
       context: context,
-      barrierColor: const Color(0x3825252B),
       builder: (_) =>
           ActionEditorDialog(runtime: widget.runtime, connection: connection),
     );
@@ -1041,7 +1041,7 @@ class _AddConnectionDialogState extends State<AddConnectionDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
+  Widget build(BuildContext context) => GlassAlertDialog(
     title: const Text('添加连接'),
     content: SizedBox(
       width: 480,

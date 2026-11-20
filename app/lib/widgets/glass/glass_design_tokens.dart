@@ -87,7 +87,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
   static GlassDesignTokens forBrightness(Brightness brightness) =>
       brightness == Brightness.light ? light : dark;
 
-  static const double primaryHeight = 54;
+  static const double primaryHeight = 46;
   static const double secondaryHeight = 40;
   static const double iconButtonSize = 46;
   static const double referenceHeight = 96;

@@ -19,6 +19,29 @@ void main() {
       scopeKey = GlobalKey<GlassMotionScopeState>();
     });
 
+    test('core button pulse durations match the design board', () {
+      expect(
+        GlassMotionAction.play.duration.inMilliseconds,
+        inInclusiveRange(120, 180),
+      );
+      expect(
+        GlassMotionAction.search.duration.inMilliseconds,
+        inInclusiveRange(120, 180),
+      );
+      expect(
+        GlassMotionAction.refresh.duration.inMilliseconds,
+        inInclusiveRange(180, 240),
+      );
+      expect(
+        GlassMotionAction.close.duration.inMilliseconds,
+        inInclusiveRange(100, 150),
+      );
+      expect(
+        GlassMotionAction.remove.duration.inMilliseconds,
+        inInclusiveRange(100, 150),
+      );
+    });
+
     testWidgets('all glyphs use unique smooth idle and click motion profiles', (
       tester,
     ) async {
@@ -147,7 +170,11 @@ void main() {
       expect(motion.sample.actionProgress, 0);
 
       await tester.tap(find.bySemanticsLabel('刷新'));
-      clock.advanceBy(const Duration(milliseconds: 170));
+      clock.advanceBy(
+        Duration(
+          microseconds: GlassMotionAction.refresh.duration.inMicroseconds ~/ 4,
+        ),
+      );
       await tester.pump();
 
       expect(motion.sample.action, GlassMotionAction.refresh);
@@ -221,9 +248,9 @@ void main() {
         await _mountMotionScope(tester, scopeKey, clock);
         addTearDown(() => _cleanup(tester, clock));
         final checkpoints = [
-          const Duration(milliseconds: 127),
-          const Duration(milliseconds: 284),
-          const Duration(milliseconds: 517),
+          const Duration(milliseconds: 47),
+          const Duration(milliseconds: 101),
+          const Duration(milliseconds: 190),
         ];
         final reference = <Duration, GlassMotionSample>{};
         for (final checkpoint in checkpoints) {
@@ -281,10 +308,10 @@ void main() {
           ..trigger();
         for (final time in const [
           Duration(milliseconds: 17),
-          Duration(milliseconds: 91),
-          Duration(milliseconds: 127),
-          Duration(milliseconds: 284),
-          Duration(milliseconds: 517),
+          Duration(milliseconds: 53),
+          Duration(milliseconds: 101),
+          Duration(milliseconds: 161),
+          Duration(milliseconds: 190),
         ]) {
           irregularClock.advanceTo(time);
           if (time == checkpoints[0] ||

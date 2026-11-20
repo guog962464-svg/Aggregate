@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
@@ -17,9 +18,9 @@ Future<void> confirmMusicControl(
   String label,
 ) async {
   if (role != 'state' && !session.controlsAuthorized) {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => GlassAlertDialog(
         title: Text('$label？'),
         content: Text('通过 ${session.source} 执行播放控制。'),
         actions: [

@@ -4,6 +4,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../app/shortcut_scheme.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/page_frame.dart';
 import 'appearance_selector.dart';
@@ -26,9 +27,9 @@ class SettingsPage extends StatelessWidget {
   final List<Widget> platformSections;
 
   Future<void> clearActivity(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showGlassDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => GlassAlertDialog(
         title: const Text('清空活动记录？'),
         content: Text(
           defaultTargetPlatform == TargetPlatform.android

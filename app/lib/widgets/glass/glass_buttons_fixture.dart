@@ -22,7 +22,11 @@ class GlassButtonsFixturePage extends StatelessWidget {
     final tokens = Theme.of(context).extension<GlassDesignTokens>()!;
     final textTheme = Theme.of(context).textTheme;
     const referenceSamples = <_ReferenceGlyphSample>[
-      _ReferenceGlyphSample('运行', GlassGlyph.play),
+      _ReferenceGlyphSample(
+        '运行',
+        GlassGlyph.play,
+        kind: GlassButtonKind.primary,
+      ),
       _ReferenceGlyphSample('暂停', GlassGlyph.pause),
       _ReferenceGlyphSample('添加连接', GlassGlyph.plus),
       _ReferenceGlyphSample('刷新', GlassGlyph.refresh),
@@ -31,7 +35,11 @@ class GlassButtonsFixturePage extends StatelessWidget {
       _ReferenceGlyphSample('搜索', GlassGlyph.search),
       _ReferenceGlyphSample('打开', GlassGlyph.externalLink),
       _ReferenceGlyphSample('停止', GlassGlyph.stop),
-      _ReferenceGlyphSample('移除', GlassGlyph.trash, danger: true),
+      _ReferenceGlyphSample(
+        '移除',
+        GlassGlyph.trash,
+        kind: GlassButtonKind.danger,
+      ),
       _ReferenceGlyphSample('连接', GlassGlyph.network),
       _ReferenceGlyphSample('允许访问', GlassGlyph.shield),
     ];
@@ -287,11 +295,15 @@ class GlassButtonsFixturePage extends StatelessWidget {
 }
 
 class _ReferenceGlyphSample {
-  const _ReferenceGlyphSample(this.label, this.glyph, {this.danger = false});
+  const _ReferenceGlyphSample(
+    this.label,
+    this.glyph, {
+    this.kind = GlassButtonKind.secondary,
+  });
 
   final String label;
   final GlassGlyph glyph;
-  final bool danger;
+  final GlassButtonKind kind;
 }
 
 class _ReferenceGlyphTile extends StatelessWidget {
@@ -308,7 +320,7 @@ class _ReferenceGlyphTile extends StatelessWidget {
         label: sample.label,
         semanticsLabel: sample.label,
         glyph: sample.glyph,
-        kind: sample.danger ? GlassButtonKind.danger : GlassButtonKind.primary,
+        kind: sample.kind,
         size: GlassButtonSize.reference,
         iconOnly: true,
         onPressed: () {},

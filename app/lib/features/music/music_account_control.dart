@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_alert_dialog.dart';
 import 'netease_login_link.dart';
 
 /// A small account entry in the player heading. Provider work stays in the
@@ -73,7 +74,7 @@ class _MusicAccountControlState extends State<MusicAccountControl> {
   Future<void> _open() async {
     final current = snapshot;
     if (current == null) return;
-    await showDialog<void>(
+    await showGlassDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _AccountDialog(
@@ -191,9 +192,9 @@ class _AccountDialogState extends State<_AccountDialog> {
   }
 
   Future<bool> _confirm(String title, String detail, String action) async =>
-      await showDialog<bool>(
+      await showGlassDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (_) => GlassAlertDialog(
           title: Text(title),
           content: Text(detail),
           actions: [
