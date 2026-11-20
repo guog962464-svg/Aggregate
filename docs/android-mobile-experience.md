@@ -266,3 +266,9 @@ flowchart LR
 - 聚焦名称字段打开系统 IME 后，测试/保存按钮仍位于键盘上方，一级底部导航已隐藏；截图见[连接表单](screenshots/android-a7.6/08-current-setup-form-smoke.png)和[输入法打开时](screenshots/android-a7.6/09-current-setup-ime-smoke.png)。临时名称输入随关闭向导丢弃；连接列表仍显示空状态。
 - 检查后将原 `hg.zp.mengnews/...LoginPasswordActivity` 任务恢复到前台，并 force-stop Aggregate；读回该前台 Activity 仍在顶层、Aggregate 无运行 PID、安装包保留。没有启动或安装 testnode。
 - UIAutomator 输出将空输入框表示为 `EditText` 节点，但没有在 XML 中提供字段 hint；此输出不能证明 TalkBack 实际朗读内容。设备仍无 TalkBack，实体读屏验收继续开放。本次只验证已安装包的启动、导航、连接表单和 IME 可见性，不刷新源码构建、Host/网络或 A7.6 全量矩阵结论。
+
+### 2026-11-20 Flutter 语义与触控区域复验
+
+- 当前工作树定向复跑 `capability_run_page_test.dart`、`music_mini_player_test.dart` 与 `glass_action_button_test.dart`：29 项通过。覆盖调用页来源/执行端/权限阅读顺序、大字号与窗口矩阵、失败恢复语义、迷你播放器控制标签及主要按钮触控尺寸。
+- `flutter analyze --no-pub` 通过（No issues found）。本轮只验证，不修改应用代码；全量 Flutter 测试和 Android/macOS 构建未重跑。
+- Android 用户 0 当前 `enabled_accessibility_services=null`、`accessibility_enabled=0`；设备装有荣耀读屏 `com.bjbyhd.screenreader_hihonor`，但未启用，TalkBack 仍未安装。没有变更无障碍服务设置，因此本节不代表实体语音朗读验收，A7.6 继续开放。
