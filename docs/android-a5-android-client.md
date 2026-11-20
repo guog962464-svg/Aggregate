@@ -275,3 +275,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **手机界面与配对边界：**打开普通 `io.github.guog962464.aggregate`（versionCode 8）后开始进入设置；设备 UI 自动化随后读到用户项目 `hg.zp.mengnews` 的更新界面节点，目标应用前台状态不再确定，故停止触屏操作，没有生成邀请、提交配对或调用 `host.hello`、`connection.list`。Mac 页面原有两条只读 grant 未改动；没有访问网易云账号/播放，也未清理 Android 应用数据。
 - **清理：**在 Mac UI 停止 Host 后确认 `47321/47322` 无 listener；ADB reverse 已移除，临时 TCP 桥和本轮 Debug PID 已停止，原 Profile 预览进程保留。Android 前台恢复为用户项目 `hg.zp.mengnews/com.zjonline.xsb_main.MainActivity`；普通 Aggregate 保留安装，NodeProbe/testnode 未安装或启动。
 - **结论与范围：**本轮刷新了 Mac Debug Host 启动及 USB reverse TCP 预检证据，但没有通过 production WSS/配对/RPC 验收，不能替代直接 LAN 或 NSD。A5.4/A5.5 继续开放；16 KB 实体设备仍缺失。
+
+## 2026-11-20 普通 Android 包 USB 邀请扫描复验
+
+- **Host 与 USB 通道：**在 Debug Aggregate 正式入口启动 Host，PID 42745 监听 `192.168.8.4:47321`。Mac `en0=192.168.8.4/24` 与 LGE AN10 `wlan0=192.168.31.135/24` 仍属不同子网。建立仅绑定 Mac 回环地址 `127.0.0.1:47322` 的临时 TCP 桥，配置 `adb reverse tcp:47321 tcp:47322`；手机对 `127.0.0.1:47321` 的 TCP 探针通过。此探针只证明 TCP 转发，不证明 TLS/WSS。
+- **邀请扫描与边界：**Mac 新建短时邀请后，只将 JSON 中 endpoint 主机改为 `127.0.0.1`，Host ID、证书指纹、nonce 与有效期保持不变；手机普通包 `io.github.guog962464.aggregate`（versionName 0.3.7）扫描后把内容填入 Mac Host 邀请框。没有确认表单解析、没有可读的待审批请求，也没有建立 WSS socket；Host 刷新后仍只有两条原有“读取连接”授权。未批准、撤销或轮换任何 grant，未调用 `host.hello`、`connection.list` 或其他 RPC。手机相机确实在扫描时连接并断开，但不能据此推断配对请求已发送。
+- **清理与结论：**停止 Host 并确认 `47321/47322` 无 listener；移除 ADB reverse，停止临时桥，关闭本轮 Debug 窗口并保留 Profile 进程；恢复原为空的 Mac 剪贴板并删除临时邀请二维码、脚本、截图与日志。Android 普通包仍安装，未清数据；手机随后回到用户的 `hg.zp.mengnews` 项目，普通 Aggregate 进程已停止。NodeProbe/testnode 未安装或启动。本次只补充 scanner 到邀请输入框和 USB TCP 预检证据，A5.4/A5.5 的 direct LAN、NSD、生产 WSS 配对、`host.hello`/`connection.list` 仍未验收；16 KB 实体设备仍缺失。
