@@ -36,6 +36,9 @@ GLYPHS = {
     "music": ("000011110", "000010010", "000010010", "000010010", "000010010", "001110110", "011101110", "011001100", "000000000"),
     "settings": ("000111000", "010101010", "001111100", "111000111", "101010101", "111000111", "001111100", "010101010", "000111000"),
     "history": ("000010000", "000111000", "001101100", "011000110", "110000011", "110000011", "011000110", "001101100", "000111000"),
+    "grid": ("111000111", "101000101", "111000111", "000000000", "000000000", "000000000", "111000111", "101000101", "111000111"),
+    "chat": ("001111100", "010000010", "100000001", "100000001", "100000001", "010000010", "001111100", "000100000", "001000000"),
+    "device": ("111111111", "100000001", "101110101", "101010101", "101110101", "100000001", "100000001", "111111111", "000010000"),
     "connection": ("000010000", "000111000", "001010100", "010010010", "100010001", "010010010", "001010100", "000111000", "000010000"),
     "terminal": ("000000000", "010000000", "001000000", "000100000", "001000000", "010000000", "000011110", "000000000", "000000000"),
     "check": ("000000001", "000000010", "000000100", "000001000", "100010000", "010100000", "001000000", "000000000", "000000000"),
@@ -52,6 +55,7 @@ GLYPHS = {
     "filter": ("111111111", "011111110", "001111100", "000111000", "000111000", "000010000", "000010000", "000010000", "000000000"),
     "sun": ("000010000", "001010100", "000111000", "010111010", "001111100", "010111010", "000111000", "001010100", "000010000"),
     "moon": ("000111000", "001100000", "011000000", "110000000", "110000000", "110001100", "011001100", "001111000", "000000000"),
+    "expand": ("100000001", "010000010", "001000100", "000000000", "000000000", "000000000", "001000100", "010000010", "100000001"),
     "spark": ("000010000", "000111000", "000010000", "010010010", "001111100", "000010000", "000101000", "001000100", "000000000"),
 }
 
@@ -109,11 +113,14 @@ def button(x, y, w, label, icon=None, primary=False, selected=False, danger=Fals
         if icon_only:
             isize = 27 if h >= 72 else 20
             ix, iy = (w-isize)/2, (h-isize)/2
+        elif h <= 34:
+            ix, iy, isize = 12, (h-16)/2, 16
         else:
             ix, iy, isize = 14, (h-20)/2, 20
         out.append(glyph(icon, ix, iy, isize, "var(--dangerInk)" if danger else "var(--glyph)"))
     if label and not icon_only:
-        out.append(txt(44 if icon else 16, h/2+5, label, 13, "var(--ink)", 570 if primary or selected else 510))
+        label_x = 36 if icon and h <= 34 else 44 if icon else 16
+        out.append(txt(label_x, h/2+5, label, 13, "var(--ink)", 570 if primary or selected else 510))
     out.append('</g>')
     return "".join(out)
 
@@ -133,6 +140,25 @@ def field(x, y, w, label, value, h=44, icon=None):
 def tag(x, y, label, color="good"):
     c = {"good":"var(--good)", "warn":"var(--warmEdge)", "danger":"var(--danger)"}.get(color, "var(--muted)")
     return f'<circle cx="{x+4}" cy="{y-4}" r="3" fill="{c}"/>' + txt(x+13, y, label, 11, c, 520)
+
+
+def mini_player(p):
+    x, y, w, h = 270, 812, 1048, 58
+    p.append(rect(x, y, w, h, "url(#panel)", 15, "var(--panelEdge)"))
+    p.append(glyph("music", x + 20, y + 18, 22))
+    p.append(txt(x + 52, y + 24, "示例歌曲", 13, "var(--ink)", 570))
+    p.append(txt(x + 52, y + 42, "网易云音乐 · 示例歌手 · 0:12 / 3:20", 10, "var(--muted)", 430))
+    controls = ("previous", "pause", "next", "stop", "refresh", "expand", "close")
+    right = x + w - 14
+    for index, icon in enumerate(controls):
+        left = right - 46 * (len(controls) - index) - 4 * (len(controls) - index - 1)
+        p.append(button(left, y + 6, 46, "", icon, primary=icon == "pause", h=46, icon_only=True))
+
+
+def target_status(p, x, y, label="预览运行时"):
+    p.append(rect(x,y,142,40,"url(#panel)",14,"var(--panelEdge)"))
+    p.append(glyph("device",x+12,y+10,18))
+    p.append(txt(x+40,y+25,label,12,"var(--ink)",520))
 
 
 def defs(dark=False):
@@ -221,12 +247,7 @@ def shell(title, active="全部功能", subtitle=None, dark=False, search=True, 
     if subtitle:
         p.append(txt(281,153,subtitle,12,"var(--muted)",440))
     if mini:
-        p.append(rect(270,812,1048,58,"url(#panel)",15,"var(--panelEdge)"))
-        p.append(glyph("music",290,830,21))
-        p.append(txt(322,835,"示例歌曲",14,"var(--ink)",570))
-        p.append(txt(322,853,"网易云音乐 · 示例歌手 · 0:12 / 3:20",10,"var(--muted)",430))
-        for i,(ico,lab) in enumerate((("previous",""),("pause",""),("next",""),("refresh",""),("close",""))):
-            p.append(button(1055+i*48,820,40,lab,ico,primary=(ico=="pause"),h=40,icon_only=True))
+        mini_player(p)
     return p
 
 
@@ -249,26 +270,42 @@ def row(p, x, y, w, title, sub, icon="document", selected=False, right=None, hei
     if right: p.append(txt(x+w-12,y+24,right,10,"var(--muted)",480,"end"))
 
 
+def workspace_directory_header(p, count="12 项", y=302, selected="全部"):
+    p.append(txt(280,y,"功能目录",14,"var(--ink)",600))
+    p.append(txt(575,y,count,11,"var(--muted)",450,"end"))
+    scopes=(("最近使用","history",97),("收藏","star",73),("全部","grid",73))
+    x=280
+    for label,icon,width in scopes:
+        p.append(button(x,y+7,width,label,icon,selected=label==selected,h=32))
+        x+=width+3
+
+
+def workspace_type_filters(p, y=233):
+    filters=(("全部","grid",73,True),("CLI","terminal",68,False),("MCP 工具","settings",104,False),("资源","document",73,False),("提示","chat",73,False))
+    x=280
+    for label,icon,width,selected in filters:
+        p.append(button(x,y,width,label,icon,selected=selected,h=32))
+        x+=width+9
+
+
 def screen_workspace():
     # Workspace owns the only visible search field. ⌘K still focuses it from
     # every page, so showing a second toolbar field here would duplicate it.
     p=shell("所有功能","所有功能","搜索并运行当前连接提供的功能",search=False,mini=True)
-    p.append(field(280,174,570,"","搜索名称、说明或来源",42,"search"))
-    for i,(label,sel) in enumerate((("全部",1),("CLI",0),("MCP 工具",0),("资源",0),("资源模板",0),("提示",0))):
-        p.append(button(280+i*103,229,92,label,selected=bool(sel),h=34))
-    heading(p,280,302,"功能目录","最近使用 · 收藏 · 全部")
-    p.append(txt(570,302,"12 项",11,"var(--muted)",450,"end"))
-    for i,(name,sub,icon) in enumerate((("查看 Git 状态","CLI · 示例 Git CLI","terminal"),("读取项目说明","资源 · 示例 MCP","folder"),("两个整数相加","MCP 工具 · 示例 MCP","spark"),("搜索歌曲","CLI · 网易云音乐","music"),("读取分支说明","资源模板 · 示例 MCP","document"),("继续播放","CLI · 网易云音乐","play"),("暂停播放","CLI · 网易云音乐","pause"),("生成摘要提示","提示 · 示例 MCP","document"))):
-        row(p,280,330+i*55,295,name,sub,icon,i==2, "☆",52)
-    p.append(line(596,322,596,776,"var(--line)"))
+    p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
+    workspace_type_filters(p)
+    workspace_directory_header(p)
+    for i,(name,sub,icon) in enumerate((("上一首","CLI · 网易云音乐","previous"),("下一首","CLI · 网易云音乐","next"),("两个整数相加","MCP 工具 · 示例 MCP","spark"),("停止播放","CLI · 网易云音乐","stop"),("搜索歌曲","CLI · 网易云音乐","music"),("播放歌曲","CLI · 网易云音乐","play"),("播放状态","CLI · 网易云音乐","music"))):
+        row(p,280,354+i*60,295,name,sub,icon,i==2, "☆",56)
+    p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"两个整数相加",20,"var(--ink)",680))
     p.append(tag(624,380,"示例 MCP · 只读"))
     p.append(txt(624,415,"读取两个数字并返回结果",12,"var(--muted)",430))
     heading(p,624,450,"参数","两个字段都会在执行前检查")
     p.append(field(624,486,332,"第一个整数","例如 12"))
     p.append(field(976,486,332,"第二个整数","例如 30"))
-    small_button(p,624,544,"选择执行端","connection",w=142)
-    small_button(p,776,544,"运行","play",primary=True,w=104)
+    target_status(p,624,547)
+    p.append(button(776,544,104,"运行","play",primary=True,h=46))
     p.append(line(624,605,1308,605))
     heading(p,624,638,"运行结果","最近一次调用 · 预览数据")
     p.append(rect(624,663,684,105,"url(#inset)",12,"var(--insetEdge)"))
@@ -286,7 +323,7 @@ def screen_connection_home(mcp=False):
     p.append(button(1266,112,46,"","refresh",h=46,icon_only=True))
     heading(p,280,204,"能力目录","选择一项查看详情或填写参数")
     if mcp:
-        groups=(("工具",(("两个整数相加","读取两个数字并返回结果","spark"),)),("资源",(("读取项目说明","项目中的 README 文本","folder"),)),("资源模板",(("读取分支说明","输入分支后返回对应说明","document"),)),("提示",(("生成摘要提示","根据输入生成摘要","document"),)))
+        groups=(("工具",(("两个整数相加","读取两个数字并返回结果","spark"),)),("资源",(("读取项目说明","项目中的 README 文本","folder"),)),("提示",(("生成摘要提示","根据输入生成摘要","document"),)))
         y=240
         for group,items in groups:
             p.append(txt(280,y,group,11,"var(--muted)",600)); y+=13
@@ -311,8 +348,8 @@ def screen_connection_home(mcp=False):
         p.append(glyph("terminal",658,396,18,"var(--muted)"))
         p.append(txt(686,411,"显示当前分支与工作区状态",12,"var(--muted)",450))
         action_y, result_line_y, result_head_y, result_box_y = 442, 502, 535, 561
-    small_button(p,642,action_y,"选择执行端","connection",w=142)
-    small_button(p,794,action_y,"运行","play",primary=True,w=104)
+    target_status(p,642,action_y+3)
+    p.append(button(794,action_y,104,"运行","play",primary=True,h=46))
     p.append(line(642,result_line_y,1298,result_line_y))
     heading(p,642,result_head_y,"最近结果","不会把参数正文写入活动记录")
     p.append(rect(642,result_box_y,656,142,"url(#inset)",12,"var(--insetEdge)"))
@@ -656,13 +693,12 @@ def screen_terminal():
 
 def screen_result():
     p=shell("所有功能","所有功能","查看当前能力本次调用的实际状态和输出",search=False,mini=True)
-    p.append(field(280,174,570,"","搜索名称、说明或来源",42,"search"))
-    for i,(label,sel) in enumerate((("全部",1),("CLI",0),("MCP 工具",0),("资源",0),("资源模板",0),("提示",0))):
-        p.append(button(280+i*103,229,92,label,selected=bool(sel),h=34))
-    heading(p,280,302,"功能目录","最近使用 · 收藏 · 全部")
-    row(p,280,330,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","terminal",True,"☆",58)
-    row(p,280,390,295,"读取项目说明","资源 · UI 检查 · MCP","document",False,"☆",58)
-    p.append(line(596,322,596,776,"var(--line)"))
+    p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
+    workspace_type_filters(p)
+    workspace_directory_header(p, count="2 项")
+    row(p,280,354,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","terminal",True,"☆",56)
+    row(p,280,414,295,"读取项目说明","资源 · UI 检查 · MCP","document",False,"☆",56)
+    p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"查看 Git 状态",20,"var(--ink)",680))
     p.append(tag(624,380,"UI 检查 · Git CLI · 成功"))
     p.append(txt(624,415,"结果保留在当前能力详情中，不跳转到独立结果页。",11,"var(--muted)",430))
@@ -708,14 +744,14 @@ def screen_buttons():
 
 def screen_dark():
     p=shell("所有功能","所有功能","深色模式保持玻璃厚度与点阵清晰度",dark=True,search=False,mini=True)
-    p.append(field(280,174,570,"","搜索名称、说明或来源",42,"search"))
-    for i,(label,sel) in enumerate((("全部",1),("CLI",0),("MCP 工具",0),("资源",0),("资源模板",0),("提示",0))): p.append(button(280+i*103,229,92,label,selected=bool(sel),h=34))
-    heading(p,280,302,"功能目录","最近使用 · 收藏 · 全部")
-    for i,(name,sub,icon) in enumerate((("查看 Git 状态","CLI · 示例 Git CLI","terminal"),("读取项目说明","资源 · 示例 MCP","folder"),("两个整数相加","MCP 工具 · 示例 MCP","spark"))): row(p,280,330+i*65,295,name,sub,icon,i==2,"☆",58)
-    p.append(line(600,322,600,770))
+    p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
+    workspace_type_filters(p)
+    workspace_directory_header(p, count="3 项")
+    for i,(name,sub,icon) in enumerate((("查看 Git 状态","CLI · 示例 Git CLI","terminal"),("读取项目说明","资源 · 示例 MCP","folder"),("两个整数相加","MCP 工具 · 示例 MCP","spark"))): row(p,280,354+i*60,295,name,sub,icon,i==2,"☆",56)
+    p.append(line(600,344,600,770))
     p.append(txt(630,354,"两个整数相加",20,"var(--ink)",680)); p.append(tag(630,381,"示例 MCP · 只读"))
     p.append(field(630,425,320,"第一个整数","例如 12")); p.append(field(968,425,320,"第二个整数","例如 30"))
-    small_button(p,630,493,"选择执行端","connection",w=142); small_button(p,782,493,"运行","play",primary=True,w=104)
+    target_status(p,630,496); p.append(button(782,493,104,"运行","play",primary=True,h=46))
     p.append(rect(630,562,658,128,"url(#inset)",12,"var(--insetEdge)")); p.append(txt(650,599,"输出将显示在这里",12,"var(--muted)",460))
     return p+["</g></svg>"]
 
@@ -748,15 +784,13 @@ def screen_account():
 
 
 def screen_mini():
-    p=shell("迷你播放器","活动","跨页控制当前音乐会话；无会话时隐藏")
-    p.append(txt(280,211,"迷你播放器",19,"var(--ink)",650))
-    p.append(txt(280,239,"固定在窗口底部，不覆盖正文或焦点。",11,"var(--muted)",430))
-    p.append(rect(280,300,1028,176,"url(#panel)",20,"var(--panelEdge)"))
-    p.append(glyph("music",310,352,26)); p.append(txt(355,357,"示例歌曲",18,"var(--ink)",620)); p.append(txt(355,383,"网易云音乐 · 示例歌手 · 0:12 / 3:20",11,"var(--muted)",430))
-    for i,ico in enumerate(("previous","pause","next","stop","refresh","close")):
-        p.append(button(792+i*76,354,58,"",ico,primary=(ico=="pause"),h=56,icon_only=True))
-    p.append(txt(280,527,"上一首 / 下一首仅在连接提供对应动作且存在目标曲目时出现。",11,"var(--muted)",430))
-    p.append(txt(280,550,"输入法打开或没有可见播放会话时按原逻辑隐藏。",11,"var(--muted)",430))
+    p=shell("迷你播放器","活动","非音乐页的底部会话控制；仅在存在可见会话时显示",mini=True)
+    p.append(txt(280,211,"跨页播放控制",19,"var(--ink)",650))
+    p.append(txt(280,239,"播放器收在主内容区底部，侧栏保持独立；正文预留空间，不遮挡输入与焦点。",11,"var(--muted)",430))
+    p.append(rect(280,282,1028,106,"url(#panel)",16,"var(--panelEdge)"))
+    p.append(txt(302,315,"控制项随真实会话能力出现",14,"var(--ink)",570))
+    p.append(txt(302,339,"上一首 / 下一首需有对应动作和目标曲目；停止、刷新、打开和收起保留原有条件。",11,"var(--muted)",430))
+    p.append(txt(302,363,"无可见播放会话或输入法打开时隐藏。",11,"var(--muted)",430))
     return p+["</g></svg>"]
 
 
@@ -787,12 +821,11 @@ def screen_host_permissions():
 
 def screen_terminal_state():
     p=shell("所有功能","所有功能","先确认执行端状态，再决定是否重跑",search=False,mini=True)
-    p.append(field(280,174,570,"","搜索名称、说明或来源",42,"search"))
-    for i,(label,sel) in enumerate((("全部",1),("CLI",0),("MCP 工具",0),("资源",0),("提示",0))):
-        p.append(button(280+i*103,229,92,label,selected=bool(sel),h=34))
-    heading(p,280,302,"功能目录","收藏 · 最近使用 · 全部")
-    row(p,280,330,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","terminal",True,"☆",58)
-    p.append(line(596,322,596,776,"var(--line)"))
+    p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
+    workspace_type_filters(p)
+    workspace_directory_header(p, count="1 项", selected="最近使用")
+    row(p,280,354,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","terminal",True,"☆",56)
+    p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"查看 Git 状态",20,"var(--ink)",680))
     p.append(tag(624,380,"结果待确认","warn"))
     p.append(txt(624,424,"操作可能已经发送，但没有收到最终确认。",16,"var(--ink)",600))
