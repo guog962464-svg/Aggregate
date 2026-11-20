@@ -294,3 +294,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络状态：**Mac `en0=192.168.10.144/24`；LGE AN10 `wlan0=192.168.31.135/24`，不同子网。Android 仅有 `192.168.31.0/24` 的 wlan0 直连路由。
 - **Host/USB：**Mac `47321` 与 `47322` 当前均无 TCP listener；`adb reverse --list` 为空。未启动 Host、未建立邀请、未提交配对、未调用 WSS/RPC。
 - **前台保护：**复核时手机有其他应用位于前台，本轮没有切换应用或改动网络设置；没有启动 NodeProbe/testnode。A5.4/A5.5 不新增验收证据，待同网段可达且 Mac Host 可用时再继续。
+
+## 2026-11-20 Mac Host 跨网段直连预检
+
+- **Host 启动：**从 `5f940a30c8edfb5605f49f189200962d70fc3dd7` 的隔离工作树运行正式 `lib/main.dart`。该工作树原锁文件无法通过 `flutter pub get --enforce-lockfile`；复制主工作区当前未提交的 `pubspec.lock` 后解析通过，再以 `flutter run --no-pub -d macos` 构建并启动成功，未包含主工作区未提交 Dart UI 修改。设置页显示 Host 运行中，`lsof` 确认监听 `192.168.8.4:47321`。Keychain 授权提示曾出现，随后消失且 Host 开始监听；自动化未能确认提示由何种操作关闭，因此不将本轮记为密码输入或 ACL 授权验收，也未轮换 Host 身份。
+- **网络：**Mac `en0=192.168.8.4/24`、默认网关 `192.168.8.1`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机 `wlan0=192.168.10.195/24`，地址不在同一子网。Android `toybox nc -z -w 4 192.168.8.4 47321` 超时；Mac ping 手机 2 次均无响应且 ARP 无条目。
+- **配对边界：**没有生成邀请或提交配对请求；没有新增/审批设备，也未调用 `host.hello`、`connection.list` 或其他 RPC。Host 设置快照仍显示原有两条只读授权。没有更改网络设置，没有启动 NodeProbe/testnode，也没有执行无障碍测试。
+- **清理：**通过 Host 设置停止服务，复核 `47321/47322` 均无监听，ADB reverse 为空；本轮 Debug app 和 Flutter runner 均已退出，临时工作树与截图已清理。手机未被切换应用，当前 Activity 读回为 HONOR 应用市场。曾观察到独立 Profile 预览进程，后续检查时该 PID 已不存在；本轮没有向其发送关闭信号，原因未知。
+- **结论：**本轮仅证明 Mac Host 可启动并监听，当前手机到 Mac 的直接 TCP 路径不可达；不构成 LAN/NSD/WSS 配对验收，也不推翻 2026-11-19 已通过的只读直连历史记录。A5.4/A5.5 继续开放。
