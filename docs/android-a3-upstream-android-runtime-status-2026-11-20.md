@@ -18,6 +18,10 @@
 
 要关闭维护方发行门槛，需要找到维护方明确发布的匹配 Android arm64 构建，核实资产、来源和完整构建输入（包括 Node/mobile 版本与 NDK）、安全更新维护承诺和可审计性；不能以本地候选的版本标识代替。许可/SBOM 审查、正式签名及 16 KB 真机验收仍按 A3.6 分别完成。本次仅核对公开资料，没有重新构建、验证资产散列或运行设备测试。
 
+## Termux Android 包候选（2026-11-20）
+
+Termux stable APT 当前索引记录了 Node.js `24.22.3` 的 `aarch64`、`arm`、`i686` 和 `x86_64` 包。它补充了当前安全版本的 Android 二进制分发候选，但不是 `nodejs-mobile` 上游发行，也没有证明可直接嵌入 Aggregate。Termux 的构建配方把 Node 安装到 `$TERMUX_PREFIX`，显式使用 `--without-npm` 并单独推荐 `npm` 包；没有声明 Flutter/JNI `libnode.so` SDK。包哈希、来源与限制见 [Termux 运行时调查](android-a3-maintained-runtime-survey-2026-11-20.md)。本次未安装或运行这些 `.deb`，也未验证仓库签名、16 KB 对齐或完整 SBOM/许可闭包。
+
 ## 2026-11-20 发行新鲜度与制品溯源补充
 
 - **Node.js 安全版本：**官方 Node 24 最新安全版本为 **24.22.3**（2026-11-11）。[官方发行页](https://nodejs.org/en/blog/release/v24.22.3/)发布带 PGP 签名的 SHASUMS 清单；其发行文件没有 Android 目标包。
