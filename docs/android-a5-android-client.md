@@ -267,3 +267,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络与 Host：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机 `wlan0=192.168.10.195/24`，Mac `en0=192.168.10.144/24`，地址位于同一 `/24`。正式 `main.dart` Debug app 启动 Host 后，`lsof` 确认 `192.168.10.144:47321` 正在监听。Android 路由查询选择 `wlan0`，但邻居表对 Mac 地址为 `INCOMPLETE`；`toybox nc` 返回 `No route to host`。Mac 到手机两次 ICMP 均无响应，ARP 无条目。
 - **配对结果：**普通 `io.github.guog962464.aggregate` 的邀请 payload 在设备字段中校验为完整匹配后发起一次配对；Android 显示“找不到 Mac Host”，Mac 未出现新待批准设备，现存只读 grant 未更改。没有建立配对、没有调用 `host.hello`/`connection.list` 或其他 Host RPC。结论只覆盖该 Wi-Fi 下的终端间路径不可达；同网段地址本身不代表二层可互访，也不推翻 2026-11-19 在另一网络中已通过的 direct WSS 记录。
 - **备用通道与清理：**仅绑定 `127.0.0.1` 的临时 TCP 桥接和 `adb reverse tcp:47321 tcp:47322` 的 loopback TCP 探针通过；没有用 loopback 邀请发起配对或 RPC。过程中手机前台离开 Aggregate 后未再切换，普通 Aggregate 包仍安装；NodeProbe/testnode 未安装或启动。ADB reverse 已移除、桥接已停止、Mac Host 已停止、47321/47322 均无 listener、临时 Debug PID 已退出。A5.4/A5.5 仍开放。
+
+## 2026-11-20 前台 Host 启动与 ADB reverse TCP 预检
+
+- **Host 启动：**`flutter build macos --no-pub --debug` 成功，打开正式 `main.dart` Debug app 并从“设置 → Mac Host”启动服务。Keychain 安全授权窗口出现；在安全字段输入前窗口已关闭，输入动作返回失效目标（未送达）。随后 Mac UI 显示“停止 Host”，`lsof` 确认 `192.168.8.4:47321` 正在监听。可确认本次 Host listener 启动成功；授权窗口关闭原因未知，本轮未新输入凭据，也未轮换 Host 身份或修改现有 grant。
+- **网络与反向通道：**Mac `en0=192.168.8.4/24`，LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机 `wlan0=192.168.31.135/24`，当前仍为不同子网。仅绑定 `127.0.0.1:47322` 的临时 TCP 桥转发至 Mac Host listener；配置 `adb reverse tcp:47321 tcp:47322` 后，Android `toybox nc -z -w 4 127.0.0.1 47321` 成功。此结果只覆盖 USB reverse 的 TCP 连通，不含 TLS/WSS、邀请校验、配对或 RPC。
+- **手机界面与配对边界：**打开普通 `io.github.guog962464.aggregate`（versionCode 8）后开始进入设置；设备 UI 自动化随后读到用户项目 `hg.zp.mengnews` 的更新界面节点，目标应用前台状态不再确定，故停止触屏操作，没有生成邀请、提交配对或调用 `host.hello`、`connection.list`。Mac 页面原有两条只读 grant 未改动；没有访问网易云账号/播放，也未清理 Android 应用数据。
+- **清理：**在 Mac UI 停止 Host 后确认 `47321/47322` 无 listener；ADB reverse 已移除，临时 TCP 桥和本轮 Debug PID 已停止，原 Profile 预览进程保留。Android 前台恢复为用户项目 `hg.zp.mengnews/com.zjonline.xsb_main.MainActivity`；普通 Aggregate 保留安装，NodeProbe/testnode 未安装或启动。
+- **结论与范围：**本轮刷新了 Mac Debug Host 启动及 USB reverse TCP 预检证据，但没有通过 production WSS/配对/RPC 验收，不能替代直接 LAN 或 NSD。A5.4/A5.5 继续开放；16 KB 实体设备仍缺失。
