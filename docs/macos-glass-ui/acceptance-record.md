@@ -1516,3 +1516,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自动验收：`flutter analyze --no-pub` 无问题；73 项定向测试通过，覆盖弹窗跨平台回退、按钮与 glyph 映射、共享动效、调用/连接/音乐/Mac Host 确认语义；macOS Profile `flutter run --profile --no-pub -d macos -t lib/preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` 构建并运行成功；`git diff --check` 通过。
 - 变更边界：未改 `glass_theme_switch.dart`、`theme_switch_simulation.dart`、主题校准文件或 `shaders/glass_theme_switch.frag`。预览只用内存样例，不读取真实账户/连接或 Host 配置。
 - 结果/未完成：UI-8.1 的全局材质、通用玻璃确认弹窗和两主题静态 Profile 检查通过，可开始 UI-8.2。该阶段截图只覆盖全局材质代表页，不代表 24 张画板对应的生产页面已全量对齐；其余页面、窄窗和所有按钮 hover/focus/pressed/busy/disabled 的原生逐项动效对照留在 UI-8.2～UI-8.6。当前阶段未请求最终视觉签收。
+
+### 2026-11-21 UI-8.0 v6.0 全功能设计稿校准
+
+- 基准：用户要求先统一设计全部功能，再按设计稿实施。复核 v5 画板、全功能行为蓝图 v2、PreviewRuntime 和实际页面入口后，发现工作台重复绘制全局/页内搜索、连接首页漏标当前连接和刷新入口、多个弹窗没有展示实际来源页，以及连接配置稿没有展开 stdio、HTTP、音乐适配器字段。
+- 修订：新增 [设计稿 v6.0](design-draft-v6.md) 和 27 张固定画布：24 个页面/状态及 3 个适配器配置变体。统一 1360×900pt 画布、240pt 侧栏、正文边界、玻璃层级和点阵按钮规则；工作台只保留页内搜索，CLI/MCP 首页按真实连接高亮并呈现刷新，弹窗叠在真实入口页上；MCP 目录纳入资源模板；修正连接配置表单底部按钮组原有 16pt 重叠。外观图仍嵌入生产主题切换控件裁片。
+- 自验：Python `ast.parse` 校验生成器语法；设计审计确认 27/27 SVG 均可解析且画布为 `viewBox="0 0 1360 900"`，检查工作台无重复全局搜索、连接选中态/刷新、资源模板分组及 3 种适配器核心字段，并断言三个配置画板底部按钮组位置无重叠；macOS `sips` 渲染 27/27 成功，并目视检查 27 张缩略总览和重点画板。全稿总览见 [contact sheet](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v6/contact-sheet.png>)；重点图： [工作台](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v6/01-workspace.png>)、[外观](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v6/05-settings-appearance.png>)、[CLI 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v6/17-connection-home.png>)、[MCP 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v6/21-mcp-home.png>)。
+- 结果/边界：v6 作为当前页面实现基准，旧 v5 保留历史。此记录只签收设计源文件、固定画布和内容映射；不代表生产 Flutter 页面、材质、原生焦点/动画或用户最终视觉签收已经完成。当前工作树中的 UI-8.2 生产改动仍需逐屏按 v6 对照；主题切换及运行/权限/音乐行为均未由本设计稿改变。
