@@ -302,3 +302,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **配对边界：**没有生成邀请或提交配对请求；没有新增/审批设备，也未调用 `host.hello`、`connection.list` 或其他 RPC。Host 设置快照仍显示原有两条只读授权。没有更改网络设置，没有启动 NodeProbe/testnode，也没有执行无障碍测试。
 - **清理：**通过 Host 设置停止服务，复核 `47321/47322` 均无监听，ADB reverse 为空；本轮 Debug app 和 Flutter runner 均已退出，临时工作树与截图已清理。手机未被切换应用，当前 Activity 读回为 HONOR 应用市场。曾观察到独立 Profile 预览进程，后续检查时该 PID 已不存在；本轮没有向其发送关闭信号，原因未知。
 - **结论：**本轮仅证明 Mac Host 可启动并监听，当前手机到 Mac 的直接 TCP 路径不可达；不构成 LAN/NSD/WSS 配对验收，也不推翻 2026-11-19 已通过的只读直连历史记录。A5.4/A5.5 继续开放。
+
+## 2026-11-20 同网段 Mac Host 直连与只读配对复验
+
+- **环境与构建：**Mac `en0=192.168.8.4/24`，LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机 `wlan0=192.168.8.7/24`。从 `716144d` detached worktree 构建正式 Mac Debug app，并在临时 worktree 中通过 `aggregateIsolatedIntegration=true` 构建 `.integration` Android Debug 包；两边只复用主工作区当时的 `pubspec.lock`，用户的 UI/lock 改动未暂存或修改。没有使用模拟器。
+- **直接 LAN / Bonjour / WSS：**Android 到 `192.168.8.4:47321` 的 TCP 探测成功，无 ADB reverse。使用 Mac 原生生成的短时邀请和 Android Keystore 临时身份；Mac UI 核对确认码后只批准“读取连接”。Android NSD 发现 1 个 endpoint，`AndroidHostManager.connect()` 通过发现结果连接；WSS Host 身份与证书 pin 校验、`host.hello` 通过，之后只读 `connection.list` 返回 1 条。没有调用 `capability.search`、setup、CLI/TUI/MCP、账号、终端或写入型 RPC。
+- **清理：**只读测试 grant 已按测试设备名撤销，待批准列表为空，Mac 原有两条“这台手机 · 读取连接”grant 保留；Mac Host UI 显示已关闭且 `47321/47322` 无 listener。`.integration` 包已移除，`adb reverse --list` 为空，手机前台恢复为 `hg.zp.mengnews/com.zjonline.xsb_main.MainActivity`；临时 Debug app、worktree、邀请内容、截图和诊断文件均已清理。
+- **结论边界：**本轮补齐了同网段下隔离 Android Debug 身份的直接 LAN、Bonjour NSD、只读配对与 WSS/RPC 证据，不代表普通签名 Release 的本地网络权限、16 KB Android 运行、日常 Android 身份轮换或 A5.5 真实业务/账号流程通过。没有进行无障碍/TalkBack 测试，也没有启动 NodeProbe/testnode。
