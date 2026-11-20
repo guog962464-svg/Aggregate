@@ -20,12 +20,12 @@ final _payload = jsonEncode({
   'expiresAt': _expires.toIso8601String(),
   'serviceType': hostBonjourServiceType,
   'endpoints': [
-    {'uri': 'wss://192.168.1.20:48123/host'},
+    {'uri': 'wss://127.0.0.1:47321/host'},
   ],
 });
 
 void main() {
-  testWidgets('scans, requests Mac approval and completes pairing', (
+  testWidgets('scans a loopback invitation and completes pairing', (
     tester,
   ) async {
     final manager = _FakeHostManager();
@@ -60,6 +60,8 @@ void main() {
     expect(find.text('Mac Host 已配对并连接'), findsOneWidget);
     expect(find.text('家庭 Mac'), findsOneWidget);
     expect(manager.isConnected(_hostId), isTrue);
+    expect(manager.hosts.single.endpoints.single.uri.host, '127.0.0.1');
+    expect(manager.hosts.single.endpoints.single.uri.port, 47321);
     manager.statusOverride = AndroidHostStatus.permissionDenied;
     manager.statusChangesController.add(
       AndroidHostStatusChange(_hostId, AndroidHostStatus.permissionDenied),

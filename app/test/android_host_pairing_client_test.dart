@@ -42,6 +42,13 @@ void main() {
       expect(invitation.endpoints.single.uri.host, '192.168.1.20');
     });
 
+    test('accepts a loopback WSS invitation for a local tunnel', () {
+      final invitation = _invitation(endpoint: 'wss://127.0.0.1:47321/host');
+      expect(invitation.endpoints.single.uri.host, '127.0.0.1');
+      expect(invitation.endpoints.single.uri.port, 47321);
+      expect(invitation.endpoints.single.uri.path, hostWssPath);
+    });
+
     test('rejects public hosts, names, paths and URL parameters', () {
       for (final endpoint in [
         'wss://203.0.113.10:48123/host',

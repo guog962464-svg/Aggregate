@@ -281,3 +281,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 与 USB 通道：**在 Debug Aggregate 正式入口启动 Host，PID 42745 监听 `192.168.8.4:47321`。Mac `en0=192.168.8.4/24` 与 LGE AN10 `wlan0=192.168.31.135/24` 仍属不同子网。建立仅绑定 Mac 回环地址 `127.0.0.1:47322` 的临时 TCP 桥，配置 `adb reverse tcp:47321 tcp:47322`；手机对 `127.0.0.1:47321` 的 TCP 探针通过。此探针只证明 TCP 转发，不证明 TLS/WSS。
 - **邀请扫描与边界：**Mac 新建短时邀请后，只将 JSON 中 endpoint 主机改为 `127.0.0.1`，Host ID、证书指纹、nonce 与有效期保持不变；手机普通包 `io.github.guog962464.aggregate`（versionName 0.3.7）扫描后把内容填入 Mac Host 邀请框。没有确认表单解析、没有可读的待审批请求，也没有建立 WSS socket；Host 刷新后仍只有两条原有“读取连接”授权。未批准、撤销或轮换任何 grant，未调用 `host.hello`、`connection.list` 或其他 RPC。手机相机确实在扫描时连接并断开，但不能据此推断配对请求已发送。
 - **清理与结论：**停止 Host 并确认 `47321/47322` 无 listener；移除 ADB reverse，停止临时桥，关闭本轮 Debug 窗口并保留 Profile 进程；恢复原为空的 Mac 剪贴板并删除临时邀请二维码、脚本、截图与日志。Android 普通包仍安装，未清数据；手机随后回到用户的 `hg.zp.mengnews` 项目，普通 Aggregate 进程已停止。NodeProbe/testnode 未安装或启动。本次只补充 scanner 到邀请输入框和 USB TCP 预检证据，A5.4/A5.5 的 direct LAN、NSD、生产 WSS 配对、`host.hello`/`connection.list` 仍未验收；16 KB 实体设备仍缺失。
+
+## 2026-11-20 USB loopback 邀请解析回归测试
+
+- 对 `AndroidHostInvitation.fromQrPayload` 增加 `wss://127.0.0.1:47321/host` 用例；配对设置页 Widget 流程改用 loopback 邀请，检查模拟扫码、提交、完成配对后保存的 Host endpoint 仍为 `127.0.0.1:47321`。
+- `cd app && flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart`：13 项通过。设置页使用注入的 scanner 和 fake HostManager，验证邀请解析及 UI 状态流，不建立 socket，也不覆盖相机或 Mac Host 网络行为。
+- **结论边界：**USB reverse endpoint 在产品解析器和设置页状态流程中有自动化覆盖；真实手机这次只确认扫描回填，尚无表单提交、TLS/WSS、Mac 审批或 RPC 证据。A5.4/A5.5 继续开放。
