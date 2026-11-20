@@ -164,3 +164,12 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **静态检查：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过，`dump config` 报告 `PAGE_ALIGNMENT_16K`。NDK 28.2.13676358 `llvm-readelf` 检查 APK 与 AAB 各 7 个库的全部 21 个 `PT_LOAD`，均为至少 16 KB 且文件偏移/虚拟地址对齐余数相符；`libapp.so` 与 `libflutter.so` 为 64 KB，其余库为 16 KB。
 - **签名与设备：**Gradle 明确只为 `.integration` 配置 Debug test signer，产品 Release 在提供正式签名配置前保持 unsigned；本次 `apksigner verify` 失败并报告缺少签名，符合预期。ADB 设备列表为空，未安装或运行本次产物。正式签名、16 KB 物理设备运行及 production Host/音乐链路仍未验收。本次只验证构建和静态产物，不把 16 KB 静态对齐表述为 16 KB 系统运行通过。
 - **代码范围：**Android/Dart 源码相对本任务此前 `1515583` 基线没有变化；完整 Flutter suite 328 项通过/analyze 无问题的证据仍按此前验收记录引用，本次没有重跑测试。
+
+
+## 2026-11-20 当前主线 Debug 与 4 KB 真机复验
+
+- **基线与构建：**`HEAD=dedcdaba191898ec3a00b42d21a7593307a2f22f`。在 `app/` 运行 `flutter build apk --debug --no-pub --target-platform android-arm64`，构建成功。APK SHA-256 `aa26411163d708633f200825b8f2a72e267a2b28d43f09fb09f1f5c136a66cfd`，大小 99,843,319 bytes。`aapt` 显示 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、targetSdk 36、arm64；APK 使用本机 Android Debug signer（SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`）。构建使用 `--no-pub`，没有重新解析依赖。
+- **静态检查：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。NDK 28.2.13676358 `llvm-readelf` 检查包内 7 个 arm64 `.so` 的 21 个 `PT_LOAD`，全部满足 `p_align >= 0x4000` 且文件偏移/虚拟地址的 16 KB 余数相符；APK 不含 `libnode.so` 或 NodeProbe 资产。
+- **代码验证：**`flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart` 的 13 项全部通过；`flutter analyze --no-pub` 无问题。未运行全量测试。
+- **4 KB 真机：**LGE AN10 / Android 15 / API 35 / arm64，`PAGE_SIZE=4096`。在保留应用数据的情况下 `adb install -r` 成功；`am start -W` 返回 `Status: ok`、`LaunchState: COLD`、`Complete`，用时 3,016 ms；进程存活且 `MainActivity` 为 top-resumed。该进程最近 500 行 logcat 未见 `FATAL EXCEPTION`、`Fatal signal` 或 tombstone 标记。验收后发送 HOME，系统启动器恢复为前台，普通 Aggregate 包仍安装；没有启动 NodeProbe/testnode。
+- **范围：**本节证明当前 Debug APK 在这台 4 KB 设备的安装/冷启动，以及包内原生库的 16 KB 静态对齐。没有运行产品 Release，也没有正式签名或 16 KB 系统设备；静态对齐不表示 16 KB 系统实机兼容。TalkBack、production Host 业务和音乐闭环仍未验收。`pubspec.lock` 的工作区修改未暂存；构建未执行 pub 解析。ADB reverse 为空，Host 47321/47322 无监听。
