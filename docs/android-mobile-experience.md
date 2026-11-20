@@ -188,7 +188,7 @@ flowchart LR
 2. 把当前连接向导包装成窄屏全页流程，保留 target-first、安全草稿及逐项检查语义；测试/保存操作避开 IME。
 3. 运行详情显示执行端、权限和可恢复状态；用 shell 级 run coordinator 管理离开页面后的长任务/取消/活动重新订阅，并明确结果正文当前不持久化。
 4. 连接、活动与音乐页按四个窄屏任务重组；播放器/迷你播放器与导航、IME、安全区协调。手机本地音频仍是独立路线，未验收前隐藏本机出声能力声明。
-5. A7.6 用真实连接名、schema、错误 Token、Host 离线、Node 不可用和大输出，在竖/横屏、分屏、浅/深色、大字体和 TalkBack 下走完整任务，并存实际设备截图。A6.5 widget 测试不替代真实 Android IME/远程 PTY 验收。
+5. A7.6 用真实连接名、schema、错误 Token、Host 离线、Node 不可用和大输出，在竖/横屏、分屏及浅/深色主题下走完整任务，并存实际设备截图。无障碍专项测试（包括 TalkBack 与大字体朗读验收）按 2026-11-20 用户决定不属于本版本验收范围。A6.5 widget 测试不替代真实 Android IME/远程 PTY 验收。
 
 ### A7.2 导航与页面组合验收（2026-11-14）
 
@@ -272,3 +272,8 @@ flowchart LR
 - 当前工作树定向复跑 `capability_run_page_test.dart`、`music_mini_player_test.dart` 与 `glass_action_button_test.dart`：29 项通过。覆盖调用页来源/执行端/权限阅读顺序、大字号与窗口矩阵、失败恢复语义、迷你播放器控制标签及主要按钮触控尺寸。
 - `flutter analyze --no-pub` 通过（No issues found）。本轮只验证，不修改应用代码；全量 Flutter 测试和 Android/macOS 构建未重跑。
 - Android 用户 0 当前 `enabled_accessibility_services=null`、`accessibility_enabled=0`；设备装有荣耀读屏 `com.bjbyhd.screenreader_hihonor`，但未启用，TalkBack 仍未安装。没有变更无障碍服务设置，因此本节不代表实体语音朗读验收，A7.6 继续开放。
+
+
+### A7.6 验收范围更新（2026-11-20）
+
+用户决定本项目不开展无障碍专项测试；实体 TalkBack/屏幕朗读与相关专项矩阵不再是 A7.6 或 A8 发布门槛。已有 Flutter 语义实现及历史自动化结果保持原样，不将其表述为本次实体读屏验收。

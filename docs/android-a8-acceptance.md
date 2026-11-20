@@ -79,7 +79,7 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - 新增 [Android 内部测试指南](android-user-guide.md)，说明只安装 Debug APK、HTTP MCP/Host/音乐的运行位置、配对与最小权限、实际音频输出位置及能力边界。
 - 更新[跨平台故障排查](troubleshooting.md#android-内部测试)，加入 Host、HTTPS/Token、任意 CLI/npm、Node 探针、音乐出声和运行结果待确认的处理步骤。
 - macOS [用户指南](user-guide.md)仍对应当前产品版本；其中明确 Android 文档仅供内部实验使用。
-- A7/A8.1–A8.3 已记录 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的安装、运行、HTTP MCP、配对、UI/IME、生命周期及存储验证。本轮 Android HTTP MCP Integration Test 文件 4 项通过，外部 HTTPS 用例因未设置 `A2_EXTERNAL_MCP_URL` 跳过。没有 16 KB 真机、TalkBack 服务、生产 Host LAN/Bonjour、实际音乐账号或签名 Release；这些项目仍未验收。
+- A7/A8.1–A8.3 已记录 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的安装、运行、HTTP MCP、配对、UI/IME、生命周期及存储验证。本轮 Android HTTP MCP Integration Test 文件 4 项通过，外部 HTTPS 用例因未设置 `A2_EXTERNAL_MCP_URL` 跳过。没有 16 KB 真机、生产 Host LAN/Bonjour、实际音乐账号或签名 Release；TalkBack 专项测试按 2026-11-20 用户决定不纳入范围。
 
 ## 本轮验证
 
@@ -172,7 +172,7 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **静态检查：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。NDK 28.2.13676358 `llvm-readelf` 检查包内 7 个 arm64 `.so` 的 21 个 `PT_LOAD`，全部满足 `p_align >= 0x4000` 且文件偏移/虚拟地址的 16 KB 余数相符；APK 不含 `libnode.so` 或 NodeProbe 资产。
 - **代码验证：**`flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart` 的 13 项全部通过；`flutter analyze --no-pub` 无问题。未运行全量测试。
 - **4 KB 真机：**LGE AN10 / Android 15 / API 35 / arm64，`PAGE_SIZE=4096`。在保留应用数据的情况下 `adb install -r` 成功；`am start -W` 返回 `Status: ok`、`LaunchState: COLD`、`Complete`，用时 3,016 ms；进程存活且 `MainActivity` 为 top-resumed。该进程最近 500 行 logcat 未见 `FATAL EXCEPTION`、`Fatal signal` 或 tombstone 标记。验收后发送 HOME，系统启动器恢复为前台，普通 Aggregate 包仍安装；没有启动 NodeProbe/testnode。
-- **范围：**本节证明当前 Debug APK 在这台 4 KB 设备的安装/冷启动，以及包内原生库的 16 KB 静态对齐。没有运行产品 Release，也没有正式签名或 16 KB 系统设备；静态对齐不表示 16 KB 系统实机兼容。TalkBack、production Host 业务和音乐闭环仍未验收。`pubspec.lock` 的工作区修改未暂存；构建未执行 pub 解析。ADB reverse 为空，Host 47321/47322 无监听。
+- **范围：**本节证明当前 Debug APK 在这台 4 KB 设备的安装/冷启动，以及包内原生库的 16 KB 静态对齐。没有运行产品 Release，也没有正式签名或 16 KB 系统设备；静态对齐不表示 16 KB 系统实机兼容。production Host 业务和音乐闭环仍未验收；TalkBack 专项测试不在当前验收范围。`pubspec.lock` 的工作区修改未暂存；构建未执行 pub 解析。ADB reverse 为空，Host 47321/47322 无监听。
 
 
 ## 2026-11-20 当前提交 Release APK/AAB 干净工作树复建
