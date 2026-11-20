@@ -272,6 +272,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-19 19:05 网络与临时 runner 清理复核：Mac `en0=192.168.8.4/24`；手机 `wlan0=192.168.31.135/24`。当时未指定路由表的 `ip route` 输出只列直连网段，尚未检查 Wi-Fi 策略表；Mac 到手机的 ICMP 无响应，Host 端口 `47321` 无监听。本轮未启动 Host、未配对或调用 RPC。pummel 临时 Service 已 force-stop 并卸载；无 testnode 进程，前台仍是 `hg.zp.mengnews/...LoginPasswordActivity`，Aggregate 普通包保留。
   - 2026-11-19 Android Wi-Fi 路由表解释更正：`ip rule` 显示 Wi-Fi policy table `1026`；该表有 `default via 192.168.31.1 dev wlan0`，ConnectivityManager 也显示相同默认路由，故更正“手机没有默认路由”的结论。Mac `192.168.8.4/24` 与手机 `192.168.31.135/24` 仍不同子网；双向 ICMP 无响应，Mac 未监听 47321，之前 Android 到 Host 的 TCP 探针超时且 NSD 返回空。未启动 Host、未配对或调用 RPC；这些可达性证据仍不支持当前网络下完成 direct LAN/NSD 验收。详见 [Android 默认路由策略表复核与更正](android-a5-android-client.md#2026-11-19-android-默认路由策略表复核与更正)。
 
+  - 2026-11-20 同网段复核：Mac `en0=192.168.10.144/24`、LGE AN10 `wlan0=192.168.10.195/24`，但 Android 邻居项保持 `INCOMPLETE`、TCP 探针为 `No route to host`，Mac 侧 ICMP/ARP 也无返回。Host 正监听期间，普通 Android 邀请请求未抵达配对层；没有新增 grant 或 RPC。USB reverse 的 loopback TCP 探针通过，但未继续配对。临时桥接、ADB reverse 与 Host 均已清理；A5.4/A5.5 状态不变，2026-11-19 直连成功证据仍按其网络环境保留。详见 [同网段直连复核](android-a5-android-client.md#2026-11-20-1002-同网段直连复核与终端隔离)。
+
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 
 **依赖：**A2 + A5；若 A4 通过，可附加白名单本地 JS 执行器。

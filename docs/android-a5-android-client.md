@@ -261,3 +261,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **钥匙串授权：**独立打开签名副本并启动 Host 后，SecurityAgent 再次请求 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串访问。用用户已提供的凭据填写安全字段并尝试“始终允许”，提示仍未关闭；桌面物理点击被一个 `警告` 对话框遮挡而未投递。`securityd` 日志记录该服务项的 `ObjectAcl REJECTS access using ACL`。现有证据能确认 ACL 拒绝了该次访问，不能据此判断密码错误或证明授权已更新。
 - **调用路径复核：**`HostTlsIdentityChannel` 将 `loadOrCreate`/`rotate` 放在专用 `identityQueue` 执行；本次失败不足以支持“Keychain 调用阻塞 Flutter 主线程”的判断。未观察到 Host 身份轮换或条目删除。
 - **退出与范围：**Debug 进程退出后确认没有存活的 Debug Host 请求者，再取消遗留的 SecurityAgent 请求；Mac `47321` 无 listener，没有配对、NSD、WSS 或 RPC。原 Profile 预览进程保持运行并恢复到前台；手机仍在原项目，未启动 testnode。Mac `192.168.8.4/24` 与 Android `192.168.31.135/24` 仍不同子网。A5.4/A5.5 继续开放。
+
+## 2026-11-20 10:02 同网段直连复核与终端隔离
+
+- **网络与 Host：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机 `wlan0=192.168.10.195/24`，Mac `en0=192.168.10.144/24`，地址位于同一 `/24`。正式 `main.dart` Debug app 启动 Host 后，`lsof` 确认 `192.168.10.144:47321` 正在监听。Android 路由查询选择 `wlan0`，但邻居表对 Mac 地址为 `INCOMPLETE`；`toybox nc` 返回 `No route to host`。Mac 到手机两次 ICMP 均无响应，ARP 无条目。
+- **配对结果：**普通 `io.github.guog962464.aggregate` 的邀请 payload 在设备字段中校验为完整匹配后发起一次配对；Android 显示“找不到 Mac Host”，Mac 未出现新待批准设备，现存只读 grant 未更改。没有建立配对、没有调用 `host.hello`/`connection.list` 或其他 Host RPC。结论只覆盖该 Wi-Fi 下的终端间路径不可达；同网段地址本身不代表二层可互访，也不推翻 2026-11-19 在另一网络中已通过的 direct WSS 记录。
+- **备用通道与清理：**仅绑定 `127.0.0.1` 的临时 TCP 桥接和 `adb reverse tcp:47321 tcp:47322` 的 loopback TCP 探针通过；没有用 loopback 邀请发起配对或 RPC。过程中手机前台离开 Aggregate 后未再切换，普通 Aggregate 包仍安装；NodeProbe/testnode 未安装或启动。ADB reverse 已移除、桥接已停止、Mac Host 已停止、47321/47322 均无 listener、临时 Debug PID 已退出。A5.4/A5.5 仍开放。
