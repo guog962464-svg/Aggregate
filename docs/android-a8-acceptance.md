@@ -196,3 +196,12 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **构建输入：**在 `fbe9fce` 干净 detached worktree 构建 `aggregateIsolatedIntegration=true` arm64 Release APK；临时工作树使用主工作区未提交的 `pubspec.lock` 副本并通过 `flutter pub get --enforce-lockfile`。APK package 为 `io.github.guog962464.aggregate.integration`、versionCode 8、versionName 0.3.7，大小 27,722,124 bytes，SHA-256 `29b58f0d253b8feb6541f8a95dae5d096482f3f9a6c3a32a45ff4aefaa5e5c79`；使用 Android Debug test signer，证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`。
 - **设备验收：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。首次官方 cold-start runner 返回 `Status: ok`、`LaunchState: COLD`，但 3 秒时 `MainActivity` 未 resumed；进程仍存在，crash buffer 没有该包匹配记录。按项目清理器已卸载 `.integration`。之后一次受控复核在 0.5/1.5/3 秒都观察到 `MainActivity` resumed、同一 PID 存活且无匹配 crash；随后官方 runner 连续 3 次通过，PIDs `1667`/`2893`/`4252`，`am start -W` 分别等待 1,334/2,103/1,156 ms。每次均自动 force-stop 并卸载 `.integration`，普通 Aggregate 保持安装。
 - **结论范围：**记录一次未复现的瞬时 Activity-resume 检查失败和后续四次可复核成功；未定位首次异常根因，也未修改应用代码。当前结论仅为该 test-signed Release 在这台 4 KB 设备的冷启动复核；不能替代正式签名、16 KB 系统实机或 production Host/音乐验收。复核后无障碍设置仍为 `null/0`，ADB reverse 为空。
+
+
+## 2026-11-20 `6507c92` 当前提交 Release APK/AAB 静态复建
+
+- **基线与依赖：**从 `6507c92ee0b7b0f71393e0b45d4a2b476271f1d1` 创建 detached worktree。该提交中的 lock 与 pubspec 约束不一致；复制主工作区未提交的 `pubspec.lock` 后 `flutter pub get --enforce-lockfile` 通过。构建使用该提交的 Dart 源码，不含主工作区未提交 UI 修改。
+- **验证：**`flutter analyze --no-pub` 无问题。Release APK/AAB 构建均成功；本轮只做构建与静态产物检查，没有运行 Flutter 测试、安装或启动 Release 包，也没有执行无障碍测试。
+- **产物：**APK 27,779,456 bytes，SHA-256 `1b50fbd9e595b55c3ff5435f64345541ba0208ceab592dcb29239818f48e9c46`；AAB 25,502,275 bytes，SHA-256 `8fe2340230e3635d6342ea4d59b1a2befd1296e5dc22c46a0d737954dfb9bf4d`。`aapt dump badging` 显示包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36，arm64-v8a only。
+- **静态门禁：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过，`dump config` 报告 `PAGE_ALIGNMENT_16K`。APK/AAB 各有 7 个 arm64 原生库、21 个 `PT_LOAD`，全部满足至少 16 KB 对齐和 offset/virtual-address 同余。两种压缩包均无 NodeProbe、NodeBridge、`libnode.so`、nodejs-mobile 或 npm `node_modules` 载荷。
+- **签名与范围：**APK/AAB 没有签名条目，保持 unsigned；未在 4 KB 或 16 KB 设备安装/运行。本项证明当前提交的产品 Release 可构建并通过 16 KB 静态检查，不代表正式签名、16 KB 系统运行或 production Host/音乐验收。16 KB 实机、正式签名及生产 Host/音乐闭环仍开放。
