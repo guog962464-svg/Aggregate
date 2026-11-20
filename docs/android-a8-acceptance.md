@@ -222,8 +222,14 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **产品 Release 工件：**arm64 APK 27,779,456 bytes，SHA-256 `f1825817fe713db275ffbb9b62c55ace1c0b70e0c49387b7b19869d2a91de3e9`；AAB 25,519,983 bytes，SHA-256 `35fd983eab178a2f93dfc27cd9d8dbd0177d225a837304766df3586ea691b3fc`。Package `io.github.guog962464.aggregate`、versionCode 8/versionName 0.3.7、minSdk 24、targetSdk 36、arm64-v8a only。
 - **静态门禁：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过，AAB config 为 `PAGE_ALIGNMENT_16K`。APK 与 AAB 各 7 个 arm64 DSO，全部 21 个 `PT_LOAD` 均 `p_align >= 0x4000` 且文件偏移/虚拟地址模 16 KB 相同。APK/AAB 均无签名条目；APK `apksigner verify` 按预期报告缺少 `META-INF/MANIFEST.MF`。两个工件都不含 NodeProbe、NodeBridge、`libnode.so` 或 npm 载荷。
 - **隔离真机包：**同一源码用 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true` 构建 test-signed `.integration` Release；APK SHA-256 `1446065084150c1e03be2fcc4f4eba7fbfbcb821ba24c356cb9ddeb5cb23bd66`，v2 test signer 证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`。`zipalign -c -P 16 4` 通过，包内有 7 个 arm64 DSO，未发现 Node/npm 载荷。
-- **4 KB 冷启动结果：**LGE AN10 / Android 15 / API 35 / `PAGE_SIZE=4096`。官方 runner 两次均得到 `Status: ok`，但 3 秒检查未观察到 `MainActivity` resumed；无匹配该包的 crash-buffer 记录，进程仍存在。第一次检查后设备为 asleep；唤醒后第二次检查时 Keyguard 仍显示。两次 runner 均自动卸载隔离 `.integration` 包，普通包未被 runner 操作；没有启动 NodeProbe/testnode。因没有收到 `MainActivity resumed` 证据，这次当前 UI 源码冷启动不签收，Keyguard 是否为直接原因尚未证实；此前 `df0ddfd` 的通过结果不外推到包含 `3dc5dac` UI 更新的源码。
-- **范围结论：**当前代码的 Release 构建与 16 KB 静态检查通过；产品包仍 unsigned。当前源码的 4 KB 物理启动证据未通过判定，需在设备处于可运行应用的状态时复验；这不改变正式签名、16 KB 真机和 production Host/音乐业务门槛。
+- **4 KB 冷启动结果：**LGE AN10 / Android 15 / API 35 / `PAGE_SIZE=4096`。最初两次 runner 均得到 `Status: ok`，但 3 秒检查未观察到 `MainActivity` resumed；第一次检查后设备为 asleep，第二次检查时 Keyguard 仍显示，原因未证实。随后设备处于唤醒、解锁状态时，使用同一 APK 重跑，`LaunchState: COLD`，`MainActivity` resumed、进程存活，详见下方补验。两次早期 runner 及成功补验均只操作隔离 `.integration` 包；普通包未被 runner 操作。没有启动 NodeProbe/testnode；较早 `df0ddfd` 的结论不用于替代当前 UI 源码验收。
+- **范围结论：**当前代码的 Release 构建、16 KB 静态检查及本机 4 KB test-signed 冷启动均通过；产品包仍 unsigned。4 KB 结果不改变正式签名、16 KB 真机和 production Host/音乐业务门槛。
+
+## 2026-11-20 当前 UI 提交后的 4 KB Release 冷启动补验
+
+- **设备状态与产物：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。测试前只读状态为 `mWakefulness=Awake`、Keyguard `showing=false`，未发送唤醒或解锁指令。使用上节同一隔离 `.integration` Release APK，SHA-256 `1446065084150c1e03be2fcc4f4eba7fbfbcb821ba24c356cb9ddeb5cb23bd66`。
+- **结果：**`app/tool/run_android_release_cold_start.py --device AEMN022427001360 --apk app/build/app/outputs/apk/release/app-release.apk` 返回成功；Android 报 `Status: ok`、`LaunchState: COLD`、`WaitTime: 1184 ms`，`MainActivity` resumed，PID 2680，进程保持存活，无匹配的新 crash-buffer 记录。冷启动项在该 4 KB 设备验收通过。
+- **清理：**runner force-stop 并卸载本次隔离 `.integration` 包。测试后普通 Aggregate 与隔离包均未安装，ADB reverse 为空；屏幕仍唤醒且未锁定，前台恢复为 `hg.zp.mengnews/...NewsDetailH5Activity`。没有启动 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
 
 ## 2026-11-20 当前 UI 提交后的 HTTPS MCP 集成复验
 
