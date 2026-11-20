@@ -1563,3 +1563,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：`python3 -m py_compile docs/macos-glass-ui/design-draft-v6/render_designs.py` 通过；生成器输出 27 张 SVG，逐张 XML、`viewBox=0 0 1360 900`、逻辑尺寸和已解析调色变量检查 27/27 通过；从 Flutter source 读取的 31 种点阵掩码均为 9×9 二进制格。macOS `NSImage` 将 27 张画板导出为 1360×900 PNG；目视检查全稿总览以及 01、09、11、16 重点画板；`git diff --check` 通过。此阶段未运行产品测试或构建。
 - 视觉证据：[v6.6 27 张画板总览](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v66/contact-sheet.png>)，SHA-256 `8edb9c2243dd1d692aedabde3b7fd4d32ff32fbe921a5b9c4ddfa0e78b6e81fe`；[16 成功结果画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v66/16-result-success.svg.png>)，SHA-256 `e94619a5fdb8db07c87780838cb04d76258910eb8e7b178f754e3e6142af08d6`。已有 Profile 对照截图[含 hover 的成功结果](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui80-design-v66/profile-16-result-success-hover.png>)，SHA-256 `88fa0f7a3a09832aef875d32c1874471326a5e59f1a9148bacf289725eda5c31`；它用于核对 Runtime 内容和布局，画面含目录 hover，不用于静置像素验收。
 - 结果/边界：v6.6 固定了全部 27 个功能场景的布局与状态基线，作为 UI-8.2～UI-8.6 的实施依据。SVG 的玻璃面是静态近似，不能代表 Flutter/Profile 的 shader、真实文字栅格、焦点或动画；尚未宣称这 27 个生产页面已与预览完全一致。接下来逐阶段用同窗口尺寸、同主题、同 Runtime/会话状态的 Profile 实窗截图核对，并按差异修正实现。未取得用户最终视觉签收。
+
+### 2026-11-21 UI-8.0 v6.7 音乐画板预览状态补正
+
+- 基准：复核 02、14、18 的 1360×900 浅色画板、设计稿第 9 节入口步骤、`MusicSession` 队列显隐条件及 `Ui6InspectionRuntime` 的账号终端桩。
+- 修订：14 明确为音乐页「切换账号」确认后进入扫码等待态；检查 Runtime 退出内存样例账号并启动保持等待的登录 stub，截图时没有生成可扫描链接，不访问命令、网络或真实账号。18 固定三首预览队列与第 2 首当前曲目，使相邻曲目按钮能按真实会话条件出现；生产队列仍由连接端状态决定。
+- 自验：预览步骤与现有账号端口、登录控件及 `MusicSession.canPrev/canNext` 合同对应；`git diff --check` 通过。此修订只明确安全设计样例，14 弹层与 18 播放器仍待生产 Widget/Profile 图像验收。
+- 结果/边界：v6.7 不改 27 张画板几何、主题开关或生产业务行为。后续 UI-8.3 将以这两项可重复状态实现并截取同尺寸实窗证据。
