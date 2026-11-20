@@ -11,6 +11,24 @@ W, H = 1360, 900
 SWITCH_REFERENCE = base64.b64encode(
     (OUT / "glass-theme-switch-light.png").read_bytes()
 ).decode("ascii")
+APP_ROOT = OUT.parents[2]
+GLYPH_TOKENS = (APP_ROOT / "app/lib/widgets/glass/glass_design_tokens.dart").read_text(
+    encoding="utf-8"
+)
+GLYPH_PITCH = float(re.search(r"glyphPitch = ([0-9.]+);", GLYPH_TOKENS).group(1))
+GLYPH_CELL_SIZE = float(
+    re.search(r"glyphCellSize = ([0-9.]+);", GLYPH_TOKENS).group(1)
+)
+GLYPH_CORNER_RADIUS = float(
+    re.search(r"glyphCornerRadius = ([0-9.]+);", GLYPH_TOKENS).group(1)
+)
+GLYPH_FEATHER = float(re.search(r"glyphFeather = ([0-9.]+);", GLYPH_TOKENS).group(1))
+GLYPH_OUTER_HALO = float(
+    re.search(r"glyphOuterHalo = ([0-9.]+);", GLYPH_TOKENS).group(1)
+)
+GLYPH_HALO_ALPHA = float(
+    re.search(r"glyphHaloAlpha = ([0-9.]+);", GLYPH_TOKENS).group(1)
+)
 
 LIGHT = {
     "scene0":"#e6e6e8", "scene1":"#e6e6e8", "scene2":"#f4f4f6", "warm":"#b06520",
@@ -27,37 +45,104 @@ DARK = {
     "good":"#a2d6bc", "danger":"#f2a09d", "dangerInk":"#f2a09d",
 }
 
-GLYPHS = {
-    "search": ("001110000", "010001000", "100000100", "100000100", "100000100", "010001000", "001110000", "000001000", "000000100"),
-    "play": ("000100000", "000110000", "000111000", "000111100", "000111110", "000111100", "000111000", "000110000", "000100000"),
-    "pause": ("011000110",) * 9,
-    "refresh": ("001111000", "010000100", "100000010", "100000110", "100000000", "000000001", "010000001", "001000010", "000111100"),
-    "plus": ("000010000", "000010000", "000010000", "000010000", "111111111", "000010000", "000010000", "000010000", "000010000"),
-    "music": ("000011110", "000010010", "000010010", "000010010", "000010010", "001110110", "011101110", "011001100", "000000000"),
-    "settings": ("000111000", "010101010", "001111100", "111000111", "101010101", "111000111", "001111100", "010101010", "000111000"),
-    "history": ("000010000", "000111000", "001101100", "011000110", "110000011", "110000011", "011000110", "001101100", "000111000"),
-    "grid": ("111000111", "101000101", "111000111", "000000000", "000000000", "000000000", "111000111", "101000101", "111000111"),
-    "chat": ("001111100", "010000010", "100000001", "100000001", "100000001", "010000010", "001111100", "000100000", "001000000"),
-    "device": ("111111111", "100000001", "101110101", "101010101", "101110101", "100000001", "100000001", "111111111", "000010000"),
-    "connection": ("000010000", "000111000", "001010100", "010010010", "100010001", "010010010", "001010100", "000111000", "000010000"),
-    "terminal": ("000000000", "010000000", "001000000", "000100000", "001000000", "010000000", "000011110", "000000000", "000000000"),
-    "check": ("000000001", "000000010", "000000100", "000001000", "100010000", "010100000", "001000000", "000000000", "000000000"),
-    "close": ("100000001", "010000010", "001000100", "000101000", "000010000", "000101000", "001000100", "010000010", "100000001"),
-    "stop": ("000000000", "011111110", "011111110", "011111110", "011111110", "011111110", "011111110", "011111110", "000000000"),
-    "folder": ("111100000", "100110000", "100011111", "100000001", "100000001", "100000001", "100000001", "111111111", "000000000"),
-    "back": ("000010000", "000100000", "001000000", "111111110", "001000000", "000100000", "000010000", "000000000", "000000000"),
-    "next": ("010000010", "011000010", "011100010", "011110010", "011111010", "011110010", "011100010", "011000010", "010000010"),
-    "previous": ("010000010", "010000110", "010001110", "010011110", "010111110", "010011110", "010001110", "010000110", "010000010"),
-    "trash": ("000111000", "011111110", "000000000", "010101010", "010101010", "010101010", "010101010", "010000010", "001111100"),
-    "lock": ("000111000", "001000100", "010000010", "010111010", "010101010", "010111010", "010000010", "001000100", "000111000"),
-    "star": ("000010000", "000010000", "001111100", "111101111", "011111110", "001111100", "001101100", "010000010", "100000001"),
-    "document": ("011111100", "010000100", "010110100", "010110100", "010000100", "010110100", "010110100", "010000100", "011111100"),
-    "filter": ("111111111", "011111110", "001111100", "000111000", "000111000", "000010000", "000010000", "000010000", "000000000"),
-    "sun": ("000010000", "001010100", "000111000", "010111010", "001111100", "010111010", "000111000", "001010100", "000010000"),
-    "moon": ("000111000", "001100000", "011000000", "110000000", "110000000", "110001100", "011001100", "001111000", "000000000"),
-    "expand": ("100000001", "010000010", "001000100", "000000000", "000000000", "000000000", "001000100", "010000010", "100000001"),
-    "spark": ("000010000", "000111000", "000010000", "010010010", "001111100", "000010000", "000101000", "001000100", "000000000"),
+RENDER_GLYPH_ENUMS = {
+    "back": "arrowBack",
+    "connection": "network",
+    "history": "activity",
+    "lock": "lock",
+    "moon": "appearance",
+    "spark": "flash",
+    "sun": "brightness",
 }
+
+
+def load_flutter_glyphs():
+    """Use the production dot masks so design boards cannot drift from Flutter."""
+    source_path = OUT.parents[2] / "app/lib/widgets/glass/glass_glyph.dart"
+    source = source_path.read_text(encoding="utf-8")
+    rows = {
+        match.group(1): tuple(re.findall(r"'([01]{9})'", match.group(2)))
+        for match in re.finditer(
+            r"static const (\w+) = \[([^\]]+)\];", source, re.DOTALL
+        )
+    }
+    rows = {name: pattern for name, pattern in rows.items() if len(pattern) == 9}
+
+    resolver_source = source[
+        source.index("List<String> _rowsFor") : source.index("abstract final class _GlyphRows")
+    ]
+    enum_to_rows = {}
+    for match in re.finditer(
+        r"((?:GlassGlyph\.\w+(?:\s*\|\|\s*GlassGlyph\.\w+)*)\s*=>\s*_GlyphRows\.(\w+))",
+        resolver_source,
+    ):
+        for enum_name in re.findall(r"GlassGlyph\.(\w+)", match.group(1)):
+            enum_to_rows[enum_name] = match.group(2)
+
+    glyphs = {}
+    # These are the symbols used by the layouts and fixture data below.
+    renderer_names = set(RENDER_GLYPH_ENUMS) | {
+        "play", "pause", "next", "previous", "plus", "stop", "copy", "playlist",
+        "grid", "chat", "device", "terminal", "check", "close", "folder", "trash",
+        "star", "document", "filter", "expand", "music", "settings", "search", "refresh",
+    }
+    for renderer_name in renderer_names:
+        enum_name = RENDER_GLYPH_ENUMS.get(renderer_name, renderer_name)
+        row_name = enum_to_rows.get(enum_name)
+        if row_name is None or row_name not in rows:
+            raise KeyError(f"No Flutter dot mask for renderer glyph {renderer_name!r}")
+        glyphs[renderer_name] = rows[row_name]
+    glyphs.update(
+        {
+            # v6.6 design proposal: remove isolated stem/noise from the three
+            # high-frequency symbols while keeping the shared rounded grid.
+            "play": (
+                "100000000",
+                "110000000",
+                "111100000",
+                "111111000",
+                "111111111",
+                "111111000",
+                "111100000",
+                "110000000",
+                "100000000",
+            ),
+            "refresh": (
+                "000111000",
+                "001000100",
+                "010000010",
+                "010000011",
+                "010000010",
+                "001000100",
+                "000111000",
+                "000000000",
+                "000000000",
+            ),
+            "search": (
+                "000111000",
+                "001000100",
+                "010000010",
+                "010000010",
+                "010000010",
+                "001000100",
+                "000111100",
+                "000000010",
+                "000000001",
+            ),
+        }
+    )
+    invalid = {
+        name: pattern
+        for name, pattern in glyphs.items()
+        if len(pattern) != 9
+        or any(len(row) != 9 or set(row) - {"0", "1"} for row in pattern)
+    }
+    if invalid:
+        raise ValueError(f"Glyph masks must be 9x9 binary grids: {sorted(invalid)}")
+    return glyphs
+
+
+GLYPHS = load_flutter_glyphs()
 
 
 def txt(x, y, value, size=14, color="var(--ink)", weight=450, anchor="start"):
@@ -77,17 +162,41 @@ def line(x1, y1, x2, y2, color="var(--line)", width=1, opacity=1):
 
 def glyph(kind, x, y, size=20, color="var(--glyph)"):
     grid = GLYPHS[kind]
-    pitch = size / 9
-    radius = max(0.82, pitch * .38)
-    pieces = []
+    scale = size / 32
+    half_cell = GLYPH_CELL_SIZE / 2
+    halo_inset = GLYPH_FEATHER + GLYPH_OUTER_HALO
+    halo_radius = min(
+        half_cell,
+        GLYPH_CORNER_RADIUS + GLYPH_FEATHER + GLYPH_OUTER_HALO,
+    )
+    halo_shapes = []
+    core_shapes = []
     for row, bits in enumerate(grid):
         for col, bit in enumerate(bits):
             if bit == "1":
-                pieces.append(f'<circle cx="{x+(col+.5)*pitch:.2f}" cy="{y+(row+.5)*pitch:.2f}" r="{radius:.2f}" fill="{color}"/>')
-    return "".join(pieces)
+                cx = 4 + col * GLYPH_PITCH
+                cy = 4 + row * GLYPH_PITCH
+                halo_shapes.append(
+                    f'<rect x="{cx-half_cell-halo_inset:.2f}" '
+                    f'y="{cy-half_cell-halo_inset:.2f}" '
+                    f'width="{GLYPH_CELL_SIZE+2*halo_inset:.2f}" '
+                    f'height="{GLYPH_CELL_SIZE+2*halo_inset:.2f}" '
+                    f'rx="{halo_radius:.2f}" fill="{color}"/>'
+                )
+                core_shapes.append(
+                    f'<rect x="{cx-half_cell:.2f}" y="{cy-half_cell:.2f}" '
+                    f'width="{GLYPH_CELL_SIZE:.2f}" height="{GLYPH_CELL_SIZE:.2f}" '
+                    f'rx="{GLYPH_CORNER_RADIUS:.2f}" fill="{color}"/>'
+                )
+    return (
+        f'<g transform="translate({x} {y}) scale({scale:.5f})">'
+        f'<g fill-opacity="{GLYPH_HALO_ALPHA:.2f}" filter="url(#glyphHalo)">'
+        f'{"".join(halo_shapes)}</g>'
+        f'{"".join(core_shapes)}</g>'
+    )
 
 
-def button(x, y, w, label, icon=None, primary=False, selected=False, danger=False, h=42, icon_only=False, pressed=False, disabled=False):
+def button(x, y, w, label, icon=None, primary=False, selected=False, danger=False, h=42, icon_only=False, pressed=False, disabled=False, navigation=False):
     kind = "danger" if danger else "primary" if primary or selected else "quiet"
     radius = min(w/2, max(14, h*.38))
     glow = (f'<rect x="-5" y="-3" width="{w+10}" height="{h+13}" rx="{radius+5}" '
@@ -110,16 +219,19 @@ def button(x, y, w, label, icon=None, primary=False, selected=False, danger=Fals
     if pressed:
         out.append(f'<path d="M{radius} 2H{w-radius}" stroke="var(--line)" stroke-opacity=".48" stroke-width="1"/>')
     if icon:
-        if icon_only:
-            isize = 27 if h >= 72 else 20
+        if navigation:
+            isize, ix, iy = 16, 12, (h-16)/2
+        elif icon_only:
+            isize = 32 if h >= 72 else 20
             ix, iy = (w-isize)/2, (h-isize)/2
         elif h <= 34:
             ix, iy, isize = 12, (h-16)/2, 16
         else:
-            ix, iy, isize = 14, (h-20)/2, 20
+            isize = 22 if primary and h >= 40 else 20
+            ix, iy = 14, (h-isize)/2
         out.append(glyph(icon, ix, iy, isize, "var(--dangerInk)" if danger else "var(--glyph)"))
     if label and not icon_only:
-        label_x = 36 if icon and h <= 34 else 44 if icon else 16
+        label_x = 36 if navigation or icon and h <= 34 else 44 if icon else 16
         out.append(txt(label_x, h/2+5, label, 13, "var(--ink)", 570 if primary or selected else 510))
     out.append('</g>')
     return "".join(out)
@@ -199,10 +311,11 @@ def defs(dark=False):
       <linearGradient id="dialogPanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--panelTop)" stop-opacity=".98"/><stop offset=".46" stop-color="var(--panelTop)" stop-opacity=".95"/><stop offset="1" stop-color="var(--panelBottom)" stop-opacity=".96"/></linearGradient>
       <linearGradient id="buttonFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--panelTop)" stop-opacity=".95"/><stop offset=".52" stop-color="var(--panelTop)" stop-opacity=".82"/><stop offset="1" stop-color="var(--panelBottom)" stop-opacity=".94"/></linearGradient>
       <linearGradient id="inset" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--inset)"/><stop offset="1" stop-color="var(--scene0)"/></linearGradient>
+      <filter id="glyphHalo" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation=".28"/></filter>
       <linearGradient id="warmGlow" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--warmEdge)" stop-opacity=".9"/><stop offset=".52" stop-color="var(--warm)" stop-opacity=".34"/><stop offset="1" stop-color="var(--warm)" stop-opacity="0"/></linearGradient>
       <filter id="softShadow" x="-25%" y="-25%" width="150%" height="170%"><feGaussianBlur stdDeviation="5"/></filter>
       <filter id="blurGlow" x="-40%" y="-50%" width="180%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
-      <clipPath id="windowClip"><rect x="16" y="16" width="1328" height="868" rx="20"/></clipPath>
+      <clipPath id="windowClip"><rect x="0" y="0" width="1360" height="900" rx="14"/></clipPath>
       <style>:root {{{vars_}}} text {{font-synthesis:none}} .button-primary {{}} .button-danger {{}}</style>
     </defs>
     """
@@ -210,40 +323,32 @@ def defs(dark=False):
 
 def shell(title, active="全部功能", subtitle=None, dark=False, search=True, mini=False, fixture="preview"):
     p = ['<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="900" viewBox="0 0 1360 900">', defs(dark)]
-    p.append('<rect width="1360" height="900" fill="#151519"/>')
-    p.append('<g clip-path="url(#windowClip)"><rect x="16" y="16" width="1328" height="868" fill="url(#scene)"/><rect x="16" y="16" width="1328" height="868" fill="url(#skyGlow)"/><rect x="16" y="16" width="1328" height="868" fill="url(#sceneGrain)" opacity=".42"/>')
-    p.append('<rect x="16" y="16" width="1328" height="42" fill="var(--panelBottom)" opacity=".30"/><path d="M16 58H1344M240 58V884" stroke="var(--line)" stroke-opacity=".72"/>')
-    for x, c in ((42,"#f26a5f"),(66,"#f0c34d"),(90,"#49bd6c")):
-        p.append(f'<circle cx="{x}" cy="37" r="7" fill="{c}"/>')
-    p.append(txt(112,42,"Aggregate",15,"var(--muted)",620))
-    p.append(glyph("connection",42,91,17))
-    p.append(txt(67,106,"Aggregate",19,"var(--ink)",680))
+    p.append('<g clip-path="url(#windowClip)"><rect x="0" y="0" width="1360" height="900" fill="url(#scene)"/><rect x="0" y="0" width="1360" height="900" fill="url(#skyGlow)"/><rect x="0" y="0" width="1360" height="900" fill="url(#sceneGrain)" opacity=".42"/>')
+    p.append('<rect x="0" y="0" width="1360" height="40" fill="var(--panelBottom)" opacity=".30"/><path d="M0 40H1360M240 40V900" stroke="var(--line)" stroke-opacity=".72"/>')
+    for x, c in ((16,"#f26a5f"),(34,"#f0c34d"),(52,"#49bd6c")):
+        p.append(f'<circle cx="{x}" cy="16" r="7" fill="{c}"/>')
+    p.append(txt(84,21,"Aggregate",13,"var(--muted)",620))
+    p.append(glyph("connection",42,81,17))
+    p.append(txt(67,99,"Aggregate",19,"var(--ink)",680))
     p.append(txt(40,153,"我的连接",11,"var(--muted)",560))
+    p.append(button(182,132,42,"","plus",h=42,icon_only=True))
     connections = (
-        (("UI 检查 · 音乐", "music"), ("UI 检查 · Git CLI", "terminal"), ("UI 检查 · MCP", "connection"))
+        (("UI 检查 · Git CLI", "terminal"), ("UI 检查 · MCP", "connection"), ("UI 检查 · 音乐", "music"))
         if fixture == "inspection"
         else (("示例网易云音乐", "music"), ("示例 Git CLI", "terminal"), ("示例 MCP", "connection"))
     )
     for i, (label, icon) in enumerate(connections):
-        y=176+i*42
-        p.append(txt(49,y+17,label,13,"var(--ink)",480))
-        p.append(f'<circle cx="219" cy="{y+12}" r="2.5" fill="var(--good)"/>')
-        if active==label:
-            p.append(rect(32,y-5,192,34,"url(#panel)",10,"var(--panelEdge)"))
-            p.append(glyph(icon,46,y+2,16))
-            p.append(txt(70,y+17,label,13,"var(--ink)",560))
-    p.append(line(32,316,224,316))
+        y=188+i*50
+        p.append(button(32,y,192,label,icon,selected=active==label,h=40,navigation=True))
+        status_x = 32 + 36 + min(112, len(label) * 6.4) + 10
+        p.append(f'<circle cx="{status_x:.1f}" cy="{y+20}" r="2.5" fill="var(--good)"/>')
+    p.append(line(32,354,224,354))
     for i,(label,icon) in enumerate((("所有功能","search"),("管理连接","connection"),("活动","history"))):
-        y=346+i*43
-        if active==label:
-            p.append(rect(32,y-12,192,34,"url(#panel)",10,"var(--panelEdge)"))
-            p.append(f'<path d="M38 {y-7}V{y+5}" stroke="var(--warmEdge)" stroke-width="2" stroke-linecap="round"/>')
-        p.append(glyph(icon,48,y-5,17))
-        p.append(txt(73,y+10,label,13,"var(--ink)",560 if active==label else 460))
-    p.append(rect(32,807,192,38,"url(#panel)",11,"var(--panelEdge)" if active=="设置" else "var(--panelEdge)"))
-    p.append(glyph("settings",47,817,17))
-    p.append(txt(72,833,"设置",13,"var(--ink)",560 if active=="设置" else 460))
-    p.append(tag(41,870,"本机工作空间"))
+        y=375+i*48
+        p.append(button(32,y,192,label,icon,selected=active==label,h=38,navigation=True))
+    settings_y = 738 if mini else 807
+    p.append(button(32,settings_y,192,"设置","settings",selected=active=="设置",h=38,navigation=True))
+    p.append(tag(41,794 if mini else 870,"本机工作空间"))
     if search:
         p.append(rect(984,69,326,38,"url(#panel)",12,"var(--panelEdge)"))
         p.append(glyph("search",1000,79,18))
@@ -276,6 +381,27 @@ def row(p, x, y, w, title, sub, icon="document", selected=False, right=None, hei
     if right: p.append(txt(x+w-12,y+24,right,10,"var(--muted)",480,"end"))
 
 
+UI6_DIRECTORY_ROWS = (
+    ("上一首", "CLI · UI 检查 · 音乐", "previous"),
+    ("下一首", "CLI · UI 检查 · 音乐", "next"),
+    ("两个整数相加", "MCP 工具 · UI 检查 · MCP", "spark"),
+    ("停止播放", "CLI · UI 检查 · 音乐", "stop"),
+    ("刷新播放状态", "CLI · UI 检查 · 音乐", "music"),
+    ("加入播放队列", "CLI · UI 检查 · 音乐", "playlist"),
+    ("打开预览终端", "CLI · UI 检查 · Git CLI", "terminal"),
+    ("搜索歌曲", "CLI · UI 检查 · 音乐", "music"),
+    ("播放歌曲", "CLI · UI 检查 · 音乐", "play"),
+    ("暂停播放", "CLI · UI 检查 · 音乐", "pause"),
+    ("查看 Git 状态", "CLI · UI 检查 · Git CLI", "play"),
+    ("演示写入权限确认", "CLI · UI 检查 · Git CLI", "play"),
+    ("演示恢复状态", "MCP 工具 · UI 检查 · MCP", "refresh"),
+    ("生成摘要提示", "MCP 工具 · UI 检查 · MCP", "spark"),
+    ("继续播放", "CLI · UI 检查 · 音乐", "play"),
+    ("编辑 JSON 参数", "MCP 工具 · UI 检查 · MCP", "document"),
+    ("读取预览说明", "资源 · UI 检查 · MCP", "folder"),
+)
+
+
 def workspace_directory_header(p, count="12 项", y=302, selected="全部"):
     p.append(txt(280,y,"功能目录",14,"var(--ink)",600))
     p.append(txt(575,y,count,11,"var(--muted)",450,"end"))
@@ -297,7 +423,7 @@ def workspace_type_filters(p, y=233):
 def screen_workspace():
     # Workspace owns the only visible search field. ⌘K still focuses it from
     # every page, so showing a second toolbar field here would duplicate it.
-    p=shell("所有功能","所有功能","搜索并运行当前连接提供的功能",search=False,mini=True)
+    p=shell("所有功能","所有功能","搜索所有连接中的功能。当前使用预览数据。",search=False,mini=True)
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
     workspace_directory_header(p)
@@ -606,12 +732,12 @@ def screen_setup_music():
     return screen_setup_variant("music")
 
 
-def overlay(title,subtitle,w,h,background="01-workspace"):
+def overlay(title,subtitle,w,h,background="01-workspace",offset_y=12):
     # Draw the actual entry page behind the scrim so each dialog is reviewed
     # in the context where people reach it.
     p=screen_by_name(background)[:-1]
     p.append('<rect x="16" y="58" width="1328" height="826" fill="#24232a" opacity=".28"/>')
-    x=(W-w)/2; y=(H-h)/2+12
+    x=(W-w)/2; y=(H-h)/2+offset_y
     p.append(rect(x,y,w,h,"url(#dialogPanel)",20,"var(--panelEdge)",1.4))
     p.append(txt(x+30,y+42,title,19,"var(--ink)",680))
     if subtitle: p.append(txt(x+30,y+66,subtitle,11,"var(--muted)",430))
@@ -619,18 +745,30 @@ def overlay(title,subtitle,w,h,background="01-workspace"):
 
 
 def screen_permission():
-    p,x,y,w,h=overlay("确认执行","检查执行目标与参数后再继续。",560,520,background="inspection-permission")
-    fields=(("功能","演示写入权限确认"),("来源","UI 检查 · Git CLI"),("执行目标","本机 Mac"),("权限","需要外部写入"))
-    yy=y+105
+    p,x,y,w,h=overlay("确认执行","检查执行目标与参数后再继续。",560,462,background="inspection-permission",offset_y=15)
+    fields=(("功能","演示写入权限确认"),("来源","UI 检查 · Git CLI"),("执行目标","此设备"),("权限","外部写入"))
+    yy=y+106
     for label,value in fields:
-        p.append(txt(x+32,yy,label,10,"var(--muted)",520)); p.append(txt(x+158,yy,value,12,"var(--ink)",520)); yy+=38
-    p.append(line(x+32,yy-10,x+w-32,yy-10))
-    p.append(txt(x+32,yy+22,"输入参数",10,"var(--muted)",520))
-    p.append(rect(x+32,yy+38,w-64,80,"url(#inset)",11,"var(--insetEdge)"))
-    p.append(txt(x+48,yy+62,'{"message":"preview only"}',11,"var(--ink)",450))
-    p.append(txt(x+32,yy+145,"请确认目标与输入内容。外部写入可能无法撤回。",10,"var(--danger)",500))
-    small_button(p,x+w-244,y+h-60,"取消","close",w=98)
-    small_button(p,x+w-136,y+h-60,"确认执行","play",primary=True,w=108)
+        p.append(txt(x+24,yy,label,10,"var(--muted)",520))
+        p.append(txt(x+114,yy,value,12,"var(--ink)",520))
+        yy+=30
+    p.append(line(x+24,yy-5,x+w-24,yy-5))
+    p.append(txt(x+24,yy+21,"提交参数（密钥字段已隐藏）",12,"var(--ink)",500))
+    p.append(rect(x+24,yy+38,w-48,82,"url(#inset)",11,"var(--insetEdge)"))
+    for index,line_text in enumerate(("{", '  "note": "仅内存预览备注"', "}")):
+        p.append(
+            f'<text x="{x+37}" y="{yy+62+index*17}" '
+            f'font-family="SFMono-Regular,Menlo,monospace" font-size="11" '
+            f'font-weight="450" fill="var(--ink)">{escape(line_text)}</text>'
+        )
+    warning_y=yy+146
+    p.append(f'<path d="M{x+31} {warning_y-11}l7 13h-14z" fill="none" stroke="var(--danger)" stroke-width="1.3" stroke-linejoin="round"/>')
+    p.append(f'<path d="M{x+31} {warning_y-7}v4m0 2v.5" stroke="var(--danger)" stroke-width="1.3" stroke-linecap="round"/>')
+    p.append(txt(x+48,warning_y,"请确认执行目标与输入内容。外部写入可能无法撤回。",10,"var(--danger)",500))
+    p.append(line(x+1,y+h-70,x+w-1,y+h-70,"var(--line)",1,.72))
+    button_y=y+h-54
+    p.append(button(x+w-225,button_y,87,"取消","close",h=40))
+    p.append(button(x+w-130,button_y,112,"确认执行","play",primary=True,h=40))
     return p+["</g></svg>"]
 
 
@@ -704,30 +842,28 @@ def screen_terminal():
 
 
 def screen_result():
-    p=shell("所有功能","所有功能","查看当前能力本次调用的实际状态和输出",search=False,mini=True,fixture="inspection")
+    p=shell("所有功能","所有功能","从一个地方找到并运行 CLI 与 MCP 功能。",search=False,mini=True,fixture="inspection")
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
     workspace_directory_header(p, count="17 项")
-    result_rows=(
-        ("查看 Git 状态","CLI · UI 检查 · Git CLI","terminal"),
-        ("演示写入权限确认","CLI · UI 检查 · Git CLI","lock"),
-        ("打开预览终端","命令 · UI 检查 · Git CLI","terminal"),
-        ("两个整数相加","MCP 工具 · UI 检查 · MCP","spark"),
-        ("编辑 JSON 参数","MCP 工具 · UI 检查 · MCP","document"),
-        ("演示恢复状态","MCP 工具 · UI 检查 · MCP","refresh"),
-        ("读取预览说明","资源 · UI 检查 · MCP","folder"),
-    )
+    # CapabilityCatalog sorts the inspection catalog by title. This viewport
+    # shows rows 5–11 after scrolling to the selected Git action.
+    result_rows=UI6_DIRECTORY_ROWS[4:11]
     for index,(name,sub,icon) in enumerate(result_rows):
-        row(p,280,354+index*60,295,name,sub,icon,index==0,"☆",56)
+        row(p,280,354+index*60,295,name,sub,icon,index==len(result_rows)-1,"☆",56)
     p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"查看 Git 状态",20,"var(--ink)",680))
     p.append(tag(624,380,"UI 检查 · Git CLI · 成功"))
-    p.append(txt(624,415,"结果保留在当前能力详情中，不跳转到独立结果页。",11,"var(--muted)",430))
-    p.append(txt(624,468,"结果",16,"var(--ink)",620))
-    p.append(tag(1152,468,"成功"))
-    p.append(button(1247,437,46,"","document",h=40,icon_only=True))
-    p.append(rect(624,486,684,244,"url(#inset)",12,"var(--insetEdge)"))
-    p.append(txt(646,523,"预览结果：工作区干净",13,"var(--ink)",460))
+    p.append(txt(624,405,"显示当前分支与工作区状态",11,"var(--muted)",430))
+    heading(p,624,450,"运行","此能力无需输入参数")
+    target_status(p,624,502,"此设备")
+    p.append(button(776,498,104,"运行","play",primary=True,h=46))
+    p.append(line(624,552,1308,552,"var(--line)",1,.78))
+    p.append(txt(624,590,"运行结果",14,"var(--ink)",620))
+    p.append(txt(624,612,"运行成功",11,"var(--muted)",430))
+    p.append(button(1235,575,77,"复制","copy",h=40))
+    p.append(rect(624,618,684,104,"url(#inset)",12,"var(--insetEdge)"))
+    p.append(txt(646,651,"预览结果：工作区干净",13,"var(--ink)",460))
     return p+["</g></svg>"]
 
 
@@ -843,20 +979,26 @@ def screen_host_permissions():
 
 
 def screen_terminal_state():
-    p=shell("所有功能","所有功能","先确认执行端状态，再决定是否重跑",search=False,fixture="inspection")
+    p=shell("所有功能","所有功能","从一个地方找到并运行 CLI 与 MCP 功能。",search=False,fixture="inspection")
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
-    workspace_directory_header(p, count="1 项", selected="最近使用")
-    row(p,280,354,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","terminal",True,"☆",56)
+    workspace_directory_header(p, count="1 项", selected="全部")
+    row(p,280,354,295,"查看 Git 状态","CLI · UI 检查 · Git CLI","play",True,"☆",56)
     p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"查看 Git 状态",20,"var(--ink)",680))
-    p.append(tag(624,380,"结果待确认","warn"))
-    p.append(txt(624,424,"操作可能已经发送，但没有收到最终确认。",16,"var(--ink)",600))
-    p.append(txt(624,451,"先检查活动状态和执行端，再决定是否重跑。",12,"var(--muted)",460))
-    p.append(rect(624,482,684,118,"url(#panel)",14,"var(--panelEdge)"))
-    p.append(glyph("history",648,508,22)); p.append(txt(686,515,"本次运行状态尚未确认",13,"var(--ink)",560))
-    p.append(txt(686,539,"为避免重复副作用，此状态不会直接提供重跑按钮。",11,"var(--muted)",440))
-    small_button(p,624,624,"检查活动状态","search",primary=True,w=162)
+    p.append(tag(624,380,"UI 检查 · Git CLI · 结果待确认","danger"))
+    p.append(txt(624,405,"仅内存预览结果待确认状态",11,"var(--muted)",430))
+    heading(p,624,450,"运行","此能力无需输入参数")
+    target_status(p,624,502,"此设备")
+    p.append(button(776,498,104,"运行","play",primary=True,h=46))
+    p.append(line(624,552,1308,552,"var(--line)",1,.78))
+    p.append(txt(624,590,"运行结果",14,"var(--ink)",620))
+    p.append(txt(624,612,"结果待确认",11,"var(--danger)",500))
+    p.append(rect(624,618,684,162,"url(#panel)",12,"var(--danger)"))
+    p.append(txt(640,645,"需要处理",13,"var(--ink)",600))
+    p.append(txt(640,669,"操作可能已经执行。先检查活动记录和执行端状态，不要直接重跑。",11,"var(--ink)",440))
+    p.append(button(640,683,150,"检查活动状态","search",primary=True,h=40))
+    p.append(txt(640,758,"查看错误详情   ⌄",11,"var(--muted)",440))
     return p+["</g></svg>"]
 
 
@@ -865,31 +1007,28 @@ def screen_mcp():
 
 
 def screen_inspection_workspace(permission=False):
-    p=shell("所有功能","所有功能","搜索并运行当前连接提供的功能",search=False,mini=True,fixture="inspection")
+    p=shell("所有功能","所有功能","从一个地方找到并运行 CLI 与 MCP 功能。",search=False,mini=True,fixture="inspection")
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
     workspace_directory_header(p,count="17 项",selected="全部")
-    rows=(
-        ("查看 Git 状态","CLI · UI 检查 · Git CLI","terminal"),
-        ("演示写入权限确认","CLI · UI 检查 · Git CLI","lock"),
-        ("打开预览终端","命令 · UI 检查 · Git CLI","terminal"),
-        ("两个整数相加","MCP 工具 · UI 检查 · MCP","spark"),
-        ("编辑 JSON 参数","MCP 工具 · UI 检查 · MCP","document"),
-        ("演示恢复状态","MCP 工具 · UI 检查 · MCP","refresh"),
-        ("读取预览说明","资源 · UI 检查 · MCP","folder"),
-    )
+    rows=UI6_DIRECTORY_ROWS[5:12] if permission else UI6_DIRECTORY_ROWS[4:11]
     for i,(name,sub,icon) in enumerate(rows):
-        row(p,280,354+i*60,295,name,sub,icon,i==(1 if permission else 0),"☆",56)
+        row(p,280,354+i*60,295,name,sub,icon,i==len(rows)-1,"☆",56)
     p.append(line(596,344,596,776,"var(--line)"))
     title="演示写入权限确认" if permission else "查看 Git 状态"
     p.append(txt(624,353,title,20,"var(--ink)",680))
     p.append(tag(624,380,"UI 检查 · Git CLI · 需要外部写入" if permission else "UI 检查 · Git CLI · 只读"))
-    p.append(txt(624,415,"仅用于检查确认界面，不会执行外部命令。" if permission else "显示当前分支与工作区状态",12,"var(--muted)",430))
+    p.append(txt(624,405,"仅用于检查确认弹窗，不会执行外部命令" if permission else "显示当前分支与工作区状态",11,"var(--muted)",430))
     if permission:
-        heading(p,624,450,"参数","确认前检查输入内容")
-        p.append(field(624,486,684,"备注","输入预览备注"))
-        target_status(p,624,547)
-        p.append(button(776,544,104,"运行","play",primary=True,h=46))
+        heading(p,624,450,"参数","参数会在运行前检查")
+        p.append(field(624,490,336,"备注","仅内存预览备注"))
+        target_status(p,624,550,"此设备")
+        p.append(button(776,547,104,"运行","play",primary=True,h=46))
+        p.append(line(624,603,1308,603,"var(--line)",1,.78))
+        heading(p,624,642,"运行结果","尚无调用 · 结果仅在本机显示")
+        p.append(rect(624,677,684,104,"url(#inset)",12,"var(--insetEdge)"))
+        p.append(txt(646,708,"结果会显示在这里",13,"var(--ink)",500))
+        p.append(txt(646,733,"结构化输出、复制与文件操作只在结果提供时出现。",11,"var(--muted)",430))
     else:
         heading(p,624,450,"运行结果","最近一次调用 · 预览数据")
         p.append(rect(624,486,684,105,"url(#inset)",12,"var(--insetEdge)"))
