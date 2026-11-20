@@ -79,6 +79,14 @@ GLYPHS = {
         "000000000", "010000000", "001000000", "000100000", "001000000",
         "010000000", "000011110", "000000000", "000000000",
     ),
+    "arrow_up": dots(
+        "000010000", "000111000", "001010100", "010010010", "000010000",
+        "000010000", "000010000", "000000000", "000000000",
+    ),
+    "arrow_down": dots(
+        "000010000", "000010000", "000010000", "010010010", "001010100",
+        "000111000", "000010000", "000000000", "000000000",
+    ),
     "history": dots(
         "000000000", "000010000", "000111000", "001101100", "111000111",
         "000000000", "000000000", "000000000", "000000000",
@@ -448,7 +456,7 @@ def board_music():
 def board_connections():
     p = shell("管理连接", "管理连接", global_search=True, subtitle="查看连接状态、诊断与可执行的管理操作")
     p.append(button(1140, 111, 169, "添加连接", "plus", True, h=42))
-    p.append(section_title(299, 191, "连接列表", "拖动排序 · 选择连接查看详情"))
+    p.append(section_title(299, 191, "连接列表", "选择连接查看详情 · 使用操作调整顺序"))
     for i, (name, kind, loc, selected) in enumerate([
         ("示例 Git CLI", "CLI", "本机 · 预览", True),
         ("示例 MCP", "HTTP MCP", "mcp://preview · 预览", False),
@@ -465,8 +473,7 @@ def board_connections():
     p.append(t(616, 204, "示例 Git CLI", 22, "#2b2b34", 660))
     p.append(badge(616, 232, "已连接", "good"))
     p.append(t(704, 232, "本机执行", 12, "#6c6c77", 420))
-    p.append(button(1016, 190, 130, "测试连接", "check", False, h=42))
-    p.append(button(1158, 190, 151, "编辑连接", "settings", False, h=42))
+    p.append(button(1179, 190, 130, "测试连接", "check", False, h=42))
     p.append(section_title(616, 290, "连接信息"))
     p.append(t(616, 322, "执行程序", 12, "#777782", 440))
     p.append(t(777, 322, "git · 预览", 13, "#33333d", 520))
@@ -478,9 +485,11 @@ def board_connections():
     p.append(r(616, 448, 692, 66, "url(#quiet)", 11, "#ffffff", .62))
     p.append(badge(638, 482, "检查通过", "good"))
     p.append(t(753, 482, "能力目录已更新", 12, "#5e5e69", 440))
-    p.append(section_title(616, 558, "动作", "常用操作靠近连接信息"))
-    p.append(button(616, 578, 183, "刷新能力", "refresh", False, h=42))
-    p.append(button(811, 578, 183, "编辑动作", "settings", False, h=42))
+    p.append(section_title(616, 558, "动作", "排序、刷新和动作配置"))
+    p.append(icon_button(616, 578, "arrow_up", "连接上移", size=46))
+    p.append(icon_button(672, 578, "arrow_down", "连接下移", size=46))
+    p.append(button(732, 578, 183, "刷新能力", "refresh", False, h=42))
+    p.append(button(927, 578, 183, "编辑动作", "settings", False, h=42))
     p.append(line(616, 671, 1308, 671))
     p.append(t(616, 711, "危险操作", 13, "#9e5550", 580))
     p.append(t(616, 733, "删除仅移除此连接配置；执行前保留现有二次确认。", 11, "#797983", 420))

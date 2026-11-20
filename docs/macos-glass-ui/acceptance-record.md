@@ -1464,3 +1464,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - `retrieval_feedback`：复核本项目 v3.5 设计稿 02/14/18、UI-7.3 本轮“布局测试通过不能替代 Profile 目视”的验收边界、`app/lib/features/music/` 与 `AppShell` 当前代码。将原 54 张 UI Review 截图确认为旧整页设计基线后更新；以同尺寸原生 Profile 截图作音乐页材质对照、以几何断言作坐标回归。
 - `prerequisites`：Flutter 3.47.8 stable / Dart 3.13.7，macOS Profile，隔离预览 bundle id `io.github.guog962464.aggregate.ui74preview`，窗口目标1360×900 logical px；样例数据来自进程内 PreviewRuntime 和账号 Runtime stub。
 - `verified_scope`：v3.5 音乐、迷你播放器主要布局在浅色 Profile 与 Widget geometry 的对照；账号弹窗的扫码显示与尺寸由 Widget 测试覆盖；12 个尺寸/主题/DPR 页面检查、340 项 App 测试、全量分析和 macOS Profile 构建。账号弹窗原生外观、音乐页深色 Profile 截图、用户最终视觉签收以及 UI-7.5～UI-7.7/既有 UI-5、UI-6 未完成项不在本次验证范围。
+
+### 2026-11-20 UI-7.0 v3.6 设计对照门槛与连接管理修订
+
+- 用户再次指出静态预览和实际软件差异明显。本次明确 22 张 SVG 负责页面结构、内容和主要坐标；系统字体、玻璃、点阵柔润度、shader 光效和动效必须用隔离 `AggregateApp` macOS Profile 预览确认。后续阶段的 Profile 预览使用生产组件与 `PreviewRuntime` / `Ui6InspectionRuntime` 内存样例，再将同一组件接入正式页面并同尺寸对照。
+- 对照 `ConnectionsPage`、`RuntimePort` 和 `ConnectionSetupPort` 后，03 画板移除不受支持的“编辑连接”与“拖动排序”，保留现有上移/下移、测试连接、刷新能力、编辑动作和删除；箭头点阵行与 `GlassGlyph.arrowUp/arrowDown` 一致。
+- 视觉证据：[03 连接管理 v3.6 SVG 栅格预览](</Users/guo/.codex/visualizations/2026/11/20/aggregate-ui7-design-revision-03-connections-v36.png>)，1360×900 PNG，SHA-256 `bfabd8cfee9ac92e685030fb1bbc2ef7bfc8f8635274ee4e63475b03530a7c97`。
+- 验证：`render_design_draft.py` 已运行；Python XML 解析 22/22 SVG 通过；macOS `sips` 将 03 画板渲染为 PNG 并完成目视检查。Profile 材质截图、深浅主题及窄窗预览尚未取得，本阶段不声明产品页面视觉通过或用户签收。
+- 范围：只改设计说明、生成器与 03 SVG；未修改产品 Dart、shader、Runtime、主题开关或 `pubspec.lock`。
