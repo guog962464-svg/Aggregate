@@ -287,3 +287,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 对 `AndroidHostInvitation.fromQrPayload` 增加 `wss://127.0.0.1:47321/host` 用例；配对设置页 Widget 流程改用 loopback 邀请，检查模拟扫码、提交、完成配对后保存的 Host endpoint 仍为 `127.0.0.1:47321`。
 - `cd app && flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart`：13 项通过。设置页使用注入的 scanner 和 fake HostManager，验证邀请解析及 UI 状态流，不建立 socket，也不覆盖相机或 Mac Host 网络行为。
 - **结论边界：**USB reverse endpoint 在产品解析器和设置页状态流程中有自动化覆盖；真实手机这次只确认扫描回填，尚无表单提交、TLS/WSS、Mac 审批或 RPC 证据。A5.4/A5.5 继续开放。
+
+
+## 2026-11-20 最新异网段复核与前台保护
+
+- **网络状态：**Mac `en0=192.168.10.144/24`；LGE AN10 `wlan0=192.168.31.135/24`，不同子网。Android 仅有 `192.168.31.0/24` 的 wlan0 直连路由。
+- **Host/USB：**Mac `47321` 与 `47322` 当前均无 TCP listener；`adb reverse --list` 为空。未启动 Host、未建立邀请、未提交配对、未调用 WSS/RPC。
+- **前台保护：**复核时手机有其他应用位于前台，本轮没有切换应用或改动网络设置；没有启动 NodeProbe/testnode。A5.4/A5.5 不新增验收证据，待同网段可达且 Mac Host 可用时再继续。
