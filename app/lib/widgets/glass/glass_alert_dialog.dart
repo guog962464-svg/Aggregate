@@ -106,7 +106,7 @@ class GlassAlertDialog extends StatelessWidget {
       insetPadding: insetPadding,
       child: GlassPanelSurface(
         borderRadius: const BorderRadius.all(Radius.circular(18)),
-        blurSigma: 20,
+        blurSigma: 14,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
           child: Material(

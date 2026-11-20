@@ -15,7 +15,7 @@ class GlassPanelSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.borderRadius = const BorderRadius.all(Radius.circular(16)),
-    this.blurSigma = 14,
+    this.blurSigma = 10,
   });
 
   final Widget child;
@@ -38,11 +38,11 @@ class GlassPanelSurface extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                tokens.glassTop.withValues(alpha: .74),
-                tokens.glassBottom.withValues(alpha: .56),
+                tokens.glassTop.withValues(alpha: .76),
+                tokens.glassBottom.withValues(alpha: .78),
               ],
             ),
-            border: Border.all(color: tokens.highlight.withValues(alpha: .78)),
+            border: Border.all(color: tokens.highlight.withValues(alpha: .42)),
           )
         : BoxDecoration(
             color: tokens.surface,
@@ -57,12 +57,12 @@ class GlassPanelSurface extends StatelessWidget {
         borderRadius: borderRadius,
         boxShadow: [
           BoxShadow(
-            color: tokens.shadow.withValues(alpha: .36),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: tokens.shadow.withValues(alpha: .24),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
           BoxShadow(
-            color: tokens.glassTop.withValues(alpha: .54),
+            color: tokens.glassTop.withValues(alpha: .24),
             blurRadius: 1,
             offset: const Offset(0, -1),
           ),

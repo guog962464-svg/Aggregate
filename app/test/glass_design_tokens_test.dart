@@ -6,6 +6,19 @@ import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_scene.dart';
 
 void main() {
+  test('glass palettes match the approved v8 material specification', () {
+    expect(GlassDesignTokens.light.surface, const Color(0xFFD9D8D5));
+    expect(GlassDesignTokens.light.glassTop, const Color(0xFFF8F7F3));
+    expect(GlassDesignTokens.light.glassBottom, const Color(0xFFE5E3DE));
+    expect(GlassDesignTokens.light.ink, const Color(0xFF5D574B));
+    expect(GlassDesignTokens.light.warm, const Color(0xFFFFC66B));
+    expect(GlassDesignTokens.dark.surface, const Color(0xFF191A1B));
+    expect(GlassDesignTokens.dark.glassTop, const Color(0xFF383A3B));
+    expect(GlassDesignTokens.dark.glassBottom, const Color(0xFF292A2C));
+    expect(GlassDesignTokens.dark.ink, const Color(0xFFDFD5C1));
+    expect(GlassDesignTokens.dark.warm, const Color(0xFFF2BD70));
+  });
+
   test('macOS themes provide the continuous glass scene palette', () {
     final light = AggregateTheme.forPlatform(
       AggregateTheme.light,
@@ -85,6 +98,9 @@ void main() {
         expect(
           _contrast(safe.colorScheme.onSurface, surface),
           greaterThanOrEqualTo(4.5),
+          reason:
+              'onSurface contrast at theme frame $frame: '
+              '${safe.colorScheme.onSurface} on $surface',
         );
         expect(
           _contrast(safe.colorScheme.onSurfaceVariant, surface),

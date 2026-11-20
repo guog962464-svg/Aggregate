@@ -5,6 +5,12 @@ uniform vec2 viewport;
 uniform float daylight;
 uniform float seconds;
 uniform float displayRatio;
+uniform vec3 darkBase;
+uniform vec3 darkBottom;
+uniform vec3 darkHighlight;
+uniform vec3 lightBase;
+uniform vec3 lightBottom;
+uniform vec3 lightHighlight;
 out vec4 fragColor;
 
 float grain(vec2 point) {
@@ -20,10 +26,13 @@ void main() {
       0.0,
       1.5,
       length((screenUv - vec2(0.92, -0.08)) * vec2(1.0, 1.25)));
-  vec3 color = mix(vec3(mix(0.040, 0.120, sky)),
-                   vec3(mix(0.800, 0.925, sky)), daylight);
+  vec3 darkGradient = mix(darkBase, darkBottom, screenUv.y);
+  vec3 lightGradient = mix(lightBase, lightBottom, screenUv.y);
+  vec3 darkScene = mix(darkGradient, darkHighlight, sky * 0.43);
+  vec3 lightScene = mix(lightGradient, lightHighlight, sky * 0.43);
+  vec3 color = mix(darkScene, lightScene, daylight);
   vec2 physicalPixel =
       vec2(screenPoint.x, viewport.y - screenPoint.y) * displayRatio;
-  color += (grain(physicalPixel + fract(seconds) * 91.7) - 0.5) * 0.022;
+  color += (grain(physicalPixel + fract(seconds) * 91.7) - 0.5) * 0.006;
   fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
