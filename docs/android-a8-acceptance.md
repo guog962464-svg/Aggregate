@@ -173,3 +173,11 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **代码验证：**`flutter test --no-pub test/android_host_pairing_client_test.dart test/android_host_settings_panel_test.dart` 的 13 项全部通过；`flutter analyze --no-pub` 无问题。未运行全量测试。
 - **4 KB 真机：**LGE AN10 / Android 15 / API 35 / arm64，`PAGE_SIZE=4096`。在保留应用数据的情况下 `adb install -r` 成功；`am start -W` 返回 `Status: ok`、`LaunchState: COLD`、`Complete`，用时 3,016 ms；进程存活且 `MainActivity` 为 top-resumed。该进程最近 500 行 logcat 未见 `FATAL EXCEPTION`、`Fatal signal` 或 tombstone 标记。验收后发送 HOME，系统启动器恢复为前台，普通 Aggregate 包仍安装；没有启动 NodeProbe/testnode。
 - **范围：**本节证明当前 Debug APK 在这台 4 KB 设备的安装/冷启动，以及包内原生库的 16 KB 静态对齐。没有运行产品 Release，也没有正式签名或 16 KB 系统设备；静态对齐不表示 16 KB 系统实机兼容。TalkBack、production Host 业务和音乐闭环仍未验收。`pubspec.lock` 的工作区修改未暂存；构建未执行 pub 解析。ADB reverse 为空，Host 47321/47322 无监听。
+
+
+## 2026-11-20 当前提交 Release APK/AAB 干净工作树复建
+
+- **源码与依赖输入：**从 `02855aa49e0546eee8ae9ecbe6ae352e3e8b0f01` 创建独立 detached worktree；为满足该提交当前 pubspec 的约束，将主工作区未提交的 `pubspec.lock` 复制到临时 worktree，并以 `flutter pub get --enforce-lockfile` 校验成功。当前未提交的 Dart UI 文件未进入这次构建。
+- **产物：**`flutter build apk --release --no-pub --target-platform android-arm64` 与 `flutter build appbundle --release --no-pub --target-platform android-arm64` 均通过。APK 为 27,713,920 bytes，SHA-256 `f5afb195e9e866e36b65e11aa8f3a13f62cf4e6777bdfb69a31c35af31f0af8e`；AAB 为 25,478,659 bytes，SHA-256 `8681295f929f5e272f4a4ce35d18c02a505e6599be725b3060ce86511d9eeb86`。包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36、arm64。
+- **静态门禁：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过且 `uncompressNativeLibraries.alignment=PAGE_ALIGNMENT_16K`。APK/AAB 各含 7 个 arm64 原生库，全部 21 个 `PT_LOAD` 均满足至少 16 KB 对齐与文件偏移/虚拟地址同余。没有 NodeProbe、NodeBridge、`libnode.so` 或 npm 载荷。
+- **签名与验收边界：**APK `apksigner verify` 报缺少 `META-INF/MANIFEST.MF`，APK/AAB 均无签名条目，符合当前产品 Release 尚未配置正式签名的状态。此次只做干净源码树的 Release 构建和静态检查，没有安装/启动该 unsigned 产物；不代表 16 KB Android 系统实机运行验收。16 KB 真机、正式签名、生产 Host/音乐闭环仍是 A8 发布门槛。
