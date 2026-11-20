@@ -267,6 +267,20 @@ final class MusicSession extends ChangeNotifier {
     _notify();
   }
 
+  /// Installs the static, in-memory track used by the explicit design preview.
+  /// This does not invoke the RuntimePort or represent a real music response.
+  void showPreviewSample() {
+    visible = true;
+    title = '示例歌曲';
+    artist = '示例歌手';
+    detail = '0:12 / 3:20';
+    playing = true;
+    playbackStatus = '播放中';
+    queueLength = 1;
+    currentIndex = 0;
+    _notify();
+  }
+
   void authorizeControls() {
     controlsAuthorized = true;
     _notify();

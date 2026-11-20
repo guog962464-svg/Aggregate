@@ -22,6 +22,7 @@ class ConnectionHomePage extends StatelessWidget {
     required this.runtime,
     required this.musicSession,
     required this.onOpen,
+    this.showMusicDesignPreview = false,
     this.onAccountChanged,
     this.onRefresh,
   });
@@ -31,6 +32,7 @@ class ConnectionHomePage extends StatelessWidget {
   final RuntimePort runtime;
   final MusicSession musicSession;
   final ValueChanged<Capability> onOpen;
+  final bool showMusicDesignPreview;
   final VoidCallback? onAccountChanged;
   final Future<void> Function()? onRefresh;
 
@@ -47,6 +49,7 @@ class ConnectionHomePage extends StatelessWidget {
         capabilities: own,
         runtime: runtime,
         session: musicSession,
+        showPreviewSample: showMusicDesignPreview,
         onAccountChanged: onAccountChanged,
       );
     }

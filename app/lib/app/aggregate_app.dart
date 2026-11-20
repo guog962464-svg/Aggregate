@@ -20,12 +20,14 @@ class AggregateApp extends StatefulWidget {
     this.platformSettingsSections = const [],
     this.glassMotionClock,
     this.systemDisableAnimations,
+    this.showMusicDesignPreview = false,
   });
 
   final RuntimePort runtime;
   final List<Widget> platformSettingsSections;
   final GlassMotionClock? glassMotionClock;
   final ValueListenable<bool>? systemDisableAnimations;
+  final bool showMusicDesignPreview;
 
   @override
   State<AggregateApp> createState() => _AggregateAppState();
@@ -187,6 +189,7 @@ class _AggregateAppState extends State<AggregateApp> {
             musicSession: musicSession,
             glassMotionClock: widget.glassMotionClock,
             platformSettingsSections: widget.platformSettingsSections,
+            showMusicDesignPreview: widget.showMusicDesignPreview,
           ),
         );
       }

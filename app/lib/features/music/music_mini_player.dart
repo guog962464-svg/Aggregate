@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
+import '../../widgets/glass/glass_panel_surface.dart';
 import 'music_session.dart';
 
 Future<void> confirmMusicControl(
@@ -97,6 +100,11 @@ class MusicMiniPlayer extends StatelessWidget {
             ? session.actions.containsKey('music.pause')
             : session.queueLength > 0 &&
                   session.actions.containsKey('music.resume');
+        if (!compact &&
+            defaultTargetPlatform == TargetPlatform.macOS &&
+            _usesGlassButtons(context)) {
+          return _macOSWidePlayer(context, canToggle: canToggle);
+        }
         return Material(
           color: Theme.of(context).colorScheme.surface,
           child: SafeArea(
@@ -121,6 +129,7 @@ class MusicMiniPlayer extends StatelessWidget {
   );
 
   Widget _trackSummary(BuildContext context, {required bool compact}) {
+    final glass = _usesGlassButtons(context);
     final displayOutputLocation = compact
         ? switch (session.outputLocation) {
             '声音由配对 Mac 输出' => 'Mac 输出',
@@ -132,8 +141,11 @@ class MusicMiniPlayer extends StatelessWidget {
         : session.outputLocation;
     return Row(
       children: [
-        const Icon(Icons.music_note_outlined),
-        const SizedBox(width: 12),
+        if (glass)
+          const GlassGlyphMark(glyph: GlassGlyph.music, size: 24)
+        else
+          const Icon(Icons.music_note_outlined),
+        SizedBox(width: glass ? 23 : 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +155,10 @@ class MusicMiniPlayer extends StatelessWidget {
                 session.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: glass
+                    ? Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontSize: 14, height: 20 / 14)
+                    : Theme.of(context).textTheme.titleMedium,
               ),
               Text.rich(
                 TextSpan(
@@ -163,7 +178,10 @@ class MusicMiniPlayer extends StatelessWidget {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: glass
+                    ? Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(fontSize: 10, height: 14 / 10)
+                    : Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
@@ -171,6 +189,24 @@ class MusicMiniPlayer extends StatelessWidget {
       ],
     );
   }
+
+  Widget _macOSWidePlayer(BuildContext context, {required bool canToggle}) =>
+      Padding(
+        key: const Key('music-mini-player-frame'),
+        padding: const EdgeInsets.fromLTRB(52, 0, 16, 16),
+        child: SizedBox(
+          height: 96,
+          child: GlassPanelSurface(
+            key: const Key('music-mini-player-panel'),
+            borderRadius: const BorderRadius.all(Radius.circular(14)),
+            blurSigma: 18,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 14, 6),
+              child: _wideControls(context, canToggle: canToggle),
+            ),
+          ),
+        ),
+      );
 
   Widget _compactControls(
     BuildContext context, {

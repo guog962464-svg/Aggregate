@@ -59,7 +59,7 @@ class PageFrame extends StatelessWidget {
                 : constraints.maxWidth < 600
                 ? 20
                 : 32,
-            28,
+            macOS ? 36 : 28,
             macOS
                 ? 51
                 : constraints.maxWidth < 600

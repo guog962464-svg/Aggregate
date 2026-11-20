@@ -171,6 +171,7 @@ final class PreviewRuntime implements RuntimePort {
           'success': true,
           'state': {
             'title': '示例歌曲',
+            'artist': '示例歌手',
             'status': 'playing',
             'progress': '0:12 / 3:20',
             'queueLength': 1,

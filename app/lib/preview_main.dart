@@ -28,6 +28,7 @@ Future<void> main() async {
   runApp(
     AggregateApp(
       runtime: runtime,
+      showMusicDesignPreview: true,
       platformSettingsSections: [
         MacHostSettingsPanel(
           hostControl: host,

@@ -1450,3 +1450,17 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - `retrieval_feedback`：按当前任务中的“先完整设计、生产页面必须与画板同尺寸对照、太阳/月亮切换逻辑冻结”约束，复核本项目 `2026-11-19/aggregate/01a1d606-f887-7930-ad30-645440d89f65__daily-task.md`、v3.5 设计稿 01/17/21、当前 PreviewRuntime 和页面源码；采纳布局/运行语义约束，并将原生截图不可用单列为未验收，不以 Widget 结果替代实窗。
 - `prerequisites`：Flutter 3.47.8/macOS Profile 工具链。当前系统窗口状态：`agent-desktop permissions` 三项授权均 granted，但 `list-displays` 为空；原生截图恢复依赖有活动显示器的桌面会话。
 - `verified_scope`：Flutter 1360×900 Widget viewport 几何、工作台/连接相关 53 项自动化、页面和共享控件分析器、当前 PreviewRuntime macOS Profile 构建。UI-7.2 的原生截图、UI-7.3 原生整窗/材质/像素签收、深色/其他窗口尺寸、UI-7.4～UI-7.7、UI-5/UI-6 未完成项仍未验收。
+
+### 2026-11-20 UI-7.4 音乐与迷你播放器按 v3.5 实施
+
+- 基准：依照全功能设计稿 v3.5 的 02 音乐、14 音乐扫码登录、18 迷你播放器画板，并复核 `MusicSession`、音乐账号 Runtime port、搜索/播放动作与 `PreviewRuntime`。本阶段只调整 macOS 音乐页、账号弹窗和底部迷你播放器；主题开关及连接/播放业务动作保持现有来源。
+- 实施：宽屏 macOS 音乐页按播放器/搜索 4:6 分栏；播放器卡、点阵曲目图案和控制组使用当前玻璃按钮系统，搜索框按设计板对齐并保持空值；原有播放、停止、上一首/下一首、入队及账号动作仍按连接所提供的 capability/port 条件出现。迷你播放器改为共享玻璃面板，继续读取同一个 `MusicSession`，保留打开、收起和条件式播放控制。账号扫码、取消、刷新、退出确认与错误恢复继续调用原账号流程。
+- 预览真实性：仅 `preview_main.dart` 显式启用内存样例；新入口默认关闭，`MusicSession.showPreviewSample()` 只写预览会话状态且不调用 RuntimePort。发布入口和窄窗/非 macOS 播放页面不启用样例。没有加入队列明细、进度拖杆或终端登录入口。
+- 几何验收：1360×900 macOS Widget viewport 对照 v3.5 画板，播放器卡 x=299、宽394、高430pt，搜索框 x=717、宽592、高46pt；AppKit 标题栏占位按 native content origin 单独计入整窗对照。底部迷你播放器 x=52、y=788、宽1292、高96pt。账号扫码弹窗宽460pt、高不超过540pt；点按扫码后验证二维码和页脚同时可见。全 App shell 的播放器坐标以同尺寸 Widget 回归固定。
+- 原生 Profile 对照：1360×900 浅色音乐页与画板 02 同尺寸对照：[music-wide-final.png](</Users/guo/.codex/visualizations/2026/11/20/aggregate-ui74-music/music-wide-final.png>)，2944×2024 PNG，SHA-256 `8c61151a8b572f4d70ad7c902d5e5102b8a6a6f97553ac4683b8db4f56371a7e`；迷你播放器截图：[mini-player.png](</Users/guo/.codex/visualizations/2026/11/20/aggregate-ui74-music/mini-player.png>)，SHA-256 `599048c06e39d76d5c4902cb9306f42461ff3786a309cbfe034f98c2601c47d8`。两图来自隔离 Profile/内存 PreviewRuntime，不触碰真实账号、连接或用户数据。账号弹窗本轮仅由 Widget/Runtime stub 验证，尚无原生截图或用户视觉签收。
+- 小窗口修正：完整布局矩阵发现 800×600 下 macOS 侧栏中间导航区超出 448pt 可用高度 71pt。已将连接/主导航放入可滚动区域，顶部品牌与连接标题、底部设置和工作空间指示保持固定；原生产品动作与导航顺序未改。修复后 2× 800×600 浅/深及完整矩阵均无 Flutter 布局异常。
+- 回归：`flutter analyze --no-pub` 无问题；App 全量 `flutter test --no-pub --reporter=compact` 340 项、`packages/aggregate_runtime` 的 `dart test --reporter=expanded` 2 项通过；`tool/ui_review_test.dart` 的 12 个窗口/主题/DPR 组合通过，涵盖 800×600、1024×768、1440×900，浅/深和 DPR 1/2。为使金样对应 v3.5 当前整页设计，更新 `work/ui-review/` 54 张旧版 PNG；它们用于布局回归，Flutter 测试环境缺少中文字体，不作为字形/材质的视觉签收。全量测试曾暴露既有主题 halo 源码终点0.54与测试探点0.535不一致；仅将测试探点补为0.535仍开启、0.545关闭，生产主题逻辑未改。`flutter build macos --profile --no-pub -t lib/preview_main.dart` 成功（69.7MB）；`dart format --output=none --set-exit-if-changed` 与 `git diff --check` 均通过。
+- 不可变边界：没有改 `GlassThemeSwitch`、太阳/月亮绘制、拖动与回弹、主题 shader、阈值、偏好写入或回调。音乐按钮仍受原 capability/action 和 `MusicSession` 状态约束；不新增平台专属业务契约。
+- `retrieval_feedback`：复核本项目 v3.5 设计稿 02/14/18、UI-7.3 本轮“布局测试通过不能替代 Profile 目视”的验收边界、`app/lib/features/music/` 与 `AppShell` 当前代码。将原 54 张 UI Review 截图确认为旧整页设计基线后更新；以同尺寸原生 Profile 截图作音乐页材质对照、以几何断言作坐标回归。
+- `prerequisites`：Flutter 3.47.8 stable / Dart 3.13.7，macOS Profile，隔离预览 bundle id `io.github.guog962464.aggregate.ui74preview`，窗口目标1360×900 logical px；样例数据来自进程内 PreviewRuntime 和账号 Runtime stub。
+- `verified_scope`：v3.5 音乐、迷你播放器主要布局在浅色 Profile 与 Widget geometry 的对照；账号弹窗的扫码显示与尺寸由 Widget 测试覆盖；12 个尺寸/主题/DPR 页面检查、340 项 App 测试、全量分析和 macOS Profile 构建。账号弹窗原生外观、音乐页深色 Profile 截图、用户最终视觉签收以及 UI-7.5～UI-7.7/既有 UI-5、UI-6 未完成项不在本次验证范围。

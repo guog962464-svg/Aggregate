@@ -2,14 +2,87 @@ import 'dart:async';
 
 import 'package:aggregate/features/music/music_player_page.dart';
 import 'package:aggregate/features/music/music_session.dart';
+import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate_runtime/aggregate_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
+
 void main() {
+  testWidgets('macOS account QR panel fits the v3.5 modal width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final runtime = _AccountPreviewRuntime();
+    runtime.account = const AccountSnapshot(AccountState.signedOut);
+    final session = MusicSession(runtime);
+    addTearDown(session.dispose);
+    addTearDown(runtime.delegate.dispose);
+    final connection = (await runtime.listConnections()).single;
+    final capabilities = await runtime.searchCapabilities(
+      const SearchQuery(''),
+    );
+    final clock = ManualGlassMotionClock();
+    addTearDown(clock.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AggregateTheme.forPlatform(
+          AggregateTheme.light,
+          TargetPlatform.macOS,
+        ),
+        home: GlassMotionScope(
+          clock: clock,
+          child: Scaffold(
+            body: MusicPlayerPage(
+              connection: connection,
+              capabilities: capabilities,
+              runtime: runtime,
+              session: session,
+            ),
+          ),
+        ),
+      ),
+    );
+    for (var tick = 0; tick < 4; tick++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('music-account')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('扫码登录'));
+    await tester.pump();
+    expect(runtime.loginCalls, 1);
+    await tester.pump(const Duration(milliseconds: 10));
+    runtime.emitLoginOutput('或点击链接打开: https://163cn.tv/fakeLogin\r\n');
+    await tester.pump();
+
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.byKey(const Key('music-login-qr')), findsOneWidget);
+    expect(
+      find.byKey(const Key('music-account-dialog-footer')),
+      findsOneWidget,
+    );
+    final dialog = tester.getRect(
+      find.byKey(const Key('music-account-dialog-content')),
+    );
+    expect(dialog.width, closeTo(460, 1));
+    expect(dialog.height, lessThanOrEqualTo(540));
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
   testWidgets('account panel confirms logout and switches through QR login', (
     tester,
   ) async {

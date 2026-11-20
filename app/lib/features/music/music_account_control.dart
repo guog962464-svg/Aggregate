@@ -376,6 +376,7 @@ class _AccountDialogState extends State<_AccountDialog> {
     final scanning = phase == _AccountPhase.scanning;
     return Dialog(
       child: ConstrainedBox(
+        key: const Key('music-account-dialog-content'),
         constraints: const BoxConstraints(maxWidth: 460, maxHeight: 540),
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -513,6 +514,12 @@ class _AccountDialogState extends State<_AccountDialog> {
                         ),
                     ],
                   ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '读取失败、生成超时和会话中断时保留重试提示；登录状态由连接端确认。',
+                  key: const Key('music-account-dialog-footer'),
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
             ),

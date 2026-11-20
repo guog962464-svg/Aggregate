@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
+import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
+import '../../widgets/glass/glass_panel_surface.dart';
 import '../../widgets/page_frame.dart';
 import 'music_mini_player.dart';
 import 'music_search_results.dart';
@@ -22,6 +25,7 @@ class MusicPlayerPage extends StatefulWidget {
     required this.capabilities,
     required this.runtime,
     required this.session,
+    this.showPreviewSample = false,
     this.onAccountChanged,
   });
 
@@ -29,6 +33,7 @@ class MusicPlayerPage extends StatefulWidget {
   final List<Capability> capabilities;
   final RuntimePort runtime;
   final MusicSession session;
+  final bool showPreviewSample;
   final VoidCallback? onAccountChanged;
 
   @override
@@ -46,6 +51,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   RunId? searchRun;
   StreamSubscription<RunEvent>? searchSubscription;
   int searchGeneration = 0;
+  bool previewSampleLoaded = false;
 
   bool _usesGlassButtons(BuildContext context) =>
       defaultTargetPlatform == TargetPlatform.macOS &&
@@ -73,7 +79,9 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
           widget.session.connection?.value != widget.connection.id.value) {
         return;
       }
-      if (!widget.runtime.isPreview &&
+      if (widget.showPreviewSample && widget.runtime.isPreview) {
+        _loadPreviewSample();
+      } else if (!widget.runtime.isPreview &&
           widget.session.accountState != AccountState.signedOut &&
           widget.session.actions.containsKey('music.state')) {
         unawaited(widget.session.execute('state'));
@@ -81,6 +89,31 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     } catch (cause) {
       if (mounted) setState(() => searchError = '读取音乐连接失败：$cause');
     }
+  }
+
+  void _loadPreviewSample() {
+    if (previewSampleLoaded) return;
+    previewSampleLoaded = true;
+    widget.session.showPreviewSample();
+    setState(() {
+      searched = true;
+      songs = const [
+        MusicSearchItem(
+          id: 'PREVIEW00000000000000000000000001',
+          originalId: '123',
+          name: '示例歌曲',
+          artist: '示例歌手',
+          playable: true,
+        ),
+        MusicSearchItem(
+          id: 'PREVIEW00000000000000000000000002',
+          originalId: '124',
+          name: '暂不可播放的歌曲',
+          artist: '示例歌手',
+          playable: false,
+        ),
+      ];
+    });
   }
 
   @override
@@ -330,6 +363,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
             onStatus: _accountStatus,
           )
         : null,
+    headerSpacing: 10,
     children: [
       LayoutBuilder(
         builder: (context, constraints) {
@@ -359,6 +393,9 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       AnimatedBuilder(
         animation: widget.session,
         builder: (context, _) {
+          if (!compact && defaultTargetPlatform == TargetPlatform.macOS) {
+            return _widePlayer(context, widget.session);
+          }
           final session = widget.session;
           final scheme = Theme.of(context).colorScheme;
           final hasTrack = session.visible && session.title != '播放状态待读取';
@@ -541,29 +578,253 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
         },
       );
 
+  Widget _widePlayer(BuildContext context, MusicSession session) {
+    final theme = Theme.of(context);
+    final tokens =
+        theme.extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(theme.brightness);
+    final hasTrack = session.visible && session.title != '播放状态待读取';
+    final playbackLabel = session.playing == true ? '暂停' : '继续播放';
+    final canToggle = session.playing == true
+        ? session.actions.containsKey('music.pause')
+        : session.queueLength > 0 &&
+              session.actions.containsKey('music.resume');
+    final controls = <Widget>[];
+    if (session.actions.containsKey('music.prev')) {
+      controls.add(
+        _semanticIconButton(
+          label: '上一首',
+          onPressed: session.busy || !session.canPrev
+              ? null
+              : () => confirmMusicControl(context, session, 'prev', '上一首'),
+          icon: Icons.skip_previous_rounded,
+        ),
+      );
+    }
+    controls.add(
+      _semanticIconButton(
+        label: playbackLabel,
+        filled: true,
+        onPressed:
+            session.busy || session.playbackStatus == '正在确认' || !canToggle
+            ? null
+            : () => confirmMusicControl(
+                context,
+                session,
+                session.playing == true ? 'pause' : 'resume',
+                playbackLabel,
+              ),
+        icon: session.playing == true
+            ? Icons.pause_rounded
+            : Icons.play_arrow_rounded,
+      ),
+    );
+    if (session.actions.containsKey('music.next')) {
+      controls.add(
+        _semanticIconButton(
+          label: '下一首',
+          onPressed: session.busy || !session.canNext
+              ? null
+              : () => confirmMusicControl(context, session, 'next', '下一首'),
+          icon: Icons.skip_next_rounded,
+        ),
+      );
+    }
+    if (session.actions.containsKey('music.state')) {
+      controls.add(
+        _semanticIconButton(
+          label: '刷新播放状态',
+          onPressed: session.busy ? null : () => session.execute('state'),
+          icon: Icons.refresh_rounded,
+        ),
+      );
+    }
+
+    return Column(
+      key: const Key('music-player-section'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('播放器', style: theme.textTheme.titleMedium),
+            const Spacer(),
+            Text(
+              session.visible ? session.playbackStatus : '尚未播放',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GlassPanelSurface(
+          key: const Key('music-player-card'),
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          child: SizedBox(
+            height: 430,
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 35),
+              child: Column(
+                children: [
+                  Container(
+                    key: const Key('music-player-artwork'),
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          tokens.glassTop.withValues(alpha: .86),
+                          tokens.inset.withValues(alpha: .72),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: tokens.highlight.withValues(alpha: .75),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: tokens.shadow.withValues(alpha: .30),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: GlassGlyphMark(
+                        glyph: GlassGlyph.music,
+                        size: 56,
+                        color: tokens.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    hasTrack ? session.title : '从搜索开始播放',
+                    key: const Key('music-player-title'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: 22,
+                      height: 28 / 22,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    hasTrack
+                        ? (session.artist ?? widget.connection.label)
+                        : widget.connection.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 20 / 14,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    session.detail.isEmpty ? '搜索歌曲，选择一首开始播放。' : session.detail,
+                    key: const Key('music-player-progress'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(height: 17 / 12),
+                  ),
+                  const SizedBox(height: 26),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var index = 0; index < controls.length; index++) ...[
+                        if (index > 0) const SizedBox(width: 4),
+                        controls[index],
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  if (session.actions.containsKey('music.stop') && hasTrack)
+                    _usesGlassButtons(context)
+                        ? AggregateActionButton(
+                            label: '停止播放',
+                            icon: Icons.stop_circle_outlined,
+                            style: AggregateActionStyle.quiet,
+                            onPressed: session.busy
+                                ? null
+                                : () => confirmMusicControl(
+                                    context,
+                                    session,
+                                    'stop',
+                                    '停止播放',
+                                  ),
+                            enabled: !session.busy,
+                          )
+                        : TextButton(
+                            onPressed: session.busy
+                                ? null
+                                : () => confirmMusicControl(
+                                    context,
+                                    session,
+                                    'stop',
+                                    '停止播放',
+                                  ),
+                            child: const Text('停止播放'),
+                          ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _library(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text('找音乐', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 12),
-      TextField(
-        key: const Key('music-search'),
-        controller: query,
-        focusNode: queryFocus,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          labelText: '搜索歌曲',
-          hintText: '歌曲或歌手',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _semanticIconButton(
-            label: '搜索歌曲',
-            onPressed: searching || confirmingSearch ? null : search,
-            icon: Icons.arrow_forward_rounded,
-          ),
-        ),
-        onSubmitted: (_) => search(),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final wideMac =
+              defaultTargetPlatform == TargetPlatform.macOS &&
+              constraints.maxWidth >= 560;
+          return SizedBox(
+            height: wideMac ? 46 : null,
+            child: TextField(
+              key: const Key('music-search'),
+              controller: query,
+              focusNode: queryFocus,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                constraints: wideMac
+                    ? const BoxConstraints.tightFor(height: 46)
+                    : null,
+                isDense: wideMac,
+                contentPadding: wideMac
+                    ? const EdgeInsets.symmetric(horizontal: 14, vertical: 10)
+                    : null,
+                labelText: wideMac ? null : '搜索歌曲',
+                hintText: '歌曲或歌手',
+                prefixIcon: wideMac ? null : const Icon(Icons.search, size: 18),
+                prefixIconConstraints: wideMac
+                    ? const BoxConstraints(minWidth: 42, maxWidth: 42)
+                    : null,
+                suffixIconConstraints: wideMac
+                    ? const BoxConstraints(minWidth: 46, maxWidth: 46)
+                    : null,
+                suffixIcon: _semanticIconButton(
+                  label: '搜索歌曲',
+                  onPressed: searching || confirmingSearch ? null : search,
+                  icon: Icons.search,
+                ),
+              ),
+              onSubmitted: (_) => search(),
+            ),
+          );
+        },
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 24),
       if (searching) const LinearProgressIndicator(),
       if (searchError case final message?) ...[
         Text(

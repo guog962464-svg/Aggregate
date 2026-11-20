@@ -41,6 +41,7 @@ class AppShell extends StatefulWidget {
     required this.musicSession,
     this.glassMotionClock,
     this.platformSettingsSections = const [],
+    this.showMusicDesignPreview = false,
   });
   final RuntimePort runtime;
   final UserPreferences preferences;
@@ -49,6 +50,7 @@ class AppShell extends StatefulWidget {
   final MusicSession musicSession;
   final GlassMotionClock? glassMotionClock;
   final List<Widget> platformSettingsSections;
+  final bool showMusicDesignPreview;
   @override
   State<AppShell> createState() => AppShellState();
 }
@@ -274,6 +276,7 @@ class AppShellState extends State<AppShell> {
             capabilities: catalog,
             runtime: widget.runtime,
             musicSession: widget.musicSession,
+            showMusicDesignPreview: widget.showMusicDesignPreview,
             onOpen: openCapability,
             onAccountChanged: () {
               unawaited(refreshAfterAccountChange(connection.id));
@@ -306,96 +309,119 @@ class AppShellState extends State<AppShell> {
     );
   }
 
-  Widget navigation({required bool compact}) => Column(
-    children: [
-      if (defaultTargetPlatform == TargetPlatform.macOS)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(42, 10, 16, 16),
-          child: Row(
-            children: [
-              GlassGlyphMark(glyph: GlassGlyph.grid, size: 18),
-              const SizedBox(width: 9),
-              Text(
-                'Aggregate',
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ],
+  Widget navigation({required bool compact}) {
+    final macOS = defaultTargetPlatform == TargetPlatform.macOS;
+    final navigableSections = Section.values.where(
+      (item) => item != Section.home && item != Section.settings,
+    );
+
+    Widget connectionHeading() => Padding(
+      padding: const EdgeInsets.only(left: 42, right: 16, top: 8, bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text('我的连接', style: Theme.of(context).textTheme.bodySmall),
           ),
-        ),
-      const SizedBox(height: 6),
-      Padding(
-        padding: const EdgeInsets.only(left: 42, right: 16, top: 8, bottom: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text('我的连接', style: Theme.of(context).textTheme.bodySmall),
+          if (macOS && widget.runtime.features.connectionKinds.isNotEmpty)
+            AggregateIconButton(
+              tooltip: '添加连接',
+              icon: Icons.add,
+              size: GlassButtonSize.navigation,
+              onPressed: () => addConnection(
+                ConnectionKind.values.firstWhere(
+                  widget.runtime.features.canAdd,
+                ),
+              ),
             ),
-            if (defaultTargetPlatform == TargetPlatform.macOS &&
-                widget.runtime.features.connectionKinds.isNotEmpty)
-              AggregateIconButton(
-                tooltip: '添加连接',
-                icon: Icons.add,
-                size: GlassButtonSize.navigation,
-                onPressed: () => addConnection(
-                  ConnectionKind.values.firstWhere(
-                    widget.runtime.features.canAdd,
+        ],
+      ),
+    );
+
+    if (macOS) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(42, 10, 16, 16),
+            child: Row(
+              children: [
+                GlassGlyphMark(glyph: GlassGlyph.grid, size: 18),
+                const SizedBox(width: 9),
+                Text(
+                  'Aggregate',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          connectionHeading(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (final connection in connectionHomes)
+                    _connectionNavigationItem(connection, compact: compact),
+                  const SizedBox(height: 24),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 32, right: 16),
+                    child: Divider(height: 1),
+                  ),
+                  const SizedBox(height: 16),
+                  for (final section in navigableSections)
+                    _navigationItem(section, compact: compact),
+                ],
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(left: 32, right: 16),
+            child: Divider(height: 1),
+          ),
+          _navigationItem(Section.settings, compact: compact),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(42, 1, 16, 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context)
+                            .extension<GlassDesignTokens>()
+                            ?.status ??
+                        Theme.of(context).colorScheme.tertiary,
+                    shape: BoxShape.circle,
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
-      for (final connection in connectionHomes)
-        _connectionNavigationItem(connection, compact: compact),
-      const SizedBox(height: 24),
-      if (defaultTargetPlatform == TargetPlatform.macOS)
-        const Padding(
-          padding: EdgeInsets.only(left: 32, right: 16),
-          child: Divider(height: 1),
-        )
-      else
-        const Divider(height: 1),
-      const SizedBox(height: 16),
-      for (final section in Section.values.where(
-        (item) => item != Section.home && item != Section.settings,
-      ))
-        _navigationItem(section, compact: compact),
-      const Spacer(),
-      if (defaultTargetPlatform == TargetPlatform.macOS)
-        const Padding(
-          padding: EdgeInsets.only(left: 32, right: 16),
-          child: Divider(height: 1),
-        )
-      else
-        const Divider(height: 1),
-      _navigationItem(Section.settings, compact: compact),
-      if (defaultTargetPlatform == TargetPlatform.macOS)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(42, 1, 16, 14),
-          child: Row(
-            children: [
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color:
-                      Theme.of(context)
-                          .extension<GlassDesignTokens>()
-                          ?.status ??
-                      Theme.of(context).colorScheme.tertiary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text('本机工作空间', style: Theme.of(context).textTheme.bodySmall),
-            ],
+                const SizedBox(width: 8),
+                Text('本机工作空间', style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
           ),
-        )
-      else
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        const SizedBox(height: 6),
+        connectionHeading(),
+        for (final connection in connectionHomes)
+          _connectionNavigationItem(connection, compact: compact),
+        const SizedBox(height: 24),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+        for (final section in navigableSections)
+          _navigationItem(section, compact: compact),
+        const Spacer(),
+        const Divider(height: 1),
+        _navigationItem(Section.settings, compact: compact),
         const SizedBox(height: 12),
-    ],
-  );
+      ],
+    );
+  }
 
   Widget _connectionNavigationItem(
     Connection connection, {
@@ -539,6 +565,7 @@ class AppShellState extends State<AppShell> {
             capabilities: catalog,
             runtime: widget.runtime,
             musicSession: widget.musicSession,
+            showMusicDesignPreview: widget.showMusicDesignPreview,
             onOpen: openCapability,
             onAccountChanged: () {
               unawaited(refreshAfterAccountChange(connection.id));
