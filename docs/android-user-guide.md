@@ -1,12 +1,12 @@
 # Android 内部测试指南
 
-> 更新：2026-11-14。Android 仍是实验版，当前没有可供分发的 Release APK/AAB；本指南用于开发和验收人员。仓库当前产品发布目标仍为 macOS。不要把 Debug 包上传应用商店或作为正式安装包传播。
+> 更新：2026-11-20。Android 仍是实验版，当前没有可供分发的 Release APK/AAB；本指南用于开发和验收人员。仓库当前产品发布目标仍为 macOS。不要把 Debug 包上传应用商店或作为正式安装包传播。
 
 ## 能力与执行位置
 
 | 能力 | 运行位置 | 当前状态 |
 | --- | --- | --- |
-| Streamable HTTP MCP | Android 手机 | A2.6 曾在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机完成回环与外部 HTTPS 闭环；A8.4 本轮外部 HTTPS 用例因未设置 `A2_EXTERNAL_MCP_URL` 跳过，故当前响应限额改动尚未在该外部地址复验。远程地址必须使用 HTTPS；不要把 Token 放进 URL。 |
+| Streamable HTTP MCP | Android 手机 | A2.6 曾在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机完成回环与外部 HTTPS 闭环；2026-11-20 又用公开只读 HTTPS MCP endpoint 验证当前 setup、发现及 `get_site_info` 调用。该 fixture 不代表用户生产服务，且本轮未切换 Wi-Fi。远程地址必须使用 HTTPS；不要把 Token 放进 URL。 |
 | Mac CLI、TUI、stdio MCP | 已配对的 Mac Host | Android 不在手机上启动这些命令。Mac 必须在线、Host 服务必须启动，且本次配对授权必须覆盖目标连接和操作。 |
 | 网易云 CLI 与音乐 | 配对 Mac Host | 账号配置、CLI 和播放由 Mac 持有；实际声音从 Mac 的音频输出设备播放。 |
 | Android 本机 Node/npm/任意 CLI | 不支持 | Node/npm 与固定样本仅用于独立 Debug 探针。用户不能在正式 Android App 中执行 `npm install`、任意 npm CLI、TUI 或 stdio Server。 |

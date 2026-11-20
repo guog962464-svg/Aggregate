@@ -1,12 +1,12 @@
 # Android A8 发布前检查与文档验收
 
-> 检查日期：2026-11-14。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
+> 检查日期：2026-11-20。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
 
 ## A8.4 安全、依赖与分发检查
 
 ### 检查范围与方法
 
-此前 Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bbe4ed665`，覆盖 Android/Flutter Runtime、配对 Mac Host、Node/npm 探针、密钥/日志、构建与分发配置。该工作台扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终标记为 failed，不能作为无漏洞结论。本轮工作树差异审查 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已完成：审阅 92 项源文件 inventory，0 项可报告漏洞；覆盖状态为 partial。原报告保留外部 HTTPS 当前版本复验、MCP 并发/超时取消语义、Host 账本恢复三个后续问题。扫描快照之后，本轮增加了 Android 全局 POST 并发上限和协议级请求 deadline/HTTP abort 回归测试，并补充 Host 账本人工恢复流程；这些后续材料不属于原报告覆盖。扫描针对 base `bd8034286ac168c596def1f09ab3960ce01d4e0e` 的冻结工作树快照，不是全仓库审计，也不能替代 16 KB 设备或生产服务验收。没有正式签名的 Android Release，也没有 16 KB 页实体设备。
+此前 Codex Security Standard 扫描目标修订为 `a5dde7507e268c7079b1eea63058636bbe4ed665`，覆盖 Android/Flutter Runtime、配对 Mac Host、Node/npm 探针、密钥/日志、构建与分发配置。该工作台扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终标记为 failed，不能作为无漏洞结论。本轮工作树差异审查 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已完成：审阅 92 项源文件 inventory，0 项可报告漏洞；覆盖状态为 partial。原报告保留外部 HTTPS 当前版本复验、MCP 并发/超时取消语义、Host 账本恢复三个后续问题；其中当前 Android HTTP MCP 代码的外部 HTTPS 用例已于 2026-11-20 在真机单独复验，原扫描本身仍不包含该证据。扫描快照之后，本轮增加了 Android 全局 POST 并发上限和协议级请求 deadline/HTTP abort 回归测试，并补充 Host 账本人工恢复流程；这些后续材料不属于原报告覆盖。扫描针对 base `bd8034286ac168c596def1f09ab3960ce01d4e0e` 的冻结工作树快照，不是全仓库审计，也不能替代 16 KB 设备或生产服务验收。没有正式签名的 Android Release，也没有 16 KB 页实体设备。
 
 ### 运行时、npm 与许可证
 
@@ -64,7 +64,7 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 
 差异审查对 HTTP 响应包装流中的错误完成行为曾记录一个候选：如果下游收到错误但继续监听，原实现不会发出结束事件。逐条检查 `mcp_dart` JSON/SSE 消费路径后确认产品当前消费者会在错误后终止或取消订阅，因此该候选不构成可达安全漏洞。审查快照之后，修正了包装层的 Stream 语义并新增错误/数据/`onDone` 回归；也增加跨 Android 会话的并发 POST 上限，以及 MCP protocol deadline、AbortableRequest 中止和超时会话关闭测试。这些后续变更不属于原扫描快照。
 
-旧 Codex Security 扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终为 failed，其 0 findings 不能作为无风险结论。本轮差异扫描 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已正常完成并生成报告；报告路径见工作区外的 Codex Security scan artifacts。它没有验证 16 KB 设备行为或外部 HTTPS 本轮实机闭环。
+旧 Codex Security 扫描 ID `be3aab55-1467-4e8c-b571-0a56f577389d` 最终为 failed，其 0 findings 不能作为无风险结论。本轮差异扫描 ID `96cfdbea-0984-4bc6-8ea5-0e45608ad884` 已正常完成并生成报告；报告路径见工作区外的 Codex Security scan artifacts。该扫描没有验证 16 KB 设备行为；外部 HTTPS 实机闭环由 2026-11-20 的独立测试补验，详见本记录末尾。
 
 ### 官方核验来源
 
@@ -79,7 +79,7 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - 新增 [Android 内部测试指南](android-user-guide.md)，说明只安装 Debug APK、HTTP MCP/Host/音乐的运行位置、配对与最小权限、实际音频输出位置及能力边界。
 - 更新[跨平台故障排查](troubleshooting.md#android-内部测试)，加入 Host、HTTPS/Token、任意 CLI/npm、Node 探针、音乐出声和运行结果待确认的处理步骤。
 - macOS [用户指南](user-guide.md)仍对应当前产品版本；其中明确 Android 文档仅供内部实验使用。
-- A7/A8.1–A8.3 已记录 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的安装、运行、HTTP MCP、配对、UI/IME、生命周期及存储验证。本轮 Android HTTP MCP Integration Test 文件 4 项通过，外部 HTTPS 用例因未设置 `A2_EXTERNAL_MCP_URL` 跳过。没有 16 KB 真机、生产 Host LAN/Bonjour、实际音乐账号或签名 Release；TalkBack 专项测试按 2026-11-20 用户决定不纳入范围。
+- A7/A8.1–A8.3 已记录 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的安装、运行、HTTP MCP、配对、UI/IME、生命周期及存储验证。Android HTTP MCP Integration Test 文件于 2026-11-20 在真机运行 5 项全部通过，其中外部 HTTPS 用例使用公开只读的 [Bommel Bot Agent Gateway](https://bommel.bot/agents)，无账号或 Token。没有 16 KB 真机、生产 Host LAN/Bonjour、实际音乐账号或签名 Release；无障碍/TalkBack 专项测试按用户决定不纳入范围。
 
 ## 本轮验证
 
@@ -88,7 +88,7 @@ A8SEC-1 与 A8SEC-3 的对应风险路径已封闭到上述范围；A8SEC-2 的�
 - Dart format、公共层边界检查、15 项共享包测试：通过。
 - Android arm64 Debug APK、Release APK/AAB 与 macOS Debug 构建：通过；macOS 构建有 `mobile_scanner` 使用 macOS 10.15 弃用 API 的既有编译警告。
 - Bundletool 1.18.3 `validate`、APK `zipalign -P 16`、Release APK/AAB 内 7 个 arm64 原生库的 16 KB ELF `PT_LOAD` 检查：通过。Release 工件未签名；无正式签名身份。
-- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机：HTTP MCP 集成文件 4 项通过、外部 HTTPS 用例因未设置环境变量跳过。测试后主包被移除，已重装 versionCode 12 Debug APK 并启动。第一次未隔离集成测试删除了旧 versionCode 11 App 数据及旧 Android Keystore 配对身份；隔离后缀也未能保证主包留存。重装后未重新建立 Host 配对；后续未再运行会安装/卸载 App 的真机集成命令。未使用模拟器。
+- LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机：既有 HTTP MCP 集成文件 4 项通过，外部 HTTPS 用例当时因未设置环境变量跳过。2026-11-20 改用隔离 `.integration` 包重跑后，5 项（含外部 HTTPS）全部通过；普通 Aggregate 包未被测试 runner 触碰，临时隔离包已卸载。历史上的主包移除/Keystore 数据丢失记录仍保留为早期非隔离运行的风险依据；本次未使用模拟器。
 - HTTP 包装流修正发生在差异扫描快照封存之后；本地测试覆盖了修正，但扫描报告不包含该后续变更。
 - 用户已有 root `pubspec.lock` 镜像 URL 改动保持未暂存；任务只提交 MCP path override 对应 lock hunk。
 
@@ -224,3 +224,10 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **隔离真机包：**同一源码用 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true` 构建 test-signed `.integration` Release；APK SHA-256 `1446065084150c1e03be2fcc4f4eba7fbfbcb821ba24c356cb9ddeb5cb23bd66`，v2 test signer 证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`。`zipalign -c -P 16 4` 通过，包内有 7 个 arm64 DSO，未发现 Node/npm 载荷。
 - **4 KB 冷启动结果：**LGE AN10 / Android 15 / API 35 / `PAGE_SIZE=4096`。官方 runner 两次均得到 `Status: ok`，但 3 秒检查未观察到 `MainActivity` resumed；无匹配该包的 crash-buffer 记录，进程仍存在。第一次检查后设备为 asleep；唤醒后第二次检查时 Keyguard 仍显示。两次 runner 均自动卸载隔离 `.integration` 包，普通包未被 runner 操作；没有启动 NodeProbe/testnode。因没有收到 `MainActivity resumed` 证据，这次当前 UI 源码冷启动不签收，Keyguard 是否为直接原因尚未证实；此前 `df0ddfd` 的通过结果不外推到包含 `3dc5dac` UI 更新的源码。
 - **范围结论：**当前代码的 Release 构建与 16 KB 静态检查通过；产品包仍 unsigned。当前源码的 4 KB 物理启动证据未通过判定，需在设备处于可运行应用的状态时复验；这不改变正式签名、16 KB 真机和 production Host/音乐业务门槛。
+
+## 2026-11-20 当前 UI 提交后的 HTTPS MCP 集成复验
+
+- **源码与命令：**应用代码基线 `86aab891ff30e37166e9b4783369c8b2a48d426b`（本次当前 HEAD `4c760115042bc4f78630ff8f1a4b5af9b86c65a7` 只增加验收文档）；在 `app/` 运行 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true flutter test --no-pub --no-uninstall --reporter expanded integration_test/android_http_mcp_test.dart -d AEMN022427001360 --dart-define=A2_EXTERNAL_MCP_URL=https://bommel.bot/api/mcp`。
+- **结果：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机整份集成文件 5 项全部通过，包括外部 HTTPS 测试；它验证 HTTPS setup、保存配置、发现 `get_site_info` 并成功调用。其余四项本地 HTTP/安全存储/响应上限/401 与超时测试也通过。
+- **测试服务与边界：**使用 [Bommel Bot Agent Gateway](https://bommel.bot/agents) 公布的 `https://bommel.bot/api/mcp`。服务方将该入口说明为公开只读、无需账号或 API key；本测试没有 Token，只调用 `get_site_info`，并在测试 finally 中删除临时连接。该结果验证公开 HTTPS MCP endpoint 的当前客户端路径，不代表任何用户生产 endpoint 或业务数据。
+- **清理与未覆盖：**测试使用隔离 `.integration` Debug 包；测试前后普通 `io.github.guog962464.aggregate` 包均未安装且没有被 runner 操作，测试后的 `.integration` 包已卸载，ADB reverse 为空。测试未设置 `A2_WIFI_SWITCH_TEST`，所以没有切换 Wi-Fi；不把测试名中的 network recovery 外推为本轮网络切换验收。没有运行 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
