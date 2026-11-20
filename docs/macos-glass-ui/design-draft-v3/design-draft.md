@@ -1,9 +1,9 @@
-# Aggregate macOS 全功能 UI 设计稿 v3.1
+# Aggregate macOS 全功能 UI 设计稿 v3.3
 
-> 日期：2026-11-19
-> 状态：macOS 视觉实施基准；本阶段只提交设计稿和参考素材，不改产品页面代码。
+> 日期：2026-11-20
+> 状态：macOS 全功能视觉实施基准；本轮先完成整套设计稿与自验，再按同一坐标实施。
 > 画板：1360 × 900 SVG；示例数据均为设计占位，不表示实际连接、运行结果或设备状态。
-> v3.1 修订：按首轮生产 Profile 对照，将窗口应用名和交通灯位置改为 macOS 原生左对齐几何；原生标题栏浅深外观跟随应用偏好。
+> v3.3 修订：设计稿与生产外壳统一到 240pt 导航、x=299pt 主内容起点、176pt 设置分类；Mac Host 画板补齐身份轮换、刷新、四种配对审批入口与权限操作，并按单屏可见密度重排。所有页面先完成设计自验，再逐项对齐生产 Profile。v3.2 的外观页调整、快捷键/本机数据拆分及 v3.1 的原生标题栏修订继续有效。
 
 ## 1. 这份设计稿如何用于实施
 
@@ -44,11 +44,11 @@
 
 - 字体：macOS 系统无衬线字体，中文回退到 PingFang SC；页面标题 25pt，区块标题 17pt，正文 12–14pt，辅助信息 10–12pt。数字和状态仍用同一字族，避免把元数据做成第二套视觉语言。
 - 对齐：页面标题与内容统一左对齐；播放器当前歌曲居中在播放器卡片里；运行/搜索等主操作靠近其表单或参数区；危险操作远离主要操作。
-- 页面骨架：导航宽度取生产 macOS 外壳的 224pt；SVG 的 16pt 画板边距计入后，主内容从 x≈270pt 开始。
+- 页面骨架：导航在 x=240pt 处分隔；主内容与生产 PageFrame 对齐，从 x≈299pt 开始。设置分类宽 176pt，右侧连续内容区从 x=513pt 开始。
 
 ```text
 窗口
-┌─ 224pt 导航 ─┬──────────── 页面标题 / 工具栏 ─────────────┐
+┌─ 240pt 导航 ─┬──────────── 页面标题 / 工具栏 ─────────────┐
 │ 连接          │                                           │
 │ 页面          │   当前任务内容                            │
 └───────────────┴───────────────────────────────────────────┘
@@ -65,7 +65,7 @@
 
 - 画板外框采用约 16pt 的窗体留白与 18pt 圆角；原生标题栏高约 42pt。
 - 应用名沿用 macOS 原生窗口标题的左对齐位置；窗口原生外观跟随应用的系统/浅色/深色偏好，避免 Flutter 场景与原生标题栏一明一暗。
-- 左侧连接导航的目标内容宽度约 224pt，分隔线细且低对比。导航依次展示我的连接、所有功能、管理连接、活动和置底设置；连接状态点只显示 Runtime 的真实状态。
+- 左侧连接导航宽 240pt，分隔线细且低对比。导航依次展示我的连接、所有功能、管理连接、活动和置底设置；连接状态点只显示 Runtime 的真实状态。
 - 内容左右留白约 30–34pt。页面标题、说明和本页主操作先组成稳定标题区；内容区再按任务拆列或分组。
 - 宽度 ≥ 760pt 时目录与详情并排；低于 760pt 时先目录后详情，保持原路由和页面状态。可见音乐迷你播放器占用窗口底部独立区域并横跨导航与主区；`Scaffold` 为它预留高度，页面内容不被覆盖。
 - 主要工作区不铺不透明的大底板。输入、终端、结果、弹窗和选中目标才用局部玻璃表面或内凹面。
@@ -118,7 +118,7 @@
 | [02 音乐首页](02-music.svg) | 当前曲目、播控、搜索结果与条件式队列控制 | `MusicPlayerPage`、`MusicSession`、`MusicSearchResults` |
 | [03 连接管理](03-connections.svg) | 连接列表、状态、诊断、刷新、动作编辑和危险操作 | `ConnectionsPage` |
 | [04 活动记录](04-activity.svg) | 状态筛选、元数据详情、重开/查看、取消与诊断 | `ActivityPage` |
-| [05 外观设置](05-settings-appearance.svg) | 当前模式、原控件基准图、单独的系统跟随选项 | `SettingsPage`、`AppearanceSelector`、`GlassThemeSwitch` |
+| [05 外观设置](05-settings-appearance.svg) | 外观说明、当前模式、原控件主视觉、单独的系统跟随选项 | `SettingsPage`、`AppearanceSelector`、`GlassThemeSwitch` |
 | [06 Mac Host](06-settings-host.svg) | Host 状态、邀请、待处理配对、已配对设备 | `MacHostSettingsPanel` |
 | [07 添加连接](07-connection-setup.svg) | CLI / MCP 类型、配置、执行目标、连接测试 | `ConnectionSetupDialog` |
 | [08 运行中的终端](08-terminal-running.svg) | 运行状态、取消、真实终端会话和流式输出 | `CapabilityRunPage`、`TerminalPage` |
@@ -128,13 +128,14 @@
 | [12 深色工作台](12-dark-reference.svg) | 深色层级、输入面、选中项和文字对比 | `AggregateTheme`、`GlassScene`、`GlassDesignTokens` |
 | [13 动作编辑器](13-action-editor.svg) | 原始 JSON 清单、动作预览、参数检查和保存 | `ActionEditorDialog` |
 | [14 音乐扫码登录](14-music-account-login.svg) | 未登录、二维码占位、扫码等待、取消和失败提示 | `MusicAccountControl`、账号对话框 |
-| [15 快捷键与本机数据](15-settings-shortcuts-data.svg) | 快捷键、保留时间、清空活动入口 | `SettingsPage`、`ShortcutScheme` |
+| [15 快捷键](15-settings-shortcuts.svg) | 搜索、运行、返回三组系统快捷键 | `SettingsPage`、`ShortcutScheme` |
 | [16 成功结果](16-result-success.svg) | 结构化结果、复制、重开和再次运行 | `ResultPanel`、`CapabilityRunPage` |
 | [17 CLI 连接首页](17-connection-home.svg) | 当前连接能力目录、无参数动作、运行与最近结果 | `ConnectionHomePage`、嵌入式 `CapabilityRunPage` |
 | [18 音乐迷你播放器](18-mini-player.svg) | 曲目摘要、条件式播放控制、打开与收起 | `MusicMiniPlayer`、`MusicSession` |
 | [19 执行目标选择](19-target-selector.svg) | 本机与可用 Host 目标、选择或取消 | `showConnectionSetupTargetDialog` |
 | [20 Host 权限编辑](20-host-permissions.svg) | Host scope 和逐连接读取 / 控制 / 写入权限 | `_HostGrantDialog` |
 | [21 MCP 连接首页](21-mcp-home.svg) | 工具、资源、提示分组，以及对应的详情/参数/结果 | `ConnectionHomePage`、嵌入式 `CapabilityRunPage` |
+| [22 本机数据](22-settings-local-data.svg) | 活动保留期限、清空入口、本机保存说明与版本信息 | `SettingsPage` |
 
 普通 CLI 连接首页使用 17；MCP 首页使用 21。二者由 `experienceFor` 返回的连接类型确定页面结构。v3 的预览样例来自 `PreviewRuntime`：Git CLI 有 1 项功能，HTTP MCP 有 3 项功能，音乐连接有 8 项功能；MCP 分组分别为 1 个工具、1 个资源、1 个提示。音乐账号对话框仅在 Runtime 提供 `ConnectionAccountPort` 时显示。示例二维码不可扫描，Host、连接、播放和活动数据均为画板样例。
 
@@ -170,15 +171,16 @@
 ### 活动与设置
 
 - [04 活动](04-activity.svg)：筛选器只按运行状态过滤。列表与详情显示能力、来源、发生时间、状态和运行 ID；活动本身不保存参数或结果正文。活动记录可查看运行/重开能力、取消仍可取消的运行、复制诊断；不增加连接/时间筛选或重新执行按钮。
-- [05 外观](05-settings-appearance.svg)：标题区读出当前模式；生产页面保留一个原生实时切换控件，并把“跟随 macOS 系统”作为单独按钮。画板中的截图框只用于锁定参考质感，不复制到产品页面。
-- [15 快捷键与本机数据](15-settings-shortcuts-data.svg)：快捷键沿用 `ShortcutScheme`；保留时长使用原选项，清空操作保持危险区与确认。
+- [05 外观](05-settings-appearance.svg)：设置分类右侧依次显示切换说明、当前模式、原生实时切换控件与独立系统跟随按钮。背景直接透出全窗场景，不增加外观预览底板；画板中的静态控件裁切不进入产品包。
+- [15 快捷键](15-settings-shortcuts.svg)：快捷键沿用 `ShortcutScheme`，名称和组合键两端对齐。
+- [22 本机数据](22-settings-local-data.svg)：保留时长使用原选项；清空操作保持危险区与确认，并显示本机保存范围和版本信息。
 - [10 通用状态](10-states.svg)：加载、无连接、无匹配、连接错误、结果未知和权限拒绝共享排版规则，但标题、说明和操作必须对应业务的真实状态，不能依靠按钮动画暗示成功。
 
 ## 5. 设计数据和真实性边界
 
 画板内的连接名称、音乐内容、数值、路径、活动时间、状态、Host 设备和权限组合都是静态示例。实施截图可用 `PreviewRuntime` 的预览内容复现视觉，但结果必须标记为预览数据。真实 Mac Host、权限、连接地址和账号状态只由生产 Runtime 提供；装饰动画不改变业务状态。
 
-唯一真实控件外观素材为 `theme-switch-light.png` 和 `theme-switch-dark.png`，来自本轮以前的 macOS 生产页面截图裁切。两张图片只作为设计档案。生产页面必须调用 `GlassThemeSwitch`，不得把这两张图片打包进 App。
+唯一真实控件外观素材为 `theme-switch-light.png` 和 `theme-switch-dark.png`，来自 macOS 生产页面截图裁切。两张图片只作为设计档案，用于页面构图；生产页面必须调用 `GlassThemeSwitch`，不得把这两张图片打包进 App。外观、Mac Host、快捷键、本机数据分别由左侧分类切换；05 画板不把其他类别内容重复放在外观页。
 
 ## 6. 页面到源码的对应关系
 
@@ -208,8 +210,9 @@
 
 ## 8. 设计阶段自验记录
 
-- Python 生成器语法检查通过；成功生成 21 张 SVG 画板。导航轨按生产 macOS 224pt 侧栏校准；画板 16pt 窗口内边距之后主内容从约 x=270pt 起排。
-- 21 张画板均由 macOS SVG 渲染器转为 1360 × 900 PNG 并抽查；音乐主页面按播放器/搜索 4:6 分栏复核，活动状态筛选、无队列列表的迷你播放器、实际 PreviewRuntime 的 CLI/MCP 能力数与示例动作均已交叉核对。
+- v3.2 画板曾以 224pt 侧栏和坐标变换生成；本次定位到该变换令主区比生产页面左移约 29pt。v3.3 移除变换，画板直接使用生产外壳坐标，并统一设置分类宽度到 176pt。
+- v3.3 Mac Host 画板覆盖 Host 启停、身份轮换、邀请生成/复制、配对刷新、拒绝、只读批准、连接向导批准、自定义权限、编辑权限和撤销配对。二维码使用不可扫描占位图，状态与设备名均标为示例数据。
+- 22 张画板覆盖工作台、音乐、连接、活动、设置、运行结果、权限和状态；设计自验后再逐页生成生产 Profile 对照，不以静态稿代替实际交互与运行时数据验证。
 - `theme-switch-light.png` 与 `theme-switch-dark.png` 可单独查看，浅色太阳和深色月亮均保留生产控件截图中的内部点阵与光效。
-- 本阶段未修改产品源码，未把设计样例数据写入 Runtime。
-- 产品代码匹配这些画板、页面交互及双主题 Profile 实测属于后续实施验收，不计入此设计阶段通过范围。
+- 设计样例数据不写入 Runtime；生产预览中的示例状态必须由明确的内存 fixture 提供并标注。
+- v3.3 后续实施验收同时检查坐标、层级、按钮图案、真实功能入口与生产状态；“看起来相似”不作为稿实一致的证据。

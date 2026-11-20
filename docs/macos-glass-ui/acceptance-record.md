@@ -1406,3 +1406,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 原生视觉证据：使用 `preview_main.dart` 的进程内 `PreviewRuntime`，隔离预览 bundle ID `io.github.guog962464.aggregate.ui7preview`，窗口逻辑尺寸 1260×860pt。最终浅色宽窗截图：[工作台目录与调用面板](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui7-design/05-workspace-inline-execution-final.png>)，2612×1812 PNG，SHA-256 `174d411ce59e6fe4748d27738998a35002fbd8a73cddde806dc3285b11aa6354`。仅捕获 Aggregate 窗口；AX 搜索确认工具栏重复入口不存在，页内搜索和右侧调用表单仍存在。临时 bundle ID 与初始窗口尺寸改动已还原，Profile 已退出。
 - 验证：`flutter test --no-pub test/widget_test.dart test/workspace_search_semantics_test.dart test/connection_experience_test.dart test/capability_run_page_test.dart test/macos_dynamic_backdrop_text_contrast_test.dart` 共 39 项通过；`flutter analyze --no-pub` 无问题；`flutter build macos --profile --no-pub -t lib/preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` 成功；`git diff --check` 通过。测试覆盖目录搜索、筛选、收藏、选中调用、参数校验、PreviewRuntime 运行结果、最近使用与活动刷新、⌘K 和布局宽度。
 - 边界：静态 Profile 图是浅色 PreviewRuntime 样例，不连真实服务；没有在原生窗口中实际运行能力，也没有本阶段暗色/窄窗 Profile 截图或用户视觉签收。Widget 测试的截图渲染器无法正确呈现 GlassScene/系统中文字体，所以不把测试 golden 当作视觉证据。UI-5/UI-6 的既有未完成项继续开放。
+
+### 2026-11-20 UI-7.0 全功能设计稿 v3.3 自验
+
+- 版本/范围：以 `main` 基线 `b5835a3` 和 `design-draft-v3` v3.2 为对照；本阶段只验收设计稿、行为蓝图和画板生成器，不将工作区中待实施的产品代码改动计入通过范围。主题开关状态机、太阳/月亮绘制和手势作为冻结边界。
+- 设计修订：移除画板的 `matrix(1.028713 0 0 1 -37.574 0)` 主区变换，设置导航统一为 176pt，外壳以 240pt 侧栏和 x=299pt 主内容坐标为准。Mac Host 画板覆盖启停、身份轮换、邀请生成/复制、配对刷新、拒绝、只读批准、连接向导批准、自定义权限、修改权限及撤销；待审批状态展示实际存在的设备平台与确认码，不编造申请权限。
+- 自验操作/结果：执行 `python3 docs/macos-glass-ui/design-draft-v3/render_design_draft.py` 重新生成 22 张画板；Python `xml.etree.ElementTree` 解析 22/22 张 SVG 成功；用 macOS SVG 渲染生成整套缩略图，对工作台、音乐、连接、活动、设置、终端、权限、状态、按钮、Host 和深色页面做全稿目视检查。生成器无残留坐标变换，设置分类宽度均为 176pt。
+- 证据：[22 张画板总览](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v33/all-22-boards.png>)、[Mac Host 设计稿](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v33/06-host.png>)、[外观设置设计稿](</Users/guo/.codex/visualizations/2026/11/20/aggregate-design-v33/05-appearance.png>)。生成器与 SVG 画板对应 `docs/macos-glass-ui/design-draft-v3/`。
+- 结果/限制：UI-7.0 设计稿自验通过。此结果不代表 Flutter 页面已与 v3.3 对齐，也不替代生产 Profile 截图、双主题状态检查或用户视觉签收；后续实施按 UI-7.1–UI-7.7 单独验收。

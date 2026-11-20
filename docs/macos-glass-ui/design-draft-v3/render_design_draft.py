@@ -148,19 +148,19 @@ def glyph(x, y, kind="play", size=20, color="#6f695d"):
     )
 
 
-def button(x, y, w, label, icon=None, primary=False, selected=False, quiet=False, h=42):
-    edge = "#efad49" if primary or selected else "#ffffff"
+def button(x, y, w, label, icon=None, primary=False, selected=False, quiet=False, h=42, danger=False):
+    edge = "#d88982" if danger else "#efad49" if primary or selected else "#ffffff"
     glow = (
         f'<rect x="{x-6}" y="{y-5}" width="{w+12}" height="{h+10}" rx="17" '
         f'fill="url(#warmGlow)" opacity=".55"/>'
         if primary or selected
         else ""
     )
-    fill = "url(#quiet)" if quiet else "url(#glass)"
+    fill = "url(#quiet)" if quiet or danger else "url(#glass)"
     icon_size = 24 if primary else 22
     icon_part = glyph(x + 15, y + (h - icon_size) / 2, icon, size=icon_size) if icon else ""
     text_x = x + (39 if icon else 16)
-    label_color = "#413b30" if primary else "#303039"
+    label_color = "#a54b45" if danger else "#413b30" if primary else "#303039"
     shadow = f'<rect x="{x+1}" y="{y+4}" width="{w-2}" height="{h}" rx="13" fill="#706d78" fill-opacity=".11"/>'
     face = r(x, y, w, h, fill, 12, edge)
     top_edge = f'<path d="M{x+14} {y+1}H{x+w-14}" stroke="#ffffff" stroke-opacity=".95" stroke-width="1.4"/>'
@@ -237,11 +237,18 @@ def embedded_image(filename, x, y, width, height):
     encoded = b64encode((OUT / filename).read_bytes()).decode("ascii")
     return (
         f'<image href="data:image/png;base64,{encoded}" x="{x}" y="{y}" '
-        f'width="{width}" height="{height}" preserveAspectRatio="xMidYMid meet" clip-path="url(#switchRefClip)"/>'
+        f'width="{width}" height="{height}" preserveAspectRatio="xMidYMid meet" mask="url(#switchReferenceMask)"/>'
     )
 
 
-def shell(page_title, active="全部功能", global_search=True, subtitle=None, mini_player=False):
+def shell(
+    page_title,
+    active="全部功能",
+    global_search=True,
+    subtitle=None,
+    mini_player=False,
+    switch_reference_mask=False,
+):
     out = ['<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="900" viewBox="0 0 1360 900">']
     out.append("""
       <defs>
@@ -279,6 +286,13 @@ def shell(page_title, active="全部功能", global_search=True, subtitle=None, 
         <clipPath id="switchRefClip"><rect x="710" y="376" width="380" height="190" rx="14"/></clipPath>
       </defs>
     """.strip())
+    if switch_reference_mask:
+        out.append(
+            '<defs><mask id="switchReferenceMask" maskUnits="objectBoundingBox" '
+            'maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="black"/>'
+            '<rect x=".20" y=".17" width=".70" height=".74" rx=".19" ry=".37" '
+            'fill="white"/></mask></defs>'
+        )
     out.append('<rect width="1360" height="900" fill="#16161a"/>')
     out.append('<rect x="16" y="16" width="1328" height="868" rx="18" fill="url(#scene)" stroke="#ffffff" stroke-opacity=".75"/>')
     out.append('<rect x="16" y="16" width="1328" height="868" rx="18" fill="url(#sceneWarm)"/>')
@@ -333,14 +347,10 @@ def shell(page_title, active="全部功能", global_search=True, subtitle=None, 
     out.append(t(298, 126, page_title, 25, "#282832", 680))
     if subtitle:
         out.append(t(299, 151, subtitle, 12, "#686873", 420))
-    # App-shell source uses a 224pt macOS navigation rail. The SVG window has
-    # a 16pt artboard inset, leaving 30pt of content padding at x=270.
-    out.append('<g transform="matrix(1.028713 0 0 1 -37.574 0)">')
     return out
 
 
 def save(name, page):
-    page.append("</g>")
     page.append("</svg>")
     (OUT / f"{name}.svg").write_text("\n".join(page), encoding="utf-8")
 
@@ -472,7 +482,7 @@ def board_connections():
     p.append(line(616, 671, 1308, 671))
     p.append(t(616, 711, "危险操作", 13, "#9e5550", 580))
     p.append(t(616, 733, "删除仅移除此连接配置；执行前保留现有二次确认。", 11, "#797983", 420))
-    p.append(button(616, 752, 126, "删除连接", "trash", False, quiet=True, h=40))
+    p.append(button(616, 752, 126, "删除连接", "trash", False, quiet=True, h=40, danger=True))
     save("03-connections", p)
 
 
@@ -524,29 +534,29 @@ def board_activity():
 
 
 def board_settings():
-    p = shell("设置", "设置", global_search=True, subtitle="让材质、光线和工作方式保持一致")
+    p = shell(
+        "设置",
+        "设置",
+        global_search=True,
+        subtitle="让材质、光线和工作方式保持一致",
+        switch_reference_mask=True,
+    )
     p.append(line(489, 184, 489, 843))
     for i, label in enumerate(["外观", "Mac Host", "快捷键", "本机数据"]):
         y = 198 + i * 49
         if i == 0:
-            p.append(r(299, y, 166, 40, "url(#glass)", 11, "#efb24f"))
+            p.append(r(299, y, 176, 40, "url(#glass)", 11, "#efb24f"))
         else:
-            p.append(r(299, y, 166, 40, "url(#quiet)", 11, "#ffffff", .5))
+            p.append(r(299, y, 176, 40, "url(#quiet)", 11, "#ffffff", .5))
         p.append(glyph(314, y + 10, ["settings", "link", "terminal", "history"][i], size=16))
         p.append(t(337, y + 26, label, 13, "#383842", 550 if i == 0 else 440))
-    p.append(section_title(526, 204, "外观", "拖动玻璃控件，在浅色和深色之间切换。"))
-    p.append(t(526, 260, "当前模式", 12, "#73737e", 440))
-    p.append(t(688, 260, "浅色", 13, "#3c3c45", 560))
-    p.append(t(526, 348, "太阳 / 月亮点阵随手势连续变化；跟随系统是独立入口。", 12, "#70707b", 420))
-    # This framed crop is explicitly a production reference, never a static
-    # replacement for the live switch in the implemented settings page.
-    p.append(r(694, 350, 412, 238, "url(#quiet)", 17, "#ffffff", .92))
-    p.append(t(710, 370, "主题切换 · 生产控件视觉基准", 10, "#72727d", 520))
-    p.append(embedded_image("theme-switch-light.png", 710, 376, 380, 190))
-    p.append(t(900, 579, "成品直接使用实时控件；不以截图代替交互", 10, "#757580", 420, "middle"))
-    p.append(button(813, 610, 174, "跟随 macOS 系统", "settings", False, h=44))
-    p.append(line(526, 692, 1309, 692))
-    p.append(section_title(526, 730, "本机偏好", "快捷键、Host 和本机数据在各自类别中设置。"))
+    p.append(section_title(513, 204, "外观", "拖动玻璃控件，在浅色和深色之间切换。"))
+    p.append(t(513, 274, "当前模式", 12, "#73737e", 440))
+    p.append(t(584, 274, "浅色", 13, "#3c3c45", 560))
+    # The crop shows the production switch in its shared scene. Runtime uses
+    # GlassThemeSwitch directly; this static image is documentation only.
+    p.append(embedded_image("theme-switch-light.png", 710, 312, 380, 190))
+    p.append(button(817, 523, 166, "跟随 macOS 系统", "settings", False, h=40))
     save("05-settings-appearance", p)
 
 
@@ -556,36 +566,44 @@ def board_host():
     for i, label in enumerate(["外观", "Mac Host", "快捷键", "本机数据"]):
         y = 198 + i * 49
         selected = i == 1
-        p.append(r(299, y, 166, 40, "url(#glass)" if selected else "url(#quiet)", 11, "#efb24f" if selected else "#ffffff"))
+        p.append(r(299, y, 176, 40, "url(#glass)" if selected else "url(#quiet)", 11, "#efb24f" if selected else "#ffffff"))
         p.append(glyph(314, y + 10, ["settings", "link", "terminal", "history"][i], size=16))
         p.append(t(337, y + 26, label, 13, "#383842", 550 if selected else 440))
     p.append(section_title(526, 204, "Mac Host", "让已配对设备安全连接到这台 Mac。"))
-    p.append(badge(526, 252, "Host 已启动", "good"))
-    p.append(t(642, 252, "局域网可用 · 端口 47832", 12, "#666671", 420))
-    p.append(button(1131, 218, 178, "停止 Host", "stop", False, h=40))
-    p.append(line(526, 282, 1309, 282))
-    p.append(section_title(526, 320, "邀请设备", "二维码和邀请码会按现有期限失效"))
-    p.append(r(526, 339, 783, 131, "url(#quiet)", 13, "#ffffff", .62))
-    p.append('<rect x="548" y="360" width="89" height="89" rx="10" fill="#fbfbfc" stroke="#d6d6de"/>')
-    for row in range(7):
-        for col in range(7):
-            if (row * 3 + col * 5) % 4 != 0:
-                p.append(f'<rect x="{558+col*10}" y="{370+row*10}" width="6" height="6" rx="1" fill="#595965"/>')
-    p.append(t(666, 378, "邀请二维码", 12, "#70707b", 450))
-    p.append(t(666, 407, "有效期  09:42", 17, "#33333d", 590))
-    p.append(button(666, 419, 109, "复制邀请码", "link", False, h=38))
-    p.append(section_title(526, 516, "待处理配对", "核对设备名称后再批准"))
-    p.append(r(526, 536, 783, 72, "url(#quiet)", 11, "#ffffff", .62))
-    p.append(t(548, 565, "iPhone · guo", 14, "#33333d", 580))
-    p.append(t(548, 587, "请求：本机只读 + 音乐控制", 11, "#777782", 420))
-    p.append(button(1017, 551, 119, "拒绝", "settings", False, quiet=True, h=40))
-    p.append(button(1147, 551, 141, "查看并批准", "check", True, h=40))
-    p.append(section_title(526, 654, "已配对设备", "权限可随时编辑或撤销"))
-    p.append(r(526, 675, 783, 63, "url(#quiet)", 11, "#ffffff", .62))
-    p.append(t(548, 704, "LGE AN10", 14, "#33333d", 560))
-    p.append(badge(548, 724, "已连接", "good"))
-    p.append(button(1031, 685, 124, "编辑权限", "settings", False, h=40))
-    p.append(button(1165, 685, 124, "撤销配对", "close", False, quiet=True, h=40))
+    p.append(badge(526, 252, "运行中", "good"))
+    p.append(t(598, 252, "局域网可用 · 端口 47832", 12, "#666671", 420))
+    p.append(button(1189, 218, 120, "停止 Host", "stop", False, h=40, danger=True))
+    p.append(t(526, 291, "轮换身份会撤销全部配对授权并停止 Host。", 11, "#777782", 420))
+    p.append(button(1129, 270, 180, "轮换 Mac Host 身份", "lock", False, quiet=True, h=40, danger=True))
+    p.append(line(526, 326, 1309, 326))
+    p.append(section_title(526, 360, "配对邀请", "二维码只包含短时邀请和 Host 地址，不含长期设备密钥。"))
+    p.append(button(1168, 336, 141, "生成新邀请", "plus", True, h=40))
+    p.append(r(526, 382, 783, 200, "url(#quiet)", 13, "#ffffff", .62))
+    p.append('<rect x="548" y="394" width="176" height="176" rx="10" fill="#fbfbfc" stroke="#d6d6de"/>')
+    for row in range(13):
+        for col in range(13):
+            if (row * 3 + col * 5 + row * col) % 4 != 0:
+                p.append(f'<rect x="{570+col*9}" y="{416+row*9}" width="5" height="5" rx="1" fill="#595965"/>')
+    p.append(t(748, 416, "邀请已生成 · 有效期 09:42", 14, "#33333d", 570))
+    p.append(t(748, 441, "1 个本机网络地址", 11, "#70707b", 430))
+    p.append(button(748, 462, 138, "复制配对信息", "link", False, quiet=True, h=38))
+    p.append(line(526, 607, 1309, 607))
+    p.append(section_title(526, 640, "待处理设备", "核对设备与确认码后再审批"))
+    p.append(icon_button(1263, 616, "refresh", "刷新配对设备", size=42))
+    p.append(r(526, 662, 783, 68, "url(#quiet)", 11, "#ffffff", .62))
+    p.append(t(540, 689, "iPhone · guo", 13, "#33333d", 580))
+    p.append(t(540, 710, "Android · 确认码 482 193", 10, "#777782", 420))
+    p.append(button(748, 676, 84, "拒绝", "close", False, quiet=True, h=40, danger=True))
+    p.append(button(840, 676, 107, "批准只读", "check", False, h=40))
+    p.append(button(955, 676, 143, "允许连接向导", "link", True, h=40))
+    p.append(button(1106, 676, 125, "自定义权限", "settings", False, h=40))
+    p.append(section_title(526, 765, "已配对设备", "权限可随时编辑或撤销"))
+    p.append(r(526, 785, 783, 64, "url(#quiet)", 11, "#ffffff", .62))
+    p.append(t(540, 812, "LGE AN10", 13, "#33333d", 560))
+    p.append(t(540, 833, "读取连接 · 音乐控制", 10, "#777782", 420))
+    p.append(badge(774, 812, "已连接", "good"))
+    p.append(button(1080, 797, 112, "修改权限", "settings", False, h=40))
+    p.append(button(1198, 797, 111, "撤销", "close", False, quiet=True, h=40, danger=True))
     save("06-settings-host", p)
 
 
@@ -730,7 +748,6 @@ def board_button_states():
 
 def board_dark_reference():
     p = shell("所有功能", "所有功能", global_search=False, subtitle="深色主题沿用同一布局，材质和状态令牌切换")
-    p.append("</g>")
     p.append('<rect x="16" y="16" width="1328" height="868" rx="18" fill="#202126" stroke="#454751"/>')
     p.append('<rect x="16" y="16" width="1328" height="42" rx="18" fill="#26272e"/>')
     for x, color in [(31, "#ee655a"), (56, "#efbe42"), (81, "#41b86b")]:
@@ -755,7 +772,6 @@ def board_dark_reference():
     p.append('<rect x="32" y="820" width="192" height="38" rx="11" fill="#292b32" stroke="#454751"/>')
     p.append(glyph(46, 831, "settings", size=16, color="#c4c5ce"))
     p.append(t(66, 844, "设置", 13, "#d5d6de", 450))
-    p.append('<g transform="matrix(1.028713 0 0 1 -37.574 0)">')
     p.append(t(298, 126, "所有功能", 25, "#efeff3", 680))
     p.append(t(298, 151, "相同的任务结构、间距与焦点顺序。", 12, "#b8bac5", 420))
     p.append(r(298, 174, 600, 42, "#111216", 10, "#454751"))
@@ -880,13 +896,13 @@ def board_music_account():
     save("14-music-account-login", p)
 
 
-def board_settings_shortcuts_data():
-    p = shell("设置", "设置", global_search=True, subtitle="快捷键与本机活动数据")
+def board_settings_shortcuts():
+    p = shell("设置", "设置", global_search=True, subtitle="快捷键")
     p.append(line(489, 184, 489, 843))
     for i, label in enumerate(["外观", "Mac Host", "快捷键", "本机数据"]):
         y = 198 + i * 49
         selected = i == 2
-        p.append(r(299, y, 166, 40, "url(#glass)" if selected else "url(#quiet)", 11, "#efb24f" if selected else "#ffffff"))
+        p.append(r(299, y, 176, 40, "url(#glass)" if selected else "url(#quiet)", 11, "#efb24f" if selected else "#ffffff"))
         p.append(glyph(314, y + 10, ["settings", "link", "terminal", "history"][i], size=16))
         p.append(t(337, y + 26, label, 13, "#383842", 550 if selected else 440))
     p.append(section_title(526, 204, "快捷键", "常用操作始终使用同一组系统组合键。"))
@@ -895,20 +911,36 @@ def board_settings_shortcuts_data():
         ("运行当前功能", "⌘ ↵"),
         ("返回或关闭", "Esc"),
     ]):
-        y = 251 + i * 54
+        y = 269 + i * 45
         p.append(t(526, y, label, 13, "#40404a", 500))
         p.append(t(1290, y, combo, 13, "#565660", 560, "end"))
         p.append(line(526, y + 18, 1309, y + 18))
-    p.append(section_title(526, 455, "本机数据", "这些操作只影响此设备保存的调用历史。"))
-    p.append(t(526, 496, "活动保留时长", 13, "#40404a", 520))
-    p.append(t(526, 519, "超过时长的状态记录会自动清理，不包含参数和结果正文。", 11, "#74747f", 420))
-    p.append(r(1190, 478, 119, 42, "url(#glass)", 10, "#ffffff"))
-    p.append(t(1205, 504, "30 天  ▾", 12, "#42424c", 500))
-    p.append(line(526, 548, 1309, 548))
-    p.append(t(526, 587, "清空活动记录", 13, "#9e5550", 550))
-    p.append(t(526, 612, "删除本机保存的调用历史。操作前会再次确认。", 11, "#74747f", 420))
-    p.append(button(1150, 574, 159, "清空记录", "trash", False, quiet=True, h=42))
-    save("15-settings-shortcuts-data", p)
+    save("15-settings-shortcuts", p)
+
+
+def board_settings_local_data():
+    p = shell("设置", "设置", global_search=True, subtitle="本机数据")
+    p.append(line(489, 184, 489, 843))
+    for i, label in enumerate(["外观", "Mac Host", "快捷键", "本机数据"]):
+        y = 198 + i * 49
+        selected = i == 3
+        p.append(r(299, y, 176, 40, "url(#glass)" if selected else "url(#quiet)", 11, "#efb24f" if selected else "#ffffff"))
+        p.append(glyph(314, y + 10, ["settings", "link", "terminal", "history"][i], size=16))
+        p.append(t(337, y + 26, label, 13, "#383842", 550 if selected else 440))
+    p.append(section_title(526, 204, "本机数据", "连接配置和活动记录保存在本机或执行端；活动内容不会保存参数或结果。"))
+    p.append(t(526, 254, "HTTP MCP 的 Bearer Token 保存在当前运行端的安全存储中。", 12, "#70707b", 420))
+    p.append(t(526, 302, "活动保留时长", 13, "#40404a", 520))
+    p.append(t(526, 325, "只保留最近活动记录。", 11, "#74747f", 420))
+    p.append(r(1190, 294, 119, 42, "url(#glass)", 10, "#ffffff"))
+    p.append(t(1205, 320, "30 天  ▾", 12, "#42424c", 500))
+    p.append(line(526, 356, 1309, 356))
+    p.append(t(526, 376, "清空活动记录", 13, "#9e5550", 550))
+    p.append(t(526, 399, "删除本机保存的调用历史。", 11, "#74747f", 420))
+    p.append(button(1150, 374, 159, "清空记录", "trash", False, quiet=True, h=42, danger=True))
+    p.append(line(526, 446, 1309, 446))
+    p.append(section_title(526, 472, "关于 Aggregate"))
+    p.append(t(526, 503, "Aggregate 开发版 · CLI 与 MCP 功能聚合工作台", 12, "#70707b", 420))
+    save("22-settings-local-data", p)
 
 
 def board_result_success():
@@ -1126,7 +1158,8 @@ if __name__ == "__main__":
     board_dark_reference()
     board_action_editor()
     board_music_account()
-    board_settings_shortcuts_data()
+    board_settings_shortcuts()
+    board_settings_local_data()
     board_result_success()
     board_connection_home()
     board_mini_player()

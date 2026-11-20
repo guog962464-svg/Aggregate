@@ -73,7 +73,6 @@
 <circle cx="48" cy="875" r="3.5" fill="#39765d"/><text x="58" y="879" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#39765d">本机工作空间</text>
 <text x="298" y="126" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="25" font-weight="680" fill="#282832">按钮与动效</text>
 <text x="299" y="151" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="420" fill="#686873">圆点图形保持统一栅格；外部材质按任务主次表达</text>
-<g transform="matrix(1.028713 0 0 1 -37.574 0)">
 <text x="371" y="223" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="14" font-weight="600" fill="#3b3b45">静置</text>
 <rect x="300" y="250" width="143" height="145" rx="28" fill="#706d78" fill-opacity=".13"/>
 <rect x="299" y="246" width="145" height="145" rx="28" fill="url(#glass)" fill-opacity="1" stroke="#ffffff" stroke-opacity=".75" stroke-width="1"/>
@@ -117,5 +116,4 @@
 <text x="299" y="782" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="560" fill="#555560">减少动态</text>
 <text x="412" y="782" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="430" fill="#6f6f7a">完全停止装饰动画，交互逻辑不变</text>
 <path d="M299 799H1309" fill="none" stroke="#c9c9d2" stroke-opacity=".42" stroke-width="1"/>
-</g>
 </svg>
