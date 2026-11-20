@@ -189,3 +189,10 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **产物：**arm64 Release APK/AAB 构建成功。APK 27,713,920 bytes，SHA-256 `2fbed8a69c2069d1f6bdf075c95fc6964e1ba500785c555648966eac0f9b9422`；AAB 25,482,492 bytes，SHA-256 `3860d32a33a3b9379449dac4768da22a9dfe26fdf415ac9583101ff816809b1a`。包名 `io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36、arm64。
 - **静态门禁：**Build Tools 36.0.0 APK `zipalign -c -P 16 4` 通过；官方 Bundletool 1.18.3（SHA-256 `a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29`）`validate` 通过，AAB 配置为 `PAGE_ALIGNMENT_16K`。APK 与 AAB 各含 7 个 arm64 原生库，21 个 `PT_LOAD` 全部满足至少 16 KB 对齐及 offset/virtual-address 余数相符；无 NodeProbe、NodeBridge、`libnode.so` 或 npm 载荷。
 - **签名与验收边界：**APK/AAB 没有签名条目，APK `apksigner verify` 因缺少 `META-INF/MANIFEST.MF` 而失败，符合当前未配置产品 Release 正式签名的状态。产物未安装或运行，不表示 16 KB 系统实机兼容。正式签名、16 KB 真机和 production Host/音乐闭环仍是 A8 发布门槛。
+
+
+## 2026-11-20 fbe9fce test-signed Release 4 KB cold-start recheck
+
+- **构建输入：**在 `fbe9fce` 干净 detached worktree 构建 `aggregateIsolatedIntegration=true` arm64 Release APK；临时工作树使用主工作区未提交的 `pubspec.lock` 副本并通过 `flutter pub get --enforce-lockfile`。APK package 为 `io.github.guog962464.aggregate.integration`、versionCode 8、versionName 0.3.7，大小 27,722,124 bytes，SHA-256 `29b58f0d253b8feb6541f8a95dae5d096482f3f9a6c3a32a45ff4aefaa5e5c79`；使用 Android Debug test signer，证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`。
+- **设备验收：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。首次官方 cold-start runner 返回 `Status: ok`、`LaunchState: COLD`，但 3 秒时 `MainActivity` 未 resumed；进程仍存在，crash buffer 没有该包匹配记录。按项目清理器已卸载 `.integration`。之后一次受控复核在 0.5/1.5/3 秒都观察到 `MainActivity` resumed、同一 PID 存活且无匹配 crash；随后官方 runner 连续 3 次通过，PIDs `1667`/`2893`/`4252`，`am start -W` 分别等待 1,334/2,103/1,156 ms。每次均自动 force-stop 并卸载 `.integration`，普通 Aggregate 保持安装。
+- **结论范围：**记录一次未复现的瞬时 Activity-resume 检查失败和后续四次可复核成功；未定位首次异常根因，也未修改应用代码。当前结论仅为该 test-signed Release 在这台 4 KB 设备的冷启动复核；不能替代正式签名、16 KB 系统实机或 production Host/音乐验收。复核后无障碍设置仍为 `null/0`，ADB reverse 为空。
