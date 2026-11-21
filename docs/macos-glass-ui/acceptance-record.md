@@ -1636,3 +1636,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：`flutter analyze --no-pub` 通过；点阵按钮、glyph golden、主题模拟、光学、实时拖动和主题开关定向套件共 45 项通过；macOS Profile 构建成功；主题按钮在隔离预览中浅/深切换后可返回浅色。`git diff --check` 通过。截图来自独立 Profile 进程，1360×900pt 窗口；主应用没有被操作。
 - 视觉证据：[浅色 Profile](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui91/light-1360x900.png>) SHA-256 `3843812fcfa4ea5316cb47599d0a9fd98765760b16dfa1efb2b2b0d733fcf49e`；[深色 Profile](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui91/dark-1360x900.png>) SHA-256 `e73bec25afad153ae768da1ce6913f03ebb1a6eed3ac1aed70f38c0f0243b8e9`。
 - 结果/边界：背景接缝与点阵剪影在该窗口样本中通过阶段检查。设置页目前仍有分类侧栏，与 v9.0 单一纵向页面不一致；留在 UI-9.5 按 05/06/15/22 修正。本阶段不代表其他功能页面已对齐，也不构成用户最终视觉签收。
+
+### 2026-11-21 UI-9.0.1 连接首页状态画板校准
+
+- 原因：UI-9.2 开始前用 1360×900pt 安全 Profile fixture 核对 17/21，发现画板写着“预览连接 · 仅内存数据”，而生产页面按当前 Runtime 呈现连接名与目标“示例 Git CLI · 此设备 / 示例 MCP · 此设备”。不修正的话，画板本身也不能作为逐屏对照基准。
+- 修订：v9.0.1 更新设计说明、生成器和 17/21 两张状态标签；保持页面几何、连接顺序、状态来源及业务逻辑不变。标签分别使用与 `Ui6InspectionRuntime` 一致的示例连接名和“此设备”。
+- 自验：生成器执行成功，Python 编译通过；17/21 SVG 由 macOS `sips` 导出并检查为 1360×900；设计文本断言确认两个标签均与安全 fixture 相同；`git diff --check` 通过。仅改设计资料，未运行产品测试或构建。
+- 视觉证据：[17 CLI 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v901/17-connection-home.png>) SHA-256 `d76ee22b62e1fc90e837f594198e23fac3d4be44ebcbe02694381bafedc495e7`；[21 MCP 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v901/21-mcp-home.png>) SHA-256 `fbd2321a9c292f3a61cf29779294de334e0f1f88bd338a5f12ccb514cfd95550`。
+- 结果/边界：连接首页的预期状态与 UI9.2 安全 Runtime fixture 现在一致；产品页面与设计稿的其余视觉验收仍在进行。

@@ -519,7 +519,7 @@ def screen_connection_home(mcp=False):
         row(p,280,236,306,"查看 Git 状态","显示当前分支与工作区状态","terminal",True,height=60)
     p.append(line(609,204,609,775))
     p.append(txt(642,242,"两个整数相加" if mcp else "查看 Git 状态",20,"var(--ink)",680))
-    p.append(tag(642,269,"预览连接 · 仅内存数据"))
+    p.append(tag(642,269,"示例 MCP · 此设备" if mcp else "示例 Git CLI · 此设备"))
     p.append(txt(642,304,"连接参数与结果只显示实际提供的内容。",12,"var(--muted)",440))
     if mcp:
         heading(p,642,352,"参数","来自当前工具输入 schema")
