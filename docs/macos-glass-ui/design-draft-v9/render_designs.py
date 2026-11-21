@@ -161,7 +161,7 @@ def rect(x, y, w, h, fill="url(#panel)", r=14, stroke="url(#edge)", sw=1):
 
 
 def line(x1, y1, x2, y2, color="var(--line)", width=1, opacity=1):
-    return f'<path d="M{x1} {y1}H{x2}" fill="none" stroke="{color}" stroke-opacity="{opacity}" stroke-width="{width}"/>'
+    return f'<path d="M{x1} {y1}L{x2} {y2}" fill="none" stroke="{color}" stroke-opacity="{opacity}" stroke-width="{width}"/>'
 
 
 def glyph(kind, x, y, size=20, color="var(--glyph)"):
@@ -359,7 +359,7 @@ def defs(dark=False):
     """
 
 
-def shell(title, active="全部功能", subtitle=None, dark=False, search=True, mini=False, fixture="preview"):
+def shell(title, active="全部功能", subtitle=None, dark=False, search=True, mini=False, fixture="preview", page_heading=True):
     p = ['<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="900" viewBox="0 0 1360 900">', defs(dark)]
     p.append('<g clip-path="url(#windowClip)"><rect x="0" y="0" width="1360" height="900" fill="url(#scene)"/><rect x="0" y="0" width="1360" height="900" fill="url(#skyGlow)"/><rect x="0" y="0" width="1360" height="900" fill="url(#sceneGrain)" opacity=".42"/>')
     # macOS contributes a 32 pt native titlebar above Flutter's 40 pt AppBar.
@@ -368,7 +368,7 @@ def shell(title, active="全部功能", subtitle=None, dark=False, search=True, 
     for x, c in ((16,"#f26a5f"),(34,"#f0c34d"),(52,"#49bd6c")):
         p.append(f'<circle cx="{x}" cy="16" r="7" fill="{c}"/>')
     p.append(txt(84,17,"Aggregate",13,"var(--muted)",620))
-    p.append(glyph("connection",42,85,17))
+    p.append(glyph("grid",42,85,17))
     p.append(txt(67,103,"Aggregate",19,"var(--ink)",680))
     p.append(txt(40,155,"我的连接",11,"var(--muted)",560))
     p.append(button(186,136,38,"","plus",h=38,icon_only=True))
@@ -394,9 +394,10 @@ def shell(title, active="全部功能", subtitle=None, dark=False, search=True, 
         # right-aligned with a 24 pt window inset and centered in the 40 pt bar.
         p.append(button(976,32,360,"搜索功能…","search",h=40))
         p.append(txt(1324,57,"⌘ K",12,"var(--muted)",520,"end"))
-    p.append(txt(280,131,title,25,"var(--ink)",690))
-    if subtitle:
-        p.append(txt(281,157,subtitle,12,"var(--muted)",440))
+    if page_heading:
+        p.append(txt(280,131,title,25,"var(--ink)",690))
+        if subtitle:
+            p.append(txt(281,157,subtitle,12,"var(--muted)",440))
     if mini:
         mini_player(p, fixture=fixture)
     return p
@@ -407,9 +408,9 @@ def heading(p, x, y, name, hint=None):
     if hint: p.append(txt(x,y+21,hint,11,"var(--muted)",430))
 
 
-def small_button(p, x, y, label, icon=None, primary=False, danger=False, w=None):
+def small_button(p, x, y, label, icon=None, primary=False, danger=False, w=None, navigation=False):
     w = w or max(86, len(label)*14+44)
-    p.append(button(x,y,w,label,icon,primary=primary,danger=danger,h=46 if primary else 40))
+    p.append(button(x,y,w,label,icon,primary=primary,danger=danger,h=46 if primary else 40,navigation=navigation))
 
 
 def row(p, x, y, w, title, sub, icon="document", selected=False, right=None, height=56):
@@ -752,15 +753,43 @@ def qr_placeholder(x,y,size):
 
 
 def screen_shortcuts():
-    p=settings_shell("快捷键","preview","名称与组合键沿用当前快捷键配置。")
-    for i,(group,items) in enumerate((("导航",(("所有功能","⌘ K"),("返回","Esc"))), ("运行",(("运行当前功能","⌘ ↵"),)))):
-        y=294+i*156
-        heading(p,316,y,group)
-        for j,(name,key) in enumerate(items):
-            yy=y+38+j*48
-            p.append(txt(316,yy,name,13,"var(--ink)",460))
-            p.append(txt(1298,yy,key,12,"var(--muted)",540,"end"))
-            p.append(line(316,yy+16,1298,yy+16,"var(--line)",1,.6))
+    # This board captures the same continuous settings scroll position as the
+    # Profile window: the page title has scrolled away, the paired-device tail
+    # leads into shortcuts, and local data remains visible below.
+    p=shell("设置","设置",fixture="preview",page_heading=False)
+    p.append('<path d="M316 90V82Q316 74 324 74H1290Q1298 74 1298 82V90" fill="none" stroke="var(--line)" stroke-opacity=".38" stroke-width="1"/>')
+    heading(p,316,130,"已配对设备","权限可随时编辑或撤销")
+    p.append(rect(316,151,982,50,"url(#panel)",12,"var(--panelEdge)"))
+    p.append(glyph("connection",332,166,18))
+    p.append(txt(363,177,"LGE AN10",12,"var(--ink)",560))
+    p.append(txt(363,194,"读取连接 · 连接向导 · 连接管理",9,"var(--muted)",430))
+    small_button(p,1060,156,"修改权限","settings",w=111)
+    small_button(p,1179,156,"撤销","close",danger=True,w=119)
+    p.append(line(316,227,1298,227))
+
+    heading(p,316,258,"快捷键","名称与组合键沿用当前快捷键配置。")
+    heading(p,316,322,"导航")
+    for yy,name,key in ((360,"所有功能","⌘ K"),(402,"返回","Esc")):
+        p.append(txt(316,yy,name,13,"var(--ink)",460))
+        p.append(txt(1298,yy,key,12,"var(--muted)",540,"end"))
+        p.append(line(316,yy+16,1298,yy+16,"var(--line)",1,.6))
+    heading(p,316,452,"运行")
+    p.append(txt(316,490,"运行当前功能",13,"var(--ink)",460))
+    p.append(txt(1298,490,"⌘ ↵",12,"var(--muted)",540,"end"))
+    p.append(line(316,506,1298,506,"var(--line)",1,.6))
+    p.append(line(316,540,1298,540))
+
+    heading(p,316,579,"本机数据","连接配置和活动记录保存在本机。")
+    heading(p,316,648,"活动保留时长","仅保存脱敏后的运行状态信息")
+    p.append(txt(316,689,"保留最近",11,"var(--muted)",430))
+    p.append(rect(1075,652,223,44,"url(#panel)",11,"var(--panelEdge)"))
+    p.append(txt(1093,680,"30 天",13,"var(--ink)",500))
+    p.append(txt(1279,680,"⌄",14,"var(--muted)",500,"end"))
+    p.append(line(316,733,1298,733))
+    heading(p,316,773,"清空活动记录","只删除本机保存的调用历史，不移除连接。")
+    p.append(txt(316,820,"删除后无法恢复。",11,"var(--muted)",430))
+    small_button(p,1134,775,"清空记录","trash",danger=True,w=164)
+    p.append(txt(316,879,"关于 Aggregate",13,"var(--ink)",600))
     return p+["</g></svg>"]
 
 
@@ -1013,15 +1042,16 @@ def screen_result():
 
 def screen_states():
     p=shell("通用状态","所有功能","状态文案和操作必须对应真实运行时信息")
-    cards=(("加载中","连接正在准备，请稍候。","refresh"),("没有连接","添加一个连接后即可运行功能。","connection"),("没有匹配","尝试更短的搜索词。","search"),("连接失败","检查连接设置或重新测试。","close"))
-    for i,(title,copy,icon) in enumerate(cards):
-        x=280+(i%2)*525; y=234+(i//2)*258
-        p.append(glyph(icon,x,y+4,25,"var(--muted)"))
-        p.append(txt(x+42,y+18,title,17,"var(--ink)",640))
-        p.append(txt(x+42,y+43,copy,12,"var(--muted)",430))
-        small_button(p,x+42,y+67,"查看下一步","next",primary=i==1,w=142)
+    cards=(("加载中","连接正在准备，请稍候。","hourglass",None,None),("没有连接","添加一个连接后即可运行功能。","connection","添加连接","plus"),("没有匹配","尝试更短的搜索词。","search","清除筛选","close"),("连接失败","检查连接设置或重新测试。","error","重试","refresh"))
+    for i,(title,copy,icon,action,action_icon) in enumerate(cards):
+        x=280+(i%2)*540; y=234+(i//2)*258
+        p.append(txt(x,y+18,title,17,"var(--ink)",640))
+        p.append(glyph(icon,x+8,y+69,26,"var(--muted)"))
+        p.append(txt(x+50,y+82,copy,12,"var(--muted)",430))
+        if action is not None:
+            small_button(p,x+50,y+(109 if i != 3 else 101),action,action_icon,primary=i==1,w=112 if i==1 else None,navigation=i==2)
         if i < 2: p.append(line(x,y+194,x+486,y+194,"var(--line)",1,.55))
-    p.append(line(797,208,797,688,"var(--line)",1,.65))
+    p.append(line(800,244,800,688,"var(--line)",1,.65))
     return p+["</g></svg>"]
 
 
