@@ -218,3 +218,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：侧栏 B002/B003 selected 双主题外观（2026-11-21）
 
 隔离 macOS Profile 中分别选中“示例 Git CLI”和“活动”，在 800×632pt 浅/深主题将指针移至内容空白区后，侧栏选中底板仍可见；AX 页面标题、路由与样例动作状态可读。完整截图、SHA 与隔离边界见[验收记录](acceptance-record.md#2026-11-21-ui-67-b002-git-cli-导航选中态浅深主题复核)、[B002/B003 矩阵](ui-6.7-button-instance-matrix.md)。只补签静置 selected 外观与路由；没有采集这两个导航项的点击动画、FrameTiming 或面板 display-present/FPS。UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B005 活动刷新双主题显示时序（2026-11-21）
+
+在隔离 macOS Profile 的活动页对生产调用点 B005 实际点击刷新，分别采集浅/深主题释放后 0–650ms 的指定时点。ScreenCaptureKit `SCStreamUpdateFrameDisplayTime` 提供 WindowServer 窗口帧显示时间；两主题采集各有 96 个回调，深色漏掉 133.3ms 目标点、浅色目标点齐全。释放后将指针移至空白侧沟以排除持续 hover；只使用 `Ui6InspectionRuntime` 进程内样例记录，按钮原有 `reload()` 仅重新读取列表。证据、哈希及采样范围见[验收记录](acceptance-record.md#2026-11-21-ui-67-b005-活动刷新双主题显示时序补核)。这些指定时点截图不是完整连续帧流，也不测 Flutter FrameTiming、物理面板呈现或 FPS；UI-6.7 仍部分验收。
