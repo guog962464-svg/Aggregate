@@ -777,7 +777,7 @@ def screen_local_data():
 
 
 def screen_setup_variant(kind):
-    p=shell("添加连接","管理连接","设置连接类型、执行目标与认证信息",fixture="inspection")
+    p=shell("管理连接","管理连接","查看连接状态、诊断与可执行的管理操作",fixture="inspection")
     p.append('<rect x="16" y="58" width="1328" height="826" fill="#242329" opacity=".24"/>')
     x,y,w,h=356,116,648,668
     config = {
