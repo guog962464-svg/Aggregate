@@ -55,14 +55,11 @@
 <text x="316" y="332" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" font-weight="460" fill="#2b2a27">所有功能</text>
 <text x="1298" y="332" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#686761">⌘ K</text>
 <path d="M316 348H1298" fill="none" stroke="#c1bfba" stroke-opacity="0.6" stroke-width="1"/>
-<text x="316" y="380" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" font-weight="460" fill="#2b2a27">设置</text>
-<text x="1298" y="380" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#686761">⌘ ,</text>
+<text x="316" y="380" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" font-weight="460" fill="#2b2a27">返回</text>
+<text x="1298" y="380" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#686761">Esc</text>
 <path d="M316 396H1298" fill="none" stroke="#c1bfba" stroke-opacity="0.6" stroke-width="1"/>
-<text x="316" y="428" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" font-weight="460" fill="#2b2a27">返回</text>
-<text x="1298" y="428" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#686761">Esc</text>
-<path d="M316 444H1298" fill="none" stroke="#c1bfba" stroke-opacity="0.6" stroke-width="1"/>
-<text x="316" y="498" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="16" font-weight="650" fill="#2b2a27">运行</text>
-<text x="316" y="536" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" font-weight="460" fill="#2b2a27">运行当前功能</text>
-<text x="1298" y="536" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#686761">⌘ ↵</text>
-<path d="M316 552H1298" fill="none" stroke="#c1bfba" stroke-opacity="0.6" stroke-width="1"/>
+<text x="316" y="450" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="16" font-weight="650" fill="#2b2a27">运行</text>
+<text x="316" y="488" text-anchor="start" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" font-weight="460" fill="#2b2a27">运行当前功能</text>
+<text x="1298" y="488" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="12" font-weight="540" fill="#686761">⌘ ↵</text>
+<path d="M316 504H1298" fill="none" stroke="#c1bfba" stroke-opacity="0.6" stroke-width="1"/>
 </g></svg>

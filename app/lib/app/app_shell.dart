@@ -380,7 +380,7 @@ class AppShellState extends State<AppShell> {
           ),
           _navigationItem(Section.settings, compact: compact),
           Padding(
-            padding: const EdgeInsets.fromLTRB(42, 1, 16, 14),
+            padding: const EdgeInsets.fromLTRB(42, 1, 16, 33),
             child: Row(
               children: [
                 Container(
@@ -501,6 +501,9 @@ class AppShellState extends State<AppShell> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(32, 4.5, 16, 4.5),
         child: AggregateActionButton(
+          key: section == Section.settings
+              ? const Key('macos-sidebar-settings')
+              : null,
           label: section.label,
           icon: section.icon,
           onPressed: activate,

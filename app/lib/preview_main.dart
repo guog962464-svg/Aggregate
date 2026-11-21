@@ -11,6 +11,7 @@ const _previewAppearance = String.fromEnvironment(
   'PREVIEW_APPEARANCE',
   defaultValue: 'system',
 );
+const _previewMusic = bool.fromEnvironment('PREVIEW_MUSIC');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ Future<void> main() async {
   runApp(
     AggregateApp(
       runtime: runtime,
-      showMusicDesignPreview: true,
+      showMusicDesignPreview: _previewMusic,
       platformSettingsSections: [
         MacHostSettingsPanel(
           hostControl: host,

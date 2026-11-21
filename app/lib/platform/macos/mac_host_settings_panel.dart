@@ -44,6 +44,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
   List<HostPendingPairing> _pending = const [];
   List<HostDeviceGrant> _paired = const [];
   HostWssPairingInvitation? _invitation;
+  final _pairedDevicesKey = GlobalKey();
   String? _error;
   var _busy = false;
 
@@ -407,8 +408,21 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
         .showSnackBar(const SnackBar(content: Text('配对信息已复制')));
   }
 
+  void _scrollToPairedDevices() {
+    final target = _pairedDevicesKey.currentContext;
+    if (target == null) return;
+    unawaited(
+      Scrollable.ensureVisible(
+        target,
+        alignment: .2,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      ),
+    );
+  }
+
   String _phaseLabel(HostStatus status) => switch (status.phase) {
-    HostPhase.stopped => '已关闭',
+    HostPhase.stopped => '已停止',
     HostPhase.starting => '正在启动',
     HostPhase.running => '运行中',
     HostPhase.stopping => '正在关闭',
@@ -426,12 +440,19 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     HostGrantScope.contentTransfer => '内容传输',
   };
 
-  Color _statusColor(ColorScheme scheme) => switch (_status.phase) {
-    HostPhase.running => scheme.primary,
-    HostPhase.failed => scheme.error,
-    HostPhase.unavailable => scheme.tertiary,
-    _ => scheme.onSurfaceVariant,
-  };
+  Color _statusColor(ThemeData theme) {
+    final tokens =
+        theme.extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(theme.brightness);
+    return switch (_status.phase) {
+      HostPhase.running => tokens.status,
+      HostPhase.stopped ||
+      HostPhase.starting ||
+      HostPhase.stopping => tokens.warm,
+      HostPhase.failed => tokens.danger,
+      HostPhase.unavailable => theme.colorScheme.tertiary,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -448,7 +469,10 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
               children: [
                 Text('Mac Host', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('让已配对设备安全连接到这台 Mac。', style: theme.textTheme.bodySmall),
+                Text(
+                  running ? '运行状态、配对邀请和已连接设备' : '让已配对设备连接到这台 Mac',
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             );
             final status = Semantics(
@@ -461,16 +485,21 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                     height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _statusColor(theme.colorScheme),
+                      color: _statusColor(theme),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(_phaseLabel(_status)),
+                  Text(
+                    _phaseLabel(_status),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: _statusColor(theme),
+                    ),
+                  ),
                 ],
               ),
             );
             final helper = Text(
-              running ? '轮换身份会撤销全部配对授权并停止 Host。' : '请先启动 Host，才能读取并撤销设备授权。',
+              '允许已配对设备在这台 Mac 上运行获准的功能。',
               style: theme.textTheme.bodySmall,
             );
             final startStopAction = AggregateActionButton(
@@ -489,7 +518,8 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
               expand: true,
             );
             final rotateAction = AggregateActionButton(
-              label: '轮换 Mac Host 身份',
+              label: '轮换身份',
+              semanticsLabel: '轮换 Mac Host 身份',
               icon: Icons.vpn_key_outlined,
               style: AggregateActionStyle.danger,
               onPressed: _busy || !running ? null : _rotateHostIdentity,
@@ -497,8 +527,50 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
               size: GlassButtonSize.compactAction,
               expand: true,
             );
+            final inviteAction = AggregateActionButton(
+              label: running ? '生成新邀请' : '生成邀请',
+              icon: Icons.add,
+              onPressed: _busy || !running ? null : _createInvitation,
+              enabled: !_busy && running,
+              size: GlassButtonSize.compactAction,
+              expand: true,
+            );
+            final pairedAction = AggregateActionButton(
+              label: '已配对设备',
+              icon: Icons.devices_outlined,
+              onPressed: _busy || _paired.isEmpty
+                  ? null
+                  : _scrollToPairedDevices,
+              enabled: !_busy && _paired.isNotEmpty,
+              size: GlassButtonSize.compactAction,
+              expand: true,
+            );
 
             if (constraints.maxWidth >= 720) {
+              if (!running) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    heading,
+                    const SizedBox(height: 22),
+                    status,
+                    const SizedBox(height: 17),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 141,
+                          height: 46,
+                          child: startStopAction,
+                        ),
+                        const SizedBox(width: 15),
+                        SizedBox(width: 137, height: 40, child: inviteAction),
+                        const SizedBox(width: 15),
+                        SizedBox(width: 149, height: 40, child: pairedAction),
+                      ],
+                    ),
+                  ],
+                );
+              }
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -514,20 +586,19 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 10),
                   Padding(
-                    padding: const EdgeInsets.only(right: 11),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    padding: const EdgeInsets.only(top: 40),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 29),
                         SizedBox(
-                          width: 120,
+                          width: 130,
                           height: 40,
                           child: startStopAction,
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(width: 180, height: 40, child: rotateAction),
+                        const SizedBox(width: 10),
+                        SizedBox(width: 140, height: 40, child: rotateAction),
                       ],
                     ),
                   ),
@@ -542,12 +613,17 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                 const SizedBox(height: 12),
                 status,
                 const SizedBox(height: 8),
-                helper,
+                if (running) helper,
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [startStopAction, rotateAction],
+                  children: [
+                    startStopAction,
+                    rotateAction,
+                    if (!running) inviteAction,
+                    if (!running) pairedAction,
+                  ],
                 ),
               ],
             );
@@ -569,7 +645,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
           ),
         ],
         if (running) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 27),
           const Divider(),
           const SizedBox(height: 9),
           LayoutBuilder(
@@ -602,10 +678,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                         child: description,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 11),
-                      child: SizedBox(width: 151, height: 40, child: action),
-                    ),
+                    SizedBox(width: 150, height: 46, child: action),
                   ],
                 );
               }
@@ -620,9 +693,10 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
             },
           ),
           if (invitation != null) ...[
+            const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
-                final qrSize = constraints.maxWidth < 520 ? 128.0 : 160.0;
+                final qrSize = constraints.maxWidth < 520 ? 104.0 : 112.0;
                 final qr = Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -646,7 +720,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                     Text('${invitation.endpoints.length} 个本机网络地址'),
                     const SizedBox(height: 12),
                     SizedBox(
-                      width: 138,
+                      width: 150,
                       height: 40,
                       child: AggregateActionButton(
                         label: '复制配对信息',
@@ -672,10 +746,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                 }
                 return Container(
                   key: const Key('host-invitation-card'),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 22,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(22, 20, 22, 6),
                   decoration: _hostPanelDecoration(theme),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -684,7 +755,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                       const SizedBox(width: 24),
                       Expanded(
                         child: SizedBox(
-                          height: 176,
+                          height: 112,
                           child: Align(
                             alignment: Alignment.topLeft,
                             child: details,
@@ -733,7 +804,11 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
             for (final request in _pending) _pendingCard(request, theme),
           if (_paired.isNotEmpty) ...[
             const SizedBox(height: 23),
-            Text('已配对设备', style: theme.textTheme.titleSmall),
+            Text(
+              '已配对设备',
+              key: _pairedDevicesKey,
+              style: theme.textTheme.titleSmall,
+            ),
             Text('权限可随时编辑或撤销', style: theme.textTheme.bodySmall),
             for (final grant in _paired) _pairedCard(grant, theme),
           ],
@@ -769,6 +844,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
         <
           ({
             String label,
+            String? semanticsLabel,
             IconData icon,
             AggregateActionStyle style,
             double width,
@@ -777,26 +853,29 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
         >[
           (
             label: '拒绝',
+            semanticsLabel: null,
             icon: Icons.close,
             style: AggregateActionStyle.danger,
-            width: 84,
+            width: 81,
             onPressed: () => _reject(request),
           ),
           (
             label: '批准只读',
+            semanticsLabel: null,
             icon: Icons.visibility_outlined,
             style: AggregateActionStyle.secondary,
-            width: 107,
+            width: 103,
             onPressed: () => _approve(
               request,
               scopes: const {HostGrantScope.readConnections},
             ),
           ),
           (
-            label: '允许连接向导',
+            label: '连接向导',
+            semanticsLabel: '允许连接向导',
             icon: Icons.settings_outlined,
             style: AggregateActionStyle.primary,
-            width: 143,
+            width: 125,
             onPressed: () => _approve(
               request,
               scopes: const {
@@ -807,6 +886,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
           ),
           (
             label: '自定义权限',
+            semanticsLabel: null,
             icon: Icons.tune,
             style: AggregateActionStyle.secondary,
             width: 125,
@@ -817,6 +897,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     Widget buildAction(
       ({
         String label,
+        String? semanticsLabel,
         IconData icon,
         AggregateActionStyle style,
         double width,
@@ -827,6 +908,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     }) {
       final button = AggregateActionButton(
         label: action.label,
+        semanticsLabel: action.semanticsLabel,
         icon: action.icon,
         style: action.style,
         onPressed: _busy ? null : action.onPressed,
@@ -844,7 +926,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
       decoration: _hostPanelDecoration(theme),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 720;
+          final wide = constraints.maxWidth >= 892;
           return Padding(
             padding: EdgeInsets.symmetric(
               horizontal: 12,
@@ -854,10 +936,12 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      const GlassGlyphMark(glyph: GlassGlyph.network, size: 20),
+                      const SizedBox(width: 15),
                       SizedBox(width: 194, child: details),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 208),
                       Wrap(
-                        spacing: 8,
+                        spacing: 7,
                         children: [
                           for (final action in actions)
                             buildAction(action, fixedWidth: true),
@@ -891,36 +975,32 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     decoration: _hostPanelDecoration(theme),
     child: LayoutBuilder(
       builder: (context, constraints) {
-        final actions = Wrap(
-          spacing: 6,
-          children: [
-            SizedBox(
-              width: 112,
-              height: 40,
-              child: AggregateActionButton(
-                label: '修改权限',
-                icon: Icons.tune,
-                onPressed: _busy ? null : () => _configurePairedGrant(grant),
-                enabled: !_busy,
-                size: GlassButtonSize.compactAction,
-                expand: true,
-              ),
-            ),
-            SizedBox(
-              width: 111,
-              height: 40,
-              child: AggregateActionButton(
-                label: '撤销',
-                icon: Icons.link_off,
-                style: AggregateActionStyle.danger,
-                onPressed: _busy ? null : () => _revoke(grant),
-                enabled: !_busy,
-                size: GlassButtonSize.compactAction,
-                expand: true,
-              ),
-            ),
-          ],
+        final editAction = SizedBox(
+          width: 111,
+          height: 40,
+          child: AggregateActionButton(
+            label: '修改权限',
+            icon: Icons.tune,
+            onPressed: _busy ? null : () => _configurePairedGrant(grant),
+            enabled: !_busy,
+            size: GlassButtonSize.compactAction,
+            expand: true,
+          ),
         );
+        final revokeAction = SizedBox(
+          width: 119,
+          height: 40,
+          child: AggregateActionButton(
+            label: '撤销',
+            icon: Icons.link_off,
+            style: AggregateActionStyle.danger,
+            onPressed: _busy ? null : () => _revoke(grant),
+            enabled: !_busy,
+            size: GlassButtonSize.compactAction,
+            expand: true,
+          ),
+        );
+        final actions = Wrap(spacing: 8, children: [editAction, revokeAction]);
         final details = Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -943,15 +1023,19 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
             ),
           ],
         );
-        if (constraints.maxWidth >= 720) {
+        if (constraints.maxWidth >= 892) {
           return SizedBox(
-            height: 64,
+            height: 48,
             child: Padding(
-              padding: const EdgeInsets.only(left: 14),
+              padding: const EdgeInsets.only(left: 20),
               child: Row(
                 children: [
+                  const GlassGlyphMark(glyph: GlassGlyph.device, size: 18),
+                  const SizedBox(width: 9),
                   Expanded(child: details),
-                  actions,
+                  editAction,
+                  const SizedBox(width: 8),
+                  revokeAction,
                 ],
               ),
             ),

@@ -73,189 +73,57 @@ class SettingsPage extends StatelessWidget {
       ? _buildMacSettings(context)
       : _buildStandardSettings(context);
 
-  Widget _buildMacSettings(BuildContext context) => DefaultTabController(
-    length: 4,
-    child: Builder(
-      builder: (context) {
-        final controller = DefaultTabController.of(context);
-        final glassTokens =
-            Theme.of(context).extension<GlassDesignTokens>() ??
-            GlassDesignTokens.forBrightness(Theme.of(context).brightness);
-        return AnimatedBuilder(
-          animation: controller,
-          builder: (context, _) => PageFrame(
-            title: '设置',
-            subtitle: switch (controller.index) {
-              0 => '让材质、光线和工作方式保持一致',
-              1 => '管理配对 Mac 与访问权限',
-              2 => '快捷键',
-              _ => '本机数据',
-            },
-            headerSpacing: 32,
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final compact = constraints.maxWidth < 760;
-                  final content = switch (controller.index) {
-                    0 => _appearanceTab(context),
-                    1 => _macHostTab(),
-                    2 => _shortcutsTab(context),
-                    _ => _localDataTab(context),
-                  };
-                  final navigation = _settingsNavigation(
-                    context,
-                    controller,
-                    compact: compact,
-                  );
-
-                  if (compact) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        navigation,
-                        const SizedBox(height: 20),
-                        Divider(
-                          height: 1,
-                          color: glassTokens.line.withValues(alpha: .38),
-                        ),
-                        const SizedBox(height: 24),
-                        content,
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        key: const Key('macos-settings-category-rail'),
-                        width: 176,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: navigation,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.only(left: 23),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: glassTokens.line.withValues(alpha: .38),
-                              ),
-                            ),
-                          ),
-                          child: content,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-
-  Widget _settingsNavigation(
-    BuildContext context,
-    TabController controller, {
-    required bool compact,
-  }) {
-    const categories = [
-      ('外观', Icons.brightness_auto_outlined),
-      ('Mac Host', Icons.devices_outlined),
-      ('快捷键', Icons.tune_outlined),
-      ('本机数据', Icons.folder_open_outlined),
-    ];
-
-    final buttons = [
-      for (var index = 0; index < categories.length; index++)
-        AggregateActionButton(
-          label: categories[index].$1,
-          icon: categories[index].$2,
-          style: AggregateActionStyle.quiet,
-          selected: controller.index == index,
-          expand: !compact,
-          semanticsLabel: '设置分类：${categories[index].$1}',
-          onPressed: () => controller.animateTo(index),
-        ),
-    ];
-
-    if (compact) {
-      return Wrap(spacing: 4, runSpacing: 4, children: buttons);
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildMacSettings(BuildContext context) {
+    final glassTokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+    final divider = Divider(
+      height: 1,
+      color: glassTokens.line.withValues(alpha: .38),
+    );
+    return PageFrame(
+      title: '设置',
+      subtitle: '外观、设备和本机数据',
+      contentPadding: const EdgeInsets.fromLTRB(40, 36, 52, 40),
+      // The Profile window adds a native 32pt title bar above the Flutter
+      // surface; keep the body aligned to the full-window v9 artboards.
+      headerSpacing: 26,
       children: [
-        for (var index = 0; index < buttons.length; index++) ...[
-          if (index > 0) const SizedBox(height: 9),
-          buttons[index],
-        ],
+        _appearanceTab(context),
+        const SizedBox(height: 24),
+        divider,
+        const SizedBox(height: 24),
+        _macHostTab(),
+        const SizedBox(height: 24),
+        divider,
+        const SizedBox(height: 24),
+        _shortcutsTab(context),
+        const SizedBox(height: 24),
+        divider,
+        const SizedBox(height: 24),
+        _localDataTab(context),
       ],
     );
   }
 
-  Widget _appearanceTab(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        '外观',
-        style: Theme.of(context).textTheme.titleMedium
-            ?.copyWith(fontSize: 17, height: 1.2),
-      ),
-      const SizedBox(height: 8),
-      Text('拖动玻璃控件，在浅色和深色之间切换。', style: Theme.of(context).textTheme.bodySmall),
-      const SizedBox(height: 25),
-      Row(
-        children: [
-          Text(
-            '当前模式',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 24),
-          Text(
-            switch (preferences.appearance) {
-              AppearancePreference.system => '跟随 macOS',
-              AppearancePreference.light => '浅色',
-              AppearancePreference.dark => '深色',
-            },
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-      const SizedBox(height: 32),
-      ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 774),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AppearanceSelector(
-                switchWidth: 490,
-                switchHeightFactor: .5,
-                calibration: ThemeSwitchCalibration.reference,
-                appearance: preferences.appearance,
-                systemLabel: '跟随 macOS 系统',
-                onChanged: (appearance) => onPreferencesChanged(
-                  preferences.copyWith(appearance: appearance),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ],
+  Widget _appearanceTab(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 36, right: 10),
+    child: AppearanceSelector(
+      macSettingsLayout: true,
+      switchWidth: 448,
+      switchHeightFactor: .5,
+      calibration: ThemeSwitchCalibration.reference,
+      appearance: preferences.appearance,
+      systemLabel: '跟随 macOS 系统',
+      helperText: '切换控件保持原始实时拖动、方向反转与太阳/月亮内部变化。',
+      onChanged: (appearance) =>
+          onPreferencesChanged(preferences.copyWith(appearance: appearance)),
+    ),
   );
 
   Widget _macHostTab() => Padding(
-    padding: const EdgeInsets.only(left: 13),
+    key: const Key('macos-settings-host-section'),
+    padding: const EdgeInsets.only(left: 36, right: 10),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -267,27 +135,43 @@ class SettingsPage extends StatelessWidget {
     ),
   );
 
-  Widget _shortcutsTab(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('快捷键', style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 8),
-      const Text('常用操作始终使用同一组系统组合键。'),
-      const SizedBox(height: 18),
-      _shortcutRow(
-        context,
-        '搜索所有功能',
-        ShortcutScheme(defaultTargetPlatform).searchLabel,
-      ),
-      const Divider(height: 1),
-      _shortcutRow(
-        context,
-        '运行当前功能',
-        ShortcutScheme(defaultTargetPlatform).runLabel,
-      ),
-      const Divider(height: 1),
-      _shortcutRow(context, '返回或关闭', 'Esc'),
-    ],
+  Widget _shortcutsTab(BuildContext context) => Padding(
+    key: const Key('macos-settings-shortcuts-section'),
+    padding: const EdgeInsets.only(left: 36, right: 10),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '快捷键',
+          style: Theme.of(context).textTheme.titleMedium
+              ?.copyWith(fontSize: 16, height: 19 / 16),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '名称与组合键沿用当前快捷键配置。',
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(fontSize: 11, height: 14 / 11),
+        ),
+        const SizedBox(height: 22),
+        Text('导航', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        _shortcutRow(
+          context,
+          '所有功能',
+          ShortcutScheme(defaultTargetPlatform).searchLabel,
+        ),
+        const Divider(height: 1),
+        _shortcutRow(context, '返回', 'Esc'),
+        const SizedBox(height: 18),
+        Text('运行', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        _shortcutRow(
+          context,
+          '运行当前功能',
+          ShortcutScheme(defaultTargetPlatform).runLabel,
+        ),
+      ],
+    ),
   );
 
   Widget _shortcutRow(BuildContext context, String label, String shortcut) =>
@@ -309,88 +193,104 @@ class SettingsPage extends StatelessWidget {
   Widget _localDataTab(BuildContext context) {
     final dropdownDecoration = InputDecoration(
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(11)),
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('本机数据', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        const Text('连接配置和活动记录保存在本机或执行端；活动内容不会保存参数或结果。'),
-        const SizedBox(height: 6),
-        const Text('HTTP MCP 的 Bearer Token 保存在当前运行端的安全存储中。'),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('活动保留时长'),
-                  const SizedBox(height: 3),
-                  Text(
-                    '只保留最近活动记录。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+    return Padding(
+      key: const Key('macos-settings-local-data-section'),
+      padding: const EdgeInsets.only(left: 36, right: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('本机数据', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text('连接配置和活动记录保存在本机。'),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('活动保留时长'),
+                    const SizedBox(height: 5),
+                    Text(
+                      '仅保存脱敏后的运行状态信息',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('保留最近'),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(
-              width: 108,
-              child: DropdownButtonFormField<int>(
-                initialValue: preferences.activityRetentionDays,
-                isExpanded: true,
-                decoration: dropdownDecoration,
-                items: const [
-                  DropdownMenuItem(value: 7, child: Text('7 天')),
-                  DropdownMenuItem(value: 30, child: Text('30 天')),
-                  DropdownMenuItem(value: 90, child: Text('90 天')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    onPreferencesChanged(
-                      preferences.copyWith(activityRetentionDays: value),
-                    );
-                  }
-                },
+              SizedBox(
+                width: 223,
+                height: 44,
+                child: DropdownButtonFormField<int>(
+                  initialValue: preferences.activityRetentionDays,
+                  isExpanded: true,
+                  decoration: dropdownDecoration,
+                  items: const [
+                    DropdownMenuItem(value: 7, child: Text('7 天')),
+                    DropdownMenuItem(value: 30, child: Text('30 天')),
+                    DropdownMenuItem(value: 90, child: Text('90 天')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      onPreferencesChanged(
+                        preferences.copyWith(activityRetentionDays: value),
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const Divider(height: 1),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('清空活动记录'),
-                  const SizedBox(height: 3),
-                  Text(
-                    '删除本机保存的调用历史。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('清空活动记录'),
+                    const SizedBox(height: 3),
+                    Text(
+                      '只删除本机保存的调用历史，不移除连接。',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '删除后无法恢复。',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            AggregateActionButton(
-              label: '清空记录',
-              icon: Icons.delete_outline,
-              style: AggregateActionStyle.danger,
-              onPressed: () => clearActivity(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        const Divider(height: 1),
-        const SizedBox(height: 20),
-        Text('关于 Aggregate', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        const Text('Aggregate $_appVersion · CLI 与 MCP 功能聚合工作台'),
-      ],
+              SizedBox(
+                width: 163,
+                height: 40,
+                child: AggregateActionButton(
+                  label: '清空记录',
+                  icon: Icons.delete_outline,
+                  style: AggregateActionStyle.danger,
+                  onPressed: () => clearActivity(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 20),
+          Text('关于 Aggregate', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text('Aggregate $_appVersion · CLI 与 MCP 功能聚合工作台'),
+          const SizedBox(height: 8),
+          const Text('HTTP MCP 的 Bearer Token 保存在当前运行端的安全存储中。'),
+        ],
+      ),
     );
   }
 

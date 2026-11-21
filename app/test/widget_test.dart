@@ -4,6 +4,7 @@ import 'package:aggregate/features/connections/connections_page.dart';
 import 'package:aggregate/platform/macos/mac_host_settings_panel.dart';
 import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate/preview/ui6_inspection_host.dart';
+import 'package:aggregate/widgets/glass/glass_design_tokens.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate/widgets/page_frame.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
@@ -210,9 +211,7 @@ void main() {
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
-  testWidgets('wide macOS settings show category rail and theme state', (
-    tester,
-  ) async {
+  testWidgets('wide macOS settings are one continuous v9 page', (tester) async {
     tester.view.physicalSize = const Size(1360, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -222,73 +221,77 @@ void main() {
     await tester.tap(find.text('设置').first);
     await tester.pump(const Duration(milliseconds: 600));
 
+    expect(find.byKey(const Key('macos-settings-category-rail')), findsNothing);
     expect(
-      find.byKey(const Key('macos-settings-category-rail')),
+      find.byKey(const Key('macos-settings-appearance-section')),
       findsOneWidget,
     );
-    final railRect = tester.getRect(
-      find.byKey(const Key('macos-settings-category-rail')),
+    expect(
+      find.byKey(const Key('macos-settings-host-section')),
+      findsOneWidget,
     );
-    expect(railRect.left, 299);
-    expect(railRect.width, 176);
-    final categoryRects = [
-      '外观',
-      'Mac Host',
-      '快捷键',
-      '本机数据',
-    ].map((name) => tester.getRect(find.bySemanticsLabel('设置分类：$name')));
-    final categories = categoryRects.toList();
-    expect(categories.first.top - railRect.top, 8);
-    for (var index = 0; index < categories.length; index++) {
-      expect(categories[index].height, 40);
-      if (index > 0) {
-        expect(categories[index].top - categories[index - 1].top, 49);
-      }
-    }
-    final appearanceHeading = tester.getRect(find.text('外观').last);
+    expect(
+      find.byKey(const Key('macos-settings-shortcuts-section')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('macos-settings-local-data-section')),
+      findsOneWidget,
+    );
     final switchRect = tester.getRect(find.bySemanticsLabel('外观主题'));
-    expect(switchRect.left, 655);
-    expect(switchRect.width, 490);
-    expect(switchRect.height, 245);
-    expect(switchRect.top - appearanceHeading.top, closeTo(122, 1));
+    expect(switchRect.left, closeTo(850, 1));
+    expect(switchRect.width, 448);
+    expect(switchRect.height, 224);
+    // Widget tests omit the native 32pt title bar, so the in-window target
+    // position 205pt is 173pt inside the Flutter surface.
+    expect(switchRect.top, closeTo(173, 1));
+    final helperRect = tester.getRect(
+      find.text('切换控件保持原始实时拖动、方向反转与太阳/月亮内部变化。'),
+    );
+    expect(helperRect.left, 316);
+    expect(helperRect.top, closeTo(310, 2));
     final systemButtonRect = tester.getRect(
       find.bySemanticsLabel('跟随 macOS 系统'),
     );
-    expect(systemButtonRect.left, 817);
-    expect(systemButtonRect.width, 166);
+    expect(systemButtonRect.left, 316);
+    expect(systemButtonRect.width, 178);
     expect(systemButtonRect.height, 40);
-    expect(systemButtonRect.top - switchRect.bottom, 8);
+    expect(systemButtonRect.top, closeTo(342, 2));
     expect(
       tester.widget<PageFrame>(find.byType(PageFrame)).subtitle,
-      '让材质、光线和工作方式保持一致',
+      '外观、设备和本机数据',
     );
-    expect(find.text('让材质、光线和工作方式保持一致'), findsOneWidget);
     expect(find.text('跟随 macOS'), findsOneWidget);
     await tester.tap(find.bySemanticsLabel('外观主题'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('深色'), findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('设置分类：快捷键'));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(tester.widget<PageFrame>(find.byType(PageFrame)).subtitle, '快捷键');
-    expect(find.text('常用操作始终使用同一组系统组合键。'), findsOneWidget);
-    expect(find.text('运行当前功能'), findsOneWidget);
-    expect(find.text('返回或关闭'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('设置分类：Mac Host'));
-    await tester.pump(const Duration(milliseconds: 350));
+    await tester.ensureVisible(
+      find.byKey(const Key('macos-settings-shortcuts-section')),
+    );
     expect(
       tester.widget<PageFrame>(find.byType(PageFrame)).subtitle,
-      '管理配对 Mac 与访问权限',
+      '外观、设备和本机数据',
     );
-    expect(find.text('管理配对 Mac 与访问权限'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('设置分类：本机数据'));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(tester.widget<PageFrame>(find.byType(PageFrame)).subtitle, '本机数据');
-    expect(find.text('连接配置和活动记录保存在本机或执行端；活动内容不会保存参数或结果。'), findsOneWidget);
+    expect(find.text('运行当前功能'), findsOneWidget);
+    expect(find.text('返回'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const Key('macos-settings-local-data-section')),
+    );
+    expect(find.text('连接配置和活动记录保存在本机。'), findsOneWidget);
+    expect(find.text('仅保存脱敏后的运行状态信息'), findsOneWidget);
+    final retention = tester.getRect(find.byType(DropdownButtonFormField<int>));
+    expect(retention.left, 1075);
+    expect(retention.width, 223);
+    expect(retention.height, 44);
+    final clearActivity = tester.getRect(find.bySemanticsLabel('清空记录'));
+    expect(clearActivity.left, 1135);
+    expect(clearActivity.width, 163);
+    expect(clearActivity.height, 40);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
-  testWidgets('wide macOS Host settings match the v3.5 sample layout', (
+  testWidgets('wide macOS Host settings match the v9.0.10 sample layout', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1360, 900);
@@ -314,47 +317,59 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
     await tester.pump(const Duration(milliseconds: 600));
-    await tester.tap(find.bySemanticsLabel('设置分类：Mac Host'));
-    await tester.pump(const Duration(milliseconds: 350));
+    await tester.ensureVisible(find.text('启动 Host'));
+    expect(find.text('让已配对设备连接到这台 Mac'), findsOneWidget);
+    final glassTokens = Theme.of(
+      tester.element(find.byType(MacHostSettingsPanel)),
+    ).extension<GlassDesignTokens>()!;
+    expect(
+      tester.widget<Text>(find.text('已停止')).style?.color,
+      glassTokens.warm,
+    );
     await tester.tap(find.text('启动 Host'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.text('生成新邀请'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.text('Pixel 9'), findsOneWidget);
+    expect(find.text('运行状态、配对邀请和已连接设备'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text('运行中')).style?.color,
+      glassTokens.status,
+    );
     expect(find.text('Android · 确认码 482 193'), findsOneWidget);
     expect(find.text('LGE AN10'), findsOneWidget);
     final stop = tester.getRect(find.bySemanticsLabel('停止 Host'));
-    expect(stop.left, 1189);
-    expect(stop.width, 120);
+    expect(stop.left, 1018);
+    expect(stop.width, 130);
     expect(stop.height, 40);
     final rotate = tester.getRect(find.bySemanticsLabel('轮换 Mac Host 身份'));
-    expect(rotate.left, 1129);
-    expect(rotate.width, 180);
+    expect(rotate.left, 1158);
+    expect(rotate.width, 140);
     expect(rotate.height, 40);
     final createInvite = tester.getRect(find.bySemanticsLabel('生成新邀请'));
-    expect(createInvite.left, 1168);
-    expect(createInvite.width, 141);
-    expect(createInvite.height, 40);
+    expect(createInvite.left, closeTo(1147, 1));
+    expect(createInvite.width, 150);
+    expect(createInvite.height, 46);
 
     final invitationCard = tester.getRect(
       find.byKey(const Key('host-invitation-card')),
     );
-    expect(invitationCard.left, 526);
-    expect(invitationCard.width, 783);
-    expect(invitationCard.height, closeTo(200, 3));
+    expect(invitationCard.left, 316);
+    expect(invitationCard.width, 982);
+    expect(invitationCard.height, closeTo(154, 3));
 
     final pendingCard = tester.getRect(
-      find.byKey(Key('host-pending-card-${host.inspectionDeviceId}')),
+      find.byKey(Key('host-pending-card-${host.inspectionPendingDeviceId}')),
     );
-    expect(pendingCard.left, 526);
-    expect(pendingCard.width, 783);
+    expect(pendingCard.left, 316);
+    expect(pendingCard.width, 982);
     expect(pendingCard.height, closeTo(68, 3));
     final pendingActions = [
-      (find.bySemanticsLabel('拒绝'), 748.0, 84.0),
-      (find.bySemanticsLabel('批准只读'), 840.0, 107.0),
-      (find.bySemanticsLabel('允许连接向导'), 955.0, 143.0),
-      (find.bySemanticsLabel('自定义权限'), 1106.0, 125.0),
+      (find.bySemanticsLabel('拒绝'), 765.0, 81.0),
+      (find.bySemanticsLabel('批准只读'), 853.0, 103.0),
+      (find.bySemanticsLabel('允许连接向导'), 963.0, 125.0),
+      (find.bySemanticsLabel('自定义权限'), 1095.0, 125.0),
     ];
     for (final (finder, left, width) in pendingActions) {
       final rect = tester.getRect(finder);
@@ -364,17 +379,21 @@ void main() {
     }
 
     final pairedCard = tester.getRect(
-      find.byKey(Key('host-paired-card-${host.inspectionDeviceId}')),
+      find.byKey(Key('host-paired-card-${host.inspectionPairedDeviceId}')),
     );
-    expect(pairedCard.left, 526);
-    expect(pairedCard.width, 783);
-    expect(pairedCard.height, closeTo(64, 3));
+    expect(pairedCard.left, 316);
+    expect(pairedCard.width, 982);
+    expect(pairedCard.height, closeTo(48, 3));
     final pairedDevice = tester.getRect(find.text('LGE AN10'));
-    expect(pairedDevice.left, closeTo(540, 1));
+    expect(pairedDevice.left, closeTo(363, 1));
     final editGrant = tester.getRect(find.bySemanticsLabel('修改权限'));
-    expect(editGrant.left, closeTo(1080, 1));
-    expect(editGrant.width, 112);
+    expect(editGrant.left, closeTo(1060, 1));
+    expect(editGrant.width, 111);
     expect(editGrant.height, 40);
+    final revokeGrant = tester.getRect(find.bySemanticsLabel('撤销'));
+    expect(revokeGrant.left, closeTo(1179, 1));
+    expect(revokeGrant.width, 119);
+    expect(revokeGrant.height, 40);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
@@ -403,8 +422,6 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.text('设置').first);
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.tap(find.bySemanticsLabel('设置分类：Mac Host'));
     await tester.pump(const Duration(milliseconds: 600));
     await tester.ensureVisible(find.text('启动 Host'));
     await tester.tap(find.text('启动 Host'));

@@ -679,12 +679,11 @@ def screen_appearance():
     small_button(p,472,571,"生成邀请","plus",w=138)
     small_button(p,624,571,"已配对设备","connection",w=150)
     p.append(line(316,638,1298,638))
-    heading(p,316,676,"快捷键","常用操作")
-    p.append(txt(316,718,"所有功能",12,"var(--muted)",450)); p.append(txt(840,718,"⌘ K",12,"var(--muted)",520,"end"))
-    p.append(txt(884,718,"运行",12,"var(--muted)",450)); p.append(txt(1298,718,"⌘ ↵",12,"var(--muted)",520,"end"))
-    p.append(line(316,738,1298,738,"var(--line)",1,.6))
-    p.append(txt(316,770,"设置",12,"var(--muted)",450)); p.append(txt(840,770,"⌘ ,",12,"var(--muted)",520,"end"))
-    p.append(txt(884,770,"返回",12,"var(--muted)",450)); p.append(txt(1298,770,"Esc",12,"var(--muted)",520,"end"))
+    heading(p,316,676,"快捷键","名称与组合键沿用当前快捷键配置。")
+    p.append(txt(316,732,"导航",13,"var(--ink)",560))
+    p.append(txt(316,770,"所有功能",13,"var(--ink)",460)); p.append(txt(1298,770,"⌘ K",12,"var(--muted)",540,"end"))
+    p.append(line(316,786,1298,786,"var(--line)",1,.6))
+    p.append(txt(316,818,"返回",13,"var(--ink)",460)); p.append(txt(1298,818,"Esc",12,"var(--muted)",540,"end"))
     return p+["</g></svg>"]
 
 
@@ -723,15 +722,15 @@ def screen_host():
     p.append(glyph("connection",332,670,18)); p.append(txt(363,680,"Pixel 9",12,"var(--ink)",560))
     p.append(txt(363,701,"Android · 确认码 482 193",9,"var(--muted)",430))
     action_x=765
-    for label,icon,width,primary,danger in (("拒绝","close",82,False,True),("批准只读","check",104,False,False),("连接向导","settings",126,True,False),("自定义权限","settings",126,False,False)):
+    for label,icon,width,primary,danger in (("拒绝","close",81,False,True),("批准只读","check",103,False,False),("连接向导","settings",125,True,False),("自定义权限","settings",125,False,False)):
         p.append(button(action_x,669,width,label,icon,primary=primary,danger=danger,h=40))
-        action_x+=width+6
+        action_x+=width+7
     p.append(txt(316,758,"已配对设备",16,"var(--ink)",650))
     p.append(txt(316,779,"权限可随时编辑或撤销",10,"var(--muted)",430))
     p.append(rect(316,795,982,48,"url(#panel)",12,"var(--panelEdge)"))
     p.append(glyph("connection",332,809,18)); p.append(txt(363,822,"LGE AN10 · Android · 读取连接 · 连接向导 · 连接管理",11,"var(--ink)",520))
-    small_button(p,1059,799,"修改权限","settings",w=112)
-    small_button(p,1178,799,"撤销","close",danger=True,w=120)
+    small_button(p,1060,799,"修改权限","settings",w=111)
+    small_button(p,1179,799,"撤销","close",danger=True,w=119)
     return p+["</g></svg>"]
 
 
@@ -754,8 +753,8 @@ def qr_placeholder(x,y,size):
 
 def screen_shortcuts():
     p=settings_shell("快捷键","preview","名称与组合键沿用当前快捷键配置。")
-    for i,(group,items) in enumerate((("导航",(("所有功能","⌘ K"),("设置","⌘ ,"),("返回","Esc"))), ("运行",(("运行当前功能","⌘ ↵"),)))):
-        y=294+i*204
+    for i,(group,items) in enumerate((("导航",(("所有功能","⌘ K"),("返回","Esc"))), ("运行",(("运行当前功能","⌘ ↵"),)))):
+        y=294+i*156
         heading(p,316,y,group)
         for j,(name,key) in enumerate(items):
             yy=y+38+j*48
