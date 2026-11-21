@@ -246,3 +246,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B014 添加 stdio MCP 双主题实鼠标验收（2026-11-21）
 
 800×720pt、DPR 2 隔离 Profile 中实鼠标点击工作台宽窗空态“添加 MCP”；浅/深均进入目标选择器，选本机预览目标进入 stdio MCP 表单，取消后 AX 确认回到空连接管理页。没有测试、保存或连接服务；只读 `Ui6InspectionRuntime` 内存 fixture。两主题窗口帧采样各 14/15，缺帧分别为深色 0ms、浅色 33.3ms；完整截图、哈希和逐时点范围见[验收记录](acceptance-record.md#2026-11-21-ui-67-b014-添加-stdio-mcp-双主题实鼠标验收)。这不是连续动画、FrameTiming 或物理面板 FPS 验收，UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B015 添加 HTTP MCP 双主题实鼠标验收（2026-11-21）
+
+800×720pt、DPR 2 隔离 HTTP-only Profile 中实鼠标点击工作台宽窗空态“添加 HTTP MCP”；浅/深均进入目标选择器，选本机预览目标进入 HTTP MCP 表单，取消后 AX 确认回到空连接管理页。URL/token 未改，没有测试、保存或连接服务；只读 `Ui6InspectionRuntime` 内存 fixture。两主题窗口帧采样各 14/15，缺帧分别为深色 16.7ms、浅色 166.7ms；完整截图、哈希和逐时点范围见[验收记录](acceptance-record.md#2026-11-21-ui-67-b015-添加-http-mcp-双主题实鼠标验收)。这不是连续动画、FrameTiming 或物理面板 FPS 验收，UI-6.7 仍部分验收。
