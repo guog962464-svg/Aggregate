@@ -20,11 +20,19 @@ final class Ui6InspectionHost
   HostStatus _status = const HostStatus(HostPhase.stopped);
   final List<HostDeviceGrant> _paired = [];
   final List<HostPendingPairing> _pending = [];
-  final List<int> _publicKey = const [1, 3, 3, 7, 9, 2, 4, 8];
+  final List<int> _pairedPublicKey = const [1, 3, 3, 7, 9, 2, 4, 8];
+  final List<int> _pendingPublicKey = const [1, 3, 3, 7, 9, 2, 4, 9];
   var _grantCounter = 0;
 
-  String get _deviceId => HostPairingProtocol.deviceIdForPublicKey(_publicKey);
-  String get inspectionDeviceId => _deviceId;
+  String get _pairedDeviceId =>
+      HostPairingProtocol.deviceIdForPublicKey(_pairedPublicKey);
+  String get _pendingDeviceId =>
+      HostPairingProtocol.deviceIdForPublicKey(_pendingPublicKey);
+
+  /// Kept as the pending request ID for existing preview callers.
+  String get inspectionDeviceId => _pendingDeviceId;
+  String get inspectionPendingDeviceId => _pendingDeviceId;
+  String get inspectionPairedDeviceId => _pairedDeviceId;
 
   @override
   HostStatus get status => _status;
@@ -39,7 +47,22 @@ final class Ui6InspectionHost
       _paired.add(
         _grant(
           displayName: 'LGE AN10',
-          scopes: const {HostGrantScope.readConnections},
+          scopes: const {
+            HostGrantScope.readConnections,
+            HostGrantScope.connectionSetup,
+            HostGrantScope.connectionManagement,
+          },
+          connectionPermissions: const {
+            'ui6-review-git': {
+              PermissionLevel.read,
+              PermissionLevel.localControl,
+            },
+            'ui6-review-mcp': {PermissionLevel.read},
+            'ui6-review-music': {
+              PermissionLevel.read,
+              PermissionLevel.externalWrite,
+            },
+          },
         ),
       );
     }
@@ -47,7 +70,7 @@ final class Ui6InspectionHost
       final now = DateTime.now().toUtc();
       _pending.add(
         HostPendingPairing(
-          deviceId: _deviceId,
+          deviceId: _pendingDeviceId,
           displayName: 'Pixel 9',
           platform: 'Android',
           confirmationCode: '482 193',
@@ -106,6 +129,7 @@ final class Ui6InspectionHost
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) async {
     var displayName = '预览设备 ${++_grantCounter}';
+    var publicKeySpki = _pendingPublicKey;
     for (final request in _pending) {
       if (request.deviceId == deviceId) {
         displayName = request.displayName;
@@ -115,6 +139,8 @@ final class Ui6InspectionHost
     _pending.removeWhere((item) => item.deviceId == deviceId);
     final grant = _grant(
       displayName: displayName,
+      deviceId: deviceId,
+      publicKeySpki: publicKeySpki,
       scopes: scopes,
       connectionPermissions: connectionPermissions,
     );
@@ -130,14 +156,18 @@ final class Ui6InspectionHost
     required Map<String, Set<PermissionLevel>> connectionPermissions,
   }) async {
     var displayName = '预览设备 ${++_grantCounter}';
+    var publicKeySpki = _pairedPublicKey;
     for (final grant in _paired) {
       if (grant.deviceId == deviceId) {
         displayName = grant.displayName;
+        publicKeySpki = grant.publicKeySpki;
         break;
       }
     }
     final grant = _grant(
       displayName: displayName,
+      deviceId: deviceId,
+      publicKeySpki: publicKeySpki,
       scopes: scopes,
       connectionPermissions: connectionPermissions,
     );
@@ -157,11 +187,13 @@ final class Ui6InspectionHost
 
   HostDeviceGrant _grant({
     required String displayName,
+    String? deviceId,
+    List<int>? publicKeySpki,
     Set<HostGrantScope> scopes = const {HostGrantScope.readConnections},
     Map<String, Set<PermissionLevel>> connectionPermissions = const {},
   }) => HostDeviceGrant(
-    deviceId: _deviceId,
-    publicKeySpki: _publicKey,
+    deviceId: deviceId ?? _pairedDeviceId,
+    publicKeySpki: publicKeySpki ?? _pairedPublicKey,
     displayName: displayName,
     platform: 'android',
     approvedAt: DateTime.now().toUtc(),

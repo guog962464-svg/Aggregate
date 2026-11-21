@@ -20,6 +20,25 @@ const _httpOnlyWorkspace = bool.fromEnvironment('UI6_HTTP_ONLY_WORKSPACE');
 const _resultUnknownFixture = bool.fromEnvironment(
   'UI6_RESULT_UNKNOWN_FIXTURE',
 );
+const _musicPreview = bool.fromEnvironment(
+  'UI6_MUSIC_PREVIEW',
+  defaultValue: true,
+);
+const _includeInspectionCapabilities = bool.fromEnvironment(
+  'UI6_INCLUDE_INSPECTION_CAPABILITIES',
+  defaultValue: true,
+);
+const _capabilityScope = String.fromEnvironment(
+  'UI6_CAPABILITY_SCOPE',
+  defaultValue: 'all',
+);
+
+Ui6InspectionCapabilityScope _inspectionCapabilityScope(String value) =>
+    switch (value) {
+      'git' => Ui6InspectionCapabilityScope.git,
+      'mcp' => Ui6InspectionCapabilityScope.mcp,
+      _ => Ui6InspectionCapabilityScope.all,
+    };
 
 /// Dedicated macOS Profile entrypoint for reviewing production button contexts.
 /// All runtime, setup, account, terminal, and Host services are in-memory stubs.
@@ -28,6 +47,9 @@ Future<void> main() async {
   final runtime = Ui6InspectionRuntime(
     emptyWorkspace: _emptyWorkspace,
     resultUnknownFixture: _resultUnknownFixture,
+    includeMusicPlaybackState: _musicPreview,
+    includeInspectionCapabilities: _includeInspectionCapabilities,
+    capabilityScope: _inspectionCapabilityScope(_capabilityScope),
     features: _httpOnlyWorkspace
         ? RuntimeFeatures.httpOnly
         : RuntimeFeatures.localDesktop,
@@ -51,7 +73,7 @@ Future<void> main() async {
   runApp(
     AggregateApp(
       runtime: runtime,
-      showMusicDesignPreview: true,
+      showMusicDesignPreview: _musicPreview,
       platformSettingsSections: [
         MacHostSettingsPanel(
           hostControl: host,

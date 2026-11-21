@@ -2,11 +2,93 @@ import 'dart:async';
 
 import 'package:aggregate/features/connections/connections_page.dart';
 import 'package:aggregate/features/connections/connection_setup_target_dialog.dart';
+import 'package:aggregate/app/theme.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+import 'package:aggregate/widgets/glass/glass_panel_surface.dart';
+import 'package:flutter/foundation.dart';
 
 void main() {
+  testWidgets('macOS target picker selects then confirms the chosen device', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final options = [
+      const ConnectionSetupTargetOption(
+        target: ExecutionTarget.device,
+        label: '本机 Mac',
+        detail: '默认目标 · 在此设备运行',
+      ),
+      ConnectionSetupTargetOption(
+        target: ExecutionTarget.host('ui6-preview-host'),
+        label: '示例 Mac Host',
+        detail: '已配对 · 连接管理',
+      ),
+    ];
+    ExecutionTarget? result;
+    await tester.pumpWidget(
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  result = await showConnectionSetupTargetDialog(
+                    context,
+                    options,
+                  );
+                },
+                child: const Text('打开目标选择'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开目标选择'));
+    await tester.pumpAndSettle();
+
+    final panel = tester.getRect(find.byType(GlassPanelSurface));
+    expect(panel.width, closeTo(585, .1));
+    expect(panel.height, closeTo(390, .1));
+    expect(panel.left, closeTo(387.5, .1));
+    // The app window's Flutter overlay starts below the 32 pt title bar; its
+    // shorter height moves the panel 16 pt down in the full-window layout.
+    expect(panel.top, closeTo(250.38, .1));
+    final cancel = tester.getRect(
+      find.byKey(const Key('connection-target-cancel')),
+    );
+    final choose = tester.getRect(
+      find.byKey(const Key('connection-target-choose')),
+    );
+    expect(cancel.right, closeTo(choose.left - 11, .1));
+    expect(choose.right, closeTo(panel.right - 30, .1));
+    await tester.tap(find.text('示例 Mac Host'));
+    await tester.pumpAndSettle();
+    expect(find.text('选择执行目标'), findsOneWidget);
+    expect(result, isNull);
+    await tester.tap(find.text('选择'));
+    await tester.pumpAndSettle();
+    expect(result, ExecutionTarget.host('ui6-preview-host'));
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('target loading disables duplicate connection setup requests', (
     tester,
   ) async {

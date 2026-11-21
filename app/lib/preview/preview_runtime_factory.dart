@@ -5,6 +5,12 @@ import 'package:aggregate_runtime/aggregate_runtime.dart';
 PreviewRuntime createPreviewRuntime() => PreviewRuntime(
   connections: const [
     Connection(
+      id: ConnectionId('example-music'),
+      kind: ConnectionKind.cli,
+      label: '示例网易云音乐',
+      location: 'ncm-cli · 预览',
+    ),
+    Connection(
       id: ConnectionId('example-git'),
       kind: ConnectionKind.cli,
       label: '示例 Git CLI',
@@ -16,12 +22,6 @@ PreviewRuntime createPreviewRuntime() => PreviewRuntime(
       label: '示例 MCP',
       location: 'mcp://preview · 预览',
       protocolVersion: '2026-07-28',
-    ),
-    Connection(
-      id: ConnectionId('example-music'),
-      kind: ConnectionKind.cli,
-      label: '示例网易云音乐',
-      location: 'ncm-cli · 预览',
     ),
   ],
   capabilities: [
@@ -116,7 +116,7 @@ PreviewRuntime createPreviewRuntime() => PreviewRuntime(
         'readme',
       ),
       title: '读取项目说明',
-      description: '资源阅读器的预览样本',
+      description: '项目中的 README 文本',
       permission: PermissionLevel.read,
     ),
     Capability(
@@ -126,7 +126,7 @@ PreviewRuntime createPreviewRuntime() => PreviewRuntime(
         'summary',
       ),
       title: '生成摘要提示',
-      description: '提示预览的样本',
+      description: '根据输入生成摘要',
       permission: PermissionLevel.read,
       inputSchema: {
         'type': 'object',

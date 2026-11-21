@@ -99,6 +99,7 @@ class GlassAlertDialog extends StatelessWidget {
         ?.copyWith(color: glassTokens.text, height: 1.45);
 
     return Dialog(
+      alignment: Alignment.center,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
@@ -126,7 +127,7 @@ class GlassAlertDialog extends StatelessWidget {
                 if (title != null)
                   Padding(
                     padding: EdgeInsets.fromLTRB(
-                      24,
+                      30,
                       icon == null ? 22 : 12,
                       24,
                       0,

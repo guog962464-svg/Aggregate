@@ -586,7 +586,7 @@ void main() {
       );
       expect(
         tester.getSize(find.byKey(const ValueKey('target-option'))).height,
-        76,
+        61,
       );
       expect(
         tester

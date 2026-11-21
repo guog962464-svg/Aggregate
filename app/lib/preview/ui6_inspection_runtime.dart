@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate_runtime/aggregate_runtime.dart';
 
+import '../features/connections/connection_setup_dialog.dart';
+
+enum Ui6InspectionCapabilityScope { all, git, mcp }
+
 /// A disposable, in-memory runtime for native UI acceptance.
 ///
 /// It exposes production confirmation/setup/account/terminal controls while
@@ -11,26 +15,53 @@ import 'package:aggregate_runtime/aggregate_runtime.dart';
 final class Ui6InspectionRuntime
     implements
         RuntimePort,
+        RuntimePresentationPort,
         ConnectionSetupPort,
         ConnectionSetupTargetPort,
-        ConnectionAccountPort {
+        ConnectionAccountPort,
+        ConnectionSetupExecutableSelectionPort,
+        ConnectionSetupInspectionSamplesPort {
   Ui6InspectionRuntime({
     bool emptyWorkspace = false,
     bool resultUnknownFixture = false,
+    bool includeMusicPlaybackState = true,
+    bool includeInspectionCapabilities = true,
+    Ui6InspectionCapabilityScope capabilityScope =
+        Ui6InspectionCapabilityScope.all,
     RuntimeFeatures features = RuntimeFeatures.localDesktop,
   }) : _resultUnknownFixture = resultUnknownFixture,
        _features = features,
        _preview = PreviewRuntime(
-         connections: emptyWorkspace ? const <Connection>[] : _seedConnections,
+         connections: emptyWorkspace
+             ? const <Connection>[]
+             : _connectionsForScope(capabilityScope),
          capabilities: resultUnknownFixture
              ? const <Capability>[_resultUnknownCapability]
-             : _seedCapabilities,
+             : _seedCapabilities
+                   .where((item) {
+                     final isMusic = item.id.connection == _musicId;
+                     final inScope = switch (capabilityScope) {
+                       Ui6InspectionCapabilityScope.all => true,
+                       Ui6InspectionCapabilityScope.git =>
+                         isMusic || item.id.connection == _gitId,
+                       Ui6InspectionCapabilityScope.mcp =>
+                         isMusic || item.id.connection == _mcpId,
+                     };
+                     return inScope &&
+                         (includeMusicPlaybackState ||
+                             item.presentation != 'music.state') &&
+                         (includeInspectionCapabilities ||
+                             !_inspectionCapabilityNames.contains(
+                               item.id.name,
+                             ));
+                   })
+                   .toList(growable: false),
          latency: const Duration(milliseconds: 240),
          features: features,
        ),
        _connections = emptyWorkspace
            ? <Connection>[]
-           : List.of(_seedConnections);
+           : _connectionsForScope(capabilityScope);
 
   final PreviewRuntime _preview;
   final bool _resultUnknownFixture;
@@ -39,6 +70,7 @@ final class Ui6InspectionRuntime
   final Map<String, ConnectionSetupDraft> _drafts = {};
   final Map<String, StreamController<String>> _terminalStreams = {};
   final Map<String, List<String>> _terminalInitialOutput = {};
+  final Map<String, Completer<int>> _terminalExitWaiters = {};
   final Map<String, JsonMap> _actionManifests = {};
   final List<RunSummary> _filterStateInspectionActivities = [];
   final Map<String, RunSummary> _outcomeUnknownRuns = {};
@@ -64,6 +96,7 @@ final class Ui6InspectionRuntime
     CapabilityKind.cliAction,
     'status',
   );
+  static final _inspectionActivityTime = DateTime(2026, 11, 21, 12);
   static const _resultUnknownCapability = Capability(
     id: CapabilityId(
       _gitId,
@@ -74,6 +107,13 @@ final class Ui6InspectionRuntime
     description: '仅内存预览结果待确认状态',
     permission: PermissionLevel.read,
   );
+  static const _inspectionCapabilityNames = {
+    'write-sample',
+    'inspect-terminal',
+    'json-sample',
+    'inspection-error',
+    'queueAdd',
+  };
 
   /// Seeds local, disposable ActivityPage states for visual inspection.
   /// This method never invokes a host process, network service, or user data.
@@ -143,7 +183,7 @@ final class Ui6InspectionRuntime
         runId: runId,
         sequence: 1,
         state: state,
-        occurredAt: DateTime.now(),
+        occurredAt: _inspectionActivityTime,
         failure: failure,
       ),
     );
@@ -170,6 +210,15 @@ final class Ui6InspectionRuntime
       location: '仅内存预览',
     ),
   ];
+
+  static List<Connection> _connectionsForScope(
+    Ui6InspectionCapabilityScope scope,
+  ) {
+    if (scope == Ui6InspectionCapabilityScope.all) {
+      return List.of(_seedConnections);
+    }
+    return [_seedConnections[2], _seedConnections[0], _seedConnections[1]];
+  }
 
   static final List<Capability> _seedCapabilities = [
     Capability(
@@ -243,8 +292,8 @@ final class Ui6InspectionRuntime
     ),
     Capability(
       id: CapabilityId(_mcpId, CapabilityKind.mcpResource, 'readme'),
-      title: '读取预览说明',
-      description: '资源阅读器的本地样例',
+      title: '读取项目说明',
+      description: '项目中的 README 文本',
       permission: PermissionLevel.read,
     ),
     Capability(
@@ -324,6 +373,29 @@ final class Ui6InspectionRuntime
   bool get isPreview => false;
 
   @override
+  Map<String, Map<String, String>> get connectionSetupInitialValues => const {
+    'ui6-inspection-cli': {
+      'label': 'Git CLI',
+      'executable': '/usr/bin/git',
+      'arguments': '[]',
+    },
+    'ui6-inspection-mcp-stdio': {
+      'label': '项目 MCP',
+      'executable': '/usr/local/bin/mcp-server',
+      'arguments': '[]',
+    },
+    'ui6-inspection-mcp-http': {
+      'label': '项目 MCP',
+      'url': 'https://mcp.example.com',
+      'token': 'preview-token',
+    },
+    'ui6-inspection-music': {
+      'label': '网易云音乐',
+      'executable': '/usr/local/bin/ncm-cli',
+    },
+  };
+
+  @override
   RuntimeFeatures get features => _features;
 
   @override
@@ -333,37 +405,48 @@ final class Ui6InspectionRuntime
   List<ConnectionAdapter> get connectionAdapters => [
     ConnectionAdapter(
       id: 'ui6-inspection-cli',
-      label: '预览 CLI',
+      label: '自定义 CLI',
       kind: ConnectionKind.cli,
       executionTarget: _target,
-      defaultLabel: '新建预览 CLI',
+      defaultLabel: 'Git CLI',
       description: '仅保存到当前进程内存，不会探测或运行本机命令。',
     ),
     ConnectionAdapter(
       id: 'ui6-inspection-mcp-stdio',
-      label: '预览 stdio MCP',
+      label: 'stdio MCP',
       kind: ConnectionKind.mcpStdio,
       executionTarget: _target,
-      defaultLabel: '新建预览 stdio MCP',
+      defaultLabel: '项目 MCP',
       description: '仅显示配置，不会启动本机命令。',
     ),
     ConnectionAdapter(
       id: 'ui6-inspection-mcp-http',
-      label: '预览 MCP HTTP',
+      label: 'HTTP MCP',
       kind: ConnectionKind.mcpHttp,
       executionTarget: _target,
-      defaultLabel: '新建预览 MCP HTTP',
+      defaultLabel: '项目 MCP',
       description: '仅保存到当前进程内存，不会发起网络请求。',
+      showGenericCliFields: false,
+    ),
+    ConnectionAdapter(
+      id: 'ui6-inspection-music',
+      label: '网易云音乐',
+      kind: ConnectionKind.cli,
+      executionTarget: _target,
+      defaultLabel: '网易云音乐',
+      description: '仅验证配置布局，不会登录或访问网络。',
+      showGenericCliFields: false,
+      autoDetectExecutable: true,
       fields: const [
-        SetupField(key: 'url', label: '服务地址', hint: 'https://preview.invalid'),
+        SetupField(key: 'appId', label: '开放平台 App ID'),
         SetupField(
-          key: 'authToken',
-          label: '访问令牌',
+          key: 'privateKey',
+          label: 'Private Key（PEM）',
           kind: SetupFieldKind.secret,
-          required: false,
+          hint: 'Private Key 只用于连接配置，不写入连接清单。',
+          readFileContent: true,
         ),
       ],
-      showGenericCliFields: false,
     ),
   ].where((adapter) => _features.canAdd(adapter.kind)).toList();
 
@@ -371,13 +454,13 @@ final class Ui6InspectionRuntime
   Future<List<ConnectionSetupTargetOption>> listSetupTargets() async => [
     const ConnectionSetupTargetOption(
       target: ExecutionTarget.device,
-      label: '本机 Mac（预览）',
-      detail: '仅在内存中展示设置流程',
+      label: '本机 Mac',
+      detail: '默认目标 · 在此设备运行',
     ),
     ConnectionSetupTargetOption(
       target: ExecutionTarget.host('ui6-preview-host'),
-      label: '配对 Mac（样例）',
-      detail: '虚构的执行目标，不会连接设备',
+      label: '示例 Mac Host',
+      detail: '已配对 · 连接管理',
     ),
   ];
 
@@ -388,7 +471,26 @@ final class Ui6InspectionRuntime
   }
 
   @override
-  Future<String?> detectExecutable(String adapterId) async => null;
+  Future<String?> detectExecutable(String adapterId) async =>
+      adapterId == 'ui6-inspection-music' ? '/usr/local/bin/ncm-cli' : null;
+
+  @override
+  Future<DetectedExecutableSelection?> detectExecutableSelection(
+    String adapterId, {
+    String? executableName,
+  }) async {
+    if (_target.kind == ExecutionTargetKind.host &&
+        executableName?.isNotEmpty == true) {
+      return const DetectedExecutableSelection(
+        displayLocation: '示例 Mac Host · 已确认',
+        reference: 'ui6-inspection-executable-ref',
+      );
+    }
+    final path = await detectExecutable(adapterId);
+    return path == null
+        ? null
+        : DetectedExecutableSelection(displayLocation: path, path: path);
+  }
 
   @override
   Future<ConnectionSetupReport> testConnectionSetup(
@@ -432,7 +534,8 @@ final class Ui6InspectionRuntime
   }
 
   @override
-  Future<int> waitAccountLogin(TerminalSession session) async => 0;
+  Future<int> waitAccountLogin(TerminalSession session) =>
+      _terminalExitWaiters[session.id]?.future ?? Future<int>.value(0);
 
   @override
   Future<AccountSnapshot> logoutAccount(
@@ -516,6 +619,25 @@ final class Ui6InspectionRuntime
       _preview.searchCapabilities(query);
 
   @override
+  String? connectionDisplayName(ConnectionId connection) {
+    for (final item in _connections) {
+      if (item.id.value == connection.value) return item.label;
+    }
+    return null;
+  }
+
+  @override
+  String? capabilityDisplayName(CapabilityId capability) {
+    for (final item in _seedCapabilities) {
+      if (item.id.key == capability.key) return item.title;
+    }
+    if (capability.key == _resultUnknownCapability.id.key) {
+      return _resultUnknownCapability.title;
+    }
+    return null;
+  }
+
+  @override
   Future<RunHandle> invoke(
     CapabilityId id,
     JsonMap arguments, {
@@ -569,12 +691,31 @@ final class Ui6InspectionRuntime
   Future<List<RunSummary>> listRecentRuns() async {
     final runs = await _preview.listRecentRuns();
     final activity = _runningInspectionActivity;
+    final stableRuns = _filterStateActivitiesSeeded
+        ? runs.map((run) => _withInspectionTime(run)).toList()
+        : runs;
     return [
       ?activity,
       ..._filterStateInspectionActivities,
       ..._outcomeUnknownRuns.values,
-      ...runs,
+      ...stableRuns,
     ];
+  }
+
+  RunSummary _withInspectionTime(RunSummary run) {
+    final latest = run.latest;
+    return RunSummary(
+      run.id,
+      run.capability,
+      RunEvent(
+        runId: latest.runId,
+        sequence: latest.sequence,
+        state: latest.state,
+        occurredAt: _inspectionActivityTime,
+        blocks: latest.blocks,
+        failure: latest.failure,
+      ),
+    );
   }
 
   @override
@@ -618,12 +759,15 @@ final class Ui6InspectionRuntime
     _terminalStreams[session.id] = StreamController<String>.broadcast(
       sync: true,
     );
+    _terminalExitWaiters[session.id] = Completer<int>();
     _terminalInitialOutput[session.id] = [
-      'UI 检查终端：全内存模拟，不会运行外部命令。\n',
-      '\$ ${command.arguments.join(' ')}\n',
+      '\x1B[38;2;216;189;140m'
+          'UI 检查终端：全内存模拟，不会运行外部命令。'
+          '\x1B[0m\r\n',
+      '\$ ${command.arguments.join(' ')}\r\n',
       if (command.arguments.join(' ') == 'git status --short') ...[
-        ' M README.md\n',
-        '?? draft.md\n',
+        ' M README.md\r\n',
+        '?? draft.md\r\n\r\n',
       ],
     ];
     return session;
@@ -657,6 +801,10 @@ final class Ui6InspectionRuntime
 
   @override
   Future<void> closeTerminal(TerminalSession session) async {
+    final exitWaiter = _terminalExitWaiters.remove(session.id);
+    if (exitWaiter != null && !exitWaiter.isCompleted) {
+      exitWaiter.complete(130);
+    }
     await _terminalStreams.remove(session.id)?.close();
     _terminalInitialOutput.remove(session.id);
   }

@@ -392,12 +392,12 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
   Widget _macDialog(BuildContext context) {
     if (!loaded) {
       return Dialog(
-        alignment: const Alignment(-0.01, -0.25),
+        alignment: const Alignment(0, -0.06),
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(24),
         child: SizedBox(
-          width: 664,
-          height: 713,
+          width: 680,
+          height: 700,
           child: GlassPanelSurface(
             borderRadius: BorderRadius.circular(18),
             child: const Center(child: CircularProgressIndicator()),
@@ -414,17 +414,18 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
         : actions.first.id;
     final theme = Theme.of(context);
     return Dialog(
-      alignment: const Alignment(-0.01, -0.25),
+      alignment: const Alignment(0, -0.06),
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(24),
       child: SizedBox(
         key: const Key('action-editor-panel'),
-        width: 664,
-        height: 713,
+        width: 680,
+        height: 700,
         child: GlassPanelSurface(
           borderRadius: BorderRadius.circular(18),
+          blurSigma: 14,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(35, 35, 35, 2),
+            padding: const EdgeInsets.fromLTRB(30, 23, 30, 15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -456,131 +457,188 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 112,
-                      height: 40,
-                      child: AggregateActionButton(
-                        label: '新增动作',
-                        icon: Icons.add,
-                        onPressed: busy ? null : _addAction,
-                        size: GlassButtonSize.compactAction,
+                // The reference puts the action controls on the same row as
+                // the subtitle, while the title block sits higher in the card.
+                const SizedBox(height: 18),
+                Transform.translate(
+                  offset: const Offset(0, -2),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 134,
+                        height: 46,
+                        child: AggregateActionButton(
+                          label: '新增动作',
+                          icon: Icons.add,
+                          onPressed: busy ? null : _addAction,
+                          size: GlassButtonSize.compactAction,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      width: 88,
-                      height: 40,
-                      child: AggregateActionButton(
-                        label: '导入',
-                        icon: Icons.file_open_outlined,
-                        style: AggregateActionStyle.quiet,
-                        onPressed: busy ? null : _import,
-                        size: GlassButtonSize.compactAction,
+                      const SizedBox(width: 11),
+                      SizedBox(
+                        width: 102,
+                        height: 40,
+                        child: AggregateActionButton(
+                          label: '导入',
+                          icon: Icons.file_open_outlined,
+                          onPressed: busy ? null : _import,
+                          size: GlassButtonSize.compactAction,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      width: 88,
-                      height: 40,
-                      child: AggregateActionButton(
-                        label: '导出',
-                        icon: Icons.save_alt,
-                        style: AggregateActionStyle.quiet,
-                        onPressed: busy ? null : _export,
-                        size: GlassButtonSize.compactAction,
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 102,
+                        height: 40,
+                        child: AggregateActionButton(
+                          label: '导出',
+                          icon: Icons.save_alt,
+                          onPressed: busy ? null : _export,
+                          size: GlassButtonSize.compactAction,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 35),
-                SizedBox(
-                  height: 283,
-                  child: TextField(
-                    key: const Key('action-manifest-json'),
-                    controller: manifestText,
-                    onChanged: (_) => setState(() => preview = null),
-                    expands: true,
-                    maxLines: null,
-                    minLines: null,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: '动作清单 JSON',
-                      alignLabelWithHint: true,
-                      border: OutlineInputBorder(),
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 49),
+                const SizedBox(height: 33),
+                // Keep the editor dimensions and spacing in lockstep with
+                // design-draft-v9/13-action-editor.svg.
+                SizedBox(
+                  height: 300,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: TextField(
+                          key: const Key('action-manifest-json'),
+                          controller: manifestText,
+                          onChanged: (_) => setState(() => preview = null),
+                          expands: true,
+                          maxLines: null,
+                          minLines: null,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                          ),
+                          decoration: const InputDecoration(
+                            alignLabelWithHint: true,
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        top: -27,
+                        child: Text(
+                          key: const Key('action-manifest-label'),
+                          '动作清单 JSON',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 5),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 274,
-                      height: 40,
-                      child: DropdownButtonFormField<String>(
-                        key: Key(
-                          'preview-action-${current ?? 'none'}-${actions.length}',
-                        ),
-                        initialValue: current,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: '预览动作',
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                      width: 300,
+                      height: 55,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: DropdownButtonFormField<String>(
+                              key: Key(
+                                'preview-action-${current ?? 'none'}-${actions.length}',
+                              ),
+                              initialValue: current,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 20,
+                                ),
+                                border: OutlineInputBorder(),
+                              ),
+                              items: [
+                                for (final action in actions)
+                                  DropdownMenuItem(
+                                    value: action.id,
+                                    child: Text(
+                                      '${action.title} · ${action.id}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                              onChanged: actions.isEmpty
+                                  ? null
+                                  : (value) => setState(() {
+                                      selectedAction = value;
+                                      preview = null;
+                                    }),
+                            ),
                           ),
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          for (final action in actions)
-                            DropdownMenuItem(
-                              value: action.id,
+                          const Positioned(
+                            left: 14,
+                            top: 7,
+                            child: IgnorePointer(
                               child: Text(
-                                '${action.title} · ${action.id}',
-                                overflow: TextOverflow.ellipsis,
+                                '预览动作',
+                                key: Key('preview-action-label'),
+                                style: TextStyle(fontSize: 10),
                               ),
                             ),
+                          ),
                         ],
-                        onChanged: actions.isEmpty
-                            ? null
-                            : (value) => setState(() {
-                                selectedAction = value;
-                                preview = null;
-                              }),
                       ),
                     ),
-                    const SizedBox(width: 23),
+                    const SizedBox(width: 20),
                     SizedBox(
-                      width: 297,
-                      height: 72,
-                      child: TextField(
-                        key: const Key('action-editor-sample-json'),
-                        controller: sampleText,
-                        expands: true,
-                        minLines: null,
-                        maxLines: null,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: '预览输入 JSON',
-                          isDense: true,
-                          contentPadding: EdgeInsets.all(10),
-                          border: OutlineInputBorder(),
-                        ),
+                      width: 300,
+                      height: 55,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: TextField(
+                              key: const Key('action-editor-sample-json'),
+                              controller: sampleText,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.fromLTRB(
+                                  10,
+                                  23,
+                                  10,
+                                  13,
+                                ),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const Positioned(
+                            left: 14,
+                            top: 7,
+                            child: IgnorePointer(
+                              child: Text(
+                                '预览输入 JSON',
+                                key: Key('action-sample-label'),
+                                style: TextStyle(fontSize: 10),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 11),
+                const SizedBox(height: 13),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -588,16 +646,20 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                       key: const Key('action-editor-preview-button'),
                       width: 179,
                       height: 40,
-                      child: AggregateActionButton(
-                        label: '检查并预览参数',
-                        icon: Icons.preview_outlined,
-                        onPressed: busy ? null : _preview,
-                        size: GlassButtonSize.compactAction,
-                        expand: true,
+                      child: Transform.translate(
+                        offset: const Offset(0, -2),
+                        child: AggregateActionButton(
+                          label: '检查并预览参数',
+                          icon: Icons.preview_outlined,
+                          onPressed: busy ? null : _preview,
+                          size: GlassButtonSize.compactAction,
+                          expand: true,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 14),
                     SizedBox(
+                      key: const Key('action-editor-preview-result'),
                       width: 401,
                       height: 62,
                       child: GlassPanelSurface(
@@ -629,37 +691,46 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 33),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 113,
-                      height: 40,
-                      child: AggregateActionButton(
-                        label: '取消',
-                        icon: Icons.close,
-                        style: AggregateActionStyle.quiet,
-                        onPressed: busy
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                        size: GlassButtonSize.compactAction,
+                SizedBox(
+                  height: 14,
+                  child: Text(
+                    '只检查参数，不运行命令。',
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                  ),
+                ),
+                const SizedBox(height: 29),
+                Transform.translate(
+                  offset: const Offset(7, -2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        width: 95,
+                        height: 40,
+                        child: AggregateActionButton(
+                          label: '取消',
+                          icon: Icons.close,
+                          onPressed: busy
+                              ? null
+                              : () => Navigator.of(context).pop(false),
+                          size: GlassButtonSize.compactAction,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 9),
-                    SizedBox(
-                      width: 150,
-                      height: 40,
-                      child: AggregateActionButton(
-                        label: '保存动作',
-                        icon: Icons.save_outlined,
-                        style: AggregateActionStyle.primary,
-                        onPressed: busy || !loaded ? null : _save,
-                        enabled: !busy && loaded,
-                        size: GlassButtonSize.compactAction,
+                      const SizedBox(width: 13),
+                      SizedBox(
+                        width: 109,
+                        height: 40,
+                        child: AggregateActionButton(
+                          label: '保存动作',
+                          icon: Icons.save_outlined,
+                          style: AggregateActionStyle.primary,
+                          onPressed: busy || !loaded ? null : _save,
+                          enabled: !busy && loaded,
+                          size: GlassButtonSize.compactAction,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

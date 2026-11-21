@@ -18,10 +18,28 @@ Future<ExecutionTarget?> showConnectionSetupTargetDialog(
   );
 }
 
-class _ConnectionSetupTargetDialog extends StatelessWidget {
+class _ConnectionSetupTargetDialog extends StatefulWidget {
   const _ConnectionSetupTargetDialog({required this.options});
 
   final List<ConnectionSetupTargetOption> options;
+
+  @override
+  State<_ConnectionSetupTargetDialog> createState() =>
+      _ConnectionSetupTargetDialogState();
+}
+
+class _ConnectionSetupTargetDialogState
+    extends State<_ConnectionSetupTargetDialog> {
+  ExecutionTarget? selectedTarget;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTarget = widget.options
+        .where((option) => option.selectable)
+        .firstOrNull
+        ?.target;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +47,7 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
     final macDesign =
         defaultTargetPlatform == TargetPlatform.macOS &&
         GlassMotionScope.maybeOf(context) != null;
-    final Widget list = options.isEmpty
+    final Widget list = widget.options.isEmpty
         ? const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
@@ -47,33 +65,43 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
           )
         : ListView.separated(
             shrinkWrap: !compact && !macDesign,
-            itemCount: options.length,
+            itemCount: widget.options.length,
             separatorBuilder: (_, _) => macDesign
-                ? const SizedBox(height: 10)
+                ? const SizedBox(height: 7)
                 : const Divider(height: 1),
             itemBuilder: (context, index) {
-              final option = options[index];
+              final option = widget.options[index];
               final isHost = option.target.kind == ExecutionTargetKind.host;
-              return Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: macDesign ? 0 : 12,
-                  vertical: macDesign ? 0 : 4,
-                ),
-                child: AggregateActionButton(
-                  label: option.label,
-                  description: option.detail,
-                  semanticsLabel: '${option.label}，${option.detail}',
-                  icon: isHost
-                      ? Icons.desktop_mac_outlined
-                      : Icons.phone_android_outlined,
-                  onPressed: option.selectable
-                      ? () => Navigator.pop(context, option.target)
-                      : null,
-                  enabled: option.selectable,
-                  expand: true,
-                  size: macDesign
-                      ? GlassButtonSize.targetOption
-                      : GlassButtonSize.secondary,
+              final isSelected = selectedTarget == option.target;
+              return SizedBox(
+                height: macDesign ? 61 : null,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: macDesign ? 0 : 12,
+                    vertical: macDesign ? 0 : 4,
+                  ),
+                  child: AggregateActionButton(
+                    label: option.label,
+                    description: option.detail,
+                    semanticsLabel: '${option.label}，${option.detail}',
+                    icon: isHost
+                        ? Icons.desktop_mac_outlined
+                        : Icons.phone_android_outlined,
+                    onPressed: !option.selectable
+                        ? null
+                        : macDesign
+                        ? () => setState(() => selectedTarget = option.target)
+                        : () => Navigator.pop(context, option.target),
+                    enabled: option.selectable,
+                    style: macDesign && !isSelected
+                        ? AggregateActionStyle.quiet
+                        : AggregateActionStyle.secondary,
+                    selected: macDesign && isSelected,
+                    expand: true,
+                    size: macDesign
+                        ? GlassButtonSize.targetOption
+                        : GlassButtonSize.secondary,
+                  ),
                 ),
               );
             },
@@ -112,7 +140,9 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
   }
 
   Widget _macDialog(BuildContext context, Widget list) => Dialog(
-    alignment: const Alignment(0, -0.15),
+    // The Flutter view starts below the native macOS title bar. This small
+    // upward offset aligns the whole window composition with board 19.
+    alignment: const Alignment(0, -.02),
     backgroundColor: Colors.transparent,
     insetPadding: const EdgeInsets.all(24),
     child: SizedBox(
@@ -121,34 +151,69 @@ class _ConnectionSetupTargetDialog extends StatelessWidget {
       child: GlassPanelSurface(
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.all(36),
+          padding: const EdgeInsets.fromLTRB(30, 27, 30, 17),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('先选择执行设备', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 6),
-              Text(
-                '连接配置会保存到选中的设备。',
-                style: Theme.of(context).textTheme.bodySmall,
+              SizedBox(
+                height: 24,
+                child: Text(
+                  '选择执行目标',
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(fontSize: 19, height: 24 / 19),
+                ),
               ),
-              const SizedBox(height: 16),
-              Expanded(child: list),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 14,
+                child: Text(
+                  '选择此连接实际可用的设备。',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(fontSize: 11, height: 14 / 11),
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(height: 129, child: list),
+              const Divider(height: 1),
+              const SizedBox(height: 27),
+              SizedBox(
+                height: 14,
+                child: Text(
+                  '设备状态与授权说明来自当前运行时。',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(fontSize: 10, height: 14 / 10),
+                ),
+              ),
+              const Spacer(),
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  AggregateActionButton(
-                    label: '取消',
-                    icon: Icons.close,
-                    style: AggregateActionStyle.quiet,
-                    onPressed: () => Navigator.pop(context),
-                    size: GlassButtonSize.compactAction,
+                  SizedBox(
+                    key: const Key('connection-target-cancel'),
+                    width: 93,
+                    height: 40,
+                    child: AggregateActionButton(
+                      label: '取消',
+                      icon: Icons.close,
+                      style: AggregateActionStyle.quiet,
+                      onPressed: () => Navigator.pop(context),
+                      size: GlassButtonSize.compactAction,
+                    ),
                   ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      '选择后进入连接类型步骤',
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.bodySmall,
+                  const SizedBox(width: 11),
+                  SizedBox(
+                    key: const Key('connection-target-choose'),
+                    width: 95,
+                    height: 46,
+                    child: AggregateActionButton(
+                      label: '选择',
+                      icon: Icons.check,
+                      style: AggregateActionStyle.primary,
+                      onPressed: selectedTarget == null
+                          ? null
+                          : () => Navigator.pop(context, selectedTarget),
+                      enabled: selectedTarget != null,
+                      size: GlassButtonSize.compactAction,
                     ),
                   ),
                 ],

@@ -534,16 +534,16 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       GlassButtonSize.terminalIcon => 16.0,
       GlassButtonSize.compactAction => 22.0,
       GlassButtonSize.navigation ||
-      GlassButtonSize.connectionNavigation ||
-      GlassButtonSize.segmented => 16.0,
+      GlassButtonSize.connectionNavigation => 16.0,
+      GlassButtonSize.segmented => 18.0,
       GlassButtonSize.secondary ||
       GlassButtonSize.directory ||
       GlassButtonSize.icon ||
       GlassButtonSize.playback ||
       GlassButtonSize.musicControl ||
       GlassButtonSize.capabilityRow ||
-      GlassButtonSize.activityRow ||
-      GlassButtonSize.targetOption => 22.0,
+      GlassButtonSize.activityRow => 22.0,
+      GlassButtonSize.targetOption => 18.0,
     };
     final visibleLabel = widget.label ?? widget.semanticsLabel!;
     // Keep status cues on the glyph and face while preserving label contrast.
@@ -684,7 +684,7 @@ double _heightFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.capabilityRow => 48,
   GlassButtonSize.directory => 56,
   GlassButtonSize.activityRow => 72,
-  GlassButtonSize.targetOption => 76,
+  GlassButtonSize.targetOption => 61,
   GlassButtonSize.navigation => 38,
   GlassButtonSize.connectionNavigation => 40,
   GlassButtonSize.segmented => 32,
@@ -710,7 +710,7 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.capabilityRow => 12,
   GlassButtonSize.directory => 11,
   GlassButtonSize.activityRow => 12,
-  GlassButtonSize.targetOption => 14,
+  GlassButtonSize.targetOption => 12,
   GlassButtonSize.navigation => 11,
   GlassButtonSize.connectionNavigation => 11,
   GlassButtonSize.segmented => 10,
@@ -1215,8 +1215,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       }
     }
 
-    if (isMusicControl) {
-      final musicArc = Path()
+    final isSelectedSegment = isSelected && radius == 10 && !isDisabled;
+    if (isMusicControl || isSelectedSegment) {
+      final selectionArc = Path()
         ..moveTo(size.width * .52, 1)
         ..cubicTo(
           size.width * .70,
@@ -1226,19 +1227,25 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           size.width - 2,
           size.height * .32,
         );
-      final arcStrength = isDisabled
-          ? .08
+      final arcStrength = isMusicControl
+          ? isDisabled
+                ? .08
+                : isPressed
+                ? .52
+                : isHovered || isFocused
+                ? .96
+                : isSelected
+                ? .80 + breath * .10
+                : .045 + breath * .035
           : isPressed
           ? .52
           : isHovered || isFocused
           ? .96
-          : isSelected
-          ? .80 + breath * .10
-          : .045 + breath * .035;
+          : .80 + breath * .10;
       canvas.save();
       canvas.clipRRect(rrect);
       canvas.drawPath(
-        musicArc,
+        selectionArc,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 5.2
@@ -1247,7 +1254,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           ..color = accent.withValues(alpha: arcStrength * .25),
       );
       canvas.drawPath(
-        musicArc,
+        selectionArc,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.3
@@ -1255,7 +1262,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           ..color = accent.withValues(alpha: arcStrength * .88),
       );
       canvas.drawPath(
-        musicArc,
+        selectionArc,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = .55

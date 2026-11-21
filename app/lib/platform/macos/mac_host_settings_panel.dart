@@ -8,6 +8,10 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart' show GlassButtonSize;
+import '../../widgets/glass/glass_design_tokens.dart';
+import '../../widgets/glass/glass_glyph.dart';
+import '../../widgets/glass/glass_motion.dart';
+import '../../widgets/glass/glass_panel_surface.dart';
 import 'host/host_control_port.dart';
 import 'host/host_pairing_authority.dart';
 import 'host/host_tls_identity.dart';
@@ -511,14 +515,21 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const SizedBox(height: 29),
-                      SizedBox(width: 120, height: 40, child: startStopAction),
-                      const SizedBox(height: 12),
-                      SizedBox(width: 180, height: 40, child: rotateAction),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 11),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const SizedBox(height: 29),
+                        SizedBox(
+                          width: 120,
+                          height: 40,
+                          child: startStopAction,
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(width: 180, height: 40, child: rotateAction),
+                      ],
+                    ),
                   ),
                 ],
               );
@@ -591,7 +602,10 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                         child: description,
                       ),
                     ),
-                    SizedBox(width: 141, height: 40, child: action),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 11),
+                      child: SizedBox(width: 151, height: 40, child: action),
+                    ),
                   ],
                 );
               }
@@ -1041,6 +1055,17 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
     });
   }
 
+  void _setScope(HostGrantScope scope, bool selected) {
+    if (scope == HostGrantScope.contentTransfer) return;
+    setState(() {
+      if (selected) {
+        _scopes.add(scope);
+      } else {
+        _scopes.remove(scope);
+      }
+    });
+  }
+
   void _finish() {
     final scopes = Set<HostGrantScope>.unmodifiable({
       ..._scopes,
@@ -1060,6 +1085,15 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
     final theme = Theme.of(context);
     final canApprove =
         !_needsConnectionSelection || _connectionPermissions.isNotEmpty;
+    final glassTokens = theme.extension<GlassDesignTokens>();
+    final viewport = MediaQuery.sizeOf(context);
+    if (theme.platform == TargetPlatform.macOS &&
+        GlassMotionScope.maybeOf(context) != null &&
+        glassTokens != null &&
+        viewport.width >= 760 &&
+        viewport.height >= 700) {
+      return _macDialog(context, theme, glassTokens, canApprove);
+    }
     return GlassAlertDialog(
       title: const Text('配置设备权限'),
       constraints: const BoxConstraints(maxWidth: 720),
@@ -1186,11 +1220,430 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
     );
   }
 
+  Widget _macDialog(
+    BuildContext context,
+    ThemeData theme,
+    GlassDesignTokens tokens,
+    bool canApprove,
+  ) => Dialog(
+    alignment: const Alignment(0, -.05),
+    backgroundColor: Colors.transparent,
+    surfaceTintColor: Colors.transparent,
+    shadowColor: Colors.transparent,
+    elevation: 0,
+    insetPadding: const EdgeInsets.all(16),
+    child: SizedBox(
+      key: const Key('host-grant-panel'),
+      width: 720,
+      height: 640,
+      child: GlassPanelSurface(
+        borderRadius: BorderRadius.circular(18),
+        blurSigma: 14,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(30, 22, 30, 15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 24,
+                child: Text(
+                  '配置设备权限',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.text,
+                    fontSize: 20,
+                    height: 24 / 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 18,
+                child: Text(
+                  '全局范围与逐连接权限分开管理。',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.muted,
+                    fontSize: 11,
+                    height: 18 / 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 19),
+              SizedBox(
+                height: 14,
+                child: Text(
+                  '全局能力',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.text,
+                    fontSize: 12,
+                    height: 14 / 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 11),
+              SizedBox(
+                height: 214,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        key: const Key('host-grant-required-row'),
+                        height: 33,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              tokens.glassTop.withValues(alpha: .62),
+                              tokens.glassBottom.withValues(alpha: .36),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: tokens.highlight.withValues(alpha: .62),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              height: 32,
+                              child: Center(
+                                child: GlassGlyphMark(
+                                  glyph: GlassGlyph.check,
+                                  size: 14,
+                                  color: tokens.status,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '读取连接',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.text,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '必需',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: tokens.status,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 22,
+                      left: 0,
+                      right: 0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final scope in const [
+                            HostGrantScope.connectionSetup,
+                            HostGrantScope.connectionManagement,
+                            HostGrantScope.account,
+                            HostGrantScope.terminal,
+                            HostGrantScope.activityClear,
+                            HostGrantScope.contentTransfer,
+                          ])
+                            SizedBox(
+                              key: Key('host-grant-scope-${scope.name}'),
+                              height: 32,
+                              child: InkWell(
+                                onTap: scope == HostGrantScope.contentTransfer
+                                    ? null
+                                    : () => _setScope(
+                                        scope,
+                                        !_scopes.contains(scope),
+                                      ),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Row(
+                                  children: [
+                                    _scopeIndicator(
+                                      selected:
+                                          scope ==
+                                              HostGrantScope.contentTransfer
+                                          ? _preservedUnavailableScopes
+                                                .contains(scope)
+                                          : _scopes.contains(scope),
+                                      onChanged:
+                                          scope ==
+                                              HostGrantScope.contentTransfer
+                                          ? null
+                                          : (selected) => _setScope(
+                                              scope,
+                                              selected == true,
+                                            ),
+                                      tokens: tokens,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        scope == HostGrantScope.contentTransfer
+                                            ? '${_scopeLabel(scope)} · 尚未开放'
+                                            : _scopeLabel(scope),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color:
+                                                  scope ==
+                                                      HostGrantScope
+                                                          .contentTransfer
+                                                  ? tokens.muted
+                                                  : tokens.text,
+                                              fontSize: 12,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 27),
+              Divider(
+                key: const Key('host-grant-global-divider'),
+                height: 1,
+                color: tokens.line,
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 16,
+                child: Text(
+                  '逐连接权限',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.text,
+                    fontSize: 16,
+                    height: 1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+              SizedBox(
+                height: 14,
+                child: Text(
+                  '本机控制或外部写入会同时包含读取权限',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.muted,
+                    fontSize: 11,
+                    height: 14 / 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_needsConnectionSelection &&
+                        _connectionPermissions.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '所选权限需要至少一个逐连接授权。',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: tokens.danger,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: widget.connections.isEmpty
+                          ? Align(
+                              alignment: Alignment.topLeft,
+                              child: Text(
+                                'Mac 尚无已登记连接。',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: tokens.muted,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: EdgeInsets.zero,
+                              itemCount: widget.connections.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final connection = widget.connections[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  child: Container(
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: tokens.line.withValues(
+                                            alpha: .58,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 11,
+                                        right: 6,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          GlassGlyphMark(
+                                            glyph:
+                                                GlassGlyphCatalog.fromMaterialIcon(
+                                                  Icons.hub_outlined,
+                                                ),
+                                            size: 19,
+                                            color: tokens.ink,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              connection.label,
+                                              style: theme.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    color: tokens.text,
+                                                    fontSize: 12,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Transform.translate(
+                                            offset: const Offset(0, -3.5),
+                                            child: Row(
+                                              children: [
+                                                _permissionChip(
+                                                  connection,
+                                                  PermissionLevel.read,
+                                                  '读取',
+                                                  compact: true,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                _permissionChip(
+                                                  connection,
+                                                  PermissionLevel.localControl,
+                                                  '本机控制',
+                                                  compact: true,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                _permissionChip(
+                                                  connection,
+                                                  PermissionLevel.externalWrite,
+                                                  '外部写入',
+                                                  compact: true,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: tokens.line.withValues(alpha: .78)),
+              const SizedBox(height: 14),
+              Transform.translate(
+                offset: const Offset(9, -2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 95,
+                      height: 40,
+                      child: AggregateActionButton(
+                        label: '取消',
+                        icon: Icons.close,
+                        onPressed: () => Navigator.of(context).pop(),
+                        size: GlassButtonSize.compactAction,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 109,
+                      height: 40,
+                      child: AggregateActionButton(
+                        label: widget.saveLabel,
+                        icon: Icons.save_outlined,
+                        style: AggregateActionStyle.primary,
+                        onPressed: canApprove ? _finish : null,
+                        enabled: canApprove,
+                        size: GlassButtonSize.compactAction,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _scopeIndicator({
+    required bool selected,
+    required ValueChanged<bool?>? onChanged,
+    required GlassDesignTokens tokens,
+  }) {
+    final enabled = onChanged != null;
+    return SizedBox(
+      width: 28,
+      height: 32,
+      child: Center(
+        child: Transform.scale(
+          scale: .8,
+          child: Checkbox(
+            value: selected,
+            onChanged: onChanged,
+            fillColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) return tokens.warm;
+              return tokens.glassTop.withValues(alpha: enabled ? .46 : .28);
+            }),
+            checkColor: tokens.text,
+            side: BorderSide(
+              color: tokens.line.withValues(alpha: enabled ? .7 : .46),
+              width: 1,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _permissionChip(
     Connection connection,
     PermissionLevel permission,
-    String label,
-  ) {
+    String label, {
+    bool compact = false,
+  }) {
     final selected =
         _connectionPermissions[connection.id.value]?.contains(permission) ??
         false;
@@ -1200,14 +1653,24 @@ class _HostGrantDialogState extends State<_HostGrantDialog> {
       PermissionLevel.externalWrite => Icons.edit_outlined,
       PermissionLevel.unknown => Icons.help_outline,
     };
-    return AggregateActionButton(
+    final button = AggregateActionButton(
       label: label,
       icon: icon,
-      style: AggregateActionStyle.secondary,
+      style: selected
+          ? AggregateActionStyle.primary
+          : AggregateActionStyle.secondary,
       selected: selected,
       semanticsLabel: '$label权限${selected ? '已选择' : '未选择'}',
       onPressed: () => _togglePermission(connection, permission),
+      size: compact ? GlassButtonSize.segmented : GlassButtonSize.compactAction,
     );
+    if (!compact) return button;
+    final width = switch (permission) {
+      PermissionLevel.read => 80.0,
+      PermissionLevel.localControl || PermissionLevel.externalWrite => 104.0,
+      PermissionLevel.unknown => 74.0,
+    };
+    return SizedBox(width: width, height: 32, child: button);
   }
 
   String _scopeLabel(HostGrantScope scope) => switch (scope) {

@@ -119,12 +119,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('macOS action editor follows the v4 preview geometry', (
+  testWidgets('macOS action editor follows the v9 design board', (
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
-    tester.view.physicalSize = const Size(1360, 868);
+    tester.view.physicalSize = const Size(1360, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -170,16 +170,38 @@ void main() {
     final sample = tester.getRect(
       find.byKey(const Key('action-editor-sample-json')),
     );
+    final actionChoice = tester.getRect(
+      find.byType(DropdownButtonFormField<String>),
+    );
     final previewButton = tester.getRect(
       find.byKey(const Key('action-editor-preview-button')),
     );
-    expect(panel.size, const Size(664, 713));
-    expect(manifest.size, const Size(594, 283));
-    expect(manifest.left, closeTo(panel.left + 35, .1));
-    expect(manifest.top, closeTo(panel.top + 161, .1));
-    expect(sample.size, const Size(297, 72));
-    expect(previewButton.size, const Size(179, 40));
-    expect(panel.top, inInclusiveRange(50, 80));
+    final previewResult = tester.getRect(
+      find.byKey(const Key('action-editor-preview-result')),
+    );
+    expect(panel.size, const Size(680, 700));
+    expect(manifest.width, closeTo(620, .1));
+    expect(manifest.height, closeTo(300, .1));
+    expect(manifest.left, closeTo(panel.left + 30, .1));
+    expect(manifest.top, closeTo(panel.top + 167, .1));
+    expect(sample.width, closeTo(300, .1));
+    expect(sample.height, closeTo(55, .1));
+    expect(actionChoice.width, closeTo(300, .1));
+    expect(actionChoice.height, closeTo(55, .1));
+    expect(sample.top, closeTo(panel.top + 472, .1));
+    expect(actionChoice.top, closeTo(panel.top + 472, .1));
+    expect(previewButton.width, closeTo(179, .1));
+    expect(previewButton.height, closeTo(40, .1));
+    expect(previewButton.top, closeTo(panel.top + 540, .1));
+    expect(previewResult.top, closeTo(panel.top + 540, .1));
+    expect(sample.bottom, lessThan(previewResult.top));
+    expect(panel.top, closeTo(95.5, .5));
+    final manifestLabel = tester.getRect(
+      find.byKey(const Key('action-manifest-label')),
+    );
+    expect(manifestLabel.top, closeTo(panel.top + 140, .1));
+    expect(find.byKey(const Key('preview-action-label')), findsOneWidget);
+    expect(find.byKey(const Key('action-sample-label')), findsOneWidget);
     final renderError = tester.takeException();
     debugDefaultTargetPlatformOverride = null;
     expect(renderError, isNull);

@@ -10,7 +10,6 @@ import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
 import '../../widgets/glass/glass_motion.dart';
-import '../../widgets/glass/glass_panel_surface.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
 import '../../widgets/capability_row.dart';
@@ -103,6 +102,9 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           if (!mounted) return;
         } else {
           selectedSetup = setup;
+          if (Theme.of(context).platform == TargetPlatform.macOS) {
+            selectedTargetLabel = '本机 Mac';
+          }
         }
         final allowedKinds = selectedSetup.connectionAdapters
             .map((adapter) => adapter.kind)
@@ -114,6 +116,11 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         if (!allowedKinds.contains(initialKind)) {
           initialKind = ConnectionKind.values.firstWhere(allowedKinds.contains);
         }
+        final inspectionValues =
+            widget.runtime is ConnectionSetupInspectionSamplesPort
+            ? (widget.runtime as ConnectionSetupInspectionSamplesPort)
+                  .connectionSetupInitialValues
+            : const <String, Map<String, String>>{};
         connection = await showGlassDialog<Connection>(
           context: context,
           builder: (_) => ConnectionSetupDialog(
@@ -121,6 +128,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
             initialKind: initialKind,
             allowedKinds: allowedKinds,
             selectedTargetLabel: selectedTargetLabel,
+            initialValuesByAdapter: inspectionValues,
           ),
         );
       } else {
@@ -239,11 +247,11 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           : '管理 CLI 与 MCP 连接。',
       trailing: macDesign && canAddConnection
           ? SizedBox(
-              width: 169,
+              width: 148,
               child: Padding(
-                padding: const EdgeInsets.only(top: 3),
+                padding: const EdgeInsets.only(top: 7),
                 child: SizedBox(
-                  height: 42,
+                  height: 46,
                   child: AggregateActionButton(
                     key: const Key('managed-add-connection'),
                     label: addingConnection ? '正在准备连接向导…' : '添加连接',
@@ -258,7 +266,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               ),
             )
           : null,
-      headerSpacing: macDesign ? 11 : 24,
+      headerSpacing: macDesign ? 17 : 24,
       children: [
         if (!macDesign && canAddConnection)
           Align(
@@ -358,7 +366,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       SizedBox(
-        width: 267,
+        width: 285,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -373,10 +381,10 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           ],
         ),
       ),
-      const SizedBox(width: 50),
+      const SizedBox(width: 59),
       Expanded(
         child: Padding(
-          padding: const EdgeInsets.only(top: 7),
+          padding: const EdgeInsets.only(top: 39),
           child: _macDetail(
             selected,
             canMoveUp: selectedIndex > 0,
@@ -398,12 +406,16 @@ class ConnectionsPageState extends State<ConnectionsPage> {
     final theme = Theme.of(context);
     final body = theme.textTheme.bodySmall;
 
-    Widget sectionHeading(String title, {String? detail}) => Column(
+    Widget sectionHeading(
+      String title, {
+      String? detail,
+      double detailSpacing = 0,
+    }) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: theme.textTheme.titleMedium),
         if (detail != null) ...[
-          const SizedBox(height: 0),
+          SizedBox(height: detailSpacing),
           Text(detail, style: body),
         ],
       ],
@@ -439,31 +451,34 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               ),
             ),
             if (!widget.runtime.isPreview)
-              SizedBox(
-                width: 130,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 7),
-                  child: SizedBox(
-                    height: 42,
-                    child: AggregateActionButton(
-                      key: const Key('managed-test-connection'),
-                      label: '测试连接',
-                      icon: Icons.refresh,
-                      onPressed: () => refresh(connection),
-                      size: GlassButtonSize.compactAction,
+              Padding(
+                padding: const EdgeInsets.only(right: 61),
+                child: SizedBox(
+                  width: 142,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: SizedBox(
+                      height: 46,
+                      child: AggregateActionButton(
+                        key: const Key('managed-test-connection'),
+                        label: '测试连接',
+                        icon: Icons.refresh,
+                        onPressed: () => refresh(connection),
+                        size: GlassButtonSize.compactAction,
+                      ),
                     ),
                   ),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 42),
+        const SizedBox(height: 27),
         sectionHeading('连接信息'),
         const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 145, child: Text('执行程序', style: body)),
+            SizedBox(width: 129, child: Text('执行程序', style: body)),
             Expanded(
               child: SelectableText(
                 connection.location,
@@ -476,7 +491,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              SizedBox(width: 145, child: Text('服务版本', style: body)),
+              SizedBox(width: 129, child: Text('服务版本', style: body)),
               Expanded(child: Text(connection.protocolVersion!)),
             ],
           ),
@@ -485,7 +500,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         Divider(color: theme.dividerColor.withValues(alpha: .72)),
         const SizedBox(height: 16),
         sectionHeading('可用功能', detail: '${capabilities.length} 项 · 选择后打开参数与结果'),
-        const SizedBox(height: 4),
+        const SizedBox(height: 0),
         if (capabilities.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -501,85 +516,109 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               itemCount: capabilities.length,
               itemBuilder: (context, index) =>
                   _macCapabilityRow(capabilities[index], connection),
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => Divider(
+                height: 7,
+                thickness: 1,
+                color: theme.dividerColor.withValues(alpha: .72),
+              ),
             ),
           )
         else
           for (final capability in capabilities) ...[
             _macCapabilityRow(capability, connection),
-            const SizedBox(height: 8),
+            Divider(
+              height: 7,
+              thickness: 1,
+              color: theme.dividerColor.withValues(alpha: .72),
+            ),
           ],
-        const SizedBox(height: 16),
-        sectionHeading('状态与诊断'),
-        const SizedBox(height: 36),
-        GlassPanelSurface(
-          borderRadius: BorderRadius.circular(11),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+        const SizedBox(height: 30),
+        sectionHeading(
+          '诊断',
+          detail: widget.runtime is ConnectionSetupInspectionSamplesPort
+              ? '当前数据来自只读预览'
+              : null,
+          detailSpacing: 6,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _macStatus(_status(connection.status), status: connection.status),
+            const SizedBox(width: 22),
+            Expanded(
+              child: Text(
+                connection.diagnostic ?? '已发现 ${capabilities.length} 项功能',
+                style: connection.diagnostic == null
+                    ? body
+                    : TextStyle(color: theme.colorScheme.error),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 26),
+        if (!widget.runtime.isPreview) ...[
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
             child: Row(
               children: [
-                _macStatus(
-                  _status(connection.status),
-                  status: connection.status,
+                if (connection.kind == ConnectionKind.cli &&
+                    connection.executionTarget.kind ==
+                        ExecutionTargetKind.device)
+                  SizedBox(
+                    width: 124,
+                    height: 40,
+                    child: AggregateActionButton(
+                      label: '编辑动作',
+                      icon: Icons.edit_outlined,
+                      onPressed: () => editActions(connection),
+                      size: GlassButtonSize.compactAction,
+                    ),
+                  ),
+                if (connection.kind == ConnectionKind.cli &&
+                    connection.executionTarget.kind ==
+                        ExecutionTargetKind.device)
+                  const SizedBox(width: 11),
+                SizedBox(
+                  width: 91,
+                  height: 40,
+                  child: AggregateActionButton(
+                    semanticsLabel: '连接上移',
+                    label: '上移',
+                    icon: Icons.arrow_upward,
+                    onPressed: canMoveUp ? () => move(connection, -1) : null,
+                    enabled: canMoveUp,
+                    size: GlassButtonSize.compactAction,
+                  ),
                 ),
-                const SizedBox(width: 22),
-                Expanded(
-                  child: Text(
-                    connection.diagnostic ?? '已发现 ${capabilities.length} 项功能',
-                    style: connection.diagnostic == null
-                        ? body
-                        : TextStyle(color: theme.colorScheme.error),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 91,
+                  height: 40,
+                  child: AggregateActionButton(
+                    semanticsLabel: '连接下移',
+                    label: '下移',
+                    icon: Icons.arrow_downward,
+                    onPressed: canMoveDown ? () => move(connection, 1) : null,
+                    enabled: canMoveDown,
+                    size: GlassButtonSize.compactAction,
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: 136,
+                  height: 40,
+                  child: AggregateActionButton(
+                    label: '删除连接',
+                    icon: Icons.delete_outline,
+                    style: AggregateActionStyle.danger,
+                    onPressed: () => remove(connection),
+                    size: GlassButtonSize.compactAction,
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (!widget.runtime.isPreview) ...[
-          sectionHeading('动作', detail: '排序与动作配置'),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              AggregateIconButton(
-                tooltip: '连接上移',
-                icon: Icons.arrow_upward,
-                onPressed: canMoveUp ? () => move(connection, -1) : null,
-                enabled: canMoveUp,
-              ),
-              AggregateIconButton(
-                tooltip: '连接下移',
-                icon: Icons.arrow_downward,
-                onPressed: canMoveDown ? () => move(connection, 1) : null,
-                enabled: canMoveDown,
-              ),
-              if (connection.kind == ConnectionKind.cli &&
-                  connection.executionTarget.kind == ExecutionTargetKind.device)
-                AggregateActionButton(
-                  label: '编辑动作',
-                  icon: Icons.edit_outlined,
-                  onPressed: () => editActions(connection),
-                  size: GlassButtonSize.compactAction,
-                ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Divider(color: theme.dividerColor.withValues(alpha: .72)),
-          const SizedBox(height: 16),
-          sectionHeading('危险操作'),
-          const SizedBox(height: 4),
-          Text('删除仅移除此连接配置；执行前保留现有二次确认。', style: body),
-          const SizedBox(height: 12),
-          AggregateActionButton(
-            label: '删除连接',
-            icon: Icons.delete_outline,
-            style: AggregateActionStyle.danger,
-            onPressed: () => remove(connection),
-            size: GlassButtonSize.compactAction,
           ),
         ],
       ],
@@ -789,7 +828,16 @@ class ConnectionsPageState extends State<ConnectionsPage> {
         children: [
           for (var index = 0; index < connections.length; index++) ...[
             _connectionRow(context, connections[index], selected),
-            if (index != connections.length - 1) const SizedBox(height: 10),
+            if (index > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Theme.of(context).dividerColor.withValues(alpha: .58),
+                ),
+              ),
+            if (index != connections.length - 1) const SizedBox(height: 9),
           ],
         ],
       );
@@ -804,7 +852,13 @@ class ConnectionsPageState extends State<ConnectionsPage> {
           itemCount: connections.length,
           itemBuilder: (context, index) =>
               _connectionRow(context, connections[index], selected),
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          separatorBuilder: (_, index) => index == 0
+              ? const SizedBox(height: 9)
+              : Divider(
+                  height: 9,
+                  thickness: 1,
+                  color: Theme.of(context).dividerColor.withValues(alpha: .58),
+                ),
         ),
       );
     }
@@ -868,7 +922,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
               ConnectionKind.mcpHttp => Icons.hub_outlined,
             },
             style: AggregateActionStyle.quiet,
-            size: GlassButtonSize.directory,
+            size: GlassButtonSize.targetOption,
             onPressed: () => setState(() => selectedId = connection.id.value),
             selected: selected?.id.value == connection.id.value,
             expand: true,

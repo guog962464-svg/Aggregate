@@ -2,16 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:aggregate/features/connections/connection_setup_dialog.dart';
+import 'package:aggregate/app/theme.dart';
+import 'package:aggregate/widgets/glass/aggregate_buttons.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+import 'package:flutter/foundation.dart';
 
 final class _SetupFixture
     implements ConnectionSetupPort, ConnectionSetupExecutableSelectionPort {
   _SetupFixture({
     this.withField = false,
     this.withFileContent = false,
+    this.music = false,
     this.autoDetect = false,
     this.httpOnly = false,
     this.actionRequired = false,
@@ -20,6 +25,7 @@ final class _SetupFixture
   });
   final bool withField;
   final bool withFileContent;
+  final bool music;
   final bool autoDetect;
   final bool httpOnly;
   final bool actionRequired;
@@ -30,7 +36,28 @@ final class _SetupFixture
   ConnectionSetupDraft? latest;
 
   @override
-  List<ConnectionAdapter> get connectionAdapters => httpOnly
+  List<ConnectionAdapter> get connectionAdapters => music
+      ? const [
+          ConnectionAdapter(
+            id: 'music',
+            label: '网易云音乐',
+            kind: ConnectionKind.cli,
+            defaultLabel: '网易云音乐',
+            autoDetectExecutable: true,
+            showGenericCliFields: false,
+            fields: [
+              SetupField(key: 'appId', label: '开放平台 App ID'),
+              SetupField(
+                key: 'privateKey',
+                label: 'Private Key（PEM）',
+                kind: SetupFieldKind.secret,
+                hint: 'Private Key 只用于连接配置，不写入连接清单。',
+                readFileContent: true,
+              ),
+            ],
+          ),
+        ]
+      : httpOnly
       ? const [
           ConnectionAdapter(
             id: 'mcp-http',
@@ -156,6 +183,303 @@ final class _SetupFixture
 }
 
 void main() {
+  testWidgets('macOS HTTP preview matches the safe memory-only design state', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final setup = _SetupFixture(httpOnly: true);
+    await tester.pumpWidget(
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showDialog<Connection>(
+                  context: context,
+                  builder: (_) => ConnectionSetupDialog(
+                    setup: setup,
+                    initialKind: ConnectionKind.mcpHttp,
+                    allowedKinds: const {ConnectionKind.mcpHttp},
+                    selectedTargetLabel: '本机 Mac',
+                    initialValuesByAdapter: const {
+                      'mcp-http': {
+                        'label': '项目 MCP',
+                        'url': 'https://mcp.example.com',
+                        'token': 'preview-token',
+                      },
+                    },
+                  ),
+                ),
+                child: const Text('打开配置'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开配置'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('尚未测试'), findsOneWidget);
+    expect(find.text('Bearer Token 仅留在当前进程内存，关闭后丢弃。'), findsOneWidget);
+    expect(
+      find.byKey(const Key('connection-setup-status-glyph')),
+      findsNothing,
+    );
+    final tokenField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Bearer Token（可选）',
+      ),
+    );
+    expect(tokenField.controller?.text, 'preview-token');
+    expect(tokenField.obscureText, isTrue);
+    final saveButton = tester.widget<AggregateActionButton>(
+      find
+          .ancestor(
+            of: find.text('保存连接'),
+            matching: find.byType(AggregateActionButton),
+          )
+          .first,
+    );
+    expect(saveButton.onPressed, isNull);
+    expect(setup.tests, 0);
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('macOS music setup keeps the designed path actions and notes', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final setup = _SetupFixture(music: true, autoDetect: true);
+    await tester.pumpWidget(
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showDialog<Connection>(
+                  context: context,
+                  builder: (_) => ConnectionSetupDialog(
+                    setup: setup,
+                    selectedTargetLabel: '本机 Mac',
+                    initialValuesByAdapter: const {
+                      'music': {
+                        'label': '网易云音乐',
+                        'executable': '/usr/local/bin/ncm-cli',
+                      },
+                    },
+                  ),
+                ),
+                child: const Text('打开配置'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开配置'));
+    await tester.pumpAndSettle();
+
+    final panel = tester.getRect(
+      find.byKey(const Key('connection-setup-panel')),
+    );
+    Rect fieldRect(String label) {
+      return tester.getRect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == label,
+        ),
+      );
+    }
+
+    expect(fieldRect('程序').top - panel.top, closeTo(289, .1));
+    expect(fieldRect('程序').width, closeTo(488, .1));
+    expect(fieldRect('开放平台 App ID').top - panel.top, closeTo(345, .1));
+    expect(fieldRect('Private Key（PEM）').top - panel.top, closeTo(401, .1));
+    expect(
+      tester
+          .widget<TextField>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is TextField &&
+                  widget.decoration?.labelText == '开放平台 App ID',
+            ),
+          )
+          .decoration
+          ?.hintText,
+      '输入 App ID',
+    );
+    expect(find.text('程序路径是内存样例；不会检查磁盘或发起登录。'), findsOneWidget);
+    expect(find.text('Private Key 只用于连接配置，不写入连接清单。'), findsOneWidget);
+    expect(
+      find.byKey(const Key('connection-setup-status-glyph')),
+      findsNothing,
+    );
+    expect(find.byTooltip('检测程序'), findsOneWidget);
+    expect(find.byTooltip('选择程序绝对路径'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('macOS connection form matches the v9 design board', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final setup = _SetupFixture();
+    await tester.pumpWidget(
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showDialog<Connection>(
+                  context: context,
+                  builder: (_) => ConnectionSetupDialog(
+                    setup: setup,
+                    selectedTargetLabel: '本机 Mac',
+                    initialValuesByAdapter: const {
+                      'cli': {
+                        'label': 'Git CLI',
+                        'executable': '/usr/bin/git',
+                        'arguments': '[]',
+                      },
+                    },
+                  ),
+                ),
+                child: const Text('打开配置'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开配置'));
+    await tester.pumpAndSettle();
+
+    final panel = tester.getRect(
+      find.byKey(const Key('connection-setup-panel')),
+    );
+    Rect fieldRect(String label) {
+      return tester.getRect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == label,
+        ),
+      );
+    }
+
+    expect(panel.size, const Size(648, 668));
+    expect(panel.left, closeTo(356, .1));
+    // Widget tests omit the native title bar; compare content positions to the
+    // panel so the same offsets map directly to the 1360×900 Profile window.
+    expect(panel.top, closeTo(95.8, .1));
+    expect(
+      tester.getRect(find.byType(DropdownButtonFormField<String>)).top -
+          panel.top,
+      closeTo(180, .1),
+    );
+    expect(
+      tester
+          .widget<DropdownButton<String>>(
+            find.descendant(
+              of: find.byType(DropdownButtonFormField<String>),
+              matching: find.byType(DropdownButton<String>),
+            ),
+          )
+          .style
+          ?.fontSize,
+      13,
+    );
+    for (final (label, top) in [
+      ('名称', 233.0),
+      ('程序绝对路径', 289.0),
+      ('启动参数 JSON 数组', 345.0),
+      ('工作目录（可选）', 415.0),
+      ('动作清单 JSON（可选）', 471.0),
+    ]) {
+      expect(fieldRect(label).top - panel.top, closeTo(top, .1), reason: label);
+    }
+    expect(
+      tester
+          .widget<TextField>(find.widgetWithText(TextField, '工作目录（可选）'))
+          .decoration
+          ?.hintText,
+      '留空使用默认目录',
+    );
+    expect(
+      tester
+          .widget<TextField>(find.widgetWithText(TextField, '动作清单 JSON（可选）'))
+          .decoration
+          ?.hintText,
+      '选择文件…',
+    );
+    expect(
+      tester
+          .widget<TextField>(find.widgetWithText(TextField, '名称'))
+          .style
+          ?.fontSize,
+      13,
+    );
+    expect(
+      find.byKey(const Key('connection-setup-status-glyph')),
+      findsOneWidget,
+    );
+    expect(find.text('尚未测试 · 测试通过后才可保存'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.widgetWithText(TextField, '名称'))
+          .controller
+          ?.text,
+      'Git CLI',
+    );
+    expect(find.text('本机 Mac'), findsOneWidget);
+    expect(find.text('第 2 步 · 配置连接'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('Android document content stays in memory and clears on close', (
     tester,
   ) async {

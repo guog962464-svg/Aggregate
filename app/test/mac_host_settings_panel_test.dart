@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aggregate/app/theme.dart';
 import 'package:aggregate/platform/macos/mac_host_settings_panel.dart';
 import 'package:aggregate/platform/host/host_pairing_protocol.dart';
 import 'package:aggregate/platform/macos/host/host_control_port.dart';
@@ -8,7 +9,10 @@ import 'package:aggregate/platform/macos/host/host_pairing_authority.dart';
 import 'package:aggregate/platform/macos/host/host_tls_identity.dart';
 import 'package:aggregate/platform/macos/host/host_wss_transport.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -181,20 +185,38 @@ void main() {
   testWidgets('starts Host, presents invitation, approves and revokes device', (
     tester,
   ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
     final host = _FakeHostControl();
     final pairing = _FakePairingControl();
     tester.view.physicalSize = const Size(1200, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: MacHostSettingsPanel(
-              hostControl: host,
-              pairingControl: pairing,
-              loadConnections: () async => const [],
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MacHostSettingsPanel(
+                hostControl: host,
+                pairingControl: pairing,
+                loadConnections: () async => const [
+                  Connection(
+                    id: ConnectionId('mac-host-cli'),
+                    kind: ConnectionKind.cli,
+                    label: '示例 Git CLI',
+                    location: '/Applications/tool',
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -223,11 +245,87 @@ void main() {
 
     await tester.tap(find.text('修改权限'));
     await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byKey(const Key('host-grant-panel'))).size,
+      const Size(720, 640),
+    );
+    expect(
+      tester.getRect(find.byKey(const Key('host-grant-panel'))).top,
+      closeTo(171.8, .5),
+    );
+    final grantPanelTop = tester
+        .getRect(find.byKey(const Key('host-grant-panel')))
+        .top;
+    expect(
+      tester.getRect(find.byKey(const Key('host-grant-required-row'))),
+      Rect.fromLTWH(
+        tester.getRect(find.byKey(const Key('host-grant-panel'))).left + 30,
+        grantPanelTop + 112,
+        660,
+        33,
+      ),
+    );
+    expect(
+      tester.getRect(find.byKey(const Key('host-grant-scope-connectionSetup'))),
+      Rect.fromLTWH(
+        tester.getRect(find.byKey(const Key('host-grant-panel'))).left + 30,
+        grantPanelTop + 134,
+        660,
+        32,
+      ),
+    );
+    expect(
+      tester.getRect(find.byKey(const Key('host-grant-global-divider'))).top,
+      closeTo(
+        tester.getRect(find.byKey(const Key('host-grant-panel'))).top + 353,
+        .1,
+      ),
+    );
+    final readPermission = find.bySemanticsLabel('读取权限未选择');
+    final localControlPermission = find.bySemanticsLabel('本机控制权限未选择');
+    final externalWritePermission = find.bySemanticsLabel('外部写入权限未选择');
+    expect(tester.getRect(readPermission).size, const Size(80, 32));
+    expect(tester.getRect(localControlPermission).size, const Size(104, 32));
+    expect(tester.getRect(externalWritePermission).size, const Size(104, 32));
+    expect(
+      tester.getRect(readPermission).top,
+      closeTo(
+        tester.getRect(find.byKey(const Key('host-grant-panel'))).top + 419,
+        .1,
+      ),
+    );
+    expect(
+      tester.getRect(externalWritePermission).right,
+      closeTo(
+        tester.getRect(find.byKey(const Key('host-grant-panel'))).left + 682,
+        .1,
+      ),
+    );
+    expect(tester.widget<Text>(find.text('逐连接权限')).style?.fontSize, 16);
+    expect(
+      tester.widget<Text>(find.text('本机控制或外部写入会同时包含读取权限')).style?.fontSize,
+      11,
+    );
+    for (final label in const ['读取', '本机控制', '外部写入']) {
+      final text = find.descendant(
+        of: find.byKey(const Key('host-grant-panel')),
+        matching: find.text(label),
+      );
+      expect(text, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(text).didExceedMaxLines,
+        isFalse,
+      );
+    }
     await tester.tap(find.text('连接向导'));
+    await tester.tap(localControlPermission);
     await tester.tap(find.text('保存权限'));
     await tester.pumpAndSettle();
     expect(pairing.updatedDeviceIds, [pairing.deviceId]);
     expect(pairing.approvedScopes, {HostGrantScope.readConnections});
+    expect(pairing.approvedConnectionPermissions, {
+      'mac-host-cli': {PermissionLevel.read, PermissionLevel.localControl},
+    });
 
     await tester.tap(find.text('撤销').last);
     await tester.pumpAndSettle();
@@ -239,6 +337,7 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await host.close();
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('approves selected scopes and per-connection permissions', (
