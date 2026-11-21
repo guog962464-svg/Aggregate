@@ -797,7 +797,7 @@ def screen_setup_variant(kind):
             ("Bearer Token（可选）", "••••••••", 44, None),
         ]),
         "music": ("网易云音乐", "网易云音乐", [
-            ("程序", "/usr/local/bin/ncm-cli", 44, "search"),
+            ("程序", "/usr/local/bin/ncm-cli", 44, ("search", "folder")),
             ("开放平台 App ID", "输入 App ID", 44, None),
             ("Private Key（PEM）", "选择 .pem 文件", 44, "folder"),
         ]),
@@ -816,10 +816,14 @@ def screen_setup_variant(kind):
     p.append(field(x+30,y+233,w-60,"名称",label,44))
     cursor=y+289
     for field_label, value, field_h, icon in fields:
-        field_w=w-112 if icon else w-60
+        icons = (icon,) if isinstance(icon, str) else (icon or ())
+        action_gap = 10 if len(icons) == 1 else 8
+        field_w = w-60-len(icons)*42-len(icons)*action_gap
         p.append(field(x+30,cursor,field_w,field_label,value,field_h))
-        if icon:
-            p.append(button(x+w-72,cursor,42,"",icon,h=field_h,icon_only=True))
+        button_x = x+30+field_w+action_gap
+        for action_icon in icons:
+            p.append(button(button_x,cursor,42,"",action_icon,h=field_h,icon_only=True))
+            button_x += 42+action_gap
         cursor+=field_h+12
     if kind=="http":
         p.append(tag(x+30,cursor+4,"尚未测试","warn"))
