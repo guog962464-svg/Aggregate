@@ -1612,3 +1612,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：设计生成器执行成功；27/27 SVG XML 解析及 `viewBox=0 0 1360 900` 检查通过；01、12、17、21 画板导出为 1360×900 PNG 并检查；01 画板文案/样例顺序断言通过；01 画板与对应 Profile 实窗均为 1360×900，完成并排视觉核对；`git diff --check` 通过。仅修订设计基准，未运行产品测试或构建。
 - 视觉证据：[v8.1 工作台画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-design-v81/01-workspace.png>)，SHA-256 `3153edf72abfb9097eb1e98267987f760e9c2cd97ab3d5a9e90d597f2cbc0368`；[对应 Flutter Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-v8-profile/01-workspace-profile-v8-1360.png>)，SHA-256 `5398821d963fd49f5dd314098b312569b51f2e5c9cb5e5d7a8fe4062c7402575`。
 - 结果/边界：v8.1 现在将样例状态与真实 Profile fixture 对齐；实现侧仍须逐屏核对 01/08/09/10/16/17/21/24，UI-8.2 尚未签收。该修订未改产品功能、Runtime 或主题开关。
+
+### 2026-11-21 UI-8.0 v8.2 设计预览同源规则
+
+- 原因：同尺寸并排检查显示 01 SVG 与真实 Flutter Profile 页面虽然内容接近，但玻璃表面、按钮厚度、阴影、字重和光效仍有明显差异；另外，17 连接首页曾误用含 17 项能力的 UI 检查 fixture 与只有 1 项能力的标准预览画板比较，该截图无效。
+- 修订：设计稿升为 v8.2。27 张 SVG 继续定义功能、文案、版式和状态；最终材质与字体预览改为 macOS Flutter Profile 实窗。设计预览入口复用 `AggregateApp` 和生产页面，仅接入确定性的内存 Runtime。逐屏实施前锁定 fixture、主题、选中项、滚动位置和迷你播放器状态；错配截图作废。17 画板明确使用 `preview_main.dart` + `PreviewRuntime`。
+- 自验：检查 01 设计与实窗的 1360×900 对照；复核 `design-draft-v8.md`、27 张画板目录、功能覆盖矩阵和 UI-8.2 阶段状态之间的版本引用；`git diff --check -- docs/macos-glass-ui` 通过。仅更新设计流程文档，未运行产品测试或构建。
+- 证据：[01 几何/文案画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-design-v81/01-workspace.png>) 与[01 Flutter Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-v8-profile/01-workspace-profile-v8-1360.png>)。无效的 17 截图已删除；在正确标准 PreviewRuntime 下重新捕获 17 的 Profile 图后再记录。
+- 结果/边界：v8.2 解决了“把 SVG 静态材质当成最终预览”的流程错误；它没有声称 SVG 与 Flutter 像素相同，也不代表 UI-8.2 产品界面已验收。所有主题切换与太阳/月亮内部逻辑保持冻结。
