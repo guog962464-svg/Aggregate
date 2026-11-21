@@ -250,3 +250,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B015 添加 HTTP MCP 双主题实鼠标验收（2026-11-21）
 
 800×720pt、DPR 2 隔离 HTTP-only Profile 中实鼠标点击工作台宽窗空态“添加 HTTP MCP”；浅/深均进入目标选择器，选本机预览目标进入 HTTP MCP 表单，取消后 AX 确认回到空连接管理页。URL/token 未改，没有测试、保存或连接服务；只读 `Ui6InspectionRuntime` 内存 fixture。两主题窗口帧采样各 14/15，缺帧分别为深色 16.7ms、浅色 166.7ms；完整截图、哈希和逐时点范围见[验收记录](acceptance-record.md#2026-11-21-ui-67-b015-添加-http-mcp-双主题实鼠标验收)。这不是连续动画、FrameTiming 或物理面板 FPS 验收，UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B016 清除无匹配筛选双主题实鼠标验收（2026-11-22）
+
+在 800×720pt、DPR 2 的浅/深 Profile 中实选资源筛选并输入无匹配查询，点击生产“清除筛选”后 AX 与画面均恢复“全部功能 · 17”，搜索内容与空态操作消失。两主题 0–650ms WindowServer 帧时点均采全 15/15。截图、SHA 与稀疏采样边界见[验收记录](acceptance-record.md#2026-11-22-ui-67-b016-清除无匹配筛选双主题实鼠标验收)。未签收连续曲线、FrameTiming 或物理面板 FPS，UI-6.7 仍部分验收。
