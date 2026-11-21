@@ -923,14 +923,29 @@ def screen_target():
 
 
 def screen_action_editor():
-    p,x,y,w,h=overlay("编辑动作 · 示例 Git CLI","清单版本 1 · 参数以数组传递。",680,700,background="inspection-connections")
+    p,x,y,w,h=overlay("编辑动作 · 示例 Git CLI","清单版本 1 · 参数以数组传递，{{变量名}} 从输入规则取值。",680,700,background="inspection-connections")
     small_button(p,x+30,y+88,"新增动作","plus",primary=True,w=134)
     small_button(p,x+175,y+88,"导入","folder",w=102)
     small_button(p,x+287,y+88,"导出","document",w=102)
     p.append(txt(x+30,y+153,"动作清单 JSON",11,"var(--muted)",520))
     p.append(rect(x+30,y+167,w-60,300,"url(#inset)",12,"var(--insetEdge)"))
-    code='''{\n  "schemaVersion": 1,\n  "id": "ui6-ui6-review-git",\n  "displayName": "示例 Git CLI",\n  "platforms": ["macos"],\n  "executable": "仅内存预览",\n  "actions": [{\n    "id": "version", "title": "查看版本",\n    "argv": ["--version"]\n  }]\n}'''
-    for i,line_ in enumerate(code.splitlines()): p.append(txt(x+48,y+194+i*20,line_,11,"var(--ink)",440))
+    code=[
+        "{",
+        '  "schemaVersion": 1,',
+        '  "id": "ui6-ui6-review-git",',
+        '  "displayName": "示例 Git CLI",',
+        '  "platforms": [',
+        '    "macos"',
+        '  ],',
+        '  "executable": "仅内存预览",',
+        '  "actions": [',
+        '    {',
+        '      "id": "version",',
+        '      "title": "查看版本",',
+        '      "argv": [',
+        '        "--version"',
+    ]
+    for i,line_ in enumerate(code): p.append(txt(x+48,y+194+i*20,line_,11,"var(--ink)",440))
     p.append(field(x+30,y+472,300,"预览动作","查看版本 · version",55))
     p.append(field(x+350,y+472,300,"预览输入 JSON","{}",55))
     small_button(p,x+30,y+540,"检查并预览参数","search",w=179)
