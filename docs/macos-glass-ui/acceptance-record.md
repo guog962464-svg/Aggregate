@@ -1721,5 +1721,5 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 
 - 环境：复用 `/private/tmp/aggregate-ui96-review` 的隔离 macOS Profile 预览，bundle ID `io.github.guog962464.aggregate.ui96buttons`，基础提交 `2ce828a1a25afb790decf0b651dd7009f17d98a4`，按钮源码包含当前已提交的 AX 焦点语义更新。用户原 Aggregate 进程未被关闭或操作。
 - 操作与读回：对“主操作 静置”执行 AX SetFocus 后，AX 树返回该按钮 `focused`。随后分别经 `agent-desktop press --headed` 和独立 CoreGraphics `CGEventPost` 发送 Tab、Shift-Tab；前者报告 `delivered_unverified`，后者没有提供应用收到按键的回执。各次操作后的完整 AX 树仍只把原按钮标记为 `focused`，未观察到焦点目标变化。
-- 系统设置：测试前全局 `AppleKeyboardUIMode=0`；测试窗口期间暂设为 `3` 并重启隔离应用，结束后恢复为 `0`。未通过 System Settings 界面回读该偏好在 macOS 27.2.1 上的有效模式，也没有物理键盘输入或 Flutter 侧按键事件日志。
-- 结论与边界：原生 Tab/Shift-Tab 遍历没有取得可验证的新目标，本轮不能签收原生键盘遍历；由于按键送达 Flutter 的状态未知，也不能据此认定产品键盘导航失效。UI-5.3 的 Widget Tab 顺序测试保持通过记录，原生遍历保持未验；UI-5.4 的代表按钮 AX SetFocus/焦点环一致性样本仍通过，但键盘 Tab、VoiceOver 朗读和禁用态 AX 缺口未关闭。系统偏好已恢复，隔离 Profile 进程已退出。
+- 系统设置：System Settings「无障碍 → 键盘 → 全键盘控制」初始读回 `0`；本轮通过该开关的 AX 控件切换为 `1`，再启动隔离 Profile 并执行键盘复测。测试结束后再次用同一控件恢复为 `0`，当前全局 `AppleKeyboardUIMode` 也为 `0`。此前仅将旧偏好 `AppleKeyboardUIMode` 暂设为 `3` 的一轮没有启用这个 System Settings 开关，不能算作全键盘控制开启时的验证。
+- 结论与边界：在 System Settings 明确显示全键盘控制为 `1` 时，AX SetFocus 可将焦点放到“主操作 静置”；之后 `agent-desktop press --headed` 的 Tab/Shift-Tab 均报告 `delivered_unverified`，完整 AX 树仍只把原按钮标记为 `focused`。独立 CoreGraphics 按键投递也没有应用收到事件的回执；一次物理点击尝试被工具以 `occluded by group` 拒绝，未送达。原生 Tab/Shift-Tab 因而仍未签收，但现有证据也不足以断定产品失效。UI-5.3 的 Widget Tab 顺序测试保持通过记录，原生遍历保持未验；UI-5.4 的代表按钮 AX SetFocus/焦点环一致性样本仍通过，但键盘 Tab、VoiceOver 朗读和禁用态 AX 缺口未关闭。系统开关已恢复，临时 Profile 进程已退出。
