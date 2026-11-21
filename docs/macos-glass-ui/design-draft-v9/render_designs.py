@@ -1110,11 +1110,11 @@ def screen_host_permissions():
     for i,(name,permissions) in enumerate((("示例 Git CLI",("读取","本机控制")),("示例 MCP",("读取",)),("示例网易云音乐",("读取","外部写入")))):
         yy=y+414+i*52
         row(p,x+30,yy,w-60,name,"", "connection",False,None,46)
-        bx=x+w-280
+        bx=x+w-320
         options=(
-            ("读取","visibility",62),
-            ("本机控制","desktop",84),
-            ("外部写入","build",84),
+            ("读取","visibility",74),
+            ("本机控制","desktop",98),
+            ("外部写入","build",98),
         )
         for permission,icon,bw in options:
             p.append(button(bx,yy+5,bw,permission,icon,selected=permission in permissions,h=32))
