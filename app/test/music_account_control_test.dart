@@ -14,7 +14,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 const _macOS = TargetPlatformVariant({TargetPlatform.macOS});
 
 void main() {
-  testWidgets('macOS account QR panel fits the v3.5 modal width', (
+  testWidgets('macOS account QR panel matches the v6.7 board geometry', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1360, 900);
@@ -66,20 +66,30 @@ void main() {
     await tester.pump();
     expect(runtime.loginCalls, 1);
     await tester.pump(const Duration(milliseconds: 10));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('music-account-dialog-content')),
+        matching: find.text('音乐账号'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('尚未登录'), findsOneWidget);
+    expect(find.text('二维码预览'), findsOneWidget);
+    expect(find.text('等待扫码'), findsOneWidget);
+    expect(find.text('刷新二维码'), findsOneWidget);
+    expect(find.text('登录'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 10));
     runtime.emitLoginOutput('或点击链接打开: https://163cn.tv/fakeLogin\r\n');
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
 
     expect(find.byType(Dialog), findsOneWidget);
     expect(find.byKey(const Key('music-login-qr')), findsOneWidget);
-    expect(
-      find.byKey(const Key('music-account-dialog-footer')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('music-account-dialog-footer')), findsNothing);
     final dialog = tester.getRect(
       find.byKey(const Key('music-account-dialog-content')),
     );
-    expect(dialog.width, closeTo(460, 1));
-    expect(dialog.height, lessThanOrEqualTo(540));
+    expect(dialog.width, closeTo(520, 1));
+    expect(dialog.height, closeTo(420, 1));
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
@@ -180,9 +190,9 @@ void main() {
     runtime.emitLoginOutput('或点击链接打开: https://163cn.tv/fakeLogin\r\n');
     await tester.pump();
     expect(find.byKey(const Key('music-login-qr')), findsOneWidget);
-    expect(find.textContaining('当前手机无法扫描自己的屏幕'), findsOneWidget);
+    expect(find.textContaining('另一台设备'), findsOneWidget);
     expect(find.byType(QrImageView), findsOneWidget);
-    expect(find.text('等待手机确认…'), findsOneWidget);
+    expect(find.textContaining('等待手机确认'), findsOneWidget);
     expect(tester.takeException(), isNull);
     tester.view.physicalSize = const Size(844, 390);
     await tester.pumpAndSettle();

@@ -83,6 +83,7 @@ abstract final class GlassOpticRenderer {
       frame.selected ? 1 : 0,
       frame.navigation ? 1 : 0,
       frame.primary ? 1 : 0,
+      frame.musicControl ? 1 : 0,
     ];
     for (var i = 0; i < floats.length; i++) {
       shader.setFloat(i, floats[i]);
@@ -118,6 +119,7 @@ class GlassActionLensFrame {
     required this.selected,
     required this.navigation,
     required this.primary,
+    required this.musicControl,
   });
 
   final double daylight;
@@ -142,4 +144,5 @@ class GlassActionLensFrame {
   final bool selected;
   final bool navigation;
   final bool primary;
+  final bool musicControl;
 }

@@ -80,17 +80,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('音乐播放器'), findsOneWidget);
+    expect(find.text('示例网易云音乐').last, findsOneWidget);
     expect(find.byKey(const Key('music-search')), findsOneWidget);
     expect(find.bySemanticsLabel('刷新播放状态'), findsOneWidget);
     expect(find.byKey(const Key('global-search')), findsNothing);
     await tester.enterText(find.byKey(const Key('music-search')), '示例');
-    await tester.tap(find.byTooltip('搜索歌曲'));
+    await tester.tap(find.byKey(const Key('music-search-submit')));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('歌曲 · 2 首'), findsOneWidget);
     expect(find.text('不可播放'), findsOneWidget);
     expect(find.bySemanticsLabel('播放 示例歌曲'), findsOneWidget);
-    await tester.tap(find.byTooltip('播放 示例歌曲'));
+    await tester.tap(find.bySemanticsLabel('播放 示例歌曲'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('示例歌曲'), findsWidgets);
     expect(find.byTooltip('收起迷你播放器'), findsNothing);

@@ -33,6 +33,7 @@ uniform float buttonDisabled;
 uniform float buttonSelected;
 uniform float buttonNavigation;
 uniform float buttonPrimary;
+uniform float buttonMusicControl;
 uniform sampler2D matrixImage;
 uniform sampler2D diffuseImage;
 out vec4 fragColor;
@@ -133,6 +134,7 @@ void paintActionLens() {
   }
 
   vec3 color = actionSubstrate(point);
+  float musicEmission = mix(1.0, 0.05, buttonMusicControl);
   if (distanceToLens < 2.0) {
     vec2 normal = vec2(
         handleDistance(point + vec2(0.5, 0.0)) - handleDistance(point - vec2(0.5, 0.0)),
@@ -158,11 +160,11 @@ void paintActionLens() {
   }
 
   float emitterDistance = stripDistance(point);
-  float emitterMask = (1.0 - smoothstep(-0.6, 0.6, emitterDistance)) * navigationEmission;
+  float emitterMask = (1.0 - smoothstep(-0.6, 0.6, emitterDistance)) * navigationEmission * musicEmission;
   vec3 hotLamp = mix(lamp * 1.05, mix(lamp, vec3(1.0), 0.65),
       1.0 - smoothstep(-1.4, -0.2, emitterDistance));
   color = mix(color, hotLamp * (0.8 + 0.35 * energy), emitterMask);
-  color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * navigationEmission * (1.0 - emitterMask));
+  color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * navigationEmission * musicEmission * (1.0 - emitterMask));
   float rim = 1.0 - smoothstep(0.0, 1.3, abs(distanceToLens + 0.75));
   color += rim * mix(mix(0.035, 0.09, vertical), mix(-0.07, 0.07, vertical), daylight);
   if (buttonHovered > 0.5 && buttonDisabled < 0.5) {

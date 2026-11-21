@@ -75,7 +75,11 @@ class MusicMiniPlayer extends StatelessWidget {
         onPressed: onPressed,
         enabled: onPressed != null,
         selected: selected,
-        kind: primary ? GlassButtonKind.primary : GlassButtonKind.icon,
+        kind: defaultTargetPlatform == TargetPlatform.macOS
+            ? GlassButtonKind.musicControl
+            : primary
+            ? GlassButtonKind.primary
+            : GlassButtonKind.icon,
         size: primary ? GlassButtonSize.playback : GlassButtonSize.icon,
       );
     }
@@ -146,7 +150,13 @@ class MusicMiniPlayer extends StatelessWidget {
           const GlassGlyphMark(glyph: GlassGlyph.music, size: 24)
         else
           const Icon(Icons.music_note_outlined),
-        SizedBox(width: glass ? 23 : 12),
+        SizedBox(
+          width: glass
+              ? defaultTargetPlatform == TargetPlatform.macOS && !compact
+                    ? 8
+                    : 23
+              : 12,
+        ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,15 +204,18 @@ class MusicMiniPlayer extends StatelessWidget {
   Widget _macOSWidePlayer(BuildContext context, {required bool canToggle}) =>
       Padding(
         key: const Key('music-mini-player-frame'),
-        padding: const EdgeInsets.fromLTRB(52, 0, 16, 16),
+        padding: const EdgeInsets.fromLTRB(270, 0, 42, 30),
         child: SizedBox(
-          height: 96,
+          height: 58,
           child: GlassPanelSurface(
             key: const Key('music-mini-player-panel'),
-            borderRadius: const BorderRadius.all(Radius.circular(14)),
+            borderRadius: const BorderRadius.all(Radius.circular(15)),
             blurSigma: 18,
+            shadowOpacity: .12,
+            shadowBlurRadius: 10,
+            shadowOffset: const Offset(0, 2),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 14, 6),
+              padding: const EdgeInsets.fromLTRB(20, 6, 14, 6),
               child: _wideControls(context, canToggle: canToggle),
             ),
           ),
@@ -293,10 +306,10 @@ class MusicMiniPlayer extends StatelessWidget {
     ],
   );
 
-  Widget _wideControls(BuildContext context, {required bool canToggle}) => Row(
-    children: [
-      Expanded(child: _trackSummary(context, compact: false)),
-      if (session.actions.containsKey('music.prev') && session.canPrev)
+  Widget _wideControls(BuildContext context, {required bool canToggle}) {
+    final controls = <Widget>[];
+    if (session.actions.containsKey('music.prev') && session.canPrev) {
+      controls.add(
         _iconButton(
           context,
           label: '上一首',
@@ -305,6 +318,9 @@ class MusicMiniPlayer extends StatelessWidget {
               ? null
               : () => confirmMusicControl(context, session, 'prev', '上一首'),
         ),
+      );
+    }
+    controls.add(
       _iconButton(
         context,
         label: session.playing == true ? '暂停' : '继续播放',
@@ -323,7 +339,9 @@ class MusicMiniPlayer extends StatelessWidget {
         primary: true,
         selected: session.playing == true,
       ),
-      if (session.actions.containsKey('music.next') && session.canNext)
+    );
+    if (session.actions.containsKey('music.next') && session.canNext) {
+      controls.add(
         _iconButton(
           context,
           label: '下一首',
@@ -332,7 +350,10 @@ class MusicMiniPlayer extends StatelessWidget {
               ? null
               : () => confirmMusicControl(context, session, 'next', '下一首'),
         ),
-      if (session.actions.containsKey('music.stop'))
+      );
+    }
+    if (session.actions.containsKey('music.stop')) {
+      controls.add(
         _iconButton(
           context,
           label: '停止播放',
@@ -341,7 +362,10 @@ class MusicMiniPlayer extends StatelessWidget {
               ? null
               : () => confirmMusicControl(context, session, 'stop', '停止播放'),
         ),
-      if (session.actions.containsKey('music.state'))
+      );
+    }
+    if (session.actions.containsKey('music.state')) {
+      controls.add(
         _iconButton(
           context,
           label: '刷新播放状态',
@@ -350,21 +374,38 @@ class MusicMiniPlayer extends StatelessWidget {
               ? null
               : () => confirmMusicControl(context, session, 'state', '刷新播放状态'),
         ),
-      if (onOpen != null)
+      );
+    }
+    if (onOpen != null) {
+      controls.add(
         _iconButton(
           context,
           label: '打开播放器',
           icon: Icons.open_in_full,
           onPressed: onOpen,
         ),
+      );
+    }
+    controls.add(
       _iconButton(
         context,
         label: '收起迷你播放器',
         icon: Icons.close,
         onPressed: session.dismiss,
       ),
-    ],
-  );
+    );
+
+    return Row(
+      children: [
+        Expanded(child: _trackSummary(context, compact: false)),
+        const SizedBox(width: 8),
+        for (var index = 0; index < controls.length; index++) ...[
+          if (index > 0) const SizedBox(width: 4),
+          controls[index],
+        ],
+      ],
+    );
+  }
 }
 
 class MusicRunPanel extends StatelessWidget {

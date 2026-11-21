@@ -1,11 +1,16 @@
 import 'dart:async';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_alert_dialog.dart';
+import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
+import '../../widgets/glass/glass_glyph.dart';
+import '../../widgets/glass/glass_panel_surface.dart';
 import 'netease_login_link.dart';
 
 /// A small account entry in the player heading. Provider work stays in the
@@ -93,11 +98,12 @@ class _MusicAccountControlState extends State<MusicAccountControl> {
   Widget build(BuildContext context) {
     final current = snapshot;
     if (current == null) return const SizedBox.shrink();
-    final label = switch (current.state) {
+    final status = switch (current.state) {
       AccountState.signedIn => current.nickname ?? '已登录',
       AccountState.signedOut => '登录账号',
       AccountState.unknown => '账号状态待确认',
     };
+    const label = '音乐账号';
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 190),
       child: Tooltip(
@@ -107,8 +113,10 @@ class _MusicAccountControlState extends State<MusicAccountControl> {
           key: const Key('music-account'),
           label: label,
           icon: Icons.account_circle_outlined,
-          semanticsLabel: '管理网易云音乐账号，$label',
-          style: AggregateActionStyle.quiet,
+          semanticsLabel: '管理网易云音乐账号，$status',
+          style: AggregateActionStyle.secondary,
+          size: GlassButtonSize.compactAction,
+          expand: true,
           onPressed: _open,
         ),
       ),
@@ -144,6 +152,7 @@ class _AccountDialogState extends State<_AccountDialog> {
   _AccountPhase phase = _AccountPhase.idle;
   String? notice;
   bool noticeIsError = false;
+  bool checkingLogin = false;
   final loginLinkReader = NeteaseLoginLinkReader();
   String? loginLink;
   TerminalSession? loginSession;
@@ -307,6 +316,51 @@ class _AccountDialogState extends State<_AccountDialog> {
     }
   }
 
+  Future<void> _refreshQr() async {
+    if (phase != _AccountPhase.scanning) {
+      await _startLogin();
+      return;
+    }
+    await _cancelLogin(message: '正在刷新二维码…');
+    if (mounted) await _startLogin();
+  }
+
+  Future<void> _confirmLogin() async {
+    if (phase != _AccountPhase.scanning || checkingLogin) return;
+    setState(() => checkingLogin = true);
+    try {
+      final result = await widget.accounts.readAccount(widget.connection.id);
+      if (!mounted) return;
+      if (result != null && result.state == AccountState.signedIn) {
+        operation++;
+        loginTimeout?.cancel();
+        loginTimeout = null;
+        await _releaseLogin();
+        if (!mounted) return;
+        setState(() {
+          snapshot = result;
+          phase = _AccountPhase.idle;
+          notice = '登录成功';
+          noticeIsError = false;
+        });
+        widget.onChanged(result);
+      } else {
+        setState(() {
+          notice = '尚未确认登录，请在音乐客户端完成扫码确认。';
+          noticeIsError = false;
+        });
+      }
+    } catch (cause) {
+      if (!mounted) return;
+      setState(() {
+        notice = _safeError(cause);
+        noticeIsError = true;
+      });
+    } finally {
+      if (mounted) setState(() => checkingLogin = false);
+    }
+  }
+
   Future<void> _finishLogin(TerminalSession session, int current) async {
     try {
       final exit = await widget.accounts.waitAccountLogin(session);
@@ -375,6 +429,12 @@ class _AccountDialogState extends State<_AccountDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scanning = phase == _AccountPhase.scanning;
+    final tokens = theme.extension<GlassDesignTokens>();
+    if (scanning &&
+        defaultTargetPlatform == TargetPlatform.macOS &&
+        tokens != null) {
+      return _macOSScanningDialog(context, tokens);
+    }
     return Dialog(
       child: ConstrainedBox(
         key: const Key('music-account-dialog-content'),
@@ -523,6 +583,251 @@ class _AccountDialogState extends State<_AccountDialog> {
                   style: theme.textTheme.bodySmall,
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _macOSScanningDialog(BuildContext context, GlassDesignTokens tokens) {
+    final statusTitle = switch (snapshot.state) {
+      AccountState.signedIn => '已登录 · ${snapshot.nickname ?? '网易云音乐账号'}',
+      AccountState.signedOut => '尚未登录',
+      AccountState.unknown => '账号状态待确认',
+    };
+    final statusDetail = snapshot.state == AccountState.signedIn
+        ? '登录状态由连接端确认。'
+        : snapshot.state == AccountState.unknown
+        ? snapshot.message ?? '使用扫码登录并等待连接端确认。'
+        : '使用扫码登录并等待连接端确认。';
+    final scanDetail =
+        widget.connection.executionTarget.kind == ExecutionTargetKind.host
+        ? '刷新二维码后用另一台设备上的网易云音乐 App 扫码。'
+        : '刷新二维码后使用音乐客户端扫码。';
+
+    return Transform.translate(
+      offset: const Offset(0, -4),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        child: GlassPanelSurface(
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          blurSigma: 20,
+          child: SizedBox(
+            key: const Key('music-account-dialog-content'),
+            width: 520,
+            height: 420,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(30, 24, 30, 19),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '音乐账号',
+                    style: TextStyle(
+                      color: tokens.text,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      height: 23 / 19,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '连接端支持时才会显示账号管理。',
+                    style: TextStyle(
+                      color: tokens.muted,
+                      fontSize: 11,
+                      height: 14 / 11,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Container(
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: tokens.inset,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: tokens.line),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 19),
+                    child: Row(
+                      children: [
+                        const GlassGlyphMark(
+                          glyph: GlassGlyph.network,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 19),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                statusTitle,
+                                style: TextStyle(
+                                  color: tokens.text,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  height: 18 / 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                statusDetail,
+                                style: TextStyle(
+                                  color: tokens.muted,
+                                  fontSize: 10,
+                                  height: 13 / 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    height: 150,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 160,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            color: Color.lerp(
+                              tokens.surface,
+                              tokens.inset,
+                              .35,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: tokens.line.withValues(alpha: .72),
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: loginLink == null
+                              ? Center(
+                                  child: Text(
+                                    '二维码预览',
+                                    style: TextStyle(
+                                      color: tokens.muted,
+                                      fontSize: 10,
+                                      height: 13 / 10,
+                                    ),
+                                  ),
+                                )
+                              : ColoredBox(
+                                  color: Colors.white,
+                                  child: Center(
+                                    child: SizedBox.square(
+                                      dimension: 140,
+                                      child: QrImageView(
+                                        key: const Key('music-login-qr'),
+                                        data: loginLink!,
+                                        backgroundColor: Colors.white,
+                                        padding: const EdgeInsets.all(14),
+                                        semanticsLabel:
+                                            '网易云音乐登录二维码，请用手机 App 扫描',
+                                        errorStateBuilder: (context, error) =>
+                                            const Center(
+                                              child: Text('二维码生成失败，请取消后重试。'),
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  loginLink == null ? '等待扫码' : '等待手机确认',
+                                  style: TextStyle(
+                                    color: tokens.text,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    height: 16 / 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 22),
+                                Text(
+                                  scanDetail,
+                                  style: TextStyle(
+                                    color: tokens.muted,
+                                    fontSize: 10,
+                                    height: 14 / 10,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: 142,
+                                  height: 38,
+                                  child: AggregateActionButton(
+                                    label: '刷新二维码',
+                                    semanticsLabel: '刷新二维码',
+                                    icon: Icons.refresh,
+                                    style: AggregateActionStyle.quiet,
+                                    size: GlassButtonSize.navigation,
+                                    expand: true,
+                                    onPressed: _refreshQr,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 38,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          height: 38,
+                          child: AggregateActionButton(
+                            label: '取消扫码',
+                            semanticsLabel: '取消扫码',
+                            icon: Icons.close,
+                            style: AggregateActionStyle.quiet,
+                            size: GlassButtonSize.navigation,
+                            expand: true,
+                            onPressed: () => _cancelLogin(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 92,
+                          height: 38,
+                          child: AggregateActionButton(
+                            label: '登录',
+                            semanticsLabel: '登录',
+                            icon: Icons.check,
+                            style: AggregateActionStyle.primary,
+                            size: GlassButtonSize.navigation,
+                            expand: true,
+                            busy: checkingLogin,
+                            busyLabel: '确认中',
+                            onPressed: _confirmLogin,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

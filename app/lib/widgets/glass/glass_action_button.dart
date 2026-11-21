@@ -14,6 +14,7 @@ enum GlassButtonKind {
   secondary,
   icon,
   playback,
+  musicControl,
   navigation,
   directoryRow,
   segmented,
@@ -344,6 +345,21 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               : 0.0;
           return tokens.shadow.withValues(alpha: emphasis);
         }
+        if (widget.kind == GlassButtonKind.musicControl) {
+          final pressed = states.contains(WidgetState.pressed);
+          final emphasized =
+              pressed ||
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused);
+          final emphasis = pressed
+              ? .10
+              : emphasized
+              ? .07
+              : widget.selected
+              ? .055
+              : .025;
+          return tokens.shadow.withValues(alpha: emphasis);
+        }
         if (widget.kind == GlassButtonKind.navigation ||
             widget.kind == GlassButtonKind.segmented) {
           final emphasized =
@@ -366,6 +382,14 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       elevation: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) return 0;
         if (widget.kind == GlassButtonKind.directoryRow) return 0;
+        if (widget.kind == GlassButtonKind.musicControl) {
+          if (states.contains(WidgetState.pressed)) return .35;
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return .62;
+          }
+          return widget.selected ? .52 : .28;
+        }
         if (widget.kind == GlassButtonKind.navigation ||
             widget.kind == GlassButtonKind.segmented) {
           if (states.contains(WidgetState.pressed)) return .45;
@@ -405,6 +429,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
           // WidgetStatesController mutates its set in place, so a painter must
           // keep a snapshot for shouldRepaint to observe state transitions.
           states: Set.unmodifiable(states),
+          selected: widget.selected,
           radius: _radiusFor(widget.size),
         ),
         child: child,
@@ -798,6 +823,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     required this.sampler,
     required this.displayRatio,
     required this.states,
+    required this.selected,
     required this.radius,
   }) : super(repaint: motion.surfaceMotion);
 
@@ -809,6 +835,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
   final ui.Image? sampler;
   final double displayRatio;
   final Set<WidgetState> states;
+  final bool selected;
   final double radius;
 
   @override
@@ -820,8 +847,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isPressed = states.contains(WidgetState.pressed);
     final isHovered = states.contains(WidgetState.hovered);
     final isFocused = states.contains(WidgetState.focused);
-    final isSelected = states.contains(WidgetState.selected);
+    final isSelected = selected || states.contains(WidgetState.selected);
     final isDirectoryRow = kind == GlassButtonKind.directoryRow;
+    final isMusicControl = kind == GlassButtonKind.musicControl;
     final isPlainNavigation = kind == GlassButtonKind.navigation;
     final isPlainSegment = kind == GlassButtonKind.segmented;
     if (isDirectoryRow &&
@@ -846,6 +874,8 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         isDirectoryRow;
     final materialWeight = isDirectoryRow
         ? .22
+        : isMusicControl
+        ? .82
         : isPlainSegment
         ? .52
         : isNavigation
@@ -902,6 +932,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       GlassButtonKind.directoryRow => isSelected ? .07 : 0.0,
       GlassButtonKind.navigation => isSelected ? .08 : 0.0,
       GlassButtonKind.segmented => isSelected ? .10 : 0.0,
+      GlassButtonKind.musicControl => isSelected ? .075 : .035,
       GlassButtonKind.primary => .24,
       GlassButtonKind.danger => .035,
       GlassButtonKind.secondary ||
@@ -917,6 +948,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         : restingLightStrength +
               breath * (isNavigation ? .012 : .022) +
               motionEnergy * .22;
+    final musicEmissionScale = isMusicControl ? .05 : 1.0;
     final emitterGlowWidth = math.min(12.0, math.max(6.0, size.height * .12));
     final emitterBlur = math.min(5.0, math.max(3.0, size.height * .05));
     final emitterCoreWidth = math.min(2.4, math.max(1.6, size.height * .025));
@@ -938,7 +970,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           displayRatio: displayRatio,
           zoom: size.height / 198,
           radius: radius,
-          energy: lightStrength * .74,
+          energy: lightStrength * .74 * musicEmissionScale,
           angle: (isDaylight ? -.72 : 2.42) + math.sin(phase) * .045,
           refraction: 32,
           frost: .76,
@@ -961,9 +993,15 @@ class _GlassButtonSurfacePainter extends CustomPainter {
           pressed: isPressed,
           hovered: isHovered,
           disabled: isDisabled,
-          selected: isSelected,
+          // Playback state is expressed by the warm edge light. Toning the
+          // whole lens toward amber makes the pause control read like a
+          // selected navigation tile, unlike the quiet primary treatment on
+          // the music board.
+          selected: isSelected && !isMusicControl,
           navigation: isNavigation,
-          primary: kind == GlassButtonKind.primary,
+          primary:
+              kind == GlassButtonKind.primary || (isMusicControl && isSelected),
+          musicControl: isMusicControl,
         ),
       );
     } else {
@@ -1052,7 +1090,8 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             stops: const [0, 1],
           ).createShader(rect),
       );
-      if (!isDisabled &&
+      if (!isMusicControl &&
+          !isDisabled &&
           (animated || isPressed || isHovered || motionEnergy > 0)) {
         canvas.drawRect(
           rect,
@@ -1064,11 +1103,15 @@ class _GlassButtonSurfacePainter extends CustomPainter {
                 accent.withValues(
                   alpha:
                       math.min(.72, lightStrength * (isDaylight ? .90 : .82)) *
-                      materialWeight,
+                      materialWeight *
+                      musicEmissionScale,
                 ),
                 accent.withValues(
                   alpha:
-                      lightStrength * (isDaylight ? .42 : .36) * materialWeight,
+                      lightStrength *
+                      (isDaylight ? .42 : .36) *
+                      materialWeight *
+                      musicEmissionScale,
                 ),
                 Colors.transparent,
               ],
@@ -1076,7 +1119,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             ).createShader(rect),
         );
       }
-      if (isSelected && !isPressed) {
+      if (isSelected && !isMusicControl && !isPressed) {
         canvas.drawRRect(
           rrect,
           Paint()..color = accent.withValues(alpha: .075 * materialWeight),
@@ -1145,7 +1188,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             ..strokeWidth = emitterGlowWidth
             ..strokeCap = StrokeCap.round
             ..maskFilter = MaskFilter.blur(BlurStyle.normal, emitterBlur)
-            ..color = accent.withValues(alpha: lightStrength * .62),
+            ..color = accent.withValues(
+              alpha: lightStrength * .62 * musicEmissionScale,
+            ),
         );
         canvas.drawPath(
           emitterBevel,
@@ -1153,7 +1198,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = emitterCoreWidth
             ..strokeCap = StrokeCap.round
-            ..color = accent.withValues(alpha: lightStrength),
+            ..color = accent.withValues(
+              alpha: lightStrength * musicEmissionScale,
+            ),
         );
         canvas.drawPath(
           emitterBevel,
@@ -1161,9 +1208,61 @@ class _GlassButtonSurfacePainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = emitterHighlightWidth
             ..strokeCap = StrokeCap.round
-            ..color = Colors.white.withValues(alpha: lightStrength * .92),
+            ..color = Colors.white.withValues(
+              alpha: lightStrength * .92 * musicEmissionScale,
+            ),
         );
       }
+    }
+
+    if (isMusicControl) {
+      final musicArc = Path()
+        ..moveTo(size.width * .52, 1)
+        ..cubicTo(
+          size.width * .70,
+          -1,
+          size.width - 2,
+          size.height * .02,
+          size.width - 2,
+          size.height * .32,
+        );
+      final arcStrength = isDisabled
+          ? .08
+          : isPressed
+          ? .52
+          : isHovered || isFocused
+          ? .96
+          : isSelected
+          ? .80 + breath * .10
+          : .045 + breath * .035;
+      canvas.save();
+      canvas.clipRRect(rrect);
+      canvas.drawPath(
+        musicArc,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5.2
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.8)
+          ..color = accent.withValues(alpha: arcStrength * .25),
+      );
+      canvas.drawPath(
+        musicArc,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.3
+          ..strokeCap = StrokeCap.round
+          ..color = accent.withValues(alpha: arcStrength * .88),
+      );
+      canvas.drawPath(
+        musicArc,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = .55
+          ..strokeCap = StrokeCap.round
+          ..color = Colors.white.withValues(alpha: arcStrength * .78),
+      );
+      canvas.restore();
     }
 
     final bevelRect = rect.deflate(.55);
@@ -1260,6 +1359,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       kind != oldDelegate.kind ||
       glyph != oldDelegate.glyph ||
       !_sameStates(states, oldDelegate.states) ||
+      selected != oldDelegate.selected ||
       radius != oldDelegate.radius;
 }
 

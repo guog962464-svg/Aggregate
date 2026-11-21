@@ -153,20 +153,20 @@ final class Ui6InspectionRuntime
     Connection(
       id: _gitId,
       kind: ConnectionKind.cli,
-      label: 'UI 检查 · Git CLI',
+      label: '示例 Git CLI',
       location: '仅内存预览',
     ),
     Connection(
       id: _mcpId,
       kind: ConnectionKind.mcpHttp,
-      label: 'UI 检查 · MCP',
+      label: '示例 MCP',
       location: 'preview.invalid',
       protocolVersion: '2026-07-28',
     ),
     Connection(
       id: _musicId,
       kind: ConnectionKind.cli,
-      label: 'UI 检查 · 音乐',
+      label: '示例网易云音乐',
       location: '仅内存预览',
     ),
   ];

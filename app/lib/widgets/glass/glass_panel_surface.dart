@@ -16,11 +16,17 @@ class GlassPanelSurface extends StatelessWidget {
     required this.child,
     this.borderRadius = const BorderRadius.all(Radius.circular(16)),
     this.blurSigma = 10,
+    this.shadowOpacity = .24,
+    this.shadowBlurRadius = 14,
+    this.shadowOffset = const Offset(0, 5),
   });
 
   final Widget child;
   final BorderRadius borderRadius;
   final double blurSigma;
+  final double shadowOpacity;
+  final double shadowBlurRadius;
+  final Offset shadowOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +63,9 @@ class GlassPanelSurface extends StatelessWidget {
         borderRadius: borderRadius,
         boxShadow: [
           BoxShadow(
-            color: tokens.shadow.withValues(alpha: .24),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
+            color: tokens.shadow.withValues(alpha: shadowOpacity),
+            blurRadius: shadowBlurRadius,
+            offset: shadowOffset,
           ),
           BoxShadow(
             color: tokens.glassTop.withValues(alpha: .24),

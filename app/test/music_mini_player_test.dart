@@ -228,7 +228,13 @@ void main() {
       await tester.tap(find.byTooltip('打开播放器'));
       await tester.pumpAndSettle();
       expect(find.byType(MusicPlayerPage), findsOneWidget);
-      expect(find.text('音乐播放器'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(MusicPlayerPage),
+          matching: find.text('音乐播放器'),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
   });

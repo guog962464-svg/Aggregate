@@ -50,99 +50,6 @@ void main() {
     variant: _macOS,
   );
 
-  testWidgets('music home matches the wide v3.5 board geometry', (
-    tester,
-  ) async {
-    _useSize(tester, const Size(1360, 900));
-    tester.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(disableAnimations: true);
-    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-
-    final runtime = createPreviewRuntime();
-    final connection = (await runtime.listConnections()).singleWhere(
-      (item) => item.id.value == 'example-music',
-    );
-    final capabilities = await runtime.searchCapabilities(
-      const SearchQuery(''),
-    );
-    final session = MusicSession(runtime);
-    addTearDown(session.dispose);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AggregateTheme.forPlatform(
-          AggregateTheme.light,
-          TargetPlatform.macOS,
-        ),
-        home: GlassMotionScope(
-          child: Scaffold(
-            appBar: const PreferredSize(
-              preferredSize: Size.fromHeight(80),
-              child: SizedBox.shrink(),
-            ),
-            body: Row(
-              children: [
-                const SizedBox(width: 240),
-                Expanded(
-                  child: MusicPlayerPage(
-                    connection: connection,
-                    capabilities: capabilities,
-                    runtime: runtime,
-                    session: session,
-                    showPreviewSample: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    for (var tick = 0; tick < 8; tick++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    await tester.pumpAndSettle();
-
-    final playerCard = tester.getRect(
-      find.byKey(const Key('music-player-card')),
-    );
-    final artwork = tester.getRect(
-      find.byKey(const Key('music-player-artwork')),
-    );
-    final search = tester.getRect(find.byKey(const Key('music-search')));
-    expect(playerCard.left, closeTo(299, 1));
-    expect(playerCard.width, closeTo(394, 1));
-    expect(playerCard.height, closeTo(430, .1));
-    expect(search.left, closeTo(717, 1));
-    expect(search.width, closeTo(592, 1));
-    expect(search.height, closeTo(46, .1));
-    expect(search.top, closeTo(playerCard.top, 1));
-    expect(
-      tester
-          .widget<TextField>(find.byKey(const Key('music-search')))
-          .controller
-          ?.text,
-      isEmpty,
-    );
-    expect(
-      tester
-          .widget<TextField>(find.byKey(const Key('music-search')))
-          .decoration
-          ?.prefixIcon,
-      isNull,
-    );
-    expect(artwork.left, closeTo(playerCard.left + 122, 1));
-    expect(artwork.top, closeTo(playerCard.top + 28, 1));
-    expect(
-      tester.getRect(find.byKey(const Key('music-player-title'))).center.dx,
-      closeTo(playerCard.center.dx, .5),
-    );
-    expect(session.title, '示例歌曲');
-    expect(session.artist, '示例歌手');
-    expect(find.text('歌曲 · 2 首'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  }, variant: _macOS);
-
   testWidgets('macOS mini player matches the floating board frame', (
     tester,
   ) async {
@@ -175,23 +82,23 @@ void main() {
     final frame = tester.getRect(
       find.byKey(const Key('music-mini-player-panel')),
     );
-    expect(frame.left, closeTo(52, .1));
-    expect(frame.top, closeTo(788, .1));
-    expect(frame.width, closeTo(1292, .1));
-    expect(frame.height, closeTo(96, .1));
+    expect(frame.left, closeTo(270, .1));
+    expect(frame.top, closeTo(812, .1));
+    expect(frame.width, closeTo(1048, .1));
+    expect(frame.height, closeTo(58, .1));
     expect(find.textContaining('示例歌曲'), findsOneWidget);
     expect(find.bySemanticsLabel('暂停'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
-  testWidgets('full design preview lays music inside the shared shell', (
+  testWidgets('full design preview aligns music home with the v9.0.2 board', (
     tester,
   ) async {
     _useSize(tester, const Size(1360, 900));
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    final runtime = createPreviewRuntime();
+    final runtime = Ui6InspectionRuntime();
     await runtime.savePreferences(
       const UserPreferences(appearance: AppearancePreference.light),
     );
@@ -212,10 +119,69 @@ void main() {
 
     expect(find.byKey(const Key('music-player-card')), findsOneWidget);
     final card = tester.getRect(find.byKey(const Key('music-player-card')));
-    // The design board reserves 40pt for the macOS titlebar. The native
-    // Flutter content view starts 32pt below the window origin, so the shared
-    // PageFrame adds the measured 8pt compensation.
-    expect(card.top, closeTo(179, 1));
+    final artwork = tester.getRect(
+      find.byKey(const Key('music-player-artwork')),
+    );
+    final title = tester.getRect(find.byKey(const Key('music-player-title')));
+    final search = tester.getRect(find.byKey(const Key('music-search')));
+    final searchButton = tester.getRect(
+      find.byKey(const Key('music-search-submit')),
+    );
+    final settings = tester.getRect(
+      find.byKey(const Key('macos-sidebar-settings')),
+    );
+    final refresh = tester.getRect(
+      find.byKey(const Key('music-refresh-status')),
+    );
+    final playResult = tester.getRect(find.bySemanticsLabel('播放 示例歌曲'));
+    final playbackControls = [
+      ('上一首', 314.0),
+      ('暂停', 392.0),
+      ('下一首', 470.0),
+      ('停止播放', 548.0),
+    ];
+    expect(card.left, closeTo(280, 1));
+    // The WidgetTester root omits the native 32pt titlebar/content inset;
+    // the paired Profile window adds it, placing this card at y=188.
+    expect(card.top, closeTo(156, 1));
+    expect(card.width, closeTo(468, 1));
+    expect(card.height, closeTo(530, 1));
+    expect(artwork.left, closeTo(310, 1));
+    expect(artwork.top, closeTo(216, 1));
+    expect(artwork.width, closeTo(150, 1));
+    expect(title.left, closeTo(482, 1));
+    for (final (label, left) in playbackControls) {
+      final control = tester.getRect(find.bySemanticsLabel(label));
+      expect(control.left, closeTo(left, 1));
+      expect(control.top, closeTo(400, 1));
+      expect(control.width, closeTo(64, 1));
+      expect(control.height, closeTo(58, 1));
+    }
+    expect(search.left, closeTo(786, 1));
+    expect(search.top, closeTo(213, 1));
+    expect(search.width, closeTo(522, 1));
+    expect(search.height, closeTo(44, 1));
+    expect(searchButton.right, closeTo(1308, 1));
+    expect(searchButton.height, closeTo(46, 1));
+    expect(refresh.left, closeTo(310, 1));
+    expect(refresh.top, closeTo(581, 1));
+    expect(refresh.width, closeTo(132, 1));
+    expect(refresh.height, closeTo(40, 1));
+    final account = tester.getRect(
+      find.byKey(const Key('music-account-frame')),
+    );
+    expect(account.left, closeTo(454, 1));
+    expect(account.top, closeTo(581, 1));
+    expect(account.width, closeTo(132, 1));
+    expect(account.height, closeTo(40, 1));
+    expect(settings.top, closeTo(807, 2));
+    expect(playResult.right, closeTo(1296, 2));
+    expect(find.text('示例歌手 · 可播放'), findsOneWidget);
+    expect(find.text('示例歌手 · 当前音源不可播放'), findsOneWidget);
+    expect(find.byKey(const Key('music-refresh-status')), findsOneWidget);
+    expect(find.bySemanticsLabel('停止播放'), findsOneWidget);
+    expect(find.bySemanticsLabel('上一首'), findsOneWidget);
+    expect(find.bySemanticsLabel('下一首'), findsOneWidget);
     expect(find.text('歌曲 · 2 首'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
@@ -231,7 +197,8 @@ MusicSession _playingSession() {
     ..detail = '0:12 / 3:20'
     ..playing = true
     ..playbackStatus = '播放中'
-    ..queueLength = 1;
+    ..queueLength = 3
+    ..currentIndex = 1;
   for (final role in ['prev', 'pause', 'next', 'stop', 'state']) {
     session.actions['music.$role'] = Capability(
       id: CapabilityId(

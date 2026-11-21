@@ -276,8 +276,11 @@ final class MusicSession extends ChangeNotifier {
     detail = '0:12 / 3:20';
     playing = true;
     playbackStatus = '播放中';
-    queueLength = 1;
-    currentIndex = 0;
+    // Keep both adjacent-track controls available in the explicit design
+    // preview. This is in-memory fixture state; Runtime responses still own
+    // the real queue length and current index.
+    queueLength = 3;
+    currentIndex = 1;
     _notify();
   }
 

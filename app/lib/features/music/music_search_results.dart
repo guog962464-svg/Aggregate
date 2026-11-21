@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
+import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
 
 const _lazyResultsThreshold = 40;
@@ -78,12 +80,14 @@ class MusicSearchResults extends StatelessWidget {
     required this.onPlay,
     this.onQueue,
     required this.busy,
+    this.boardRowStyle = false,
   });
 
   final List<MusicSearchItem> items;
   final ValueChanged<MusicSearchItem> onPlay;
   final ValueChanged<MusicSearchItem>? onQueue;
   final bool busy;
+  final bool boardRowStyle;
 
   bool _usesGlassButtons(BuildContext context) =>
       defaultTargetPlatform == TargetPlatform.macOS &&
@@ -128,47 +132,136 @@ class MusicSearchResults extends StatelessWidget {
     ],
   );
 
-  Widget _songRow(BuildContext context, MusicSearchItem item) => Row(
-    children: [
-      const Icon(Icons.music_note_outlined, size: 18),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(
-              item.artist,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
+  Widget _songRow(BuildContext context, MusicSearchItem item) {
+    final theme = Theme.of(context);
+    final tokens =
+        theme.extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(theme.brightness);
+    final useBoardStyle =
+        boardRowStyle && defaultTargetPlatform == TargetPlatform.macOS;
+    final playAction = useBoardStyle
+        ? _boardTextAction(
+            context,
+            label: '播放 ${item.name}',
+            onPressed: busy ? null : () => onPlay(item),
+          )
+        : _resultActionButton(
+            context,
+            label: '播放 ${item.name}',
+            icon: Icons.play_arrow,
+            onPressed: busy ? null : () => onPlay(item),
+          );
+    final unavailable = useBoardStyle
+        ? Text(
+            '不可播放',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: tokens.muted,
             ),
-          ],
+          )
+        : Tooltip(
+            message: '当前账号或音源不可播放',
+            child: Text('不可播放', style: theme.textTheme.bodySmall),
+          );
+
+    return Padding(
+      key: ValueKey('music-search-result-row-${item.id}'),
+      padding: EdgeInsets.only(
+        left: useBoardStyle ? 13 : 0,
+        right: useBoardStyle ? 12 : 0,
+      ),
+      child: Row(
+        children: [
+          if (useBoardStyle)
+            ExcludeSemantics(
+              child: GlassGlyphMark(glyph: GlassGlyph.music, size: 18),
+            )
+          else
+            const Icon(Icons.music_note_outlined, size: 18),
+          SizedBox(width: useBoardStyle ? 11 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  key: ValueKey('music-search-result-title-${item.id}'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: useBoardStyle
+                      ? theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 13,
+                          height: 17 / 13,
+                        )
+                      : null,
+                ),
+                Text(
+                  useBoardStyle
+                      ? '${item.artist} · ${item.playable ? '可播放' : '当前音源不可播放'}'
+                      : item.artist,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: useBoardStyle ? 10 : null,
+                    color: useBoardStyle ? tokens.muted : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (item.playable) ...[
+            if (onQueue != null)
+              _resultActionButton(
+                context,
+                label: '将 ${item.name} 加入下一首',
+                icon: Icons.playlist_add,
+                onPressed: busy ? null : () => onQueue!(item),
+              ),
+            playAction,
+          ] else
+            unavailable,
+        ],
+      ),
+    );
+  }
+
+  Widget _boardTextAction(
+    BuildContext context, {
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    final theme = Theme.of(context);
+    final tokens =
+        theme.extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(theme.brightness);
+    return Semantics(
+      label: label,
+      button: true,
+      enabled: onPressed != null,
+      onTap: onPressed,
+      child: ExcludeSemantics(
+        child: TextButton(
+          key: ValueKey('music-search-result-action-$label'),
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            foregroundColor: tokens.muted,
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          child: Text(
+            '播放',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
-      const SizedBox(width: 8),
-      if (item.playable)
-        if (onQueue != null)
-          _resultActionButton(
-            context,
-            label: '将 ${item.name} 加入下一首',
-            icon: Icons.playlist_add,
-            onPressed: busy ? null : () => onQueue!(item),
-          ),
-      if (item.playable)
-        _resultActionButton(
-          context,
-          label: '播放 ${item.name}',
-          icon: Icons.play_arrow,
-          onPressed: busy ? null : () => onPlay(item),
-        )
-      else
-        Tooltip(
-          message: '当前账号或音源不可播放',
-          child: Text('不可播放', style: Theme.of(context).textTheme.bodySmall),
-        ),
-    ],
-  );
+    );
+  }
 
   Widget _resultActionButton(
     BuildContext context, {
