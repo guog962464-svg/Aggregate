@@ -222,3 +222,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B005 活动刷新双主题显示时序（2026-11-21）
 
 在隔离 macOS Profile 的活动页对生产调用点 B005 实际点击刷新，分别采集浅/深主题释放后 0–650ms 的指定时点。ScreenCaptureKit `SCStreamUpdateFrameDisplayTime` 提供 WindowServer 窗口帧显示时间；两主题采集各有 96 个回调，深色漏掉 133.3ms 目标点、浅色目标点齐全。释放后将指针移至空白侧沟以排除持续 hover；只使用 `Ui6InspectionRuntime` 进程内样例记录，按钮原有 `reload()` 仅重新读取列表。证据、哈希及采样范围见[验收记录](acceptance-record.md#2026-11-21-ui-67-b005-活动刷新双主题显示时序补核)。这些指定时点截图不是完整连续帧流，也不测 Flutter FrameTiming、物理面板呈现或 FPS；UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B007 活动页七个筛选按钮双主题点击状态（2026-11-21）
+
+在隔离 macOS Profile（800×720pt、DPR 2）对七个活动筛选各实鼠标点击一次，浅/深共 14 次；每个状态都采到 +200ms WindowServer 窗口帧，截图显示对应筛选仍为 selected，且夹具列表/空态随筛选更新。指针在释放后移至空白侧沟。逐时点缺失、timing JSON SHA-256 与截图见[验收记录](acceptance-record.md#2026-11-21-ui-67-b007-活动页七个筛选按钮双主题点击验收)。该项只签收 B007 的七个筛选实例与 fixture 路由，采样仍是指定时点而非连续帧，且不能替代 FrameTiming、面板 FPS 或其余生产按钮实例；UI-6.7 仍部分验收。
