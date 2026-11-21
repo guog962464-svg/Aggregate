@@ -1731,3 +1731,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 截图证据：[Tab → 全局搜索](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/12-native-tab-search-profile.png>)，SHA-256 `e78a1451aa63d78dec22c27e82b1f1d9595b00819aacab8deb5e695163447194`；[Tab → 添加连接](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/13-native-tab-add-connection-profile.png>)，SHA-256 `3c5a66881fda073fd5e4ff3040302c913e09e1beab6d295bae7fc7d8784cd841`。
 - Shift+Tab 边界：尝试了 `agent-desktop press shift+tab` 与向隔离进程投递带 Shift 标记的 CoreGraphics 事件；应用日志中的 Tab 事件均读到 `HardwareKeyboard.isShiftPressed=false`，不能据此证明修饰键已被 Flutter 接收。一次 `osascript` 尝试没有产生应用侧事件。因此本次不签收原生 Shift+Tab，也不将状态画廊内的 AX `focused` 属性当成焦点遍历证据。
 - 结论与边界：真实生产应用壳层的两步前向 Tab 及可见焦点环已通过原生 Profile 实窗验证；UI-5.3 的双向顺序仍以既有 Widget 测试为完整顺序证据，原生 Shift+Tab 保持未验。UI-5.4 仍部分通过：VoiceOver 控件朗读、禁用态 `AXEnabled` 引擎缺口及全部生产按钮实例未完成验收。本补测没有改产品代码。完成后全键盘控制及 `AppleKeyboardUIMode` 均恢复为 `0`，隔离应用和 System Settings 已正常退出。
+
+### 2026-11-21 UI-5.4/UI-5.7 生产应用壳层 VoiceOver 字幕复核
+
+- 环境：隔离 Profile 副本 `/private/tmp/aggregate-ui96-review` 使用真实 `lib/main.dart`，bundle ID `io.github.guog962464.aggregate.ui96buttons`；System Settings VoiceOver 开关读回 `0→1`，VoiceOver Utility 中“显示字幕面板”原本已勾选。测试期间用户原 Aggregate 进程未被操作。
+- 实际朗读：VoiceOver 字幕先报告“Aggregate，窗口，Aggregate 我的连接 本机工作空间，group”；VO+Right 后报告位于嵌套 group，并提示用 Control-Option-Shift-下箭头进入。随后通过 agent-desktop 与直接 CoreGraphics 尝试组内导航，仍未读出搜索、播放器或其他控件名称/状态；输入调用没有应用侧回执，故不把它解释为应用语义缺陷，也不签收控件朗读顺序。AX 树本身仍能列出这些控件名称，与 VoiceOver 已成功朗读它们是不同结论。
+- 截图证据：[VoiceOver 字幕面板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/16-voiceover-caption-tight.png>)，SHA-256 `c139d33f17d9e081ff31c10e24cdf7de7f39dd4261d02b37fe45faadda3d70ef`。全屏临时捕获已删除，仅保留裁切后的字幕面板。
+- 收尾与结论：System Settings VoiceOver 开关及 `voiceOverOnOffKey` 均读回 `0`；`AppleKeyboardUIMode` 为 `0`。正常退出隔离 Profile、System Settings 和 VoiceOver Utility 后，进程查询仅剩用户原 Aggregate PID 1564。本轮没有改产品代码；UI-5.4 与 UI-5.7 继续部分验收，控件名称、状态与主流程朗读顺序仍待可验证的 VoiceOver 输入复测。
