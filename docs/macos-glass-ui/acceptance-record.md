@@ -1738,3 +1738,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 实际朗读：VoiceOver 字幕先报告“Aggregate，窗口，Aggregate 我的连接 本机工作空间，group”；VO+Right 后报告位于嵌套 group，并提示用 Control-Option-Shift-下箭头进入。随后通过 agent-desktop 与直接 CoreGraphics 尝试组内导航，仍未读出搜索、播放器或其他控件名称/状态；输入调用没有应用侧回执，故不把它解释为应用语义缺陷，也不签收控件朗读顺序。AX 树本身仍能列出这些控件名称，与 VoiceOver 已成功朗读它们是不同结论。
 - 截图证据：[VoiceOver 字幕面板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/16-voiceover-caption-tight.png>)，SHA-256 `c139d33f17d9e081ff31c10e24cdf7de7f39dd4261d02b37fe45faadda3d70ef`。全屏临时捕获已删除，仅保留裁切后的字幕面板。
 - 收尾与结论：System Settings VoiceOver 开关及 `voiceOverOnOffKey` 均读回 `0`；`AppleKeyboardUIMode` 为 `0`。正常退出隔离 Profile、System Settings 和 VoiceOver Utility 后，进程查询仅剩用户原 Aggregate PID 1564。本轮没有改产品代码；UI-5.4 与 UI-5.7 继续部分验收，控件名称、状态与主流程朗读顺序仍待可验证的 VoiceOver 输入复测。
+
+### 2026-11-21 UI-6.7 B003 活动导航选中态浅深主题复核
+
+- 环境：隔离副本 `/private/tmp/aggregate-ui96-review`，以 macOS Profile、独立 bundle ID `io.github.guog962464.aggregate.ui96buttons` 运行，窗口 800×632pt；仅操作副本内存状态，未触碰真实 Host 或持久连接数据。用户原 Aggregate 进程 PID 1564 始终保留并未操作。
+- 操作与读回：分别在浅色、深色主题选择侧栏“活动”；AX 页面文本读回“运行记录”和“活动”。把指针移至内容空白区域后，活动导航底板仍可见，确认截图展示的是 selected 静置态而不是 hover。两种主题的行高、位置和圆角一致，底板在各自主题背景上有可辨识的玻璃层级。
+- 视觉证据：[深色活动导航选中态](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/26-activity-dark-profile-selected-nohover.png>)，SHA-256 `14462677ba7f0249feb13dc473fa34a0fc723b2c8acfd711558914ff143b282e`；[浅色活动导航选中态](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/27-activity-light-profile-selected-nohover.png>)，SHA-256 `4abb16d459b6f68dfc7ca12c0cb11867b21aadfc8e73e0829c7a83951281fac`。两张均为独立 Profile 应用窗口截图；局部放大检查了选中行及相邻未选项。
+- 结果/边界：B003 的活动路由和浅/深主题静置 selected 外观通过本次补核。此项没有采集按钮按下/离开动效关键帧、FrameTiming 或面板 display-present/FPS，也不代表 109 个生产按钮实例已逐一验收；UI-6.7 仍部分验收。临时 Profile 已正常关闭，系统 VoiceOver 与全键盘控制均保持关闭（读回 `0`），当前仅用户原 Aggregate 进程仍运行。
