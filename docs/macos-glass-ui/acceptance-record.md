@@ -1716,3 +1716,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自动验收：`flutter test --no-pub test/glass_action_button_test.dart` 14 项通过，新增用例逐项断言未聚焦→聚焦→失焦的 semantics 状态；`flutter analyze --no-pub lib/widgets/glass/glass_action_button.dart test/glass_action_button_test.dart` 无问题；`dart format` 与针对两文件的 `git diff --check` 通过。
 - 原生验收：以更新后的生产按钮源码，在临时副本中构建 macOS Profile（Flutter 3.47.8，独立 bundle id `io.github.guog962464.aggregate.ui96buttons`）。隔离窗口中对“刷新 聚焦”实例执行 AX SetFocus，随后 AX 树该按钮状态为 `focused`；同一 Profile 窗口截图显示该按钮暖色焦点环。截图：[原生 AX 聚焦刷新按钮](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/11-native-ax-focused-refresh.png>)，SHA-256 `508b52fa1151903aeca8294ab33ebb7157c549bb3292b1439cb4223dbe587a54`。测试结束后临时 app 已退出；只剩用户原应用 PID 1564 运行。
 - 结果/边界：此证据证明共享按钮一个代表实例的 AX SetFocus 与可见焦点环一致。键盘 Tab 本轮未能产生可验证的新焦点目标；VoiceOver 朗读、禁用按钮 `AXEnabled` 引擎缺陷、109 个生产调用点逐实例状态矩阵仍未验收，UI-5.4/5.7 继续部分通过。
+
+### 2026-11-21 UI-5.3/UI-5.4 隔离 Profile 原生 Tab 焦点补测
+
+- 环境：复用 `/private/tmp/aggregate-ui96-review` 的隔离 macOS Profile 预览，bundle ID `io.github.guog962464.aggregate.ui96buttons`，基础提交 `2ce828a1a25afb790decf0b651dd7009f17d98a4`，按钮源码包含当前已提交的 AX 焦点语义更新。用户原 Aggregate 进程未被关闭或操作。
+- 操作与读回：对“主操作 静置”执行 AX SetFocus 后，AX 树返回该按钮 `focused`。随后分别经 `agent-desktop press --headed` 和独立 CoreGraphics `CGEventPost` 发送 Tab、Shift-Tab；前者报告 `delivered_unverified`，后者没有提供应用收到按键的回执。各次操作后的完整 AX 树仍只把原按钮标记为 `focused`，未观察到焦点目标变化。
+- 系统设置：测试前全局 `AppleKeyboardUIMode=0`；测试窗口期间暂设为 `3` 并重启隔离应用，结束后恢复为 `0`。未通过 System Settings 界面回读该偏好在 macOS 27.2.1 上的有效模式，也没有物理键盘输入或 Flutter 侧按键事件日志。
+- 结论与边界：原生 Tab/Shift-Tab 遍历没有取得可验证的新目标，本轮不能签收原生键盘遍历；由于按键送达 Flutter 的状态未知，也不能据此认定产品键盘导航失效。UI-5.3 的 Widget Tab 顺序测试保持通过记录，原生遍历保持未验；UI-5.4 的代表按钮 AX SetFocus/焦点环一致性样本仍通过，但键盘 Tab、VoiceOver 朗读和禁用态 AX 缺口未关闭。系统偏好已恢复，隔离 Profile 进程已退出。
