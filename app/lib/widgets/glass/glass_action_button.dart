@@ -24,6 +24,8 @@ enum GlassButtonSize {
   primary,
   secondary,
   compactAction,
+  terminalToolbar,
+  terminalIcon,
   directory,
   navigation,
   connectionNavigation,
@@ -298,6 +300,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
     final height = _heightFor(widget.size);
     final small =
         widget.size == GlassButtonSize.compactAction ||
+        widget.size == GlassButtonSize.terminalToolbar ||
+        widget.size == GlassButtonSize.terminalIcon ||
         widget.size == GlassButtonSize.directory ||
         widget.size == GlassButtonSize.navigation ||
         widget.size == GlassButtonSize.connectionNavigation ||
@@ -306,11 +310,14 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         widget.size == GlassButtonSize.playback ||
         widget.size == GlassButtonSize.musicControl ||
         widget.size == GlassButtonSize.capabilityRow;
+    final horizontalPadding = widget.size == GlassButtonSize.terminalToolbar
+        ? 8.0
+        : widget.leading == null
+        ? (small ? 12.0 : 16.0)
+        : 16.0;
     final padding = widget.iconOnly
         ? EdgeInsets.zero
-        : EdgeInsets.symmetric(
-            horizontal: widget.leading == null ? (small ? 12 : 16) : 16,
-          );
+        : EdgeInsets.symmetric(horizontal: horizontalPadding);
     final content = _buildContent(
       tokens,
       height,
@@ -337,31 +344,40 @@ class _GlassActionButtonState extends State<GlassActionButton> {
               : 0.0;
           return tokens.shadow.withValues(alpha: emphasis);
         }
-        final accent = widget.kind == GlassButtonKind.danger
-            ? tokens.danger
-            : tokens.warm;
-        final halo = accent.withValues(alpha: tokens.daylight > .5 ? .38 : .42);
-        final blend = states.contains(WidgetState.pressed)
-            ? .18
-            : states.contains(WidgetState.hovered) ||
-                  states.contains(WidgetState.selected)
-            ? .09
-            : widget.kind == GlassButtonKind.navigation ||
-                  widget.kind == GlassButtonKind.segmented
-            ? .01
-            : .025;
-        return Color.lerp(tokens.shadow, halo, blend)!;
+        if (widget.kind == GlassButtonKind.navigation ||
+            widget.kind == GlassButtonKind.segmented) {
+          final emphasized =
+              states.contains(WidgetState.selected) ||
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.pressed);
+          return tokens.shadow.withValues(alpha: emphasized ? .12 : 0);
+        }
+        return tokens.shadow.withValues(
+          alpha: states.contains(WidgetState.pressed)
+              ? .16
+              : states.contains(WidgetState.hovered)
+              ? .14
+              : widget.kind == GlassButtonKind.primary
+              ? .14
+              : .09,
+        );
       }),
       elevation: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) return 0;
         if (widget.kind == GlassButtonKind.directoryRow) return 0;
-        if (states.contains(WidgetState.pressed)) return .55;
-        if (states.contains(WidgetState.hovered)) return 2.6;
         if (widget.kind == GlassButtonKind.navigation ||
             widget.kind == GlassButtonKind.segmented) {
-          return states.contains(WidgetState.selected) ? 1.3 : .2;
+          if (states.contains(WidgetState.pressed)) return .45;
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return .75;
+          }
+          return states.contains(WidgetState.selected) ? .85 : 0;
         }
-        return widget.kind == GlassButtonKind.primary ? 1.7 : 1.0;
+        if (states.contains(WidgetState.pressed)) return .65;
+        if (states.contains(WidgetState.hovered)) return 1.8;
+        return widget.kind == GlassButtonKind.primary ? 1.45 : .85;
       }),
       shape: WidgetStatePropertyAll(shape),
       side: const WidgetStatePropertyAll(BorderSide.none),
@@ -381,6 +397,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         painter: _GlassButtonSurfacePainter(
           tokens: tokens,
           kind: widget.kind,
+          glyph: widget.glyph,
           motion: _motionController,
           shader: _surfaceShader,
           sampler: _shaderSampler,
@@ -487,8 +504,10 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         : labelAppearance.shadows;
     final iconSize = switch (widget.size) {
       GlassButtonSize.reference => 32.0,
-      GlassButtonSize.primary => 22.0,
-      GlassButtonSize.compactAction => 20.0,
+      GlassButtonSize.primary => 24.0,
+      GlassButtonSize.terminalToolbar => 16.0,
+      GlassButtonSize.terminalIcon => 16.0,
+      GlassButtonSize.compactAction => 22.0,
       GlassButtonSize.navigation ||
       GlassButtonSize.connectionNavigation ||
       GlassButtonSize.segmented => 16.0,
@@ -499,7 +518,7 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       GlassButtonSize.musicControl ||
       GlassButtonSize.capabilityRow ||
       GlassButtonSize.activityRow ||
-      GlassButtonSize.targetOption => 20.0,
+      GlassButtonSize.targetOption => 22.0,
     };
     final visibleLabel = widget.label ?? widget.semanticsLabel!;
     // Keep status cues on the glyph and face while preserving label contrast.
@@ -635,6 +654,8 @@ double _heightFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.primary => GlassDesignTokens.primaryHeight,
   GlassButtonSize.secondary => GlassDesignTokens.secondaryHeight,
   GlassButtonSize.compactAction => 40,
+  GlassButtonSize.terminalToolbar => 40,
+  GlassButtonSize.terminalIcon => 42,
   GlassButtonSize.capabilityRow => 48,
   GlassButtonSize.directory => 56,
   GlassButtonSize.activityRow => 72,
@@ -650,6 +671,7 @@ double _heightFor(GlassButtonSize size) => switch (size) {
 
 double _widthFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.musicControl => 64,
+  GlassButtonSize.terminalIcon => 42,
   _ => _heightFor(size),
 };
 
@@ -658,6 +680,8 @@ double _radiusFor(GlassButtonSize size) => switch (size) {
   GlassButtonSize.reference => 22,
   GlassButtonSize.secondary => 13,
   GlassButtonSize.compactAction => 12,
+  GlassButtonSize.terminalToolbar => 13,
+  GlassButtonSize.terminalIcon => 14,
   GlassButtonSize.capabilityRow => 12,
   GlassButtonSize.directory => 11,
   GlassButtonSize.activityRow => 12,
@@ -768,6 +792,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
   _GlassButtonSurfacePainter({
     required this.tokens,
     required this.kind,
+    required this.glyph,
     required this.motion,
     required this.shader,
     required this.sampler,
@@ -778,6 +803,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
 
   final GlassDesignTokens tokens;
   final GlassButtonKind kind;
+  final GlassGlyph glyph;
   final GlassMotionController motion;
   final ui.FragmentShader? shader;
   final ui.Image? sampler;
@@ -796,7 +822,15 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isFocused = states.contains(WidgetState.focused);
     final isSelected = states.contains(WidgetState.selected);
     final isDirectoryRow = kind == GlassButtonKind.directoryRow;
+    final isPlainNavigation = kind == GlassButtonKind.navigation;
     if (isDirectoryRow &&
+        !isPressed &&
+        !isHovered &&
+        !isFocused &&
+        !isSelected) {
+      return;
+    }
+    if (isPlainNavigation &&
         !isPressed &&
         !isHovered &&
         !isFocused &&
@@ -818,7 +852,9 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final opacity = isDisabled
         ? GlassDesignTokens.disabledButtonFaceOpacity
         : isDirectoryRow
-        ? .34
+        ? isSelected
+              ? .72
+              : .48
         : 1.0;
     final darkAmount = math
         .pow((1 - tokens.daylight).clamp(0.0, 1.0), 2.5)
@@ -840,8 +876,14 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final motionEnergy = motion.energy;
     final time = motion.now.inMicroseconds / Duration.microsecondsPerSecond;
     final animated = motion.animationsEnabled && !isDisabled;
+    final glyphPhase = switch (glyph) {
+      GlassGlyph.play => 0.0,
+      GlassGlyph.refresh => .72,
+      GlassGlyph.search => 1.36,
+      _ => glyph.index * .13,
+    };
     final phase = animated
-        ? time * (math.pi * 2 / 9.2) + motion.phaseSeed * .37
+        ? time * (math.pi * 2 / 9.2) + motion.phaseSeed * .37 + glyphPhase
         : math.pi * .45;
     final breath = animated ? .5 + .5 * math.sin(phase) : .5;
     final lightDrift = animated ? math.sin(phase) * radius * .12 : 0.0;
@@ -851,17 +893,16 @@ class _GlassButtonSurfacePainter extends CustomPainter {
       (isDaylight ? -.74 : .74) +
           math.cos(phase * .8) * (isDaylight ? .035 : -.035),
     );
-    final restingLightStrength = isDirectoryRow
-        ? isSelected
-              ? .08
-              : 0.0
-        : isNavigation
-        ? isSelected
-              ? .22
-              : .035
-        : (isSelected || kind == GlassButtonKind.primary)
-        ? .26
-        : .08;
+    final restingLightStrength = switch (kind) {
+      GlassButtonKind.directoryRow => isSelected ? .07 : 0.0,
+      GlassButtonKind.navigation => isSelected ? .14 : 0.0,
+      GlassButtonKind.segmented => isSelected ? .10 : 0.0,
+      GlassButtonKind.primary => .24,
+      GlassButtonKind.danger => .035,
+      GlassButtonKind.secondary ||
+      GlassButtonKind.icon ||
+      GlassButtonKind.playback => .045,
+    };
     final lightStrength = isDisabled
         ? .025
         : isPressed
@@ -869,7 +910,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         : isHovered
         ? .56
         : restingLightStrength +
-              breath * (isNavigation ? .018 : .035) +
+              breath * (isNavigation ? .012 : .022) +
               motionEnergy * .22;
     final emitterGlowWidth = math.min(12.0, math.max(6.0, size.height * .12));
     final emitterBlur = math.min(5.0, math.max(3.0, size.height * .05));
@@ -1212,6 +1253,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
   bool shouldRepaint(covariant _GlassButtonSurfacePainter oldDelegate) =>
       tokens != oldDelegate.tokens ||
       kind != oldDelegate.kind ||
+      glyph != oldDelegate.glyph ||
       !_sameStates(states, oldDelegate.states) ||
       radius != oldDelegate.radius;
 }

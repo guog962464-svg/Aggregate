@@ -1628,3 +1628,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：生成器执行成功；当前 27/27 SVG 通过 XML 解析且 `viewBox=0 0 1360 900`；`sips` 将全部 27 张渲染为 PNG。对照检查全部页面与关键状态，重点复核 01/03/04/05/10/11/12/17/18/21；修正连接选择、活动记录选中样式与状态画板重复卡片。`git diff --check -- docs/macos-glass-ui` 通过。此阶段只更新设计材料，没有改生产界面或运行产品测试/构建。
 - 视觉证据：本轮设计源在 [v9 画板目录](design-draft-v9/README.md)；[01 工作台 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/01-workspace.png>) SHA-256 `618c48a4ab521a90ae25ae1ad39125b1f692524648715bc7cd315bc5ffcb8f73`；[05 外观 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/05-settings-appearance.png>) SHA-256 `1b4d66b9bbc7178d9327ae81e6a4cdb214c6d36ac19e99948c683b274da68eb6`；[11 按钮状态 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/11-button-motion.png>) SHA-256 `77c7a449b0ec5e1dbed21bc189906935f81d13285bc54aa25e6d8bc4c9c63c0e`；[12 深色 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/12-dark-reference.png>) SHA-256 `e9683edd0f005922be281c43de0f822650da9f317332270570f0dec321f6ee6b`。其余重点样张 03/04/10/17/18/21 同目录归档。
 - 结果/边界：UI-9.0 设计阶段完成；下一步从 UI-9.1 开始实现并按相同状态逐屏 Profile 对照。没有宣称当前生产界面已符合新稿；所有真实业务逻辑以及明暗开关的实时拖动、日月变化、光效和节奏保持冻结。
+
+### 2026-11-21 UI-9.1 场景背景与公共点阵按钮
+
+- 基准：v9.0 主题开关场景和按钮规范；按 1360×900pt 浅/深色窗口检查。为避免影响用户当前打开的应用，使用源码临时副本、合成 Runtime、独立 Bundle ID 的 macOS Profile 预览，未切换主应用窗口。
+- 实施：窗口雾银背景的渐变与颗粒参数对齐主题开关场景；运行、刷新、搜索剪影调整为可辨认的统一圆角点阵，普通导航静置层次降低，按钮光弧相位按图案错开。未修改 `glass_theme_switch.dart`、`glass_theme_switch.frag` 或主题切换的模拟、手势和回调代码。
+- 自验：`flutter analyze --no-pub` 通过；点阵按钮、glyph golden、主题模拟、光学、实时拖动和主题开关定向套件共 45 项通过；macOS Profile 构建成功；主题按钮在隔离预览中浅/深切换后可返回浅色。`git diff --check` 通过。截图来自独立 Profile 进程，1360×900pt 窗口；主应用没有被操作。
+- 视觉证据：[浅色 Profile](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui91/light-1360x900.png>) SHA-256 `3843812fcfa4ea5316cb47599d0a9fd98765760b16dfa1efb2b2b0d733fcf49e`；[深色 Profile](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui91/dark-1360x900.png>) SHA-256 `e73bec25afad153ae768da1ce6913f03ebb1a6eed3ac1aed70f38c0f0243b8e9`。
+- 结果/边界：背景接缝与点阵剪影在该窗口样本中通过阶段检查。设置页目前仍有分类侧栏，与 v9.0 单一纵向页面不一致；留在 UI-9.5 按 05/06/15/22 修正。本阶段不代表其他功能页面已对齐，也不构成用户最终视觉签收。

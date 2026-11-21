@@ -227,24 +227,23 @@ void main() {
       }
 
       final refresh = GlassGlyphFactory.pointsFor(GlassGlyph.refresh);
-      expect(refresh, hasLength(25));
+      expect(refresh, hasLength(17));
       expect(hasPoint(refresh, const Offset(14.8, 4)), isTrue);
-      expect(hasPoint(refresh, const Offset(4, 12.1)), isTrue);
-      expect(hasPoint(refresh, const Offset(20.2, 12.1)), isTrue);
-      expect(hasPoint(refresh, const Offset(22.9, 12.1)), isTrue);
-      expect(hasPoint(refresh, const Offset(25.6, 12.1)), isTrue);
-      expect(hasPoint(refresh, const Offset(4, 17.5)), isTrue);
+      expect(hasPoint(refresh, const Offset(6.7, 9.4)), isTrue);
+      expect(hasPoint(refresh, const Offset(22.9, 9.4)), isTrue);
+      expect(hasPoint(refresh, const Offset(20.2, 6.7)), isTrue);
+      expect(hasPoint(refresh, const Offset(22.9, 6.7)), isTrue);
       expect(hasPoint(refresh, const Offset(9.4, 17.5)), isTrue);
 
       final play = GlassGlyphFactory.pointsFor(GlassGlyph.play);
-      expect(play, hasLength(25));
-      expect(hasPoint(play, const Offset(9.4, 4)), isTrue);
-      expect(hasPoint(play, const Offset(9.4, 25.6)), isTrue);
+      expect(play, hasLength(17));
+      expect(hasPoint(play, const Offset(9.4, 6.7)), isTrue);
+      expect(hasPoint(play, const Offset(9.4, 22.9)), isTrue);
       expect(hasPoint(play, const Offset(20.2, 14.8)), isTrue);
-      expect(hasPoint(play, const Offset(22.9, 14.8)), isFalse);
+      expect(hasPoint(play, const Offset(25.6, 14.8)), isFalse);
 
       final search = GlassGlyphFactory.pointsFor(GlassGlyph.search);
-      expect(search, hasLength(21));
+      expect(search, hasLength(22));
       expect(hasPoint(search, const Offset(14.8, 4)), isTrue);
       expect(hasPoint(search, const Offset(20.2, 20.2)), isTrue);
       expect(hasPoint(search, const Offset(22.9, 22.9)), isTrue);

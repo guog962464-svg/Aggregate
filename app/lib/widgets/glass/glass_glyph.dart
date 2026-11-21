@@ -577,18 +577,17 @@ List<String> _rowsFor(GlassGlyph glyph) => switch (glyph) {
 };
 
 abstract final class _GlyphRows {
-  // Match the narrow, 9-row play mark used by the reference sample: its
-  // vertical spine stays quiet while the triangular fill grows to the right.
+  // Keep the 9×9 play mark pointed to the right at both reference and action sizes.
   static const play = [
+    '000000000',
     '001000000',
     '001100000',
     '001110000',
-    '001111000',
     '001111100',
-    '001111000',
     '001110000',
     '001100000',
     '001000000',
+    '000000000',
   ];
   static const pause = [
     '011000110',
@@ -723,26 +722,26 @@ abstract final class _GlyphRows {
     '100000001',
   ];
   static const search = [
-    '001111000',
-    '010000100',
-    '100000010',
-    '100000010',
-    '100000010',
-    '010000100',
-    '001111100',
-    '000000010',
-    '000000001',
+    '000111000',
+    '001000100',
+    '010000010',
+    '010000010',
+    '010000010',
+    '001000110',
+    '000111100',
+    '000000110',
+    '000000011',
   ];
   static const refresh = [
-    '001111000',
-    '010000100',
-    '100000010',
-    '100000111',
-    '100000000',
-    '111000001',
-    '010000001',
-    '001000010',
-    '000111100',
+    '000111000',
+    '001000110',
+    '010000010',
+    '010000010',
+    '010000010',
+    '001000100',
+    '000111000',
+    '000000000',
+    '000000000',
   ];
   static const music = [
     '000011110',

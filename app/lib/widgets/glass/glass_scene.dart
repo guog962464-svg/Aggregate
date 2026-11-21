@@ -275,8 +275,8 @@ class _GlassScenePainter extends CustomPainter {
     if (effect == null) {
       canvas.drawColor(
         Color.lerp(
-          const Color(0xFF191A1B),
-          const Color(0xFFD9D8D5),
+          const Color(0xFF0A0A0A),
+          const Color(0xFFCCCCCC),
           frame.switchDaylight ?? tokens.daylight,
         )!,
         BlendMode.src,
@@ -288,19 +288,7 @@ class _GlassScenePainter extends CustomPainter {
     effect.setFloat(2, frame.switchDaylight ?? tokens.daylight);
     effect.setFloat(3, frame.seconds);
     effect.setFloat(4, pixelRatio);
-    _setRgb(effect, 5, const Color(0xFF191A1B));
-    _setRgb(effect, 8, const Color(0xFF222325));
-    _setRgb(effect, 11, const Color(0xFF333436));
-    _setRgb(effect, 14, const Color(0xFFD9D8D5));
-    _setRgb(effect, 17, const Color(0xFFDEDDDA));
-    _setRgb(effect, 20, const Color(0xFFF3F1EC));
     canvas.drawRect(Offset.zero & size, Paint()..shader = effect);
-  }
-
-  void _setRgb(ui.FragmentShader effect, int index, Color color) {
-    effect.setFloat(index, color.r);
-    effect.setFloat(index + 1, color.g);
-    effect.setFloat(index + 2, color.b);
   }
 
   @override
