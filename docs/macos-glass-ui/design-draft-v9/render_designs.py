@@ -88,6 +88,7 @@ def load_flutter_glyphs():
     renderer_names = set(RENDER_GLYPH_ENUMS) | {
         "play", "pause", "next", "previous", "plus", "stop", "copy", "playlist",
         "grid", "chat", "device", "terminal", "check", "close", "folder", "trash",
+        "visibility", "desktop", "build",
         "error", "hourglass", "inbox", "info",
         "star", "document", "filter", "expand", "music", "settings", "search", "refresh",
     }
@@ -1110,9 +1111,13 @@ def screen_host_permissions():
         yy=y+414+i*52
         row(p,x+30,yy,w-60,name,"", "connection",False,None,46)
         bx=x+w-280
-        for j,permission in enumerate(permissions):
-            bw=84 if permission in {"本机控制","外部写入"} else 62
-            p.append(button(bx,yy+5,bw,permission,selected=True,h=32))
+        options=(
+            ("读取","visibility",62),
+            ("本机控制","desktop",84),
+            ("外部写入","build",84),
+        )
+        for permission,icon,bw in options:
+            p.append(button(bx,yy+5,bw,permission,icon,selected=permission in permissions,h=32))
             bx+=bw+6
     small_button(p,x+w-235,y+h-55,"取消","close",w=96)
     small_button(p,x+w-130,y+h-55,"保存权限","document",primary=True,w=110)

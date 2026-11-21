@@ -1,4 +1,4 @@
-# v9.0.6 功能与状态覆盖矩阵
+# v9.0.7 功能与状态覆盖矩阵
 
 本矩阵将现有 macOS 功能入口、实现模块、画板和需要保留的状态连在一起。画板是视觉基准；表中的交互状态规定同一页面在实际状态变化时如何表现。样例数据只允许存在于预览 Runtime。
 
@@ -19,7 +19,7 @@
 | `music/music_player_page.dart`、`music_search_results.dart`、`music_session.dart` | 搜索音乐、播放/暂停/停止、上一首/下一首、加到下一首 | 02、18、10 | 搜索中、结果、无匹配、不可播放、播放/暂停/停止和连接失败；控件显隐依赖真实能力/队列；主页面和迷你播放器复用同一会话 |
 | `music/music_account_control.dart`、`netease_login_link.dart` | 从播放器“音乐账号”入口打开，登录、切换账号、扫码、取消、重试 | 02、14、10 | 入口位于播放信息区并紧邻刷新状态；账号能力不存在时隐藏；状态显示在弹窗内；取消及刷新仍走现有端口 |
 | `music/music_mini_player.dart` | 在其他页面控制可见音乐会话 | 18，并用于有会话的其他画板 | 无会话时隐藏；当前曲名/状态来自同一会话；不增加队列视图或进度拖杆 |
-| `settings/settings_page.dart`、`appearance_selector.dart`、`glass_theme_switch.dart` | 在同一页查看外观、Mac Host、快捷键、本机数据 | 05、06、15、22、20、23 | 外观 → Host → 快捷键 → 本机数据纵向连续排列；05/06/15/22 是不同滚动位置；Host/配对/权限、快捷键和本机保留期限沿用现有数据；原主题开关行为冻结 |
+| `settings/settings_page.dart`、`appearance_selector.dart`、`glass_theme_switch.dart` | 在同一页查看外观、Mac Host、快捷键、本机数据 | 05、06、15、22、20、23 | 外观 → Host → 快捷键 → 本机数据纵向连续排列；05/06/15/22 是不同滚动位置；Host/配对/权限、快捷键和本机保留期限沿用现有数据；权限弹窗保留每条连接的读取、本机控制、外部写入三种可切换项，并通过琥珀强调显示已选状态；原主题开关行为冻结 |
 | `widgets/page_state.dart` | 页面加载、空、错误与重试提示 | 10、18 | 状态文案与图标沿用真实布局；活动空态按自然内容宽度落在正文左缘，不拉伸居中 |
 | Android 专用 Host 设置面板 | Android Host 配置 | 不属于本次 macOS 设计 | 保持平台专属，不把 Android 设置画进 Mac 窗口 |
 
