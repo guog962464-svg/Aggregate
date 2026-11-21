@@ -719,8 +719,8 @@ def screen_host():
     p.append(txt(316,641,"核对设备名称与确认码后再审批",10,"var(--muted)",430))
     p.append(button(1260,601,38,"","refresh",h=38,icon_only=True))
     p.append(rect(316,655,982,68,"url(#panel)",13,"var(--panelEdge)"))
-    p.append(glyph("connection",332,670,18)); p.append(txt(363,680,"LGE AN10",12,"var(--ink)",560))
-    p.append(txt(363,701,"Android · 确认码 4D8K2P",9,"var(--muted)",430))
+    p.append(glyph("connection",332,670,18)); p.append(txt(363,680,"Pixel 9",12,"var(--ink)",560))
+    p.append(txt(363,701,"Android · 确认码 482 193",9,"var(--muted)",430))
     action_x=765
     for label,icon,width,primary,danger in (("拒绝","close",82,False,True),("批准只读","check",104,False,False),("连接向导","settings",126,True,False),("自定义权限","settings",126,False,False)):
         p.append(button(action_x,669,width,label,icon,primary=primary,danger=danger,h=40))
@@ -728,7 +728,7 @@ def screen_host():
     p.append(txt(316,758,"已配对设备",16,"var(--ink)",650))
     p.append(txt(316,779,"权限可随时编辑或撤销",10,"var(--muted)",430))
     p.append(rect(316,795,982,48,"url(#panel)",12,"var(--panelEdge)"))
-    p.append(glyph("connection",332,809,18)); p.append(txt(363,822,"Pixel 9 · Android · 读取连接",11,"var(--ink)",520))
+    p.append(glyph("connection",332,809,18)); p.append(txt(363,822,"LGE AN10 · Android · 读取连接 · 连接向导 · 连接管理",11,"var(--ink)",520))
     small_button(p,1059,799,"修改权限","settings",w=112)
     small_button(p,1178,799,"撤销","close",danger=True,w=120)
     return p+["</g></svg>"]
@@ -797,7 +797,7 @@ def screen_setup_variant(kind):
             ("Bearer Token（可选）", "••••••••", 44, None),
         ]),
         "music": ("网易云音乐", "网易云音乐", [
-            ("程序", "自动查找 ncm-cli", 44, "search"),
+            ("程序", "/usr/local/bin/ncm-cli", 44, "search"),
             ("开放平台 App ID", "输入 App ID", 44, None),
             ("Private Key（PEM）", "选择 .pem 文件", 44, "folder"),
         ]),
@@ -822,18 +822,19 @@ def screen_setup_variant(kind):
             p.append(button(x+w-72,cursor,42,"",icon,h=field_h,icon_only=True))
         cursor+=field_h+12
     if kind=="http":
-        p.append(tag(x+30,cursor+4,"已连接 · 3 项工具可用"))
-        p.append(txt(x+30,cursor+27,"令牌会保存在当前设备的安全存储中。",10,"var(--muted)",430))
+        p.append(tag(x+30,cursor+4,"尚未测试","warn"))
+        p.append(txt(x+30,cursor+27,"Bearer Token 仅留在当前进程内存，关闭后丢弃。",10,"var(--muted)",430))
     elif kind=="music":
-        p.append(txt(x+30,cursor+9,"Private Key 只用于连接配置，不写入连接清单。",10,"var(--muted)",430))
+        p.append(txt(x+30,cursor+9,"程序路径是内存样例；不会检查磁盘或发起登录。",10,"var(--muted)",430))
+        p.append(txt(x+30,cursor+27,"Private Key 只用于连接配置，不写入连接清单。",10,"var(--muted)",430))
     else:
         p.append(glyph("refresh",x+30,y+538,14,"var(--muted)"))
-        p.append(txt(x+52,y+550,"测试后显示诊断；测试可保存时才启用保存。",10,"var(--muted)",430))
+        p.append(txt(x+52,y+550,"尚未测试 · 测试通过后才可保存",10,"var(--muted)",430))
     p.append(line(x+30,y+570,x+w-30,y+570))
     small_button(p,x+w-362,y+593,"取消","close",w=92)
     small_button(p,x+w-262,y+593,"测试连接","refresh",w=126)
     # Disabled until the connection check reports a saveable result.
-    p.append(button(x+w-128,y+593,98,"保存连接", "check", primary=True, h=38, disabled=kind!="http"))
+    p.append(button(x+w-128,y+593,98,"保存连接", "check", primary=True, h=38, disabled=True))
     return p+["</g></svg>"]
 
 
@@ -910,7 +911,7 @@ def screen_danger_confirmation():
 def screen_target():
     p,x,y,w,h=overlay("选择执行目标","选择此连接实际可用的设备。",585,390,background="inspection-connections")
     row(p,x+28,y+103,w-56,"本机 Mac","默认目标 · 在此设备运行","connection",True,None,61)
-    row(p,x+28,y+171,w-56,"Pixel 9","已配对 · 连接管理","connection",False,None,61)
+    row(p,x+28,y+171,w-56,"示例 Mac Host","已配对 · 连接管理","connection",False,None,61)
     p.append(txt(x+30,y+273,"设备状态与授权说明来自当前运行时。",10,"var(--muted)",430))
     small_button(p,x+w-230,y+h-57,"取消","close",w=94)
     small_button(p,x+w-126,y+h-57,"选择","check",primary=True,w=96)
@@ -924,11 +925,14 @@ def screen_action_editor():
     small_button(p,x+287,y+88,"导出","document",w=102)
     p.append(txt(x+30,y+153,"动作清单 JSON",11,"var(--muted)",520))
     p.append(rect(x+30,y+167,w-60,300,"url(#inset)",12,"var(--insetEdge)"))
-    code='''{\n  "schemaVersion": 1,\n  "id": "git-version",\n  "displayName": "UI 检查",\n  "executable": "仅内存预览",\n  "actions": [\n    {\n      "id": "version",\n      "title": "查看版本",\n      "argv": ["--version"]\n    }\n  ]\n}'''
+    code='''{\n  "schemaVersion": 1,\n  "id": "ui6-ui6-review-git",\n  "displayName": "示例 Git CLI",\n  "platforms": ["macos"],\n  "executable": "仅内存预览",\n  "actions": [{\n    "id": "version", "title": "查看版本",\n    "argv": ["--version"]\n  }]\n}'''
     for i,line_ in enumerate(code.splitlines()): p.append(txt(x+48,y+194+i*20,line_,11,"var(--ink)",440))
-    p.append(txt(x+30,y+490,"预览动作",10,"var(--muted)",520)); p.append(txt(x+30,y+516,"查看版本 · version",13,"var(--ink)",560))
-    p.append(txt(x+350,y+490,"预览输入 JSON",10,"var(--muted)",520)); p.append(rect(x+350,y+500,300,55,"url(#inset)",10,"var(--insetEdge)")); p.append(txt(x+367,y+532,"{}",12,"var(--ink)",450))
-    p.append(txt(x+30,y+558,"检查只生成最终参数数组，不运行程序。",10,"var(--muted)",430))
+    p.append(field(x+30,y+472,300,"预览动作","查看版本 · version",55))
+    p.append(field(x+350,y+472,300,"预览输入 JSON","{}",55))
+    small_button(p,x+30,y+540,"检查并预览参数","search",w=179)
+    p.append(rect(x+223,y+540,401,62,"url(#inset)",10,"var(--insetEdge)"))
+    p.append(txt(x+235,y+565,"检查后显示最终参数数组。",10,"var(--muted)",430))
+    p.append(txt(x+30,y+612,"只检查参数，不运行命令。",10,"var(--muted)",430))
     small_button(p,x+w-240,y+h-55,"取消","close",w=96)
     small_button(p,x+w-132,y+h-55,"保存动作","document",primary=True,w=110)
     return p+["</g></svg>"]
