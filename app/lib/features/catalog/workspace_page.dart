@@ -297,6 +297,7 @@ class WorkspacePageState extends State<WorkspacePage> {
                       widget.runtime.features.canAdd(ConnectionKind.mcpStdio)
                 ? '还没有连接。添加第一个 CLI 或 MCP，功能会出现在这里。'
                 : '还没有连接。添加第一个 HTTP MCP，功能会出现在这里。',
+            glyph: GlassGlyph.network,
             actions: [
               if (widget.runtime.features.canAdd(ConnectionKind.cli))
                 AggregateActionButton(
@@ -324,6 +325,7 @@ class WorkspacePageState extends State<WorkspacePage> {
         else if (visible.isEmpty)
           PageState.empty(
             search.text.isEmpty ? '当前筛选下没有可用功能。' : '没有找到“${search.text}”对应的功能。',
+            glyph: GlassGlyph.search,
             actions: [
               AggregateActionButton(
                 label: '清除筛选',
@@ -657,6 +659,7 @@ class WorkspacePageState extends State<WorkspacePage> {
           : '还没有连接。添加第一个 HTTP MCP，功能会出现在这里。';
       return PageState.empty(
         message,
+        glyph: GlassGlyph.network,
         actions: [
           if (widget.runtime.features.canAdd(ConnectionKind.cli))
             AggregateActionButton(
@@ -690,6 +693,11 @@ class WorkspacePageState extends State<WorkspacePage> {
       final isScopedEmpty = emptyScope != _WorkspaceDirectoryScope.all;
       return PageState.empty(
         emptyMessage,
+        glyph: switch (emptyScope) {
+          _WorkspaceDirectoryScope.recent => GlassGlyph.history,
+          _WorkspaceDirectoryScope.favorites => GlassGlyph.star,
+          _WorkspaceDirectoryScope.all => GlassGlyph.search,
+        },
         actions: [
           AggregateActionButton(
             label: isScopedEmpty ? '查看全部' : '清除筛选',

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
@@ -303,6 +304,7 @@ class ConnectionsPageState extends State<ConnectionsPage> {
                 widget.runtime.features.connectionKinds.isEmpty
                     ? '当前运行端尚无可添加的连接。'
                     : '还没有连接。添加一个连接开始使用。',
+                glyph: GlassGlyph.network,
               );
             }
             return LayoutBuilder(

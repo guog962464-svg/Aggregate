@@ -1692,3 +1692,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：`render_designs.py` 重新生成成功；27/27 SVG 均可解析且 `viewBox` 为 `0 0 1360 900`；七张受影响画板分别导出为 1360×900 PNG 并逐张目视检查；设计目录 `git diff --check` 通过。将 10 号稿与 1360×900pt 隔离 Profile `PageState` 状态夹具对照，将 15 号稿与 1360×900pt 连续设置页 Profile 截图对照；未触发真实连接、Host、音乐服务或主题切换。
 - 视觉证据：[10 状态画板对应的 Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/10-state-gallery-live-resample.png>)，SHA-256 `7d6e141cb74b847f3dde0a26e634c5269b6406a3e2f578942f643d7f29a91b4e`；[15 连续设置页 Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui95-implementation/15-settings-shortcuts-profile.png>)，SHA-256 `4825fe5facf75dd38a3de3c5a6e956c493a6536c35f317e7a22139e372d21b1d`。
 - 结果/边界：只关闭 10/15 画板与对应实窗构图的差异并修订设计基准，不代表 UI-9.6 全稿通过。其余浅深、窄窗、焦点和动效矩阵，以及 UI-5/UI-6 原生无障碍和逐实例动效待办继续开放；本记录不作为最终用户视觉签收。
+
+### 2026-11-21 UI-9.6 通用页面状态点阵与宽窄布局
+
+- 基准：v9.0.11 画板 10；生产 `PageState`、工作台空结果与连接管理空态；1360×900pt 隔离 macOS Profile 状态夹具。
+- 实施：宽窗下以点阵图标和说明横排呈现状态，窄窗下改为垂直堆叠；各页面继续使用现有“添加连接”“清除筛选”“重试”回调。macOS 使用 `GlassGlyphMark`，连接/搜索/最近/收藏状态配置语义对应的 glyph；其他平台保留 Material 图标回退。
+- 自验：`flutter test --no-pub test/page_state_layout_test.dart test/workspace_search_semantics_test.dart test/connections_page_lazy_test.dart test/activity_page_test.dart` 共 19 项通过，其中含 Android Material 回退、宽/窄布局与动作回调断言；`flutter analyze --no-pub` 无问题；`dart format --output=none --set-exit-if-changed lib/widgets/page_state.dart lib/features/catalog/workspace_page.dart lib/features/connections/connections_page.dart test/page_state_layout_test.dart` 无格式改动；`git diff --check` 通过。`glass_theme_switch.dart`、主题 shader 与主题切换测试文件均未改。
+- 视觉证据：[通用状态 Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/10-state-gallery-live-resample.png>)，SHA-256 `7d6e141cb74b847f3dde0a26e634c5269b6406a3e2f578942f643d7f29a91b4e`。只显示内存状态和无副作用按钮，没有触发真实连接或服务。
+- 结果/边界：通用状态页面适配子项完成。UI-9.6 其余页面差异、窄窗/深色/焦点/按钮动效矩阵，以及 UI-5/UI-6 的 VoiceOver、禁用态原生 AX、逐生产按钮呈现验收仍未关闭。
