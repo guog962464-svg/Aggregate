@@ -214,3 +214,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：运行、刷新、搜索图案点击时序（2026-11-19）
 
 96 dp 共享 `GlassActionButton` Profile fixture 的暗色点击样本现在用 ScreenCaptureKit 的 WindowServer display-time 对齐释放时点；运行、刷新和搜索在 0–650 ms 目标时序中分别采到 15、14、14 个选中帧，刷新漏 0 ms、搜索漏 83.3 ms。样本显示三种图案有对应的轻微位移/伸缩、旋转和大小变化。Widget 触发/注册回归 13 项、`flutter analyze --no-pub`、格式与 diff 检查通过；夹具回调为空，没有产品代码改动。截图与间隔统计见[验收记录](acceptance-record.md#2026-11-19-ui-67-运行刷新搜索点击呈现时序补验)。该证据不代表 109 个生产实例、浅色、VoiceOver、面板 FPS 或原视频逐帧通过；UI-6.7 继续部分验收。
+
+### UI-6.7 补证：侧栏 B002/B003 selected 双主题外观（2026-11-21）
+
+隔离 macOS Profile 中分别选中“示例 Git CLI”和“活动”，在 800×632pt 浅/深主题将指针移至内容空白区后，侧栏选中底板仍可见；AX 页面标题、路由与样例动作状态可读。完整截图、SHA 与隔离边界见[验收记录](acceptance-record.md#2026-11-21-ui-67-b002-git-cli-导航选中态浅深主题复核)、[B002/B003 矩阵](ui-6.7-button-instance-matrix.md)。只补签静置 selected 外观与路由；没有采集这两个导航项的点击动画、FrameTiming 或面板 display-present/FPS。UI-6.7 仍部分验收。

@@ -1745,3 +1745,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 操作与读回：分别在浅色、深色主题选择侧栏“活动”；AX 页面文本读回“运行记录”和“活动”。把指针移至内容空白区域后，活动导航底板仍可见，确认截图展示的是 selected 静置态而不是 hover。两种主题的行高、位置和圆角一致，底板在各自主题背景上有可辨识的玻璃层级。
 - 视觉证据：[深色活动导航选中态](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/26-activity-dark-profile-selected-nohover.png>)，SHA-256 `14462677ba7f0249feb13dc473fa34a0fc723b2c8acfd711558914ff143b282e`；[浅色活动导航选中态](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/27-activity-light-profile-selected-nohover.png>)，SHA-256 `4abb16d459b6f68dfc7ca12c0cb11867b21aadfc8e73e0829c7a83951281fac`。两张均为独立 Profile 应用窗口截图；局部放大检查了选中行及相邻未选项。
 - 结果/边界：B003 的活动路由和浅/深主题静置 selected 外观通过本次补核。此项没有采集按钮按下/离开动效关键帧、FrameTiming 或面板 display-present/FPS，也不代表 109 个生产按钮实例已逐一验收；UI-6.7 仍部分验收。临时 Profile 已正常关闭，系统 VoiceOver 与全键盘控制均保持关闭（读回 `0`），当前仅用户原 Aggregate 进程仍运行。
+
+### 2026-11-21 UI-6.7 B002 Git CLI 导航选中态浅深主题复核
+
+- 环境：隔离副本 `/private/tmp/aggregate-ui96-review`，使用 `lib/preview/ui6_inspection_main.dart` 构建 macOS Profile，独立 bundle ID `io.github.guog962464.aggregate.ui96buttons`，窗口 800×632pt。连接与能力仅为 `Ui6InspectionRuntime` 内存样例；未运行样例中的 Git 命令、打开终端或触发写入确认。用户原 Aggregate PID 1564 未被操作。
+- 操作与读回：浅色主题中从侧栏选择“示例 Git CLI”；AX 读回页面标题“示例 Git CLI”、区域“命令与动作”和 3 项样例动作。通过设置中的原主题控件切换深色，再回到 Git CLI 页并复核相同状态。两次均将指针移到页面空白区后截图，侧栏选中底板仍可见，排除选中样式来自该导航项的 hover。
+- 视觉证据：[浅色 Git CLI 选中态](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/29-git-cli-light-profile-selected-nohover.png>)，SHA-256 `51621949c7477840813349d35e8b93055a04642b91f71ef7cd121ecbdc1578ab`；[深色 Git CLI 选中态](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui96-review/30-git-cli-dark-profile-selected-nohover.png>)，SHA-256 `d3d2693b0e09f3dcafbb48525387bc5440c715fcb9c2336f37efc41f643fb231`。两张为完整 800×632pt Profile 窗口截图，DPR 2。
+- 结果/边界：B002 的双主题路由与静置 selected 底板通过本次补核。未测点击动画、FrameTiming、实际显示器呈现时序，也未据此扩大到其他生产按钮；UI-6.7 仍部分验收。隔离 Profile 已正常退出，系统 VoiceOver 和全键盘控制均为关闭（读回 `0`），用户应用 PID 1564 仍在运行。
