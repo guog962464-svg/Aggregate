@@ -1603,3 +1603,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自验：`flutter test --no-pub test/glass_design_tokens_test.dart test/glass_action_button_test.dart` 25 项通过；`flutter analyze --no-pub` 无问题；Profile macOS `ui6_inspection_main.dart` 构建成功（71.4MB），在 1363×900 pt 隔离实窗启动并核对浅色音乐页材质；`git diff --check` 通过。主题开关逻辑文件和 shader diff 均为空。
 - 视觉证据：[v8.0 实窗材质核对](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui81-v8-material/music-profile.png>)，SHA-256 `e7aabc90e7ebbfacdc0a83288d9077a8a452ecce0c07fe09390c38a3c7db896a`；它只证明浅色实窗的共享场景和控件材质可正常绘制，不作为音乐页布局验收截图。
 - 结果/边界：UI-8.1 的全局配色、连续背景和共用控件材质已落地。Profile 目视核对仍显示音乐页卡片比例和纵向信息布局与 02 画板有差异；按后续页面阶段修正，不能据此宣称全功能生产界面已对齐，也没有取得用户最终视觉签收。明暗主题插值对比度、按钮语义和共享 glyph 定向测试均保持通过。
+
+
+### 2026-11-21 UI-8.0 v8.1 工作台样例与预览对照校准
+
+- 原因：用户反馈实窗与预览观感差异明显。复核 01 画板和 1360×900 Profile 截图后，发现画板的侧栏连接顺序、目录第 5/7 项、执行目标和空结果副文案与正在使用的 12 项检查 fixture 不一致；手绘 SVG 的玻璃材质也无法代表 Flutter shader、系统字形和真实控件。
+- 修订：将 01 画板固定到 `ui7_design_preview_main.dart` 所用的 `Ui6InspectionRuntime` 12 项 fixture，改正连接顺序、首屏目录项、工作台说明、目标标签和空结果说明。默认目标标签同步校正 12/17/21 画板。设计基准升为 v8.1，规定改单页前固定 Profile 入口、fixture、主题、选中项和滚动位置；SVG 用于核对结构/文案/几何，材质/字形/动态状态以同源 Flutter Profile 设计预览为准。
+- 自验：设计生成器执行成功；27/27 SVG XML 解析及 `viewBox=0 0 1360 900` 检查通过；01、12、17、21 画板导出为 1360×900 PNG 并检查；01 画板文案/样例顺序断言通过；01 画板与对应 Profile 实窗均为 1360×900，完成并排视觉核对；`git diff --check` 通过。仅修订设计基准，未运行产品测试或构建。
+- 视觉证据：[v8.1 工作台画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-design-v81/01-workspace.png>)，SHA-256 `3153edf72abfb9097eb1e98267987f760e9c2cd97ab3d5a9e90d597f2cbc0368`；[对应 Flutter Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-v8-profile/01-workspace-profile-v8-1360.png>)，SHA-256 `5398821d963fd49f5dd314098b312569b51f2e5c9cb5e5d7a8fe4062c7402575`。
+- 结果/边界：v8.1 现在将样例状态与真实 Profile fixture 对齐；实现侧仍须逐屏核对 01/08/09/10/16/17/21/24，UI-8.2 尚未签收。该修订未改产品功能、Runtime 或主题开关。

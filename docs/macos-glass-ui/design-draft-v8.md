@@ -1,6 +1,6 @@
-# Aggregate macOS 全功能设计稿 v8.0
+# Aggregate macOS 全功能设计稿 v8.1
 
-> **用途：** v8.0 是接下来 macOS UI 实施和逐屏验收的唯一视觉基准，覆盖 27 张画板、用户操作路径、状态矩阵和窄窗规则。此前版本保留作历史记录，不再作为实现依据。
+> **用途：** v8.1 是接下来 macOS UI 实施和逐屏验收的唯一视觉基准，覆盖 27 张画板、用户操作路径、状态矩阵和窄窗规则。它保留 v8.0 的视觉方向，并根据 Profile 实窗复核结果校准预览样例和逐屏对照流程。此前版本保留作历史记录，不再作为实现依据。
 >
 > **范围：** macOS。示例数据仅供画板展示；运行、权限、连接、音乐和活动数据始终来自现有 Runtime 与会话。
 
@@ -182,6 +182,8 @@ Aggregate 是每天使用的 Mac 工作台。界面要让人快速找到能力�
 
 - 先把设计稿和页面样例锁定，再改对应生产页面。需要改变稿件时，先改稿和对应页面标准，然后再实现。
 - 每个主画板使用 1360×900pt macOS Profile 实窗截图并排对照；主列边界、标题基线、表单和操作尺寸误差不超过 4pt。迷你播放器面板与画板位置、宽高误差不超过 2pt。
+- 开始改单页前，先固定该画板对应的 Profile 入口、Runtime fixture、主题、选中项和滚动位置；设计稿与实窗的样例名称、数量、排序、连接顺序和结果状态必须相同。发现内容不一致时先校正 fixture/画板，再判断布局偏差。
+- 玻璃材质、真实字形和动态控件以隔离的 Flutter Profile 设计预览为准；SVG 只核对结构、文案和几何，不用于验收材质。设计预览入口 `ui7_design_preview_main.dart` 与检查入口共用同一 `AggregateApp` 和安全 Runtime，避免另写一套会漂移的组件。
 - 对照全窗背景采样、按钮厚度/边缘/阴影范围/点阵、文字层级、选中状态、焦点、运行状态、空态和实际内容；不能只核对组件名字或外框坐标。
 - 生产截图必须来自同尺寸 Flutter Profile 页面。SVG 负责固定版式和内容，不作为材质通过证据；材质验收以 v8 token 和生产主题控件参考为准。
 - 每个阶段分别保存：画板 revision、实际 Profile 截图、相关回归记录、模型/窗口逻辑尺寸、浅深主题状态与提交 SHA。
@@ -194,7 +196,8 @@ Aggregate 是每天使用的 Mac 工作台。界面要让人快速找到能力�
 
 | 画板 | 预览入口与状态 |
 | --- | --- |
-| 01、02、17、21 | `preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` + `createPreviewRuntime()`。连接标签固定为「示例网易云音乐 / 示例 Git CLI / 示例 MCP」；01 有 12 项能力，目录沿 `CapabilityCatalog.search` 的标题顺序显示，首屏七项从「上一首」到「播放状态」，选中 MCP「两个整数相加」；17 只有一项 Git 状态能力，21 展示一个工具、一个资源和一个提示。02 是音乐连接主页：歌曲为「示例歌曲」，本机输出；搜索结果为两首，第一首可播放、第二首不可播放；`PreviewRuntime` 不提供账号管理端口，因此这里没有账号入口。要复现 01/17/21 画板的底部播放器，先进入音乐页生成预览会话，再切到目标页；02 本身不显示跨页播放器。 |
+| 01 | `ui7_design_preview_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=false` + `Ui6InspectionRuntime`。固定 12 项能力和 Git CLI / MCP / 网易云音乐的侧栏顺序；目录按 `CapabilityCatalog.search` 的标题顺序显示，首屏七项为「上一首、下一首、两个整数相加、停止播放、刷新播放状态、搜索歌曲、播放歌曲」，选中「两个整数相加」。初始没有调用记录，目标显示「此设备」；音乐会话为「示例歌曲」。 |
+| 02、17、21 | `preview_main.dart --dart-define=PREVIEW_APPEARANCE=light` + `createPreviewRuntime()`。连接标签固定为「示例网易云音乐 / 示例 Git CLI / 示例 MCP」；17 只有一项 Git 状态能力，21 展示一个工具、一个资源和一个提示。02 是音乐连接主页：歌曲为「示例歌曲」，本机输出；搜索结果为两首，第一首可播放、第二首不可播放；`PreviewRuntime` 不提供账号管理端口，因此这里没有账号入口。要复现 17/21 画板的底部播放器，先进入音乐页生成预览会话，再切到目标页；02 本身不显示跨页播放器。 |
 | 03、07–09、13、14、16、19、20、25–27 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true` + `Ui6InspectionRuntime`/`Ui6InspectionHost`；连接标签固定为「示例网易云音乐 / 示例 Git CLI / 示例 MCP」，操作只影响当前进程。03 有三条连接、17 项能力；07、25–27 从连接管理的添加流程进入。08 从「打开预览终端」提交 `git status --short`，只显示内存 stub 输出。09 在工作台选择「演示写入权限确认」、填写备注，停在确认前；弹窗背景就是该工作台状态。14 进入音乐页，在账号面板选择「切换账号」并确认；检查 Runtime 退出内存样例账号后启动一个保持等待的登录 stub，在手机扫码前截图。预览登录 stub 不产生可扫描的链接，也不访问命令、网络或真实账号；画板中的二维码块是等待态占位。16 先进入示例网易云音乐页建立同一 `MusicSession`，回到全部功能目录，将目录滚动到「查看 Git 状态」并运行；成功结果、17 项总数和当前选中项保持不变。目录顺序由 `CapabilityCatalog.search` 按标题排序；画板显示其第 5–11 项（「刷新播放状态」至选中的「查看 Git 状态」），不是按连接分组的人工顺序。要复现 03/09/13/16/19 的底部播放器，先进入示例网易云音乐页生成同一 `MusicSession` 再前往目标页；20 和连接配置画板按无可见音乐会话截图。 |
 | 04 | 使用上述 UI 检查入口并加入 `--dart-define=UI6_SEED_ACTIVITY=true --dart-define=UI6_SEED_ACTIVITY_FILTER_STATES=true`。仅内存生成超时、结果待确认、取消、失败、成功五项；按该顺序选中超时记录。检查 Runtime 为记录提供「查看 Git 状态 / 两个整数相加」显示名和「示例 Git CLI / 示例 MCP」来源名；固定展示时间为 `2026-11-21 12:00:00`。进入示例网易云音乐页生成样例会话，再打开活动页，播放器与活动数据都来自同一检查进程。 |
 | 18 | `ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true`，不启用活动种子。先进入示例网易云音乐连接页生成可见 `MusicSession`，再切到**活动页**。样例没有运行记录；`PageState.empty` 按内容自然宽度布局，图标位于文案上方并从正文 x=280pt 开始，不扩展到整页居中。播放器保持同一会话并由主内容区底部布局定位，侧栏与播放器文本使用「示例网易云音乐 / 示例 Git CLI / 示例 MCP」和「示例歌曲」。此画板展示活动空态与跨页播放器共存，不是新的“播放器介绍页”。生产会话仍以连接端返回的队列为准。 |

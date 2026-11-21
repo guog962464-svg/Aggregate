@@ -254,7 +254,7 @@ def mini_player(p, fixture="preview"):
         p.append(button(left, y + 6, 46, "", icon, primary=icon == "pause", h=46, icon_only=True))
 
 
-def target_status(p, x, y, label="预览运行时"):
+def target_status(p, x, y, label="此设备"):
     p.append(rect(x,y,142,40,"url(#panel)",14,"var(--panelEdge)"))
     p.append(glyph("device",x+12,y+10,18))
     p.append(txt(x+40,y+25,label,12,"var(--ink)",520))
@@ -412,11 +412,20 @@ def workspace_type_filters(p, y=233):
 def screen_workspace():
     # Workspace owns the only visible search field. ⌘K still focuses it from
     # every page, so showing a second toolbar field here would duplicate it.
-    p=shell("所有功能","所有功能","搜索所有连接中的功能。当前使用预览数据。",search=False,mini=True)
+    # This board uses the same 12-item inspection fixture as the Profile review:
+    # Git, MCP, Music connection order and CapabilityCatalog title sorting.
+    p=shell(
+        "所有功能",
+        "所有功能",
+        "从一个地方找到并运行 CLI 与 MCP 功能。",
+        search=False,
+        mini=True,
+        fixture="inspection",
+    )
     p.append(field(280,178,570,"","搜索名称、说明或来源",42,"search"))
     workspace_type_filters(p)
     workspace_directory_header(p)
-    for i,(name,sub,icon) in enumerate((("上一首","CLI · 示例网易云音乐","previous"),("下一首","CLI · 示例网易云音乐","next"),("两个整数相加","MCP 工具 · 示例 MCP","spark"),("停止播放","CLI · 示例网易云音乐","stop"),("搜索歌曲","CLI · 示例网易云音乐","music"),("播放歌曲","CLI · 示例网易云音乐","play"),("播放状态","CLI · 示例网易云音乐","music"))):
+    for i,(name,sub,icon) in enumerate((("上一首","CLI · 示例网易云音乐","previous"),("下一首","CLI · 示例网易云音乐","next"),("两个整数相加","MCP 工具 · 示例 MCP","spark"),("停止播放","CLI · 示例网易云音乐","stop"),("刷新播放状态","CLI · 示例网易云音乐","music"),("搜索歌曲","CLI · 示例网易云音乐","music"),("播放歌曲","CLI · 示例网易云音乐","play"))):
         row(p,280,354+i*60,295,name,sub,icon,i==2, "☆",56)
     p.append(line(596,344,596,776,"var(--line)"))
     p.append(txt(624,353,"两个整数相加",20,"var(--ink)",680))
@@ -428,7 +437,7 @@ def screen_workspace():
     target_status(p,624,547)
     p.append(button(776,544,104,"运行","play",primary=True,h=46))
     p.append(line(624,605,1308,605))
-    heading(p,624,638,"运行结果","最近一次调用 · 预览数据")
+    heading(p,624,638,"运行结果","尚无调用 · 结果仅在本机显示")
     p.append(rect(624,663,684,105,"url(#inset)",12,"var(--insetEdge)"))
     p.append(txt(646,696,"结果会显示在这里",13,"var(--muted)",480))
     p.append(txt(646,722,"结构化输出、复制与文件操作只在结果提供时出现。",11,"var(--muted)",430))
