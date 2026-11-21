@@ -429,6 +429,43 @@ void main() {
     expect(first.hasFocus, isTrue);
   }, variant: _macOS);
 
+  testWidgets('glass action semantics follows its keyboard focus state', (
+    tester,
+  ) async {
+    final focusNode = FocusNode();
+    addTearDown(focusNode.dispose);
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassActionButton(
+              label: '键盘焦点按钮',
+              glyph: GlassGlyph.search,
+              focusNode: focusNode,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final button = find.bySemanticsLabel('键盘焦点按钮');
+    var data = tester.getSemantics(button).getSemanticsData();
+    expect(data.flagsCollection.isFocused, ui.Tristate.isFalse);
+
+    focusNode.requestFocus();
+    await tester.pump();
+    data = tester.getSemantics(button).getSemanticsData();
+    expect(data.flagsCollection.isFocused, ui.Tristate.isTrue);
+
+    focusNode.unfocus();
+    await tester.pump();
+    data = tester.getSemantics(button).getSemanticsData();
+    expect(data.flagsCollection.isFocused, ui.Tristate.isFalse);
+    semantics.dispose();
+  }, variant: _macOS);
+
   testWidgets('busy and disabled states suppress the operation', (
     tester,
   ) async {

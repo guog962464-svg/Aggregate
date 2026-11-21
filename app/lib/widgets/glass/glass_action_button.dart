@@ -436,14 +436,8 @@ class _GlassActionButtonState extends State<GlassActionButton> {
       ),
     );
 
-    return Semantics(
-      label: name,
-      button: true,
-      enabled: _enabled,
-      selected: widget.selected,
-      value: widget.busy ? widget.busyLabel ?? '正在处理' : null,
-      liveRegion: widget.busy,
-      onTap: _enabled ? _handlePressed : null,
+    return ValueListenableBuilder<Set<WidgetState>>(
+      valueListenable: _statesController,
       child: ExcludeSemantics(
         child: NotificationListener<ScrollMetricsNotification>(
           onNotification: (_) {
@@ -479,6 +473,18 @@ class _GlassActionButtonState extends State<GlassActionButton> {
             ),
           ),
         ),
+      ),
+      builder: (context, states, child) => Semantics(
+        label: name,
+        button: true,
+        enabled: _enabled,
+        focusable: _enabled,
+        focused: _enabled && states.contains(WidgetState.focused),
+        selected: widget.selected,
+        value: widget.busy ? widget.busyLabel ?? '正在处理' : null,
+        liveRegion: widget.busy,
+        onTap: _enabled ? _handlePressed : null,
+        child: child,
       ),
     );
   }
