@@ -1616,7 +1616,15 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 ### 2026-11-21 UI-8.0 v8.2 设计预览同源规则
 
 - 原因：同尺寸并排检查显示 01 SVG 与真实 Flutter Profile 页面虽然内容接近，但玻璃表面、按钮厚度、阴影、字重和光效仍有明显差异；另外，17 连接首页曾误用含 17 项能力的 UI 检查 fixture 与只有 1 项能力的标准预览画板比较，该截图无效。
-- 修订：设计稿升为 v8.2。27 张 SVG 继续定义功能、文案、版式和状态；最终材质与字体预览改为 macOS Flutter Profile 实窗。设计预览入口复用 `AggregateApp` 和生产页面，仅接入确定性的内存 Runtime。逐屏实施前锁定 fixture、主题、选中项、滚动位置和迷你播放器状态；错配截图作废。17 画板明确使用 `preview_main.dart` + `PreviewRuntime`。
+- 修订：设计稿升为 v8.2。27 张 SVG 继续定义功能、文案、版式和状态；最终材质与字体预览改为 macOS Flutter Profile 实窗。设计预览入口复用 `AggregateApp` 和生产页面，仅接入确定性的内存 Runtime。逐屏实施前锁定 fixture、主题、选中项、滚动位置和迷你播放器状态；错配截图作废。发现标准 `PreviewRuntime` 显示“预览运行时”，与 17/21 的“此设备”设计文案不同，因此 17/21 改用 `Ui6InspectionRuntime` 的 Git/MCP 范围 fixture，并保留同一进程中的示例音乐会话。
 - 自验：检查 01 设计与实窗的 1360×900 对照；复核 `design-draft-v8.md`、27 张画板目录、功能覆盖矩阵和 UI-8.2 阶段状态之间的版本引用；`git diff --check -- docs/macos-glass-ui` 通过。仅更新设计流程文档，未运行产品测试或构建。
-- 证据：[01 几何/文案画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-design-v81/01-workspace.png>) 与[01 Flutter Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-v8-profile/01-workspace-profile-v8-1360.png>)。无效的 17 截图已删除；在正确标准 PreviewRuntime 下重新捕获 17 的 Profile 图后再记录。
+- 证据：[01 几何/文案画板](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-design-v81/01-workspace.png>) 与[01 Flutter Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui82-v8-profile/01-workspace-profile-v8-1360.png>)。原错误 fixture 的 17 截图已删除；新范围 fixture 的 Profile 图待复核后归档。
 - 结果/边界：v8.2 解决了“把 SVG 静态材质当成最终预览”的流程错误；它没有声称 SVG 与 Flutter 像素相同，也不代表 UI-8.2 产品界面已验收。所有主题切换与太阳/月亮内部逻辑保持冻结。
+
+### 2026-11-21 UI-9.0 全功能设计重做
+
+- 原因：用户指出目前成品和之前展示的设计预览仍有显著差异，并要求先按全部功能重做设计稿、再依照设计稿实施。旧稿的连接项、导航和活动行大量使用相同凸起卡片，操作图案比例过小；主操作仅叠加一条短金线，和用户认可的主题开关玻璃质感连接不够。
+- 设计：新增 [v9.0 全功能设计稿](design-draft-v9.md)、27 张 SVG 画板、[功能覆盖矩阵](design-draft-v9/feature-coverage.md)与生成器。明确“先审设计、再改生产页”；采用主题开关所在的雾银连续背景、乳白玻璃体、石墨点阵、琥珀弧光；普通导航及内容行回到平面层级，选中项用浅玻璃落面和细暖边；运行、刷新、搜索点阵重绘为右向三角、带方向折口的圆环及完整镜片柄。设置 05/06/15/22 保持同一纵向页面，主题控件逻辑冻结。
+- 自验：生成器执行成功；当前 27/27 SVG 通过 XML 解析且 `viewBox=0 0 1360 900`；`sips` 将全部 27 张渲染为 PNG。对照检查全部页面与关键状态，重点复核 01/03/04/05/10/11/12/17/18/21；修正连接选择、活动记录选中样式与状态画板重复卡片。`git diff --check -- docs/macos-glass-ui` 通过。此阶段只更新设计材料，没有改生产界面或运行产品测试/构建。
+- 视觉证据：本轮设计源在 [v9 画板目录](design-draft-v9/README.md)；[01 工作台 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/01-workspace.png>) SHA-256 `618c48a4ab521a90ae25ae1ad39125b1f692524648715bc7cd315bc5ffcb8f73`；[05 外观 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/05-settings-appearance.png>) SHA-256 `1b4d66b9bbc7178d9327ae81e6a4cdb214c6d36ac19e99948c683b274da68eb6`；[11 按钮状态 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/11-button-motion.png>) SHA-256 `77c7a449b0ec5e1dbed21bc189906935f81d13285bc54aa25e6d8bc4c9c63c0e`；[12 深色 PNG](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v90/12-dark-reference.png>) SHA-256 `e9683edd0f005922be281c43de0f822650da9f317332270570f0dec321f6ee6b`。其余重点样张 03/04/10/17/18/21 同目录归档。
+- 结果/边界：UI-9.0 设计阶段完成；下一步从 UI-9.1 开始实现并按相同状态逐屏 Profile 对照。没有宣称当前生产界面已符合新稿；所有真实业务逻辑以及明暗开关的实时拖动、日月变化、光效和节奏保持冻结。
