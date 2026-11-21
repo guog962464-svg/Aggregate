@@ -1645,6 +1645,14 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 视觉证据：[17 CLI 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v901/17-connection-home.png>) SHA-256 `d76ee22b62e1fc90e837f594198e23fac3d4be44ebcbe02694381bafedc495e7`；[21 MCP 首页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v901/21-mcp-home.png>) SHA-256 `fbd2321a9c292f3a61cf29779294de334e0f1f88bd338a5f12ccb514cfd95550`。
 - 结果/边界：连接首页的预期状态与 UI9.2 安全 Runtime fixture 现在一致；产品页面与设计稿的其余视觉验收仍在进行。
 
+### 2026-11-21 UI-9.0.2 音乐账号入口画板校准
+
+- 原因：UI9.3 的 Profile 首屏对照发现，实窗把账号动作放在页面页眉，而 v9.0.1 的 02 画板只展示了 14 的弹窗、没有展示可发现的入口；14 的底图已经将入口放在播放器信息区。画板与实现因此描述了两条不同路径。
+- 修订：先更新 v9 设计基准，再继续实现。02 与 14 统一在播放器“播放信息”下方、紧邻“刷新状态”放置稳定名称“音乐账号”；账号能力不存在时隐藏入口，具体账号状态仍在弹窗中显示。更新生成器、设计说明和功能覆盖矩阵，编号升为 v9.0.2。
+- 自验：设计生成器执行成功；27 张 SVG 均可解析且画布为 1360×900；新版 02 导出并目视检查，音乐账号入口与刷新动作在同一行且留有间距；`git diff --check` 通过。此次仅校准设计材料，没有改生产代码或运行产品测试/构建。
+- 视觉证据：[v9.0.2 02 音乐页](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-design-v902/02-music-account-entry.png>) SHA-256 `8077e9548052c0d80b33e3be8ccdc4a68f6de4198fd564df8889163fd439ba25`；[调整前 Profile 实窗](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui93/02-before-account-entry-profile-light.png>) SHA-256 `ebcce5698e5213d789e9c253aafab39053882d100e90d54186d5c0af85034230`。
+- 结果/边界：先把账号入口补进设计稿，之后 UI9.3 再将实窗动作移到同一位置并复核 02/14/18；不改变登录、扫码、取消、刷新或会话逻辑。
+
 ### 2026-11-21 UI-9.2 工作台、连接首页、运行与结果
 
 - 基准：v9.0.1 全功能画板及固定的 1360×900pt Profile 预览；主题切换控件逻辑保持冻结。工作台使用 12 项标准 UI 检查 fixture；17/21 使用 Git/MCP 范围 fixture 和同一内存音乐会话；终端、权限和结果状态使用安全检查 Runtime，不访问本机命令或网络。

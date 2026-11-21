@@ -1043,6 +1043,7 @@ def screen_music():
     for i,ico in enumerate(("previous","pause","next","stop")): p.append(button(314+i*78,432,64,"",ico,primary=(ico=="pause"),h=58,icon_only=True))
     p.append(txt(310,534,"播放信息",11,"var(--muted)",500)); p.append(txt(310,558,"示例网易云音乐 · 声音由此设备输出",12,"var(--ink)",470))
     small_button(p,310,612,"刷新状态","refresh",w=132)
+    small_button(p,454,612,"音乐账号","connection",w=132)
     heading(p,786,220,"找音乐","搜索歌曲并查看结果")
     p.append(field(786,245,522,"","搜索歌曲",44,"search")); small_button(p,1174,299,"搜索","search",primary=True,w=134)
     p.append(txt(786,360,"歌曲 · 2 首",12,"var(--ink)",560))
