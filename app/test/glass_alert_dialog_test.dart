@@ -54,6 +54,13 @@ void main() {
 
     expect(find.byType(GlassPanelSurface), findsOneWidget);
     expect(find.text('确认操作'), findsOneWidget);
+    final panel = tester.getRect(find.byType(GlassPanelSurface));
+    final title = tester.getRect(find.text('确认操作'));
+    expect(title.left - panel.left, moreOrLessEquals(30, epsilon: 1));
+    expect(
+      tester.widget<Dialog>(find.byType(Dialog)).alignment,
+      Alignment.center,
+    );
     final barrier = tester.widgetList<ModalBarrier>(find.byType(ModalBarrier));
     expect(barrier.any((item) => item.color != null), isTrue);
 

@@ -10,12 +10,15 @@ import '../../app/shortcut_scheme.dart';
 import '../../widgets/capability_row.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/glass/glass_motion.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/page_state.dart';
 import '../invocation/capability_run_page.dart';
 import '../music/music_session.dart';
+
+enum _WorkspaceDirectoryScope { recent, favorites, all }
 
 class WorkspacePage extends StatefulWidget {
   const WorkspacePage({
@@ -54,6 +57,7 @@ class WorkspacePageState extends State<WorkspacePage> {
   int generation = 0;
   String? selectedCapabilityKey;
   Capability? _selectedCapability;
+  _WorkspaceDirectoryScope _directoryScope = _WorkspaceDirectoryScope.all;
 
   bool _usesGlassButtons(BuildContext context) =>
       defaultTargetPlatform == TargetPlatform.macOS &&
@@ -390,7 +394,7 @@ class WorkspacePageState extends State<WorkspacePage> {
   }
 
   Widget _buildMacDesktop(BuildContext context, BoxConstraints constraints) {
-    final width = math.min(1080.0, constraints.maxWidth - 110);
+    final width = math.min(1080.0, constraints.maxWidth - 88);
     final sourceLabels = {
       for (final connection in connections)
         connection.id.value: connection.label,
@@ -400,28 +404,33 @@ class WorkspacePageState extends State<WorkspacePage> {
         .where((item) => widget.favoriteKeys.contains(item.id.key))
         .toList();
     final recentCapabilities = <Capability>[];
-    if (search.text.isEmpty && filter == null && capabilities != null) {
+    if (capabilities != null) {
       final seen = <String>{};
       for (final run in recent) {
         if (!seen.add(run.capability.key)) continue;
-        for (final capability in capabilities!) {
+        for (final capability in visible) {
           if (capability.id.key == run.capability.key) {
             recentCapabilities.add(capability);
           }
         }
-        if (recentCapabilities.length >= 3) break;
+        if (recentCapabilities.length >= 20) break;
       }
     }
-    final directoryWidth = math.min(360.0, math.max(220.0, width * .34));
+    final directoryCapabilities = switch (_directoryScope) {
+      _WorkspaceDirectoryScope.recent => recentCapabilities,
+      _WorkspaceDirectoryScope.favorites => favorites,
+      _WorkspaceDirectoryScope.all => visible,
+    };
+    final directoryWidth = math.min(296.0, math.max(240.0, width * .287));
     final selected = selectedCapability;
 
     return Align(
       alignment: Alignment.topLeft,
       child: SizedBox(
-        width: width + 110,
+        width: constraints.maxWidth,
         height: constraints.maxHeight,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(59, 32, 51, 24),
+          padding: const EdgeInsets.fromLTRB(40, 32, 52, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -439,7 +448,7 @@ class WorkspacePageState extends State<WorkspacePage> {
               ),
               const SizedBox(height: 20),
               SizedBox(
-                width: math.min(600.0, width - 60),
+                width: math.min(570.0, width - 60),
                 height: 42,
                 child: _desktopSearch(context),
               ),
@@ -461,7 +470,7 @@ class WorkspacePageState extends State<WorkspacePage> {
                   _filterChip('提示', CapabilityKind.mcpPrompt),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 19),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -483,29 +492,51 @@ class WorkspacePageState extends State<WorkspacePage> {
                               Text(
                                 capabilities == null
                                     ? '…'
-                                    : '${visible.length} 项',
+                                    : '${directoryCapabilities.length} 项',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              _directoryScopeButton(
+                                '最近使用',
+                                _WorkspaceDirectoryScope.recent,
+                                Icons.history,
+                              ),
+                              _directoryScopeButton(
+                                '收藏',
+                                _WorkspaceDirectoryScope.favorites,
+                                Icons.star_border_rounded,
+                              ),
+                              _directoryScopeButton(
+                                '全部',
+                                _WorkspaceDirectoryScope.all,
+                                Icons.grid_view_outlined,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 13),
                           Expanded(
                             child: _desktopCatalog(
                               context,
-                              visible: visible,
-                              favorites: favorites,
-                              recentCapabilities: recentCapabilities,
+                              visible: directoryCapabilities,
                               sourceLabels: sourceLabels,
+                              emptyScope: _directoryScope,
                             ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 20),
                     const VerticalDivider(
                       key: Key('workspace-capability-directory-divider'),
                       width: 1,
                     ),
-                    const SizedBox(width: 46),
+                    const SizedBox(width: 26),
                     Expanded(
                       child: KeyedSubtree(
                         key: const Key('workspace-capability-details'),
@@ -530,7 +561,7 @@ class WorkspacePageState extends State<WorkspacePage> {
                                   widget.onRunSettled?.call();
                                 },
                                 embedded: true,
-                                embeddedContentInset: width >= 900 ? 27 : 0,
+                                embeddedTopInset: width >= 900 ? 56 : 0,
                               ),
                       ),
                     ),
@@ -557,30 +588,37 @@ class WorkspacePageState extends State<WorkspacePage> {
       controller: search,
       focusNode: searchFocus,
       autofocus: widget.autofocusSearch,
-      style: Theme.of(context).textTheme.titleMedium,
+      style: Theme.of(context).textTheme.bodyMedium
+          ?.copyWith(fontSize: 13, fontWeight: FontWeight.w400),
       decoration: InputDecoration(
         hintText: '搜索名称、说明或来源',
+        hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          color:
+              Theme.of(context).extension<GlassDesignTokens>()?.muted ??
+              Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 10,
         ),
+        prefixIconConstraints: const BoxConstraints.tightFor(
+          width: 38,
+          height: 42,
+        ),
         prefixIcon: SizedBox(
-          width: 48,
+          width: 38,
           child: Center(
-            child: GlassGlyphMark(glyph: GlassGlyph.search, size: 16),
+            child: Transform.translate(
+              offset: const Offset(2, 0),
+              child: GlassGlyphMark(glyph: GlassGlyph.search, size: 16),
+            ),
           ),
         ),
         suffixIcon: search.text.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Center(
-                  widthFactor: 1,
-                  child: Text(
-                    ShortcutScheme(defaultTargetPlatform).searchLabel,
-                  ),
-                ),
-              )
+            ? null
             : AggregateIconButton(
                 tooltip: '清除搜索',
                 icon: Icons.close,
@@ -603,9 +641,8 @@ class WorkspacePageState extends State<WorkspacePage> {
   Widget _desktopCatalog(
     BuildContext context, {
     required List<Capability> visible,
-    required List<Capability> favorites,
-    required List<Capability> recentCapabilities,
     required Map<String, String> sourceLabels,
+    required _WorkspaceDirectoryScope emptyScope,
   }) {
     if (error != null) {
       return PageState.error('加载功能失败：$error', onRetry: reloadCatalog);
@@ -644,110 +681,81 @@ class WorkspacePageState extends State<WorkspacePage> {
       );
     }
     if (visible.isEmpty) {
+      final emptyMessage = switch (emptyScope) {
+        _WorkspaceDirectoryScope.recent => '还没有最近使用的功能。',
+        _WorkspaceDirectoryScope.favorites => '还没有收藏的功能。',
+        _WorkspaceDirectoryScope.all =>
+          search.text.isEmpty ? '当前筛选下没有可用功能。' : '没有找到“${search.text}”对应的功能。',
+      };
+      final isScopedEmpty = emptyScope != _WorkspaceDirectoryScope.all;
       return PageState.empty(
-        search.text.isEmpty ? '当前筛选下没有可用功能。' : '没有找到“${search.text}”对应的功能。',
+        emptyMessage,
         actions: [
           AggregateActionButton(
-            label: '清除筛选',
-            icon: Icons.close,
+            label: isScopedEmpty ? '查看全部' : '清除筛选',
+            icon: isScopedEmpty ? Icons.grid_view_outlined : Icons.close,
             style: AggregateActionStyle.quiet,
             onPressed: () {
-              search.clear();
-              setState(() => filter = null);
-              reloadCatalog();
+              if (isScopedEmpty) {
+                setState(() => _directoryScope = _WorkspaceDirectoryScope.all);
+              } else {
+                search.clear();
+                setState(() => filter = null);
+                reloadCatalog();
+              }
             },
           ),
         ],
       );
     }
 
-    final includeGroups = search.text.isEmpty && filter == null;
     return CustomScrollView(
       key: const Key('workspace-capability-directory'),
       slivers: [
-        if (includeGroups && favorites.isNotEmpty)
-          ..._capabilitySlivers(context, '收藏的功能', favorites, sourceLabels),
-        if (recentCapabilities.isNotEmpty)
-          ..._capabilitySlivers(
-            context,
-            '最近使用',
-            recentCapabilities,
-            sourceLabels,
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 18),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final capability = visible[index];
+              return Padding(
+                key: ValueKey('workspace-capability-${capability.id.key}'),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: CapabilityRow(
+                  capability: capability,
+                  source:
+                      sourceLabels[capability.id.connection.value] ?? '未知来源',
+                  compactDirectory: true,
+                  directorySubtitle: _workspaceDirectorySubtitle(
+                    capability,
+                    sourceLabels,
+                  ),
+                  selected: selectedCapabilityKey == capability.id.key,
+                  onOpen: () => _openCapability(capability, embedded: true),
+                  isFavorite: widget.favoriteKeys.contains(capability.id.key),
+                  onFavoriteChanged: (value) =>
+                      widget.onFavoriteChanged(capability, value),
+                ),
+              );
+            }, childCount: visible.length),
           ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8, top: 2),
-            child: Text(
-              '全部功能 · ${visible.length}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final capability = visible[index];
-            return Padding(
-              key: ValueKey('workspace-capability-${capability.id.key}'),
-              padding: const EdgeInsets.only(bottom: 9),
-              child: CapabilityRow(
-                capability: capability,
-                source: sourceLabels[capability.id.connection.value] ?? '未知来源',
-                compactDirectory: true,
-                selected: selectedCapabilityKey == capability.id.key,
-                onOpen: () => _openCapability(capability, embedded: true),
-                isFavorite: widget.favoriteKeys.contains(capability.id.key),
-                onFavoriteChanged: (value) =>
-                    widget.onFavoriteChanged(capability, value),
-              ),
-            );
-          }, childCount: visible.length),
         ),
       ],
     );
   }
 
-  List<Widget> _capabilitySlivers(
-    BuildContext context,
-    String title,
-    List<Capability> items,
-    Map<String, String> sourceLabels,
-  ) => [
-    SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8, top: 2),
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    ),
-    SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        final capability = items[index];
-        return Padding(
-          key: ValueKey('workspace-${title.hashCode}-${capability.id.key}'),
-          padding: const EdgeInsets.only(bottom: 9),
-          child: CapabilityRow(
-            capability: capability,
-            source: sourceLabels[capability.id.connection.value] ?? '未知来源',
-            compactDirectory: true,
-            selected: selectedCapabilityKey == capability.id.key,
-            onOpen: () => _openCapability(capability, embedded: true),
-            isFavorite: widget.favoriteKeys.contains(capability.id.key),
-            onFavoriteChanged: (value) =>
-                widget.onFavoriteChanged(capability, value),
-          ),
-        );
-      }, childCount: items.length),
-    ),
-    const SliverToBoxAdapter(child: SizedBox(height: 18)),
-  ];
+  Widget _directoryScopeButton(
+    String label,
+    _WorkspaceDirectoryScope scope,
+    IconData icon,
+  ) => GlassActionButton(
+    glyph: GlassGlyphCatalog.fromMaterialIcon(icon),
+    label: label,
+    semanticsLabel: '按目录视图：$label',
+    onPressed: () => setState(() => _directoryScope = scope),
+    selected: _directoryScope == scope,
+    kind: GlassButtonKind.segmented,
+    size: GlassButtonSize.segmented,
+  );
 
   Widget _filterChip(String label, CapabilityKind? kind) {
     final selected = filter == kind;
@@ -776,4 +784,18 @@ class WorkspacePageState extends State<WorkspacePage> {
       onSelected: (_) => setState(() => filter = kind),
     );
   }
+}
+
+String _workspaceDirectorySubtitle(
+  Capability capability,
+  Map<String, String> sourceLabels,
+) {
+  final kind = switch (capability.id.kind) {
+    CapabilityKind.cliCommand || CapabilityKind.cliAction => 'CLI',
+    CapabilityKind.mcpTool => 'MCP 工具',
+    CapabilityKind.mcpResource => '资源',
+    CapabilityKind.mcpPrompt => '提示',
+  };
+  final source = sourceLabels[capability.id.connection.value] ?? '未知来源';
+  return '$kind · $source';
 }

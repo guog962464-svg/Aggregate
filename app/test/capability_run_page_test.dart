@@ -75,7 +75,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(capability.title).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('运行'));
+    await tester.tap(find.byKey(const Key('capability-run')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     runtime.events.add(
@@ -158,7 +158,7 @@ void main() {
         find.descendant(of: dialog, matching: find.text('do-not-display')),
         findsNothing,
       );
-      await tester.tap(find.widgetWithText(FilledButton, '执行'));
+      await tester.tap(find.widgetWithText(FilledButton, '确认执行'));
       await tester.pump(const Duration(milliseconds: 250));
       await tester.pump(const Duration(milliseconds: 250));
       expect(runtime.invocations, 1);
@@ -244,7 +244,29 @@ void main() {
       final field = find.byKey(const Key('field-apiToken'));
       await tester.enterText(field, 'test-token');
       await pressCommandEnter();
-      expect(find.text('确认执行'), findsOneWidget);
+      expect(
+        find.byKey(const Key('execution-confirmation-title')),
+        findsOneWidget,
+      );
+      expect(find.text('检查执行目标与参数后再继续。'), findsOneWidget);
+      expect(
+        find.byKey(const Key('execution-confirmation-row-capability')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('execution-confirmation-row-source')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('execution-confirmation-row-target')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('execution-confirmation-row-permission')),
+        findsOneWidget,
+      );
+      expect(find.text('提交参数（密钥字段已隐藏）'), findsOneWidget);
+      expect(find.text('请确认执行目标与输入内容。外部写入可能无法撤回。'), findsOneWidget);
       expect(runtime.invocations, 0);
       expect(searchCalls, 0);
 
@@ -260,8 +282,11 @@ void main() {
       expect(Focus.of(tester.element(field)).hasFocus, isTrue);
 
       await pressCommandEnter();
-      expect(find.text('确认执行'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, '执行'));
+      expect(
+        find.byKey(const Key('execution-confirmation-title')),
+        findsOneWidget,
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '确认执行'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
       expect(runtime.invocations, 1);
@@ -281,7 +306,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('field-apiToken')), 'test');
     await tester.tap(find.text('运行'));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '执行'));
+    await tester.tap(find.widgetWithText(FilledButton, '确认执行'));
     await tester.pump();
     expect(runtime.invocations, 1);
     runtime.events.add(
@@ -512,7 +537,7 @@ void main() {
         );
         await tester.tap(find.text('运行'));
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(FilledButton, '执行'));
+        await tester.tap(find.widgetWithText(FilledButton, '确认执行'));
         await tester.pump();
         runtime.events.add(
           RunEvent(

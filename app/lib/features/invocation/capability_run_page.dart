@@ -9,6 +9,8 @@ import '../../app/shortcut_scheme.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
 import '../../widgets/glass/glass_alert_dialog.dart';
 import '../../widgets/glass/glass_action_button.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
+import '../../widgets/glass/glass_glyph.dart';
 import '../../widgets/page_frame.dart';
 import '../../widgets/result_panel.dart';
 import '../music/music_mini_player.dart';
@@ -28,6 +30,8 @@ class CapabilityRunPage extends StatefulWidget {
     this.onRunSettled,
     this.embedded = false,
     this.embeddedContentInset = 0,
+    this.embeddedTopInset = 0,
+    this.connectionHome = false,
   });
   final RuntimePort runtime;
   final Capability capability;
@@ -37,6 +41,8 @@ class CapabilityRunPage extends StatefulWidget {
   final VoidCallback? onRunSettled;
   final bool embedded;
   final double embeddedContentInset;
+  final double embeddedTopInset;
+  final bool connectionHome;
   @override
   State<CapabilityRunPage> createState() => _CapabilityRunPageState();
 }
@@ -55,6 +61,17 @@ String _permissionExplanation(PermissionLevel permission) =>
       PermissionLevel.externalWrite => '此功能可能向外部服务写入或提交数据。',
       PermissionLevel.unknown => '此功能的权限级别尚未分类，请先核对来源和参数。',
     };
+
+String _embeddedRunStateLabel(RunState state) => switch (state) {
+  RunState.created || RunState.validating => '准备中',
+  RunState.awaitingPermission => '待授权',
+  RunState.running => '运行中',
+  RunState.succeeded => '成功',
+  RunState.failed => '失败',
+  RunState.cancelled => '已取消',
+  RunState.timedOut => '超时',
+  RunState.outcomeUnknown => '结果待确认',
+};
 
 bool _sensitiveKey(String key) => RegExp(
   r'(password|passwd|secret|token|api.?key|authorization|credential)',
@@ -373,68 +390,186 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
     }
   }
 
+  Widget _confirmationDetailRow(
+    BuildContext context, {
+    required String keyName,
+    required String label,
+    required String value,
+  }) {
+    final tokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+    return Padding(
+      key: ValueKey('execution-confirmation-row-$keyName'),
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 78,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: tokens.muted),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: tokens.text, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<bool> _confirmExecution(
     JsonMap arguments, {
     Capability? capability,
     bool retryingUnknownOutcome = false,
-  }) async =>
-      await showGlassDialog<bool>(
-        context: context,
-        builder: (_) => GlassAlertDialog(
-          title: Text(retryingUnknownOutcome ? '确认重新执行' : '确认执行'),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440, maxHeight: 480),
-            child: SingleChildScrollView(
+  }) async {
+    final confirmedCapability = capability ?? widget.capability;
+    final tokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+    final permission = confirmedCapability.permission;
+    final permissionWarning = retryingUnknownOutcome
+        ? '上一次调用结果仍未知。重复执行可能造成重复写入；请先确认执行端状态。'
+        : permission == PermissionLevel.externalWrite
+        ? '请确认执行目标与输入内容。外部写入可能无法撤回。'
+        : _permissionExplanation(permission);
+    return await showGlassDialog<bool>(
+          context: context,
+          builder: (_) => GlassAlertDialog(
+            title: Text(
+              retryingUnknownOutcome ? '确认重新执行' : '确认执行',
+              key: const Key('execution-confirmation-title'),
+            ),
+            content: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 440,
+                maxHeight: MediaQuery.sizeOf(context).height * .68,
+              ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '功能：${(capability ?? widget.capability).title}\n'
-                    '来源：${sourceLabel ?? widget.capability.id.connection.value}\n'
-                    '执行端：$executionLabel\n'
-                    '权限：${_permissionLabel((capability ?? widget.capability).permission)}',
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Text(
+                      '检查执行目标与参数后再继续。',
+                      key: const Key('execution-confirmation-subtitle'),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: tokens.muted),
+                    ),
                   ),
-                  if (retryingUnknownOutcome) ...[
-                    const SizedBox(height: 12),
-                    const Text('上一次调用结果仍未知。重新执行可能重复外部写入；请先确认执行端状态。'),
-                  ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
+                  _confirmationDetailRow(
+                    context,
+                    keyName: 'capability',
+                    label: '功能',
+                    value: confirmedCapability.title,
+                  ),
+                  _confirmationDetailRow(
+                    context,
+                    keyName: 'source',
+                    label: '来源',
+                    value:
+                        sourceLabel ?? confirmedCapability.id.connection.value,
+                  ),
+                  _confirmationDetailRow(
+                    context,
+                    keyName: 'target',
+                    label: '执行目标',
+                    value: executionLabel,
+                  ),
+                  _confirmationDetailRow(
+                    context,
+                    keyName: 'permission',
+                    label: '权限',
+                    value: _permissionLabel(permission),
+                  ),
+                  const SizedBox(height: 10),
+                  Divider(color: tokens.line.withValues(alpha: .78), height: 1),
+                  const SizedBox(height: 14),
                   const Text('提交参数（密钥字段已隐藏）'),
-                  const SizedBox(height: 6),
-                  SelectableText(
-                    _prettyArguments(
-                      arguments,
-                      (capability ?? widget.capability).inputSchema,
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(minHeight: 82),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: tokens.inset.withValues(alpha: .42),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: tokens.line.withValues(alpha: .76),
+                      ),
                     ),
-                    style: const TextStyle(fontFamily: 'monospace'),
+                    child: SelectableText(
+                      _prettyArguments(
+                        arguments,
+                        confirmedCapability.inputSchema,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.text,
+                        fontFamily: 'monospace',
+                        height: 1.45,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _permissionExplanation(
-                      (capability ?? widget.capability).permission,
-                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        permission == PermissionLevel.read
+                            ? Icons.info_outline_rounded
+                            : Icons.warning_amber_rounded,
+                        size: 16,
+                        color: permission == PermissionLevel.read
+                            ? tokens.muted
+                            : tokens.danger,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          permissionWarning,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: permission == PermissionLevel.read
+                                    ? tokens.muted
+                                    : tokens.danger,
+                                height: 1.35,
+                              ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+            actions: [
+              AggregateActionButton(
+                label: '取消',
+                icon: Icons.close,
+                style: AggregateActionStyle.quiet,
+                onPressed: () => Navigator.pop(context, false),
+              ),
+              AggregateActionButton(
+                label: retryingUnknownOutcome ? '仍然执行' : '确认执行',
+                icon: Icons.play_arrow_rounded,
+                style: AggregateActionStyle.primary,
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ],
+            scrollable: true,
           ),
-          actions: [
-            AggregateActionButton(
-              label: '取消',
-              icon: Icons.close,
-              style: AggregateActionStyle.quiet,
-              onPressed: () => Navigator.pop(context, false),
-            ),
-            AggregateActionButton(
-              label: retryingUnknownOutcome ? '仍然执行' : '执行',
-              icon: Icons.play_arrow_rounded,
-              style: AggregateActionStyle.primary,
-              onPressed: () => Navigator.pop(context, true),
-            ),
-          ],
-        ),
-      ) ??
-      false;
+        ) ??
+        false;
+  }
 
   Future<void> openTerminal() async {
     if (!(form.currentState?.validate() ?? true)) return;
@@ -599,6 +734,35 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
     ),
   );
 
+  String _embeddedStatusCaption() {
+    final source = sourceLabel ?? widget.capability.id.connection.value;
+    if (widget.connectionHome) {
+      return widget.runtime.isPreview
+          ? '预览连接 · 仅内存数据'
+          : '$source · $executionLabel';
+    }
+    final current = state;
+    if (current != null) return '$source · ${_embeddedRunStateLabel(current)}';
+    return '$source · ${_permissionLabel(widget.capability.permission)}';
+  }
+
+  Color _embeddedStatusColor(BuildContext context) {
+    final tokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+    return switch (state) {
+      RunState.created ||
+      RunState.validating ||
+      RunState.awaitingPermission ||
+      RunState.running => tokens.warm,
+      RunState.failed ||
+      RunState.timedOut ||
+      RunState.outcomeUnknown => tokens.danger,
+      RunState.cancelled => tokens.muted,
+      null || RunState.succeeded => tokens.status,
+    };
+  }
+
   Widget _actionControls(
     String action, {
     required bool compact,
@@ -606,6 +770,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
   }) {
     final kind = widget.capability.id.kind;
     final primary = AggregateActionButton(
+      key: const Key('capability-run'),
       style: AggregateActionStyle.primary,
       onPressed: _isActiveRunState(state) ? null : run,
       icon: Icons.play_arrow,
@@ -614,11 +779,14 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
           ? GlassButtonSize.primary
           : GlassButtonSize.secondary,
     );
+    final primaryControl = macDesignPrimary
+        ? SizedBox(width: 104, child: primary)
+        : primary;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        macDesignPrimary ? SizedBox(width: 130, child: primary) : primary,
+        primaryControl,
         if (kind == CapabilityKind.cliCommand &&
             !widget.runtime.isPreview &&
             widget.runtime.features.terminal)
@@ -636,6 +804,77 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
             label: '取消',
           ),
       ],
+    );
+  }
+
+  Widget _executionTargetLabel(BuildContext context) {
+    final tokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+    return Semantics(
+      label: '运行位置：$executionLabel',
+      child: Container(
+        key: const Key('execution-target-label'),
+        width: 142,
+        height: GlassDesignTokens.secondaryHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              tokens.glassTop.withValues(alpha: .78),
+              tokens.glassBottom.withValues(alpha: .72),
+            ],
+          ),
+          border: Border.all(color: tokens.highlight.withValues(alpha: .78)),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: tokens.shadow.withValues(alpha: .28),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            GlassGlyphMark(
+              glyph: GlassGlyph.device,
+              size: 18,
+              color: tokens.ink,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                executionLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: tokens.text, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _macInsetDecoration(BuildContext context) {
+    final tokens =
+        Theme.of(context).extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          tokens.inset.withValues(alpha: .62),
+          tokens.raised.withValues(alpha: .46),
+        ],
+      ),
+      border: Border.all(color: tokens.line.withValues(alpha: .66)),
+      borderRadius: BorderRadius.circular(12),
     );
   }
 
@@ -664,6 +903,7 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
         macEmbedded &&
         widget.capability.id.kind == CapabilityKind.mcpTool &&
         widget.capability.permission == PermissionLevel.read;
+    final macConnectionHome = macEmbedded && widget.connectionHome;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final kind = widget.capability.id.kind;
     final action = kind == CapabilityKind.mcpResource
@@ -723,7 +963,9 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
           autofocus: true,
           child: PageFrame(
             title: widget.capability.title,
-            contentPadding: macEmbedded ? EdgeInsets.zero : null,
+            contentPadding: macEmbedded
+                ? EdgeInsets.only(top: widget.embeddedTopInset)
+                : null,
             headerContentPadding: macEmbedded
                 ? EdgeInsets.only(left: widget.embeddedContentInset)
                 : EdgeInsets.zero,
@@ -731,18 +973,32 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                 ? Theme.of(context).textTheme.titleMedium
                 : null,
             headerSpacing: macEmbedded ? 0 : 24,
-            subtitle: compactReadOnlyTool
-                ? '填写参数，然后运行工具。'
+            fillWidth: macEmbedded,
+            subtitle: macEmbedded
+                ? _embeddedStatusCaption()
                 : '${widget.capability.description} · ${sourceLabel ?? widget.capability.id.connection.value}'
                       '${widget.runtime.isPreview ? ' · 预览数据' : ''}',
+            subtitleStyle: macEmbedded
+                ? Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _embeddedStatusColor(context),
+                    fontWeight: FontWeight.w500,
+                  )
+                : null,
             children: [
-              if (!compactReadOnlyTool) ...[
+              if (macEmbedded) ...[
                 Padding(
-                  padding: EdgeInsets.only(
-                    left: macEmbedded ? widget.embeddedContentInset : 0,
+                  padding: EdgeInsets.only(left: widget.embeddedContentInset),
+                  child: Text(
+                    macConnectionHome
+                        ? '连接参数与结果只显示实际提供的内容。'
+                        : widget.capability.description,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  child: _executionContext(),
                 ),
+                const SizedBox(height: 20),
+              ],
+              if (!macEmbedded) ...[
+                _executionContext(),
                 const SizedBox(height: 20),
               ],
               if (widget.capability.presentation?.startsWith('music.') ==
@@ -758,12 +1014,40 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
               ],
               LayoutBuilder(
                 builder: (context, constraints) {
+                  final rawProperties =
+                      widget.capability.inputSchema['properties'];
+                  final hasInputFields =
+                      rawProperties is Map && rawProperties.isNotEmpty;
+                  final inputFieldCount = rawProperties is Map
+                      ? rawProperties.length
+                      : 0;
+                  final inputFieldCaption = switch (inputFieldCount) {
+                    1 => '一个字段会在执行前检查',
+                    2 => '两个字段都会在执行前检查',
+                    _ => '$inputFieldCount 个字段都会在执行前检查',
+                  };
                   final formPane = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (compactReadOnlyTool)
-                        const SizedBox(height: 40)
-                      else ...[
+                      if (macEmbedded) ...[
+                        Text(
+                          hasInputFields ? '参数' : '运行',
+                          key: Key(
+                            'capability-section-${hasInputFields ? 'parameters' : 'run'}',
+                          ),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          hasInputFields
+                              ? macConnectionHome
+                                    ? '来自当前工具输入 schema'
+                                    : inputFieldCaption
+                              : '此能力无需输入参数',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        SizedBox(height: macConnectionHome ? 30 : 17),
+                      ] else ...[
                         Text(
                           '参数',
                           style: Theme.of(context).textTheme.titleMedium,
@@ -772,55 +1056,65 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                       ],
                       AbsorbPointer(
                         absorbing: _isActiveRunState(state),
-                        child: SchemaForm(
-                          key: form,
-                          schema: widget.capability.inputSchema,
-                          columnsWhenWide:
-                              widget.embedded &&
-                              defaultTargetPlatform == TargetPlatform.macOS,
-                          labelsOutside:
-                              widget.embedded &&
-                              defaultTargetPlatform == TargetPlatform.macOS,
-                          markRequired: !compactReadOnlyTool,
-                        ),
+                        child: hasInputFields || !macEmbedded
+                            ? SchemaForm(
+                                key: form,
+                                schema: widget.capability.inputSchema,
+                                columnsWhenWide:
+                                    widget.embedded &&
+                                    defaultTargetPlatform ==
+                                        TargetPlatform.macOS,
+                                labelsOutside:
+                                    widget.embedded &&
+                                    defaultTargetPlatform ==
+                                        TargetPlatform.macOS,
+                                glassFields: macEmbedded,
+                                markRequired: !compactReadOnlyTool,
+                              )
+                            : const SizedBox.shrink(),
                       ),
-                      if (!compactPhone) ...[
-                        const SizedBox(height: 8),
-                        if (compactReadOnlyTool)
-                          Row(
+                      if (macConnectionHome &&
+                          !hasInputFields &&
+                          (kind == CapabilityKind.cliAction ||
+                              kind == CapabilityKind.cliCommand)) ...[
+                        Container(
+                          key: const Key('connection-command-description'),
+                          height: 46,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: _macInsetDecoration(context),
+                          child: Row(
                             children: [
+                              GlassGlyphMark(
+                                glyph: GlassGlyph.terminal,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  widget.runtime.isPreview
-                                      ? '只读 · 预览数据'
-                                      : '只读 · 当前连接',
+                                  widget.capability.description,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ),
-                              _actionControls(
-                                action,
-                                compact: false,
-                                macDesignPrimary: true,
-                              ),
-                              const SizedBox(width: 13),
-                              Text(
-                                ShortcutScheme(defaultTargetPlatform).runLabel,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
                             ],
-                          )
-                        else if (macEmbedded)
+                          ),
+                        ),
+                      ],
+                      if (!compactPhone) ...[
+                        const SizedBox(height: 8),
+                        if (macEmbedded)
                           Align(
-                            alignment: Alignment.centerRight,
+                            alignment: Alignment.centerLeft,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _actionControls(action, compact: false),
-                                const SizedBox(width: 12),
-                                Text(
-                                  ShortcutScheme(defaultTargetPlatform)
-                                      .runLabel,
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                _executionTargetLabel(context),
+                                const SizedBox(width: 10),
+                                _actionControls(
+                                  action,
+                                  compact: false,
+                                  macDesignPrimary: true,
                                 ),
                               ],
                             ),
@@ -862,6 +1156,9 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                               onCheckActivity: _checkActivityStatus,
                               activityCheckInProgress: checkingActivity,
                               compactMacOS: macEmbedded,
+                              recentResults: macConnectionHome,
+                              workspaceResults:
+                                  macEmbedded && !macConnectionHome,
                             ),
                           ],
                         )
@@ -945,7 +1242,13 @@ class _CapabilityRunPageState extends State<CapabilityRunPage> {
                           ),
                           child: formPane,
                         ),
-                        SizedBox(height: macEmbedded ? 34 : 28),
+                        SizedBox(
+                          height: macConnectionHome
+                              ? 12
+                              : macEmbedded
+                              ? 8
+                              : 28,
+                        ),
                         resultPane,
                       ],
                     );

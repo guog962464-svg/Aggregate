@@ -3,11 +3,146 @@ import 'dart:async';
 import 'package:aggregate/features/invocation/terminal_page.dart';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:terminal_view/terminal_view.dart';
 
+import 'package:aggregate/widgets/glass/glass_action_button.dart';
+import 'package:aggregate/widgets/glass/glass_motion.dart';
+
 void main() {
+  testWidgets('macOS terminal frame follows the v8 board dimensions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    try {
+      final runtime = _TerminalRuntime();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(useMaterial3: true),
+          home: GlassMotionScope(
+            clock: ManualGlassMotionClock(),
+            child: TerminalPage(
+              runtime: runtime,
+              command: const CliCommand(ConnectionId('test'), [
+                'git',
+                'status',
+                '--short',
+              ]),
+              source: '示例 Git CLI',
+              executionTarget: '此设备',
+              permission: PermissionLevel.read,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final terminal = tester.getRect(
+        find.byKey(const Key('terminal-surface')),
+      );
+      expect(terminal.left, 32);
+      expect(terminal.top, closeTo(141, 1));
+      expect(terminal.width, 1296);
+      expect(terminal.height, 508);
+      final surface = tester.widget<Container>(
+        find.byKey(const Key('terminal-surface')),
+      );
+      final surfaceDecoration = surface.decoration! as BoxDecoration;
+      expect(surfaceDecoration.color, const Color(0xFF17181C));
+      expect(surfaceDecoration.borderRadius, BorderRadius.circular(15));
+      expect(surfaceDecoration.border?.top.color, const Color(0xFF555660));
+      expect(surfaceDecoration.boxShadow, isNull);
+      expect(tester.getRect(find.text('终端')).left, 48);
+      expect(tester.widget<Text>(find.text('终端')).style?.fontSize, 19);
+      expect(
+        tester.widget<Text>(find.textContaining('示例 Git CLI')).style?.fontSize,
+        12,
+      );
+      expect(
+        tester
+            .widget<Text>(find.text('执行端：本机 Mac · 权限：读取连接 · 交互会话'))
+            .style
+            ?.fontSize,
+        10,
+      );
+      expect(
+        tester.getRect(find.byTooltip('中断程序')),
+        const Rect.fromLTWH(1270, 35, 42, 42),
+      );
+
+      final terminalView = tester.widget<TerminalView>(
+        find.byType(TerminalView),
+      );
+      expect(terminalView.textStyle.height, closeTo(27 / 13, .001));
+      expect(terminalView.backgroundOpacity, 0);
+      void expectToolbarButton(String key, double left, double width) {
+        final rect = tester.getRect(find.byKey(Key(key)));
+        expect(rect.left, closeTo(left, 1));
+        expect(rect.top, closeTo(675, 1));
+        expect(rect.width, closeTo(width, 1));
+        expect(rect.height, closeTo(40, 1));
+      }
+
+      expectToolbarButton('terminal-control-ctrl', 32, 64);
+      expectToolbarButton('terminal-key-escape', 106, 64);
+      expectToolbarButton('terminal-key-tab', 180, 64);
+      expectToolbarButton('terminal-key-arrowUp', 254, 52);
+      expectToolbarButton('terminal-key-arrowDown', 316, 52);
+      expectToolbarButton('terminal-key-arrowLeft', 378, 52);
+      expectToolbarButton('terminal-key-arrowRight', 440, 52);
+      expectToolbarButton('terminal-copy', 502, 90);
+      expectToolbarButton('terminal-paste', 602, 90);
+      for (final key in [
+        'terminal-key-escape',
+        'terminal-key-tab',
+        'terminal-key-arrowUp',
+        'terminal-key-arrowDown',
+        'terminal-key-arrowLeft',
+        'terminal-key-arrowRight',
+      ]) {
+        final action = tester.widget<GlassActionButton>(
+          find.descendant(
+            of: find.byKey(Key(key)),
+            matching: find.byType(GlassActionButton),
+          ),
+        );
+        expect(action.leading, isA<SizedBox>(), reason: key);
+      }
+      for (final (label, left) in [
+        ('Esc', 122.0),
+        ('Tab', 196.0),
+        ('↑', 270.0),
+        ('↓', 332.0),
+        ('←', 394.0),
+        ('→', 456.0),
+        ('复制', 518.0),
+        ('粘贴', 618.0),
+      ]) {
+        expect(
+          tester.getRect(find.text(label)).left,
+          closeTo(left, 1),
+          reason: label,
+        );
+        expect(tester.widget<Text>(find.text(label)).style?.fontSize, 13);
+      }
+      expect(find.text('执行端：本机 Mac · 权限：读取连接 · 交互会话'), findsOneWidget);
+      expect(find.textContaining(r'$ git status --short'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
   testWidgets('mobile toolbar sends terminal keys and Ctrl input', (
     tester,
   ) async {

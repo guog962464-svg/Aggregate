@@ -5,6 +5,7 @@ import 'package:aggregate/preview/preview_runtime_factory.dart';
 import 'package:aggregate/preview/ui6_inspection_runtime.dart';
 import 'package:aggregate/widgets/glass/glass_motion.dart';
 import 'package:aggregate/widgets/glass/glass_action_button.dart';
+import 'package:aggregate/widgets/glass/glass_glyph.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -31,6 +32,47 @@ Widget _workspace(
 );
 
 void main() {
+  testWidgets('workspace search uses the v8 inline-search treatment', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    try {
+      await tester.pumpWidget(
+        _workspace(Ui6InspectionRuntime(), onAddConnection: (_) {}),
+      );
+      await tester.pumpAndSettle();
+
+      final search = tester.widget<TextField>(
+        find.byKey(const Key('global-search')),
+      );
+      expect(search.decoration?.hintText, '搜索名称、说明或来源');
+      expect(search.decoration?.hintStyle?.fontSize, 13);
+      expect(search.decoration?.suffixIcon, isNull);
+      expect(search.style?.fontSize, 13);
+      expect(search.style?.fontWeight, FontWeight.w400);
+      final searchBounds = tester.getRect(
+        find.byKey(const Key('global-search')),
+      );
+      final hintBounds = tester.getRect(find.text('搜索名称、说明或来源'));
+      final glyphBounds = tester.getRect(
+        find.descendant(
+          of: find.byKey(const Key('global-search')),
+          matching: find.byType(GlassGlyphMark),
+        ),
+      );
+      expect(
+        hintBounds.left - searchBounds.left,
+        moreOrLessEquals(42, epsilon: 1),
+      );
+      expect(
+        glyphBounds.center.dx - searchBounds.left,
+        moreOrLessEquals(21, epsilon: 1),
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
   testWidgets('global shortcut reaches the accessible workspace results', (
     tester,
   ) async {
@@ -92,7 +134,21 @@ void main() {
       await tester.tap(find.byTooltip('清除搜索'));
       await tester.pumpAndSettle();
       expect(tester.widget<TextField>(search).controller!.text, isEmpty);
-      expect(find.text('全部功能 · 17'), findsOneWidget);
+      expect(find.text('17 项'), findsOneWidget);
+      expect(find.text('功能目录'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('按目录视图：收藏'));
+      await tester.pumpAndSettle();
+      expect(find.text('还没有收藏的功能。'), findsOneWidget);
+      await tester.tap(find.text('查看全部'));
+      await tester.pumpAndSettle();
+      expect(find.text('17 项'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('按目录视图：最近使用'));
+      await tester.pumpAndSettle();
+      expect(find.text('还没有最近使用的功能。'), findsOneWidget);
+      await tester.tap(find.text('查看全部'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('资源'));
       await tester.pumpAndSettle();
@@ -103,7 +159,7 @@ void main() {
       await tester.tap(find.text('清除筛选'));
       await tester.pumpAndSettle();
       expect(tester.widget<TextField>(search).controller!.text, isEmpty);
-      expect(find.text('全部功能 · 17'), findsOneWidget);
+      expect(find.text('17 项'), findsOneWidget);
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }

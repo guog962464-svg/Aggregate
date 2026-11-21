@@ -823,6 +823,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final isSelected = states.contains(WidgetState.selected);
     final isDirectoryRow = kind == GlassButtonKind.directoryRow;
     final isPlainNavigation = kind == GlassButtonKind.navigation;
+    final isPlainSegment = kind == GlassButtonKind.segmented;
     if (isDirectoryRow &&
         !isPressed &&
         !isHovered &&
@@ -845,6 +846,8 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         isDirectoryRow;
     final materialWeight = isDirectoryRow
         ? .22
+        : isPlainSegment
+        ? .52
         : isNavigation
         ? .74
         : 1.0;
@@ -855,6 +858,8 @@ class _GlassButtonSurfacePainter extends CustomPainter {
         ? isSelected
               ? .72
               : .48
+        : isPlainSegment && !isSelected
+        ? .84
         : 1.0;
     final darkAmount = math
         .pow((1 - tokens.daylight).clamp(0.0, 1.0), 2.5)
@@ -895,7 +900,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     );
     final restingLightStrength = switch (kind) {
       GlassButtonKind.directoryRow => isSelected ? .07 : 0.0,
-      GlassButtonKind.navigation => isSelected ? .14 : 0.0,
+      GlassButtonKind.navigation => isSelected ? .08 : 0.0,
       GlassButtonKind.segmented => isSelected ? .10 : 0.0,
       GlassButtonKind.primary => .24,
       GlassButtonKind.danger => .035,

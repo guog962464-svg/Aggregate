@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 
 import '../../widgets/capability_row.dart';
 import '../../widgets/glass/aggregate_buttons.dart';
-import '../../widgets/glass/glass_action_button.dart';
-import '../../widgets/glass/glass_design_tokens.dart';
 import '../../widgets/page_frame.dart';
 import '../invocation/capability_run_page.dart';
 import '../music/music_player_page.dart';
@@ -155,16 +153,14 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
 
   Widget _buildDesktop(BuildContext context, bool isCli, double width) {
     final scheme = Theme.of(context).colorScheme;
-    final tokens =
-        Theme.of(context).extension<GlassDesignTokens>() ??
-        GlassDesignTokens.forBrightness(Theme.of(context).brightness);
     final selected = selectedCapability;
+    final contentWidth = width - 88;
     final directoryWidth = math.min(
-      320.0,
-      math.max(220.0, (width - 110) * .25),
+      306.0,
+      math.max(240.0, contentWidth * .297),
     );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(59, 32, 51, 24),
+      padding: const EdgeInsets.fromLTRB(40, 32, 48, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -182,74 +178,33 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '连接首页按来源展示命令、工具、资源与提示',
+                      '查看当前连接提供的能力与最近结果',
                       key: const Key('connection-home-header-subtitle'),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          SizedBox(
-            height: 40,
-            child: Row(
-              children: [
-                ExcludeSemantics(
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: tokens.status,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  _connectionStatusLabel(widget.connection.status),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: tokens.status),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  '${_connectionTypeLabel(widget.connection.kind, isCli)} · '
-                  '${widget.capabilities.length} 项功能',
-                  key: const Key('connection-home-capability-summary'),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const Spacer(),
+              if (widget.onRefresh != null)
                 SizedBox(
                   key: const Key('connection-home-refresh'),
-                  width: 154,
-                  height: 40,
-                  child: AggregateActionButton(
-                    label: refreshing ? '刷新中…' : '刷新能力',
+                  width: 46,
+                  height: 46,
+                  child: AggregateIconButton(
+                    tooltip: '刷新能力',
                     icon: Icons.refresh,
-                    style: AggregateActionStyle.secondary,
-                    busy: refreshing,
-                    enabled: !refreshing && widget.onRefresh != null,
-                    size: GlassButtonSize.compactAction,
-                    expand: true,
                     onPressed: _refreshConnection,
+                    enabled: !refreshing,
+                    busy: refreshing,
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
           if (widget.connection.diagnostic case final diagnostic?) ...[
             const SizedBox(height: 8),
             Text(diagnostic, style: TextStyle(color: scheme.error)),
           ],
-          const SizedBox(height: 14),
-          Divider(
-            key: const Key('connection-home-header-divider'),
-            height: 1,
-            thickness: 1,
-            color: Theme.of(context).dividerColor.withValues(alpha: .62),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -270,12 +225,38 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                         : isCli
                         ? _sectionSlivers(
                             context,
-                            '命令与动作',
+                            '能力目录',
                             widget.capabilities,
-                            detail: '此连接提供 ${widget.capabilities.length} 项功能',
+                            detail: '选择一项查看详情或填写参数',
                             embedded: true,
                           )
                         : [
+                            SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '能力目录',
+                                    key: const Key(
+                                      'connection-home-directory-title',
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.2,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '选择一项查看详情或填写参数',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontSize: 11, height: 1.2),
+                                  ),
+                                ],
+                              ),
+                            ),
                             ..._sectionSlivers(
                               context,
                               '工具',
@@ -319,6 +300,8 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                             capability: selected,
                             musicSession: widget.musicSession,
                             embedded: true,
+                            embeddedTopInset: 37,
+                            connectionHome: true,
                           ),
                   ),
                 ),
@@ -420,6 +403,9 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
             children: [
               Text(
                 title,
+                key: title == '能力目录'
+                    ? const Key('connection-home-directory-title')
+                    : null,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
@@ -444,6 +430,7 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
                 capability: capability,
                 source: widget.connection.label,
                 compactDirectory: true,
+                directorySubtitle: capability.description,
                 selected:
                     embedded && selectedCapabilityKey == capability.id.key,
                 onOpen: () => _openCapability(capability, embedded: embedded),
@@ -457,15 +444,3 @@ class _GenericConnectionHomeState extends State<_GenericConnectionHome> {
     ];
   }
 }
-
-String _connectionTypeLabel(ConnectionKind kind, bool isCli) => switch (kind) {
-  ConnectionKind.cli => isCli ? 'CLI 程序' : 'CLI 连接',
-  ConnectionKind.mcpStdio => '本机 MCP',
-  ConnectionKind.mcpHttp => 'HTTP MCP',
-};
-
-String _connectionStatusLabel(ConnectionStatus status) => switch (status) {
-  ConnectionStatus.ready => '已连接',
-  ConnectionStatus.connecting => '连接中',
-  ConnectionStatus.unavailable => '暂不可用',
-};

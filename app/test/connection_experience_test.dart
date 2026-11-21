@@ -101,6 +101,10 @@ void main() {
   testWidgets('CLI and MCP connections use their own functional homes', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       AggregateApp(
         runtime: createPreviewRuntime(),
@@ -108,20 +112,75 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('示例 Git CLI').first);
+    await tester.tap(find.bySemanticsLabel('示例 Git CLI，已连接'));
     await tester.pumpAndSettle();
-    expect(find.text('命令与动作'), findsWidgets);
+    expect(
+      find.byKey(const Key('connection-home-directory-title')),
+      findsOneWidget,
+    );
     expect(find.text('查看 Git 状态'), findsWidgets);
-    await tester.tap(find.text('示例 MCP').first);
+    await tester.tap(find.bySemanticsLabel('示例 MCP，已连接'));
     await tester.pumpAndSettle();
+    final connectionTitle = find.byKey(
+      const Key('connection-home-header-title'),
+    );
+    expect(connectionTitle, findsOneWidget);
+    expect(tester.widget<Text>(connectionTitle).data, '示例 MCP');
+    expect(
+      find.byKey(const Key('connection-home-directory-title')),
+      findsOneWidget,
+    );
     expect(find.text('工具'), findsOneWidget);
     expect(find.text('资源'), findsOneWidget);
     expect(find.text('提示'), findsOneWidget);
     expect(find.text('两个整数相加'), findsWidgets);
+    expect(find.text('项目中的 README 文本'), findsOneWidget);
+    expect(find.text('根据输入生成摘要'), findsOneWidget);
     expect(tester.takeException(), isNull);
   }, variant: _macOS);
 
-  testWidgets('v3.5 macOS connection home geometry follows its design board', (
+  testWidgets('v9.0 workspace geometry follows the 1360 point design board', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1360, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = createPreviewRuntime();
+    addTearDown(runtime.dispose);
+
+    await tester.pumpWidget(
+      AggregateApp(
+        runtime: runtime,
+        glassMotionClock: ManualGlassMotionClock(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('所有功能').first);
+    await tester.pumpAndSettle();
+
+    final title = tester.getRect(find.byKey(const Key('workspace-page-title')));
+    final search = tester.getRect(find.byKey(const Key('global-search')));
+    final directory = tester.getRect(
+      find.byKey(const Key('workspace-capability-directory-panel')),
+    );
+    final details = tester.getRect(
+      find.byKey(const Key('workspace-capability-details')),
+    );
+
+    expect(title.left, 280);
+    expect(search.width, closeTo(570, .5));
+    expect(directory.left, 280);
+    expect(directory.width, closeTo(296, .5));
+    expect(details.left, closeTo(623, 1));
+    await tester.tap(find.text('两个整数相加').first);
+    await tester.pumpAndSettle();
+    expect(find.text('两个字段都会在执行前检查'), findsOneWidget);
+    expect(find.text('预览运行时'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: _macOS);
+
+  testWidgets('v9.0 macOS connection home geometry follows its design board', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1360, 900);
@@ -150,9 +209,6 @@ void main() {
     final refresh = tester.getRect(
       find.byKey(const Key('connection-home-refresh')),
     );
-    final headerDivider = tester.getRect(
-      find.byKey(const Key('connection-home-header-divider')),
-    );
     final directory = tester.getRect(
       find.byKey(const Key('connection-home-directory')),
     );
@@ -163,21 +219,37 @@ void main() {
       find.byKey(const Key('connection-home-run-pane')),
     );
 
-    expect(title.left, 299);
+    expect(title.left, 280);
     expect(title.top, 72);
-    expect(subtitle.left, 299);
+    expect(subtitle.left, 280);
     expect(subtitle.top, 110);
-    expect(refresh, const Rect.fromLTWH(1155, 129, 154, 40));
-    expect(headerDivider, const Rect.fromLTWH(299, 183, 1010, 1));
-    expect(directory.left, 299);
-    expect(directory.width, closeTo(252.5, 1));
-    expect(directory.top, 208);
-    expect(directoryDivider.left, closeTo(575.5, 1));
-    expect(runPane.left, closeTo(606.5, 1));
+    expect(refresh, const Rect.fromLTWH(1266, 72, 46, 46));
+    expect(directory.left, 280);
+    expect(directory.width, closeTo(306, 1));
+    expect(directory.top, 159);
+    expect(find.text('能力目录'), findsOneWidget);
+    expect(find.text('选择一项查看详情或填写参数'), findsOneWidget);
+    expect(directoryDivider.left, closeTo(610.5, 1));
+    expect(runPane.left, closeTo(641, 1));
+    expect(find.text('显示当前分支与工作区状态'), findsNWidgets(2));
     expect(
       find.descendant(
         of: find.byKey(const Key('connection-home-run-pane')),
         matching: find.text('查看 Git 状态'),
+      ),
+      findsOneWidget,
+    );
+    final embeddedTitle = tester.getRect(
+      find.descendant(
+        of: find.byKey(const Key('connection-home-run-pane')),
+        matching: find.text('查看 Git 状态'),
+      ),
+    );
+    expect(embeddedTitle.top, closeTo(196, 1));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('connection-home-run-pane')),
+        matching: find.byKey(const Key('connection-command-description')),
       ),
       findsOneWidget,
     );
@@ -206,12 +278,12 @@ void main() {
     await tester.tap(find.text('查看 Git 状态').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('参数'), findsOneWidget);
-    expect(find.text('结果'), findsOneWidget);
+    expect(find.byKey(const Key('capability-section-run')), findsOneWidget);
+    expect(find.text('最近结果'), findsOneWidget);
     // The selected capability remains visible in the directory beside the
     // same title in the embedded run pane.
     expect(find.text('查看 Git 状态'), findsNWidgets(2));
-    await tester.tap(find.text('运行').first);
+    await tester.tap(find.byKey(const Key('capability-run')));
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('运行成功'), findsOneWidget);

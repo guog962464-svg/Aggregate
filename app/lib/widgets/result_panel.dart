@@ -9,6 +9,7 @@ import 'glass/aggregate_buttons.dart';
 import 'glass/glass_action_button.dart';
 import 'glass/glass_design_tokens.dart';
 import 'glass/glass_motion.dart';
+import 'glass/glass_panel_surface.dart';
 
 bool _usesGlassButtons(BuildContext context) =>
     defaultTargetPlatform == TargetPlatform.macOS &&
@@ -45,6 +46,46 @@ bool _isActiveRunState(RunState? state) => switch (state) {
   RunState.outcomeUnknown => false,
 };
 
+Widget _recoverySurface(BuildContext context, {required Widget child}) {
+  final radius = BorderRadius.circular(12);
+  if (!_usesGlassButtons(context)) {
+    return Material(
+      color: Theme.of(context).colorScheme.errorContainer,
+      shape: RoundedRectangleBorder(borderRadius: radius),
+      child: Padding(padding: const EdgeInsets.all(14), child: child),
+    );
+  }
+
+  final tokens =
+      Theme.of(context).extension<GlassDesignTokens>() ??
+      GlassDesignTokens.forBrightness(Theme.of(context).brightness);
+  return GlassPanelSurface(
+    borderRadius: radius,
+    blurSigma: 10,
+    child: DecoratedBox(
+      key: const Key('result-recovery-danger-outline'),
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(
+          color: tokens.danger.withValues(alpha: .62),
+          width: .8,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        child: DefaultTextStyle.merge(
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: tokens.text, fontSize: 11, height: 1.35),
+          child: IconTheme(
+            data: IconThemeData(color: tokens.ink),
+            child: child,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class ResultPanel extends StatelessWidget {
   const ResultPanel({
     super.key,
@@ -55,6 +96,8 @@ class ResultPanel extends StatelessWidget {
     this.onCheckActivity,
     this.activityCheckInProgress = false,
     this.compactMacOS = false,
+    this.recentResults = false,
+    this.workspaceResults = false,
   });
   final RunState? state;
   final List<ResultBlock> blocks;
@@ -63,6 +106,8 @@ class ResultPanel extends StatelessWidget {
   final VoidCallback? onCheckActivity;
   final bool activityCheckInProgress;
   final bool compactMacOS;
+  final bool recentResults;
+  final bool workspaceResults;
 
   @override
   Widget build(BuildContext context) =>
@@ -149,32 +194,47 @@ class ResultPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '结果',
+                    recentResults
+                        ? '最近结果'
+                        : workspaceResults
+                        ? '运行结果'
+                        : '结果',
                     style: Theme.of(context).textTheme.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
-                  Semantics(
-                    liveRegion: true,
-                    label: '运行状态：${_stateLabel(state)}',
-                    child: Text(
-                      _stateLabel(state),
+                  if (recentResults && state == null)
+                    Text(
+                      '不会把参数正文写入活动记录',
                       style: Theme.of(context).textTheme.bodySmall,
+                    )
+                  else if (workspaceResults && state == null)
+                    Text(
+                      runtime?.isPreview == true
+                          ? '最近一次调用 · 预览数据'
+                          : '尚无调用 · 结果仅在本机显示',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    )
+                  else
+                    Semantics(
+                      liveRegion: true,
+                      label: '运行状态：${_stateLabel(state)}',
+                      child: Text(
+                        _stateLabel(state),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-            AggregateActionButton(
-              label: '复制',
-              icon: Icons.copy_outlined,
-              onPressed: blocks.isEmpty
-                  ? null
-                  : () => _copyResults(context, blocks),
-              enabled: blocks.isNotEmpty,
-              style: AggregateActionStyle.secondary,
-              size: GlassButtonSize.compactAction,
-            ),
+            if (blocks.isNotEmpty)
+              AggregateActionButton(
+                label: '复制',
+                icon: Icons.copy_outlined,
+                onPressed: () => _copyResults(context, blocks),
+                style: AggregateActionStyle.secondary,
+                size: GlassButtonSize.compactAction,
+              ),
           ],
         ),
         if (_isActiveRunState(state)) ...[
@@ -196,21 +256,75 @@ class ResultPanel extends StatelessWidget {
           ),
         ],
         if (output) ...[
-          const SizedBox(height: 20),
+          SizedBox(
+            height: recentResults
+                ? 4
+                : workspaceResults
+                ? 0
+                : 20,
+          ),
           Container(
             width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 100),
-            padding: const EdgeInsets.all(18),
+            constraints: BoxConstraints(
+              minHeight: recentResults
+                  ? 142
+                  : workspaceResults
+                  ? 104
+                  : 100,
+            ),
+            padding: EdgeInsets.all(
+              recentResults || workspaceResults ? 22 : 18,
+            ),
             decoration: BoxDecoration(
               color: tokens.inset.withValues(alpha: .45),
               border: Border.all(color: tokens.line.withValues(alpha: .58)),
               borderRadius: BorderRadius.circular(11),
             ),
             child: blocks.isEmpty
-                ? Text(
-                    state == RunState.succeeded ? '运行成功，未返回内容。' : '结果将在这里显示。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  )
+                ? recentResults && state == null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '尚无最近结果',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: tokens.text,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              '运行后在此查看输出、状态和可用操作。',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        )
+                      : workspaceResults && state == null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '结果会显示在这里',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: tokens.text,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              '结构化输出、复制与文件操作只在结果提供时出现。',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        )
+                      : Text(
+                          state == RunState.succeeded
+                              ? '运行成功，未返回内容。'
+                              : '结果将在这里显示。',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -331,43 +445,72 @@ class _FailureRecovery extends StatelessWidget {
       RuntimeErrorCode.outcomeUnknown,
       RuntimeErrorCode.internal,
     }.contains(failure.code);
-    return Material(
-      color: Theme.of(context).colorScheme.errorContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('需要处理', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 6),
-            Text(recovery),
-            if (canCheckActivity && onCheckActivity != null) ...[
-              const SizedBox(height: 8),
-              if (_usesGlassButtons(context))
-                AggregateActionButton(
+    final glass = _usesGlassButtons(context);
+    final tokens = Theme.of(context).extension<GlassDesignTokens>();
+    return _recoverySurface(
+      context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '需要处理',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: tokens?.text,
+              fontSize: glass ? 13 : null,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            recovery,
+            style: glass
+                ? Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: tokens?.text,
+                    fontSize: 11,
+                    height: 1.35,
+                  )
+                : null,
+          ),
+          if (canCheckActivity && onCheckActivity != null) ...[
+            const SizedBox(height: 8),
+            if (_usesGlassButtons(context))
+              SizedBox(
+                width: 150,
+                height: 40,
+                child: AggregateActionButton(
                   label: '检查活动状态',
                   icon: Icons.manage_search,
                   onPressed: onCheckActivity,
                   busyLabel: '检查中…',
                   busy: activityCheckInProgress,
                   enabled: !activityCheckInProgress,
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: activityCheckInProgress ? null : onCheckActivity,
-                  icon: const Icon(Icons.manage_search),
-                  label: Text(activityCheckInProgress ? '检查中…' : '检查活动状态'),
+                  style: AggregateActionStyle.primary,
+                  size: GlassButtonSize.compactAction,
+                  expand: true,
                 ),
-            ],
-            const SizedBox(height: 8),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: const Text('查看错误详情'),
-              children: [SelectableText(failure.message)],
-            ),
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: activityCheckInProgress ? null : onCheckActivity,
+                icon: const Icon(Icons.manage_search),
+                label: Text(activityCheckInProgress ? '检查中…' : '检查活动状态'),
+              ),
           ],
-        ),
+          const SizedBox(height: 8),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            minTileHeight: glass ? 42 : null,
+            visualDensity: glass ? VisualDensity.compact : null,
+            title: Text(
+              '查看错误详情',
+              style: glass
+                  ? Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: tokens?.muted, fontSize: 11)
+                  : null,
+            ),
+            children: [SelectableText(failure.message)],
+          ),
+        ],
       ),
     );
   }
@@ -383,25 +526,41 @@ class _UnknownOutcomeRecovery extends StatelessWidget {
   final bool activityCheckInProgress;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.errorContainer,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: Padding(
-      padding: const EdgeInsets.all(14),
+  Widget build(BuildContext context) {
+    final glass = _usesGlassButtons(context);
+    final tokens = Theme.of(context).extension<GlassDesignTokens>();
+    return _recoverySurface(
+      context,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('操作可能已经发送，但没有收到最终确认。先检查活动状态和执行端，再决定是否重跑。'),
+          Text(
+            '操作可能已经发送，但没有收到最终确认。先检查活动状态和执行端，再决定是否重跑。',
+            style: glass
+                ? Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: tokens?.text,
+                    fontSize: 11,
+                    height: 1.35,
+                  )
+                : null,
+          ),
           if (onCheckActivity != null) ...[
             const SizedBox(height: 8),
             if (_usesGlassButtons(context))
-              AggregateActionButton(
-                label: '检查活动状态',
-                icon: Icons.manage_search,
-                onPressed: onCheckActivity,
-                busyLabel: '检查中…',
-                busy: activityCheckInProgress,
-                enabled: !activityCheckInProgress,
+              SizedBox(
+                width: 150,
+                height: 40,
+                child: AggregateActionButton(
+                  label: '检查活动状态',
+                  icon: Icons.manage_search,
+                  onPressed: onCheckActivity,
+                  busyLabel: '检查中…',
+                  busy: activityCheckInProgress,
+                  enabled: !activityCheckInProgress,
+                  style: AggregateActionStyle.primary,
+                  size: GlassButtonSize.compactAction,
+                  expand: true,
+                ),
               )
             else
               OutlinedButton.icon(
@@ -412,8 +571,8 @@ class _UnknownOutcomeRecovery extends StatelessWidget {
           ],
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _FileResultView extends StatefulWidget {

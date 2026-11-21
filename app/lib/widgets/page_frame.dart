@@ -10,9 +10,11 @@ class PageFrame extends StatelessWidget {
     this.contentPadding,
     this.headerContentPadding = EdgeInsets.zero,
     this.titleStyle,
+    this.subtitleStyle,
     this.headerSpacing = 24,
     required this.children,
     this.lazyChildren = false,
+    this.fillWidth = false,
   });
   final String title;
   final String? subtitle;
@@ -20,9 +22,11 @@ class PageFrame extends StatelessWidget {
   final EdgeInsets? contentPadding;
   final EdgeInsets headerContentPadding;
   final TextStyle? titleStyle;
+  final TextStyle? subtitleStyle;
   final double headerSpacing;
   final List<Widget> children;
   final bool lazyChildren;
+  final bool fillWidth;
 
   @override
   Widget build(BuildContext context) => DefaultTextStyle.merge(
@@ -45,7 +49,10 @@ class PageFrame extends StatelessWidget {
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 8),
-            Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              subtitle!,
+              style: subtitleStyle ?? Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ],
       );
@@ -55,13 +62,13 @@ class PageFrame extends StatelessWidget {
           contentPadding ??
           EdgeInsets.fromLTRB(
             macOS
-                ? 59
+                ? 40
                 : constraints.maxWidth < 600
                 ? 20
                 : 32,
             macOS ? 36 : 28,
             macOS
-                ? 51
+                ? 52
                 : constraints.maxWidth < 600
                 ? 20
                 : 32,
@@ -95,13 +102,19 @@ class PageFrame extends StatelessWidget {
       final paddedHeader = headerContentPadding == EdgeInsets.zero
           ? header
           : Padding(padding: headerContentPadding, child: header);
+      final contentWidth = constraints.maxWidth.isFinite
+          ? constraints.maxWidth.clamp(0.0, 1080.0).toDouble()
+          : 1080.0;
       if (!lazyChildren) {
         return SingleChildScrollView(
           padding: padding,
           child: Align(
             alignment: Alignment.topLeft,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1080),
+              constraints: BoxConstraints(
+                minWidth: fillWidth ? contentWidth : 0,
+                maxWidth: 1080,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -128,7 +141,10 @@ class PageFrame extends StatelessWidget {
                 return Align(
                   alignment: Alignment.topLeft,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1080),
+                    constraints: BoxConstraints(
+                      minWidth: fillWidth ? contentWidth : 0,
+                      maxWidth: 1080,
+                    ),
                     child: child,
                   ),
                 );

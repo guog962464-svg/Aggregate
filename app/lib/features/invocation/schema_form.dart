@@ -4,6 +4,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/glass/aggregate_buttons.dart';
+import '../../widgets/glass/glass_design_tokens.dart';
 
 const _lazySchemaFieldThreshold = 40;
 
@@ -13,11 +14,13 @@ class SchemaForm extends StatefulWidget {
     required this.schema,
     this.columnsWhenWide = false,
     this.labelsOutside = false,
+    this.glassFields = false,
     this.markRequired = true,
   });
   final JsonMap schema;
   final bool columnsWhenWide;
   final bool labelsOutside;
+  final bool glassFields;
   final bool markRequired;
   @override
   State<SchemaForm> createState() => SchemaFormState();
@@ -275,6 +278,18 @@ class SchemaFormState extends State<SchemaForm> {
     final semanticLabel = required && !widget.markRequired
         ? '$labelBase，必填'
         : displayLabel;
+    final glassField =
+        widget.glassFields &&
+        type != 'boolean' &&
+        type != 'array' &&
+        type != 'object';
+    final fieldDecoration = _fieldDecoration(
+      context,
+      displayLabel: displayLabel,
+      spec: spec,
+      type: type,
+      glassField: glassField,
+    );
     final Widget field;
     if (type == 'boolean') {
       field = SwitchListTile(
@@ -292,9 +307,7 @@ class SchemaFormState extends State<SchemaForm> {
           key: Key('field-${entry.key}'),
           initialValue: selections[entry.key],
           isExpanded: true,
-          decoration: InputDecoration(
-            labelText: widget.labelsOutside ? null : displayLabel,
-          ),
+          decoration: fieldDecoration,
           items: [
             for (final option in options.cast<String>())
               DropdownMenuItem(
@@ -331,8 +344,7 @@ class SchemaFormState extends State<SchemaForm> {
         field = TextFormField(
           key: Key('field-${entry.key}'),
           controller: controller,
-          decoration: InputDecoration(
-            labelText: widget.labelsOutside ? null : displayLabel,
+          decoration: fieldDecoration.copyWith(
             helperText: type == 'array' || type == 'object'
                 ? '输入 JSON ${type == 'array' ? '数组' : '对象'}'
                 : spec['enum'] is List
@@ -384,11 +396,11 @@ class SchemaFormState extends State<SchemaForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.labelsOutside && type != 'boolean') ...[
+        if (widget.labelsOutside && type != 'boolean' && !glassField) ...[
           Text(displayLabel, style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: 6),
         ],
-        widget.labelsOutside
+        widget.labelsOutside || glassField
             ? Semantics(label: semanticLabel, child: field)
             : field,
         if (type == 'array' || type == 'object')
@@ -409,8 +421,86 @@ class SchemaFormState extends State<SchemaForm> {
               }),
             ),
           ),
-        const SizedBox(height: 16),
+        SizedBox(height: widget.glassFields ? 7 : 16),
       ],
     );
+  }
+
+  InputDecoration _fieldDecoration(
+    BuildContext context, {
+    required String displayLabel,
+    required Map spec,
+    required Object? type,
+    required bool glassField,
+  }) {
+    if (!glassField) {
+      return InputDecoration(
+        labelText: widget.labelsOutside ? null : displayLabel,
+      );
+    }
+    final theme = Theme.of(context);
+    final tokens =
+        theme.extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(theme.brightness);
+    final hint = _glassHint(spec, type);
+    final fill = Color.lerp(tokens.inset, tokens.glassTop, .18)!;
+    final outline = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: tokens.line.withValues(alpha: .72)),
+    );
+    return InputDecoration(
+      labelText: displayLabel,
+      labelStyle: theme.textTheme.labelSmall?.copyWith(
+        fontSize: 10,
+        height: 1,
+        color: tokens.muted,
+      ),
+      floatingLabelStyle: theme.textTheme.labelSmall?.copyWith(
+        fontSize: 10,
+        height: 1,
+        color: tokens.muted,
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+      hintText: hint,
+      hintStyle: theme.textTheme.bodySmall?.copyWith(
+        height: 1,
+        color: tokens.muted.withValues(alpha: .92),
+      ),
+      isDense: true,
+      filled: true,
+      fillColor: fill,
+      contentPadding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+      constraints: const BoxConstraints(minHeight: 42),
+      border: outline,
+      enabledBorder: outline,
+      focusedBorder: outline.copyWith(
+        borderSide: BorderSide(color: tokens.glow, width: 1.25),
+      ),
+      errorBorder: outline.copyWith(
+        borderSide: BorderSide(color: tokens.danger),
+      ),
+      focusedErrorBorder: outline.copyWith(
+        borderSide: BorderSide(color: tokens.danger, width: 1.25),
+      ),
+      errorStyle: theme.textTheme.bodySmall?.copyWith(
+        fontSize: 10,
+        color: tokens.danger,
+      ),
+    );
+  }
+
+  String? _glassHint(Map spec, Object? type) {
+    final explicitHint = spec['placeholder'] ?? spec['hint'];
+    if (explicitHint is String && explicitHint.isNotEmpty) return explicitHint;
+    final example =
+        spec['example'] ??
+        (spec['examples'] is List && (spec['examples'] as List).isNotEmpty
+            ? (spec['examples'] as List).first
+            : null);
+    if (example != null) return '例如 $example';
+    return switch (type) {
+      'integer' || 'number' => '请输入数字',
+      _ => '请输入内容',
+    };
   }
 }
