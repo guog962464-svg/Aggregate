@@ -238,3 +238,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B010 取消运行双主题实鼠标验收（2026-11-21）
 
 相同 800×720pt、DPR 2 的隔离 Profile 中，从运行中样例详情对“取消运行”实际点击；两主题 AX 均确认取消操作消失，窗口画面状态变为“已取消”。ScreenCaptureKit 指定目标时点深色漏 0ms、浅色漏 50ms。取消仅更新 `Ui6InspectionRuntime` 进程内 fixture，没有真实运行任务。图片、计时与 SHA 见[验收记录](acceptance-record.md#2026-11-21-ui-67-b010-取消运行双主题实鼠标验收)。只签收该 `_macDetail` 实例的局部动作与状态；连续动画、真实服务响应、FrameTiming、面板 FPS 和全矩阵仍待核，UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B013 添加 CLI 双主题实鼠标验收（2026-11-21）
+
+800×720pt、DPR 2 隔离 Profile 中实鼠标点击工作台宽窗空态“添加 CLI”；浅/深均进入目标选择器，选本机预览目标进入 CLI 表单，取消后 AX 确认回到空连接管理页。没有测试、保存或运行 CLI；只读 `Ui6InspectionRuntime` 内存 fixture。两主题窗口帧采样各 14/15，缺帧分别为深色 200ms、浅色 0ms；完整截图、哈希和逐时点范围见[验收记录](acceptance-record.md#2026-11-21-ui-67-b013-添加-cli-双主题实鼠标验收)。这不是连续动画、FrameTiming 或物理面板 FPS 验收，UI-6.7 仍部分验收。
