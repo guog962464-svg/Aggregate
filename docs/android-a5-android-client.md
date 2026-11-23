@@ -534,3 +534,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **只读 Keychain 元数据：**对登录钥匙串执行元数据计数，发现 3 条匹配 Host TLS tag 前缀的密钥记录，其中 2 条 tag 含 `.candidate.`。未读取密钥数据或导出私钥，也没有修改、删除或轮换 Keychain 项。当前源码每次创建使用随机 candidate UUID，并在失败时 best-effort 删除；这些现存 candidate 与该失败清理路径相符，但无法证明它们由哪次运行创建、哪条是活动密钥或它们是否造成当前提示。最近 10 分钟的 `securityd` 日志过滤未返回可定位条目。
 - **当前结论：**同网段和双向 IP 可达已确认，生产 Host 仍卡在系统 Keychain 私钥导出授权，未达到 A5 production WSS/配对/只读 RPC 验收。Apple 文档说明 macOS Keychain ACL 按项目和操作授权应用，选择“始终允许”会把应用加入对应 ACL 的可信应用列表（[Access Control Lists](https://developer.apple.com/documentation/security/access-control-lists)）；当前授权状态与候选项目归属仍未知。未执行 Keychain 清理、身份轮换或绕过系统授权。
 - **范围：**本次只确认同网段、双向 ping、Host 提示/退出状态和 Keychain 密钥记录元数据；不新增 NSD、WSS、配对或 RPC 通过证据。此前隔离包的 `host.hello` 与只读 `connection.list` 仍只适用于其原测试范围。无 NodeProbe/testnode 或无障碍测试。
+
+## 2026-11-23 A5 同网段连通性现场复核（23:58 Asia/Shanghai）
+
+- **网络：**Mac Wi-Fi 接口 `en0=192.168.8.4/24`，路由到手机地址 `192.168.8.7` 直接走 `en0` 且 ARP 邻居解析成功；Mac 到 LGE AN10 和手机到 Mac 的 ICMP 均为 2/2。手机 `wlan0=192.168.8.7/24`，Android 15/API 35/arm64/4 KB 页，普通 Aggregate `MainActivity` 处于 resumed 前台。`networksetup -getairportnetwork en0` 报告未关联 AirPort 网络，因此只能确认同网段和双向 IP 可达，不能确认 SSID/AP 关联。
+- **Host 与范围：**Host 端口 `47321/47322` 均无 listener。本轮没有再次启动 Host，因为最近同网段尝试仍卡在 Keychain 私钥导出授权，期间没有 Keychain/签名状态变化。没有邀请、配对、grant 变更、WSS 或 RPC；未进入 NodeProbe/testnode，也未运行无障碍测试。
+- **结论：**用户确认的网络一致性已由双向 ping 与直接路由复核；此项不代表 production Host、NSD、配对或 RPC 验收。A5 production 路径继续受 Keychain 授权阻塞。
