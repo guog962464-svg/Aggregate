@@ -1974,3 +1974,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B094：实鼠标点击 Pixel 9“批准只读”后，待处理卡消失，已配对列表变为 LGE AN10 与 Pixel 9；Pixel 9 只显示“读取连接”，LGE AN10 原权限不变。两张配对卡的修改权限/撤销按钮各为 111×40、119×40pt。结果[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/host-settings-paired-devices.png>) SHA-256 0542b95136dd0d8f12ea4420d7323968b8aeaf71b050d073cb9a8ee5c2c440a4。
 - B097：实鼠标点击 Pixel 9“修改权限”打开原生权限弹窗；浅色[弹窗截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/edit-permissions-dialog.png>) SHA-256 038f783f8db8aebf5c4f204bdd7a6fd194df97bad78fabf232ce64f07c8a97ca，1692×1356px。随后取消点击因应用失焦未确认投递，焦点重取时窗口枚举报告 APP_UNRESPONSIVE；没有点击保存。仅按精确 PID 4639 终止隔离进程，正式应用未操作。
 - 结论与限制：浅色待处理/已配对设备卡、B094 只读批准状态以及 B097 弹窗打开路径获得实窗补证。此次没有验拒绝、连接向导、权限保存/取消收尾、按下/释放动效、Flutter FrameTiming 或物理面板 FPS。失焦期间单次 ps CPU 读数为 107.9%，采样未受控，不据此下性能结论。UI-6.7 继续部分验收。
+
+### 2026-11-23 UI-6.7 B097 浅色权限编辑弹窗取消复验
+
+- 环境：浅色隔离 Profile bundle io.github.guog962464.aggregate.ui6b073lightcurrent，新进程 PID 5734，窗口 800×632pt、DPR 2。Host 使用进程内 Ui6InspectionHost stub，无 44321 listener，不访问真实设备、Keychain 或网络。
+- 复验路径：启动内存 Host 后对 Pixel 9 执行批准只读，再实鼠标打开“修改权限”弹窗。live AX 中“取消”按钮 bounds 为 89×40pt，中心约为屏幕坐标 932,750；据此物理点击后立刻取样仍读到弹窗，随后 fresh snapshot 确认弹窗消失。AX find 读回 Pixel 9 与“读取连接”，LGE AN10 仍保留原范围；没有点击保存。
+- 证据：取消后 [配对卡截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/permissions-after-cancel.png>) SHA-256 8e3c8843821e2d1c176b8e1be4d85e4dc0a08ebfcab678f6c0e028cbf9be48be，1824×1488px、DPR 2。画面里迷你播放器出现鼠标悬停提示，不将其纳入本项按钮验收。
+- 结论与限制：B097 浅色修改权限的打开和取消后状态现已补证；首轮失焦失败记录保留为历史，随后这次新进程确认取消成功。仅作用于内存 fixture；没有权限保存、hover/按下/释放动画曲线、Flutter FrameTiming 或物理面板 FPS 证据。Profile 已按 PID 5734 退出，正式应用未操作。
