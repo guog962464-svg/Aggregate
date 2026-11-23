@@ -430,3 +430,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **可达性：**从手机到 Mac `192.168.10.239` 的 ICMP 2/2 无响应；`47321/TCP` 探针超时，且 Mac 当时没有 `47321` listener。故当前网络一致/直连可达尚未得到系统读数支持。此 TCP 探针因 Host 未监听，不单独作为 Host 服务失败证据。
 - **前台和范围：**`topResumedActivity` 仍是用户项目 `com.cbdn.news/...MainActivity`；Aggregate 普通包 `io.github.guog962464.aggregate` / versionName `0.3.7` 仍安装。本轮没有切换手机前台、没有启动 Mac Host、生成邀请、提交配对、批准/撤销 grant 或调用 RPC；也没有更改网络设置、启动 testnode 或运行无障碍测试。
 - **结论：**本轮仅完成地址、策略路由、连通性和前台状态读回；A5.4 production LAN/NSD/WSS 配对与只读 RPC、A5.5 production 业务验收继续开放。待地址/路由实际可达后再沿用已授权的只读 Host 验收范围。
+
+## 2026-11-23 Release Host 启动与 Keychain 复核（19:02 Asia/Shanghai）
+
+- **构建与入口：**在当前 checkout `c0860180029e2d9a8942a64de39cf4e476097083` 执行 `flutter build macos --release --no-pub`，构建成功（52.4 MB）。本地 `pubspec.lock` 当时有用户未提交改动，`objective_c` 为 9.6.4，而 HEAD 锁定 9.6.3；因此这次 Release 运行不作为干净锁文件基线的最终验收。`app/lib` 没有未提交源码改动。
+- **Host 启动与钥匙串：**从该 Release 正式入口的“设置 → Mac Host”启动，触发登录钥匙串对 `io.github.guog962464.aggregate.host.tls.v1` 的访问提示。使用用户已提供的密码并尝试“始终允许”后，系统提示仍然保留；无法确认该次 Keychain ACL 是否改变，也不能据此判断密码错误。为结束卡住的启动请求，取消了当前钥匙串访问；App 随后显示“启动失败”。
+- **网络与服务：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页 `wlan0=192.168.8.7/24`（SSID“我没网”），Mac `en0=192.168.10.239/24`、默认网关 `192.168.10.1`；`networksetup -getairportnetwork en0` 显示 Mac 未关联 AirPort 网络。两端不在同一 `/24`；Mac→手机和手机→Mac 的 ICMP 探测各丢失 2/2。Host 未启动，`47321/47322` 均无 listener，故本轮没有有效的 Host TCP、NSD 或 WSS 检查。
+- **清理与范围：**Mac Release Aggregate 已退出；没有生成邀请、提交配对、修改 grant、调用 `host.hello`/`connection.list` 或其他 RPC。没有切换 Android 前台、启动 testnode/NodeProbe、改动网络设置或运行无障碍测试。A5.4/A5.5 继续开放；既有同网段成功记录仅适用于其记录的地址与时间。
+- **结论：**用户反馈网络已一致，但本次系统地址仍显示跨子网；本地 Host 启动又受 Keychain 授权提示阻断。本轮没有新增 production LAN/配对/RPC 通过证据。
