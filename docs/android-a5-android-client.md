@@ -415,3 +415,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **接口与地址：**Mac `en0=192.168.10.239/24`，路由器 `192.168.10.1`，接口显示 `status: active`；`networksetup -getairportnetwork en0` 仍报告未关联 AirPort 网络。LGE AN10 `wlan0=192.168.31.136/24`，手机路由表显示其本地 `/24` 路由。两端地址仍不同子网，Mac 到手机目标走 `192.168.10.1` 默认路由。
 - **连通性与 Host：**Mac 到手机的两次 ICMP 探测和 `47321/TCP` 均超时；Mac `47321` 无 listener。本轮没有修改网络、启动 Host、生成邀请、配对或调用 RPC。
 - **结论：**Mac 地址变化后 direct LAN 仍不可达；本轮不构成 NSD、配对或 RPC 通过证据。没有运行 testnode、NodeProbe 或无障碍测试。
+
+## 2026-11-23 同网段 TCP 复验与配对中断
+
+- **同网段直连：**17:25 左右重新读取到 Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`。Mac Host 绑定 `192.168.8.4:47321`；手机 ping 2/2 成功，Android `toybox nc -z -w 5 192.168.8.4 47321` 退出码 0。该观察证明当时 ICMP 与 TCP 直连可达，不单独证明 NSD、WSS 配对或 RPC。
+- **邀请与界面：**通过普通包名 Aggregate 设置页输入过一条短时邀请，但没有点击“请求配对”，也没有生成待审批设备或更改授权。后续新邀请在输入框读回时不是有效 JSON，字段已清空；邀请内容未写入记录。
+- **网络与连接中断：**约 18:03 Mac `en0` 已变为 `192.168.10.239/24`，Android ADB transport 随后消失。18:09 再读 Mac 仍为 `192.168.10.239/24`；`adb devices -l` 与 `adb mdns services` 均无设备，`system_profiler SPUSBDataType` 未发现 Android USB 设备，因此此时无法读取手机地址或确认用户所述网络是否已一致。
+- **清理与范围：**Mac Host 已停止，`47321/47322` 均无 listener；本次没有提交配对、批准设备、修改 grant 或调用 `host.hello` / `connection.list`。手机前台及后续地址因 ADB 断开而未知；没有启动 testnode、NodeProbe 或无障碍测试。
+- **结论：**同网段 TCP 可达已在 17:25 的地址组合上通过；之后网络地址变化且设备连接丢失，当前生产 NSD/WSS、配对与只读 RPC 尚未完成。旧的同网段成功证据仅适用于当时，不外推到当前状态。
