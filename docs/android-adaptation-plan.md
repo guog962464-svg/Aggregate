@@ -1,7 +1,7 @@
 # Aggregate Android 适配规划
 
 > 修订日期：2026-11-23。当前状态：A0–A2 已完成；A3 进行中，A3.6 的许可与法律审查、Android 原生依赖闭包、维护方发行资格仍未关闭，16 KB 真机缺失；A4 已完成 Debug 评估与能力边界，Android 本地 ncm-cli 判定不支持；A5 进行中，普通 applicationId Debug 身份轮换以及测试签名 Release 的 LAN/NSD 只读链路、产品主界面冷启动和 CAMERA 允许路径已在 LGE AN10 4 KB 真机通过，正式签名和签名升级路径仍开放；普通包名 Debug 首次 CAMERA 弹窗拒绝及 UI 回退也已实际通过，普通包名 Release 的 CAMERA 允许路径和 user-fixed 拒绝回退状态已验证；隔离 fixture 已覆盖 CLI/TUI/MCP/setup 等流程，production Host 当前只验收 `host.hello` 与只读 `connection.list`，production 业务写操作、网易云账号/播放仍未验收；A6 代码与 4 KB 启动验收完成，production 网易云账号/播放未完成；A7 手机界面和自动化矩阵完成，无障碍/TalkBack 按用户决定排除；A8 当前 HEAD 的 arm64 Release APK/AAB 静态检查及普通包名测试签名 Release 冷启动通过。Android 分发仍需正式签名、运行时许可/依赖闭包和 16 KB 真机验收。Node/npm 产品入口在 A3.6 关闭前保持受限；详见各阶段记录与 [A8 验收记录](android-a8-acceptance.md)。
-> 最新 A5 实时网络回读（2026-11-23）：Mac `en0=192.168.10.239/24`、LGE AN10 `wlan0=192.168.8.7/24`，不同子网；当前 production 直连配对未通过。此前同网段通过记录保留为原时刻的历史验收，不代表本轮网络状态。
+> 最新 A5 实时网络回读（2026-11-23 16:38 Asia/Shanghai）：Mac `en0=192.168.8.4/24`（Wi-Fi 未关联）、LGE AN10 `wlan0=192.168.31.136/24`，不同子网；Mac 到手机的 ICMP 与 TCP/47321 探测超时，当前 production 直连配对未通过。此前同网段通过记录保留为原时刻的历史验收，不代表本轮网络状态。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
 **统一开发原则：仍然只有一个 Flutter/Dart 工程。** macOS 和 Android 共用领域模型、`RuntimePort` 契约、业务状态及适合复用的设计元素和 Widget；手机端可以按实际使用场景在 Flutter 中重新设计信息架构、导航、页面结构和操作流程，无须与桌面保持同一页面树。`AggregateApp` 仍是共同入口，可按平台能力与窗口形态组装不同 Flutter 界面。`app/android/` 只承载 Flutter 宿主、构建配置和必要的系统桥接，不另写 Kotlin/Compose 页面；Kotlin/C++/JNI 负责 Node、Service、凭证/文件等平台能力，结果经 Dart 适配器进入手机界面。macOS 继续使用现有界面与原生适配层。
