@@ -50,3 +50,9 @@ Termux stable APT 当前索引记录了 Node.js `24.22.3` 的 `aarch64`、`arm`�
 - 从 [`lakutata/libnode v24.20.0`](https://github.com/lakutata/libnode/releases/tag/v24.20.0)只读下载 Android arm64 归档、`SHA256SUMS` 和 `manifest.json` 到 `/tmp`。归档 SHA-256 为 `c11b570621a67cadc718bc42376d9482a09336159b3dc5bcb43cc9634a12a97f`，与发布清单及 manifest 中记录值相符；manifest 大小为 26,283,287 bytes，标记 Node `24.20.0`、Android `arm64-v8a`、NDK r27d、最低 API 24，recipe commit `7c55423d731f7fec83ac52ab158901ce20a57356`。
 - 归档含 `lib/libnode.so`、Node 头文件、Node `LICENSE` 和 `libnode.json`；归档清单中未见 `libc++_shared.so` 或 SPDX/CycloneDX/SBOM 文件。使用本机 NDK r28c `llvm-readelf` 检查提取出的 ELF：4 个 `PT_LOAD` 的 `p_align` 均为 `0x4000`；动态依赖包含 Android `libc++_shared.so`。因此 16 KB ELF 对齐有独立静态证据，但仍需确认应用提供匹配的 C++ runtime，并补齐完整 native/platform 依赖与许可/BOM 闭包。
 - 该资产仍是 Node `24.20.0`，而 [Node.js `24.22.3` 安全版本](https://nodejs.org/en/blog/release/v24.22.3/)于 2026-11-11 发布。该归档不满足当前项目 `24.22.3` 基线，不能作为候选运行时采纳。本次没有安装、链接、构建或运行归档，没有 Android 16 KB 实机；静态 ELF 对齐不能替代设备验收。A3.6 维护来源、许可/法律审核、完整依赖闭包、正式签名和 16 KB 真机门槛继续开放。
+
+## 2026-11-23 maintained Node 24 Android release recheck (22:58 Asia/Shanghai)
+
+- Node.js 官方 [24.22.3 LTS 发布记录](https://nodejs.org/en/blog/release/v24.22.3/)将该版本标为 2026-11-11 的安全版本。
+- [nodejs-mobile 官方 Releases](https://github.com/nodejs-mobile/nodejs-mobile/releases)当前仍将 `v18.20.4` 标记为 Latest，并列出 Android arm64-v8a；检查到的 [fogtape Releases](https://github.com/fogtape/nodejs-mobile/releases) Node 24 最新项仍为 2026-10-22 的 `v24.22.1-0` 预发布；[JaneaSystems Releases](https://github.com/JaneaSystems/nodejs-mobile/releases) Latest 仍为 `v0.3.3`（Node `12.19.0`）。在这些已检查的公开发行来源中，未发现匹配 Node `24.22.3` 的维护方 Android `libnode.so` 成品。
+- 本次只检查发行页面和 Node 官方版本页，没有下载资产、核对哈希、构建或运行设备；来源范围不覆盖所有第三方分发渠道。A3.6 的维护方 provenance、许可证/SBOM 闭包、法律复核和 16 KB 真机门槛仍开放。
