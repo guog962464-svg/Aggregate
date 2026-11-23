@@ -2027,3 +2027,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 结果：静置时 AX 显示“重试计数：0”。真实指针点一次“重试”后，fresh AX 显示“重试计数：1”。回调只递增夹具本地计数，不代表真实加载、网络请求或错误恢复。
 - 证据：静置[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b104-light/page-state-error-idle-light-profile-v2.png>) SHA-256 `7d801be899420af8017002a38e5c643586adc85d722d2a7751ea839764f6a2dc`；重试后[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b104-light/page-state-error-retry-light-profile-v2.png>) SHA-256 `948bc6c9221a158736d0d9bdd4dec075667865d2da773eee7fa6c0dd56f85608`。均为 1824×1488px、DPR 2。Profile 构建成功；验收后隔离 app 已优雅关闭，临时入口源码已删除。
 - 结论与限制：B104 浅色错误态静态呈现和本地重试回调通过；没有按下/释放动画帧、Flutter `FrameTiming` 或物理面板 FPS 证据。未运行测试；UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B106 浅色错误结果恢复动作补验
+
+- 环境：复用浅色隔离 Profile 副本 bundle ID `io.github.guog962464.aggregate.ui6b096light`，PID 12965，窗口 800×632pt、DPR 2；来源及运行时为 `Ui6InspectionRuntime` / `PreviewRuntime` 进程内夹具，构建源码 SHA 未记录。正式应用未操作。
+- 路径与结果：在“所有功能”搜索“演示恢复状态”，进入参数页并点一次“运行”。它只触发 `Ui6InspectionRuntime.invoke` 的本地 `StateError('预览错误态：未联系任何执行端')`，AX 显示“运行状态：运行失败”和恢复提示，没有外部执行端或网络请求。滚动后“检查活动状态”按钮完整显示在 MiniPlayer 上方，live AX bounds 为 150×40pt；真实指针点击后 fresh AX 仍为“运行失败”。当前示例异常发生在 `RunHandle` 生成前，`_checkActivityStatus` 的 `handle == null` guard 会直接返回，所以该点击不执行活动查询，也没有重跑。
+- 证据：点击后完整恢复卡[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b106-light/failure-recovery-light-after-check.png>) SHA-256 `491b70a26dea8f58c21f917ad65e7f5656efc80d9abb0f5e74c5fe74fb0dac0f`，1824×1488px、DPR 2。
+- 结论与限制：B106 浅色错误结果卡及恢复按钮可见位置获得实窗补证；点击在没有 `RunHandle` 时直接返回，不能作为有效运行记录的活动状态查询验收。没有按钮按下帧、连续动画、Flutter `FrameTiming` 或物理面板 FPS 数据。隔离 app 已优雅关闭；UI-6.7 仍部分验收。
