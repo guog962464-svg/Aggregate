@@ -354,3 +354,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Release LAN / NSD 与 RPC：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页，手机 `192.168.8.7/24`、Mac `192.168.8.4/24`。Mac 当前 Host WSS/Bonjour 服务运行；双方确认码匹配后，只批准 `readConnections`，无逐连接权限。普通包名的测试签名 Release 使用产品 NSD 发现并连到 `wss://192.168.8.4:47321/host`；断开后再次经 NSD 重连，`host.hello` 成功，`connection.list` 返回 1 项。Android probe 报告成功，Mac Host runner 1 项通过且退出码 0。
 - **授权与清理：**临时 grant 撤销后，Mac grant 集合由验收前 2 条恢复为原来的 2 条；Host 停止且 `47321/47322` 无 listener。测试过程中登录钥匙串提示短暂出现；密码字段的自动化引用在输入前失效（`not_delivered`），随后提示隐藏。本轮没有输入密码、点“始终允许”或改变 Keychain ACL；Host 后续仍成功启动。手机 Release 包已卸载，Package Manager 没有 Aggregate/NodeProbe/testnode，手机回到 HONOR Launcher，ADB reverse 为空。临时测试密钥、APK 和 worktree 均已删除。
 - **范围结论：**这验证了 Android 15 4 KB 真机上测试签名、普通包名 Release probe 的 LAN/Bonjour/NSD 与只读 RPC 路径。它不替代正式签名、正式签名关联的安装/权限行为、产品 Release 主界面验收、16 KB 系统运行，或 A5.5 的 CLI/TUI/MCP/向导/账号/写入业务闭环；这些仍开放。没有执行无障碍/TalkBack 测试。
+
+## 2026-11-23 普通包名测试签名 Release 主界面与 CAMERA 允许路径
+
+- **构建与安装：**以当前 HEAD `226c5b28b8975303a453e3cd7fba0915ff22d100` 构建 arm64 Release APK，使用短期 RSA 测试证书签名后安装普通 `io.github.guog962464.aggregate` 包名；`apksigner verify` 与 `zipalign -c -P 16 4` 通过。产品未签名 APK SHA-256 为 `57085584c575dca996fe2d7b943f0203d367aa61e434a665b9222e7716c08781`。临时签名证书不是产品发布证书。
+- **设备与冷启动：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`。`am start -W` 返回 `Status: ok`、`LaunchState: COLD`；`MainActivity` 成为 `topResumedActivity`，进程在观察窗口内存活，crash buffer 没有新增该包的崩溃条目。产品首页正常显示。
+- **CAMERA 允许路径：**在“设置 → Mac Host → 扫描二维码”打开系统 CAMERA 授权后选择“仅使用期间允许”；Package Manager 显示 `CAMERA granted=true`，`appops` 为 `foreground/allow`，扫码预览正常。没有扫描二维码，没有填写邀请，没有请求配对，也没有连接 Host 或调用 RPC。
+- **网络与范围：**本轮复核 Mac `en0=192.168.8.4/24`、手机 `wlan0=192.168.8.7/24`，手机到 `192.168.8.4` 的路由选择 `wlan0`。本轮没有重启 Mac Host；production LAN/NSD 的只读验收见 [当前提交 Host LAN 与 NSD 只读复验](#2026-11-23-当前提交-production-host-lan-与-nsd-只读复验)。
+- **清理与限制：**测试后 force-stop 并卸载普通包，Package Manager 无 Aggregate/NodeProbe/testnode 包，前台恢复 HONOR Launcher；卸载清除了本次 CAMERA 授权，临时 APK/证书/截图均删除。普通包名的 CAMERA 拒绝回退分支本轮未复验；此前隔离 `.integration` Release 的 Android 15 允许/拒绝路径见[相机权限补验](#2026-11-18-隔离-test-signed-android-release-相机权限补验)。本项不代表正式签名、正式签名更新兼容或 16 KB 真机验收；没有运行无障碍/TalkBack 测试。
