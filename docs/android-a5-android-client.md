@@ -369,3 +369,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **拒绝状态与界面：**测试前卸载状态为空；通过 Android Package Manager 对该包执行 CAMERA revoke，并设置 `user-set`、`user-fixed` 标志。`dumpsys package` 报 `CAMERA granted=false`，AppOps 为 `CAMERA: ignore`。打开“设置 → Mac Host → 扫描二维码”后，扫码预览显示 `permissionDenied`，并给出“请允许相机访问，或返回后粘贴二维码内容”的回退提示；没有权限提示弹窗，`MainActivity` 保持前台并显示回退文案。
 - **边界：**这是在普通包名 Release 上对拒绝状态与 UI 回退的系统级构造验收，没有在 CAMERA 弹窗中点选“禁止”，也没有验证正式签名行为。此前隔离 `.integration` Release 的真实 CAMERA 允许/拒绝弹窗路径见[相机权限补验](#2026-11-18-隔离-test-signed-android-release-相机权限补验)。没有扫描邀请、配对、连接 Host 或调用 RPC；没有运行无障碍/TalkBack 测试。
 - **清理：**force-stop 并卸载普通包，临时 APK、密钥和截图删除；Package Manager 无 Aggregate/NodeProbe/testnode 包，前台回到 HONOR Launcher。卸载清除本轮 permission flags。
+
+## 2026-11-23 普通包名 Debug 真实 CAMERA 弹窗拒绝
+
+- **构建与设备：**当前工作树运行 `flutter build apk --debug --no-pub --target-platform android-arm64`。APK SHA-256 `4bb52fe27782724eae0b7874dd37d666cb27897481b85bae810729cc163460f0`，大小 99,965,207 bytes；`io.github.guog962464.aggregate`、versionCode 8、versionName 0.3.7、targetSdk 36。安装到 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机普通用户配置。
+- **真实拒绝路径：**首次打开“设置 → Mac Host → 扫描二维码”后，系统 CAMERA 弹窗显示 Aggregate，并由测试直接选择“禁止”。随后 Package Manager 为 `CAMERA granted=false`、flags 含 `USER_SET`；AppOps 显示 `CAMERA: ignore`。扫码页正常留在前台，显示 `permissionDenied` 及“请允许相机访问，或返回后粘贴二维码内容”的提示；`MainActivity` 仍为 top-resumed。未输入或扫描邀请。
+- **验收范围：**这验证普通 applicationId Debug 包上的首次系统弹窗拒绝及 UI 回退。它不覆盖第二次拒绝形成的 `USER_FIXED` 状态或正式签名 Release 权限行为；普通包名 Release 的 `USER_FIXED` 回退状态构造验收见上一节，隔离 `.integration` Release 的真实拒绝弹窗见 2026-11-18 记录。
+- **清理：**force-stop 后执行卸载时 ADB 返回 `DELETE_FAILED_INTERNAL_ERROR`；随后的 `dumpsys package` 返回 `Unable to find package`，user 0 与平行空间 user 128 均无该包，`pm path` 和 PID 为空，ADB reverse 列表为空，设备回到 Launcher。系统未保留本轮 CAMERA 权限记录。没有连接 Mac Host、请求配对或调用 RPC；没有启动 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
