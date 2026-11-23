@@ -513,3 +513,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**重新读取 Mac Wi‑Fi `192.168.8.4/24` 与 LGE AN10 `wlan0=192.168.8.7/24`；Android 15/API 35/arm64，`PAGE_SIZE=4096`。网络仍一致。
 - **Host 尝试：**从 Aggregate 设置点击“启动 Host”。SecurityAgent 弹出导出 Host TLS 私钥的登录钥匙串请求；在安全输入框填入用户此前提供的钥匙串凭据，并依次尝试“始终允许”和“允许”，窗口仍未关闭。为解除挂起请求，最后选择“拒绝”；SecurityAgent 随后隐藏，Aggregate 回到“启动 Host”，`47321/47322` 均无 listener。
 - **结论与边界：**本轮没有生产 WSS、配对、邀请、grant 变更或 RPC。不能据此判断凭据是否有效或 Keychain ACL 的根因；生产 Host 验收继续受钥匙串访问阻塞。手机保持在 Aggregate 前台，未启动 testnode，也未做无障碍测试。
+
+## 2026-11-23 A5 Host 私钥导出路径与签名复核（23:13 Asia/Shanghai）
+
+- **签名配置：**对 Debug、Profile、Release 的现有 `Aggregate.app` 执行 `codesign -dv --verbose=4`，三者均为 ad-hoc 签名、没有 TeamIdentifier；`app/macos/Runner.xcodeproj/project.pbxproj` 三个配置均显式设 `CODE_SIGN_IDENTITY = "-"`。
+- **Keychain 调用路径：**`HostTlsIdentityChannel` 用 `SecItemCopyMatching` 取出 `SecKey`，随后经 `SecKeyCopyExternalRepresentation` 导出私钥，并构造成 PEM 返回给 Flutter channel。当前弹窗措辞是从钥匙串导出 Host 私钥，与该源码路径相符；这说明请求发生在哪个操作上，但不证明其失败根因。凭据接受情况、ACL 状态以及失败创建后的 Keychain 项是否已清理由本轮检查无法确认。未执行身份轮换、Keychain 检索/清理或签名变更。
+- **再次尝试与状态：**在用户已授权的只读 Host 验收范围内再次启动；将此前提供的凭据填入安全输入框并选择“始终允许”，提示仍在，随后拒绝以结束挂起请求。SecurityAgent 隐藏，Host UI 回到“启动 Host”，`47321/47322` 无 listener。Mac `192.168.8.4/24` 与 Android `192.168.8.7/24` 双向 ping 均 2/2，手机是 Android 15/API 35/arm64/4 KB，仍停留在 Aggregate 前台。
+- **结论与边界：**网络一致与双向连通已复核；生产 Host 仍未启动，无 WSS、配对、邀请、grant 变更或 RPC。三种 bundle 均 ad-hoc 是可复现事实，Keychain/签名之间的因果关系仍属未证实假设。没有启动 testnode 或进行无障碍测试。
