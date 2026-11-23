@@ -423,3 +423,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络与连接中断：**约 18:03 Mac `en0` 已变为 `192.168.10.239/24`，Android ADB transport 随后消失。18:09 再读 Mac 仍为 `192.168.10.239/24`；`adb devices -l` 与 `adb mdns services` 均无设备，`system_profiler SPUSBDataType` 未发现 Android USB 设备，因此此时无法读取手机地址或确认用户所述网络是否已一致。
 - **清理与范围：**Mac Host 已停止，`47321/47322` 均无 listener；本次没有提交配对、批准设备、修改 grant 或调用 `host.hello` / `connection.list`。手机前台及后续地址因 ADB 断开而未知；没有启动 testnode、NodeProbe 或无障碍测试。
 - **结论：**同网段 TCP 可达已在 17:25 的地址组合上通过；之后网络地址变化且设备连接丢失，当前生产 NSD/WSS、配对与只读 RPC 尚未完成。旧的同网段成功证据仅适用于当时，不外推到当前状态。
+
+## 2026-11-23 最新网络反馈后的 ADB 实时复核（18:33 Asia/Shanghai）
+
+- **设备和地址：**USB ADB 已重新枚举 LGE AN10（Android 15 / API 35 / arm64 / 4 KB 页），设备 ID `AEMN022427001360`。手机 `wlan0=192.168.8.7/24`，SSID 为“我没网”，Wi-Fi policy table 1026 的默认路由为 `192.168.8.1`。Mac `en0=192.168.10.239/24`，默认路由为 `192.168.10.1`；`networksetup -getairportnetwork en0` 报告未关联 AirPort 网络。两端不在同一 `/24`。
+- **可达性：**从手机到 Mac `192.168.10.239` 的 ICMP 2/2 无响应；`47321/TCP` 探针超时，且 Mac 当时没有 `47321` listener。故当前网络一致/直连可达尚未得到系统读数支持。此 TCP 探针因 Host 未监听，不单独作为 Host 服务失败证据。
+- **前台和范围：**`topResumedActivity` 仍是用户项目 `com.cbdn.news/...MainActivity`；Aggregate 普通包 `io.github.guog962464.aggregate` / versionName `0.3.7` 仍安装。本轮没有切换手机前台、没有启动 Mac Host、生成邀请、提交配对、批准/撤销 grant 或调用 RPC；也没有更改网络设置、启动 testnode 或运行无障碍测试。
+- **结论：**本轮仅完成地址、策略路由、连通性和前台状态读回；A5.4 production LAN/NSD/WSS 配对与只读 RPC、A5.5 production 业务验收继续开放。待地址/路由实际可达后再沿用已授权的只读 Host 验收范围。

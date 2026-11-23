@@ -287,6 +287,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-20 同网段复核：Mac `en0=192.168.10.144/24`、LGE AN10 `wlan0=192.168.10.195/24`，但 Android 邻居项保持 `INCOMPLETE`、TCP 探针为 `No route to host`，Mac 侧 ICMP/ARP 也无返回。Host 正监听期间，普通 Android 邀请请求未抵达配对层；没有新增 grant 或 RPC。USB reverse 的 loopback TCP 探针通过，但未继续配对。临时桥接、ADB reverse 与 Host 均已清理；A5.4/A5.5 状态不变，2026-11-19 直连成功证据仍按其网络环境保留。详见 [同网段直连复核](android-a5-android-client.md#2026-11-20-1002-同网段直连复核与邻居解析失败)。
   - 2026-11-20 前台 Host 补验：正式 `main.dart` Debug Host 成功监听 `192.168.8.4:47321`；Mac loopback TCP 桥与 `adb reverse tcp:47321 tcp:47322` 仅通过 TCP 探针。设备 UI 自动化读到用户项目更新界面节点，Aggregate 前台状态不再确定，因此未生成邀请、配对或调用 RPC；Host、桥与 reverse 均已清理。A5.4/A5.5 继续开放，不能将 TCP 预检计作 WSS/配对验收。详见 [前台 Host 启动与 ADB reverse TCP 预检](android-a5-android-client.md#2026-11-20-前台-host-启动与-adb-reverse-tcp-预检)。
   - 2026-11-23 当前工作区 A5 本机协议/配对/向导核心回归：6 个测试文件共 47 项通过，含 Android RuntimePort、Host RPC dispatch、配对授权/客户端及 setup runtime；按用户要求跳过包含语义断言或无障碍特征注入的两个 UI 测试文件。没有启动手机 App、Mac Host 或 production WSS，不替代实机业务验收；A5.4/A5.5 保持开放。详见 [A5 本机协议与向导核心测试复验](android-a5-android-client.md#2026-11-23-a5-本机协议与向导核心测试复验)。
+  - 2026-11-23 18:33 用户反馈网络一致后的 ADB 实时复核：设备已恢复 USB ADB；手机 `192.168.8.7/24`（SSID“我没网”），Mac `192.168.10.239/24` 且系统报告 Wi-Fi 未关联；手机到 Mac ping 2/2 无响应，Mac 当时无 `47321` listener。手机仍在用户项目前台，未启动 Host、配对或调用 RPC；A5.4/A5.5 保持开放。详见 [ADB 实时网络复核](android-a5-android-client.md#2026-11-23-最新网络反馈后的-adb-实时复核1833-asiashanghai)。
 
 ### A6：Android 多运行端路由、Host 连接与账号/终端
 
