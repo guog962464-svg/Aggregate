@@ -4,32 +4,32 @@
     "cycloneDxBoms": [
       {
         "kind": "apk",
-        "sha256": "bdda0a64b991b2884524e40f93f29ae514db35045e8dc393cf61dcfebfc56c71",
-        "componentCount": 96,
+        "sha256": "bcf534e4df8d463f5c096fa17b31abe2ac9675c00cac4cae41845af73d642aaf",
+        "componentCount": 98,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 66,
-        "candidateLicenseExpressionCount": 62,
+        "libraryLicenseFieldCount": 67,
+        "candidateLicenseExpressionCount": 63,
         "candidateNamedTextLicenseCount": 2,
-        "unresolvedLicenseComponentCount": 4
+        "unresolvedLicenseComponentCount": 3
       },
       {
         "kind": "aab",
-        "sha256": "dd4add58b6d30d887f0092f7a1f03d73bee8756531e95a980efdc1def994d8aa",
-        "componentCount": 96,
+        "sha256": "006c2d697b3b1075a7b0cd1fbef1af53425cccbc9a481b7e83cd862dee0177b8",
+        "componentCount": 98,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 66,
-        "candidateLicenseExpressionCount": 62,
+        "libraryLicenseFieldCount": 67,
+        "candidateLicenseExpressionCount": 63,
         "candidateNamedTextLicenseCount": 2,
-        "unresolvedLicenseComponentCount": 4
+        "unresolvedLicenseComponentCount": 3
       }
     ],
     "libnodePackagedStrippedSha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
     "libnodeUnstrippedSha256": "b72d87ed7266fd2c02dbafb8af8a250f22ca88427bde0f688b39827e9b973e8a",
-    "licenseManifestSha256": "12f8362376bbbc8e42ffaece5395784b743003eb9b6b3229a3dfe59f373c393f",
+    "licenseManifestSha256": "71fcaa84480c304f42c63d628f326e2c8f36b62e9b33ca0abaf6d20ffe9fcf48",
     "linkMapBytes": 96109187,
     "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
     "mobileRecipeCommit": "d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5",
@@ -49,14 +49,14 @@
     },
     "releaseArtifacts": {
       "apk": {
-        "sha256": "46948e43a2a892ed1b806b30e38996bf42dcb8a6266f5f2a493086c0a8c46bfb",
+        "sha256": "23879349eaba633f15f6bfacadb4bab701b43859b8289bfd66929d8ff8db8327",
         "signatureStatus": "unsigned",
-        "sizeBytes": 35337962
+        "sizeBytes": 35339584
       },
       "aab": {
-        "sha256": "413d3c343b26214051f47c7ff6225ad7e5a2e312f08711c3680265e39f4d0ad4",
+        "sha256": "18acd966f235326278acc73d59d0a57150a332cb0cd648bdbf3addc6283d1105",
         "signatureStatus": "unsigned",
-        "sizeBytes": 73260252
+        "sizeBytes": 73261983
       }
     },
     "upstreamNodeCommit": "e63cab040c09d43ceef8cb35508c40044614e906",
@@ -141,7 +141,8 @@
     "No 16 KB physical device was available; runtime/install/load behavior on 16 KB hardware remains an open release gate.",
     "The candidate is a local Darwin-hosted cross build from a fogtape recipe and official Node source; it is not an upstream-maintained Android binary release.",
     "The 96 MB raw linker map is retained outside the repository; this inventory records its SHA-256 and archive/member counts.",
-    "The exact V8 vendored zlib notice is added to the regenerated candidate package and manifest; this is an experimental candidate asset update, not a legal sign-off."
+    "The exact V8 vendored zlib notice is added to the regenerated candidate package and manifest; this is an experimental candidate asset update, not a legal sign-off.",
+    "The scoped libv8_libbase.a expression and two added source-header notices are candidates only; the aggregate V8 source, Node.js mobile runtime and JNI bridge rows remain unresolved, and neither legal review nor recipient-side LicenseRef interoperability is complete."
   ],
   "linkMap": {
     "explicitStaticArchiveCount": 37,
@@ -466,8 +467,9 @@
         "archiveMemberCount": 40,
         "membersWithRetainedSections": 39,
         "licenseCandidate": {
-          "status": "unresolved",
-          "reason": "The linker map retains deps/v8/src/base/ieee754.o; ieee754.cc states it is adapted from fdlibm under a separate custom Sun permission notice. This archive combines that source with V8-licensed objects; retain unresolved pending scoped license modeling."
+          "status": "candidate",
+          "expression": "BSD-3-Clause AND LicenseRef-V8-fdlibm-Sun",
+          "review": "Candidate expression for the exact 39 retained V8 source objects plus fdlibm-derived ieee754.o. V8 and fdlibm texts and the retained GoogleTest/Chromium source notices are packaged and hash-bound. Legal approval and recipient-side CycloneDX custom LicenseRef interoperability remain pending."
         },
         "licenseEvidence": [
           {
@@ -479,13 +481,33 @@
             "path": "deps/v8/LICENSE.fdlibm",
             "sha256": "e7115e18444dae09d17f361ddc365fb1d342640fe500796209c63f7c80dfae10",
             "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.fdlibm"
+          },
+          {
+            "path": "deps/v8/third_party/googletest/src/googletest/include/gtest/gtest_prod.h",
+            "sha256": "3c6301ef533db8686e474dd5a0de4d98a31cbb630e2273f712472d1be25aa261",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/googletest/NOTICE-gtest_prod.h.txt",
+            "packagedAssetSha256": "500ce084a8d904bc96ad514d6d9a1eebdb2acf553991168102182a615a4df00f",
+            "evidenceKind": "source-header-notice"
+          },
+          {
+            "path": "deps/v8/src/base/debug/stack_trace_android.cc",
+            "sha256": "45d720531cefc54a8f5b0fe0df9d1764e760864cc7beef991b6fc15fba1ef3a2",
+            "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/chromium/NOTICE-stack_trace_android.cc.txt",
+            "packagedAssetSha256": "5581b0e431afac8472c5c84219fa6e601fdd4cfac67d6f5a1cb3fd42dcc34e97",
+            "evidenceKind": "source-header-notice"
           }
         ],
         "retainedObjectLicenseScope": {
           "linkMapSha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
           "membersWithRetainedSections": 39,
-          "unresolvedRetainedObject": "deps/v8/src/base/ieee754.o",
-          "reason": "ieee754.cc states it is adapted from fdlibm; its custom Sun permission notice has no selected SPDX mapping here."
+          "licenseScopes": [
+            "V8 BSD-3-Clause",
+            "fdlibm/Sun notice on ieee754.o"
+          ],
+          "noticeAssets": [
+            "nodejs-mobile-static-licenses/deps/v8/third_party/googletest/NOTICE-gtest_prod.h.txt",
+            "nodejs-mobile-static-licenses/deps/v8/third_party/chromium/NOTICE-stack_trace_android.cc.txt"
+          ]
         }
       },
       {
@@ -680,7 +702,7 @@
           "archiveMembers": 2
         }
       ],
-      "remainingScope": "libv8_libbase.a remains unresolved because fdlibm-derived ieee754.o uses a custom Sun permission notice; aggregate libnode.so remains unresolved because it combines multiple components."
+      "remainingScope": "libv8_libbase.a now has an evidence-supported candidate expression and hash-bound V8, fdlibm, GoogleTest and Chromium notice assets; legal approval and recipient-side CycloneDX 1.6 LicenseRef text interoperability remain open. The aggregate V8 source component, Node.js mobile runtime and Aggregate NodeProbe JNI bridge remain unresolved."
     }
   },
   "scope": "Exact source and static archive evidence for the isolated arm64 NodeProbe candidate. This supplements, but does not replace, the CycloneDX APK/AAB BOM; no legal sign-off or product release is implied.",
@@ -1369,11 +1391,25 @@
           "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/LICENSE.v8",
           "path": "deps/v8/LICENSE.v8",
           "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca"
+        },
+        {
+          "path": "deps/v8/third_party/googletest/src/googletest/include/gtest/gtest_prod.h",
+          "sha256": "3c6301ef533db8686e474dd5a0de4d98a31cbb630e2273f712472d1be25aa261",
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/googletest/NOTICE-gtest_prod.h.txt",
+          "packagedAssetSha256": "500ce084a8d904bc96ad514d6d9a1eebdb2acf553991168102182a615a4df00f",
+          "evidenceKind": "source-header-notice"
+        },
+        {
+          "path": "deps/v8/src/base/debug/stack_trace_android.cc",
+          "sha256": "45d720531cefc54a8f5b0fe0df9d1764e760864cc7beef991b6fc15fba1ef3a2",
+          "packagedAsset": "nodejs-mobile-static-licenses/deps/v8/third_party/chromium/NOTICE-stack_trace_android.cc.txt",
+          "packagedAssetSha256": "5581b0e431afac8472c5c84219fa6e601fdd4cfac67d6f5a1cb3fd42dcc34e97",
+          "evidenceKind": "source-header-notice"
         }
       ],
       "name": "V8",
       "notes": [
-        "The aggregate deps/v8 source group includes V8 BSD-3-Clause code, a retained fdlibm-derived ieee754.o with a separate Sun permission notice, and external vendored components. Per-archive mappings use the exact candidate linker map; libv8_libbase.a remains unresolved because it combines V8 code with fdlibm-derived code."
+        "The aggregate deps/v8 source group includes V8 BSD-3-Clause code, fdlibm-derived code, and external vendored components, so this aggregate row remains unresolved. The exact libv8_libbase.a archive has a separate BSD-3-Clause AND LicenseRef-V8-fdlibm-Sun candidate with the retained GoogleTest and Chromium source-header notices hash-bound to the package; legal approval and recipient-side custom-reference interoperability remain pending."
       ],
       "sourceGitTreeObjectId": "f291e09f79e4b197c356477fcdb800a22d24d038",
       "sourceRoot": "deps/v8",
@@ -1446,16 +1482,16 @@
   "validation": {
     "cycloneDxSchema": "1.6",
     "cycloneDxSchemaSha256": "1ebcb88a2c845ecb6ff7bee7aeabdff9422cb0347f3d6875b241bd444b7e098f",
-    "cycloneDxSchemaValidation": "Passed for the license-candidate APK and AAB BOMs using CycloneDX 1.6 root, SPDX and JSF schemas with Draft 7 and format checking; 0 schema errors for each BOM.",
-    "aabBundletoolValidate": "passed with Bundletool 1.18.3",
-    "aabNativeLibraryAlignment": "PAGE_ALIGNMENT_16K",
-    "apkZipalign": "passed: zipalign -c -P 16 4",
-    "licenseAssetHashCheck": "Passed after isolated candidate rebuild: all 25 Node native dependency license/notice files, Node project LICENSE, the V8 vendored zlib LICENSE, two Gradle runtime components using the bundled Apache-2.0 text, and three NDK notices match recorded hashes in APK and AAB.",
-    "nodeRuntimeElfAlignment": "passed: 11 PT_LOAD segments across 3 arm64 libraries in both APK and AAB; each p_align=0x4000",
-    "bomDependencyClosure": "Passed: 96 components, 45 dependency nodes, 40 dependency edges; all references resolve; composition remains incomplete.",
+    "cycloneDxSchemaValidation": "Passed for the notice-updated APK and AAB with CycloneDX 1.6 root schema SHA-256 1ebcb88a2c845ecb6ff7bee7aeabdff9422cb0347f3d6875b241bd444b7e098f, SPDX schema SHA-256 33863a360fc4d348e183d89c1ca7aa0877f481e7eb55be2d4102a30386188a10, and JSF 0.82 schema SHA-256 2faf5eb3651f2ae5f46091a131770d8d847bbd121139d19c85fc7051bfa58c46; jsonschema 4.26.0 Draft 7 and format checking; 0 schema errors per BOM.",
+    "aabBundletoolValidate": "Passed on notice-updated unsigned AAB SHA-256 18acd966f235326278acc73d59d0a57150a332cb0cd648bdbf3addc6283d1105 with official Bundletool 1.18.3 (jar SHA-256 a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29).",
+    "aabNativeLibraryAlignment": "PAGE_ALIGNMENT_16K for the notice-updated AAB; no 16 KB device runtime test.",
+    "apkZipalign": "Passed for notice-updated unsigned APK SHA-256 23879349eaba633f15f6bfacadb4bab701b43859b8289bfd66929d8ff8db8327: Build Tools 36.0.0 zipalign -c -P 16 4.",
+    "licenseAssetHashCheck": "Passed for both notice-updated APK and AAB: all 28 manifest entries match packaged asset hashes, including GoogleTest NOTICE SHA-256 500ce084a8d904bc96ad514d6d9a1eebdb2acf553991168102182a615a4df00f and Chromium NOTICE SHA-256 5581b0e431afac8472c5c84219fa6e601fdd4cfac67d6f5a1cb3fd42dcc34e97; the manifest SHA-256 is 71fcaa84480c304f42c63d628f326e2c8f36b62e9b33ca0abaf6d20ffe9fcf48.",
+    "nodeRuntimeElfAlignment": "Passed on both notice-updated APK and AAB: 3 arm64 libraries and 11 PT_LOAD segments; each p_align >= 0x4000 and file/virtual offsets are congruent modulo 16 KB.",
+    "bomDependencyClosure": "Passed for both notice-updated BOMs: 98 components, 45 dependency nodes and 40 edges; all dependency references resolve. Composition remains incomplete.",
     "physicalNodeProbeRelease": "Passed on LGE AN10 / Android 15 / API 35 / arm64 / 4 KB using debug-key-signed APK SHA-256 f16497c63370c0c191a76a507931e392464d252dc12d6cc112e8aeb20473093d: foreground ProbeActivity returned Node v24.22.3/mobile 24.22.3-0, file=ok, loopback network=network-ok (522 ms). Isolated package uninstalled afterward; previous app restored.",
-    "sourceEvidenceHashCheck": "Passed: 26 source components plus eight archive-level license-scope records; 55 distinct source file/hash pairs and 72 source-derived APK/AAB license-asset/hash checks matched. This does not validate all 96 BOM components or legal approval.",
-    "bomLicenseDeclarationCoverage": "APK and AAB each contain 96 components: 70 libraries and 26 license/notice files. 66/70 library components have license fields: 62 SPDX-expression candidates and two named-text candidates; four library rows remain unresolved. Candidate mappings are not legal approval."
+    "sourceEvidenceHashCheck": "The prior broad sweep covered 26 source components, eight archive-level license-scope records, 55 source file/hash pairs and 72 source-derived packaged-asset/hash checks. This follow-up additionally matched the two pinned GoogleTest/Chromium source-header hashes and both NOTICE asset hashes in the current APK/AAB; it does not validate all 98 BOM components or provide legal approval.",
+    "bomLicenseDeclarationCoverage": "APK and AAB each contain 98 components: 70 libraries and 28 license/notice files. 67/70 library components have license fields: 63 SPDX-expression candidates and two named-text candidate components; three library rows remain unresolved (Aggregate NodeProbe JNI bridge, Node.js mobile runtime and aggregate V8). Candidate mappings are not legal approval."
   },
   "binaryLicenseMappings": [
     {
