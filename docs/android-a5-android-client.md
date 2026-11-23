@@ -580,3 +580,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **实现：**服务准备超时后保留原 Future 的挂起标记；在这条原生 Keychain 请求完成或失败前，后续 Host start 快速返回安全的 `transportFailure`，不再提交并行 Keychain 查询。原 Future 结束后解除标记，允许用户重试。若 Security.framework 永不返回，当前 app 生命周期内的重试会一直被阻止；Future timeout 仍不能取消原生调用。
 - **验证：**Host WSS 与 Mac Host module 定向测试 8 项通过；超时测试确认首次仅调用一次 loader、挂起期重试不增加调用数、迟到结果不打开 listener，原 Future 完成后可成功重试并正常停止。定向 `dart analyze` 无问题。对含该保护的源码补丁，在 detached worktree 用 `flutter pub get --offline`（当前工作区锁定版本，锁文件比较无差异）后执行 `flutter build macos --debug --no-pub`，构建成功并生成 arm64 Mach-O。编译有 mobile_scanner 弃用 API 与 Flutter Assemble Run Script 警告。
 - **边界：**隔离 app 未启动，未操作 SecurityAgent 或 Keychain，也没有生产 Host/WSS/NSD/配对/RPC。此次验证关闭超时重试保护的测试、分析与编译缺口，不证明实际 Keychain 授权或 production Host 可用。
+
+## 2026-11-24 A5 当前 Debug 包现场验证服务超时与重试闸门
+
+- **网络与设备：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`；路由经 `en0` 直连，双向 ICMP 各 2/2。设备为 Android 15/API 35/arm64/4 KB 页。Host TCP `47321/47322` 无 listener，ADB reverse 为空。
+- **隔离构建：**在 detached worktree `/private/tmp/aggregate-a5-live-timeout` 的提交 `60aaacef77c3e204537ccb5a47c700ef68b3fd9c` 执行 `flutter pub get --offline`（`pubspec.lock` 无差异）和 `flutter build macos --debug --no-pub`，成功生成 arm64 Debug app。输出有 `mobile_scanner` 弃用 API 与 Flutter Assemble Run Script 警告。未在用户工作区重建或覆盖产物。
+- **现场超时：**关闭两个仍显示 Host“正在启动”的旧 Debug app 实例后，从隔离构建启动新 app。设置页初始状态为“已停止”；点击“启动 Host”后，约 32 秒读到“启动失败”，并显示“Host 启动失败。请检查 Keychain、网络接口和本地网络权限后重试。”这与默认 30 秒服务准备超时的 UI 结果一致。不能由此判定 Keychain、网络接口或本地网络权限中的具体根因，也不能证明原生 Keychain 操作已取消。
+- **重试观察：**随后在失败态再点击一次，UI 在约 0.5 秒内仍返回启动失败，没有再经过服务准备等待期。这与挂起 Future 重试闸门的行为一致；单凭 UI 时间不足以证明原生层没有再次发起请求，定向单元测试仍是该性质的直接证据。
+- **安全与验收边界：**系统进程 `SecurityAgent`（PID 25593）仍在，但本轮没有读取到授权提示内容。CUA 拒绝控制 `com.apple.SecurityAgent`，因此没有输入用户凭据或选择允许/始终允许，也没有修改 Keychain、ACL 或签名。Host 端口仍无 listener；没有 production WSS、NSD、邀请、配对或 RPC。未切换 Android 前台、进入 NodeProbe/testnode 或运行无障碍测试。Keychain 授权结果和 OSStatus 仍未知，A5 production Host 验收开放。
