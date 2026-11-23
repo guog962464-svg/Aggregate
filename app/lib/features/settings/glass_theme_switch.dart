@@ -44,6 +44,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   bool _sceneLayoutRefreshScheduled = false;
   Offset _backdropOrigin = Offset.zero;
   bool _focused = false;
+  bool _suppressPointerFocusRing = false;
   bool _hoveredOnTrack = false;
   int? _pointer;
   bool _startedOnHandle = false;
@@ -155,6 +156,18 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     setState(() {});
   }
 
+  void _showKeyboardFocusRing() {
+    if (!_focus.hasFocus || !_suppressPointerFocusRing) return;
+    _suppressPointerFocusRing = false;
+    setState(() => _focused = true);
+  }
+
+  void _updateFocusHighlight(bool value) {
+    if (!value) _suppressPointerFocusRing = false;
+    final visible = value && !_suppressPointerFocusRing;
+    if (_focused != visible) setState(() => _focused = visible);
+  }
+
   Offset _designPoint(Offset local, Size size) =>
       (local - ThemeSwitchArtwork.sceneOrigin(size, widget.calibration.scene)) /
       ThemeSwitchArtwork.sceneScale(size, widget.calibration.scene);
@@ -189,6 +202,8 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   void _down(PointerDownEvent event, Size size) {
     final point = _designPoint(event.localPosition, size);
     if (!_allowsPointer(event, size) || _pointer != null) return;
+    _suppressPointerFocusRing = true;
+    _focused = false;
     _focus.requestFocus();
     _pointer = event.pointer;
     _startX = point.dx;
@@ -284,7 +299,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     onTap: () => _select(!widget.light),
     child: FocusableActionDetector(
       focusNode: _focus,
-      onShowFocusHighlight: (value) => setState(() => _focused = value),
+      onShowFocusHighlight: _updateFocusHighlight,
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
         SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
@@ -293,13 +308,22 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
       },
       actions: {
         ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) => _select(!widget.light),
+          onInvoke: (_) {
+            _showKeyboardFocusRing();
+            _select(!widget.light);
+          },
         ),
         _DarkIntent: CallbackAction<_DarkIntent>(
-          onInvoke: (_) => _select(false),
+          onInvoke: (_) {
+            _showKeyboardFocusRing();
+            _select(false);
+          },
         ),
         _LightIntent: CallbackAction<_LightIntent>(
-          onInvoke: (_) => _select(true),
+          onInvoke: (_) {
+            _showKeyboardFocusRing();
+            _select(true);
+          },
         ),
       },
       child: LayoutBuilder(

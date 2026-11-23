@@ -1,7 +1,9 @@
 import 'package:aggregate/features/settings/glass_theme_switch.dart';
 import 'package:aggregate/features/settings/theme_switch_calibration.dart';
 import 'package:aggregate/features/settings/theme_switch_simulation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -271,6 +273,49 @@ void main() {
       closeTo(ThemeSwitchSimulation.trackHeight * ringScale + 8, 0.01),
     );
     expect(focusRing.position, DecorationPosition.foreground);
+  });
+
+  testWidgets('pointer focus hides the keyboard ring until a key is used', (
+    tester,
+  ) async {
+    final previousStrategy = FocusManager.instance.highlightStrategy;
+    FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() {
+      FocusManager.instance.highlightStrategy = previousStrategy;
+    });
+
+    final changes = <bool>[];
+    await tester.pumpWidget(_host(changes: changes));
+    final switchFinder = find.byType(GlassThemeSwitch);
+    final detector = tester.widget<FocusableActionDetector>(
+      find.descendant(
+        of: switchFinder,
+        matching: find.byType(FocusableActionDetector),
+      ),
+    );
+    detector.focusNode!.requestFocus();
+    await tester.pump();
+
+    final focusRingFinder = find.descendant(
+      of: switchFinder,
+      matching: find.byKey(const ValueKey('theme-switch-focus-ring')),
+    );
+    expect(focusRingFinder, findsOneWidget);
+
+    final pointer = await tester.startGesture(
+      tester.getRect(switchFinder).center,
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pump();
+    expect(focusRingFinder, findsNothing);
+
+    await pointer.cancel();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    expect(focusRingFinder, findsOneWidget);
+    expect(changes, [true]);
   });
 
   testWidgets(

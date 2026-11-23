@@ -365,3 +365,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B108/B109 生产本地文件路径复验（2026-11-23）
 
 随后将同一浅色 Profile 夹具委派到生产 MacRuntime 本地文件方法，并使用隔离 Runtime 目录与一次性普通文件。B108 AX 读回文件真实两行内容；B109 的 Finder 窗口 AX 将该精确文件标为 selected。临时源码已恢复并与 HEAD 校验一致，Profile、Finder 窗口和样例文件已清理。截图 SHA 与验收边界见[记录](acceptance-record.md#2026-11-23-ui-67-b108b109-浅色生产本地文件路径复验)。此项仅覆盖该普通文件和浅色 800×720pt Profile；其他文件边界及按钮连续动效、Flutter FrameTiming、物理面板 FPS 未验，UI-6.7 仍部分验收。
+
+### UI-6.8 补证：主题开关键盘/指针焦点环（2026-11-23）
+
+为避免键盘焦点框影响玻璃主题开关的指针材质对照，指针按下时隐藏该框，Space、Enter 和方向键操作时恢复。11 项定向 Widget 测试、macOS Profile 构建及隔离原生窗口交互均通过；实窗 AX 验证鼠标点击可在深浅主题间切换，键盘动作显示整轨焦点环，鼠标再次操作后隐藏。太阳/月亮模拟、拖动与业务回调保持原实现。窗口截图和 SHA、原生实例范围见[验收记录](acceptance-record.md#2026-11-23-ui-6-8-主题开关键盘与指针焦点环实窗复验)。该项不替代原 MP4（已删除）逐帧对照、display-present FPS、VoiceOver 实际语音、UI-6.7 全量调用点或最终用户签收；UI-6.8/阶段 0–6 仍未完成。
