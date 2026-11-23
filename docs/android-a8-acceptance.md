@@ -1,6 +1,6 @@
 # Android A8 发布前检查与文档验收
 
-> 检查日期：2026-11-20。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
+> 检查日期：2026-11-23。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
 
 ## A8.4 安全、依赖与分发检查
 
@@ -243,3 +243,11 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **实现范围：**只在 `app/test/host_rpc_protocol_test.dart` 增加临时文件回归，未更改 ledger 运行时代码。使用 `maxEntries: 1` 写入第一项后，验证第二项被 `operationLedgerFull` 拒绝且 `operations.json` 字节内容未变；重新打开后旧 `started` 记录转为 `outcomeUnknown`，被拒绝的 operation 不存在。
 - **验证：**`flutter test --no-pub test/host_rpc_protocol_test.dart --plain-name 'rejects new operations without changing a full ledger'` 通过；整份 `host_rpc_protocol_test.dart` 22 项通过；`dart format test/host_rpc_protocol_test.dart` 检查 0 变更。没有启动生产 Host、读取/更改真实账本或执行无障碍测试。
 - **范围限制：**确认本地账本容量拒绝与进程重启语义；文档中的真实 Host 管理员恢复流程仍未在生产 Host 演练，也未执行设备撤权/配对密钥轮换。
+
+## 2026-11-23 当前 HEAD Release APK/AAB 静态复验与 4 KB 冷启动
+
+- **源码与依赖：**从当前 HEAD `be41aaae36e1118dac705d0097c3a0fb172a7584` 的共享工作树构建；Android 源码无未提交修改。工作区 `pubspec.lock` 有用户未提交修改，SHA-256 为 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`；命令使用 `--no-pub`，未解析或改写依赖。
+- **产品 Release 工件：**`flutter build apk --release --no-pub --target-platform android-arm64` 与 `flutter build appbundle --release --no-pub --target-platform android-arm64` 均通过。APK SHA-256 `2605b195f317a9c1bfc0d723006fa1070f629a185e241e44a335dbb0c427e587`、27,845,236 bytes；AAB SHA-256 `803b97a6227165504b15221ac103f4dc0bd43ed3fcd87d0cb3bf2d77c7384040`、25,571,035 bytes。包名 `io.github.guog962464.aggregate`、versionCode 8/versionName 0.3.7、minSdk 24、targetSdk 36，arm64 only；产品 APK/AAB 保持未签名。
+- **静态门禁：**Build Tools 36.0.0 `zipalign -c -P 16 4` 通过。APK/AAB 各含相同的 7 个 arm64 原生库、21 个 `PT_LOAD`，全部 `p_align >= 0x4000` 且文件偏移与虚拟地址的 16 KB 余数相同；archive CRC 检查通过，未包含 NodeProbe、NodeBridge、`libnode.so`、nodejs-mobile 或 npm `node_modules`。从 [Google Bundletool 1.18.3 release](https://github.com/google/bundletool/releases/tag/1.18.3) 下载的官方 jar SHA-256 `a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29` 与 GitHub release API asset digest 一致；`validate` 通过，AAB 配置报告 `PAGE_ALIGNMENT_16K`。
+- **隔离 Release 冷启动：**同一源码构建 test-signed `io.github.guog962464.aggregate.integration` APK，SHA-256 `50b4a36d8bbc4d0f889ee9a8f992cb1cf3e99fcb46eb096061da5c82b23a4dfd`，使用 Android Debug test signer（证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`）；zipalign 检查通过。LGE AN10 / Android 15 / API 35 / 4 KB 真机冷启动 runner 返回 `Status: ok`、`LaunchState: COLD`、`MainActivity` resumed 且进程存活（PID 504，WaitTime 1,528 ms）。runner 随后卸载本轮隔离包。
+- **清理与范围：**普通 Aggregate 包未被操作；ADB reverse 为空，Mac Host 端口 `47321/47322` 无 listener，手机返回 HONOR Launcher。此项是当前源码的 unsigned 产品 Release 静态检查与 test-signed Release 4 KB 冷启动，不代表正式签名或 16 KB 系统运行。没有启动 NodeProbe/testnode，也没有运行无障碍/TalkBack 专项测试；production Host/音乐闭环仍未验收。

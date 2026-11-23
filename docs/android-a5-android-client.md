@@ -316,3 +316,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 命令：`flutter test --no-pub --reporter expanded test/android_runtime_port_test.dart test/connection_setup_runtime_test.dart test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_setup_rpc_dispatcher_test.dart test/android_host_pairing_client_test.dart`（工作目录 `app/`）。
 - 按用户要求，未运行包含语义断言/无障碍特征注入的 `connection_setup_dialog_test.dart` 和 `connection_setup_target_test.dart`；未运行任何 TalkBack、读屏或无障碍专项测试。
 - 该结果来自本机 Flutter 测试 runner 与隔离测试依赖，没有启动 Android App、Mac Host 或 production WSS；不替代 Android 真机业务链路、LAN/NSD、真实账号/播放或 16 KB 系统验证。A5.4/A5.5 保持开放。
+
+## 2026-11-23 Android 实体 Keystore 与隔离 Host setup E2E
+
+- **命令与环境：**在 `app/` 运行 `python3 tool/run_android_host_setup_e2e.py --device AEMN022427001360`。设备为 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页；Mac en0 为 `192.168.8.4/24`，手机 wlan0 为 `192.168.31.136/24`，仍处于不同子网。
+- **结果：**`Mac loopback Host fixture: PASS`、`Android physical Keystore + WSS setup flow: PASS`。Android 使用实体设备 Keystore 和隔离 `.integration` 包，通过 USB ADB reverse 连接本机 loopback Host fixture；向导使用隔离 HOME/MacRuntime 数据及假 Node/npm/mpv/ncm-cli。
+- **清理：**runner 删除隔离测试包、ADB reverse 与临时 fixture；普通 Aggregate 包未被目标操作。测试后手机回到 HONOR Launcher，reverse 列表为空，Mac `47321/47322` 无 listener。没有访问 Mac 生产 Host、生产钥匙串、真实账号或音乐服务。
+- **验收边界：**这是实体 Android Keystore/WSS 和隔离 setup 工作流证据，不代表 direct LAN/Bonjour/NSD、production WSS、日常身份轮换、真实 CLI/账号/播放或 16 KB 系统通过。未启动 NodeProbe/testnode；按用户要求未运行无障碍/TalkBack 专项测试。A5.4/A5.5 仍保持开放。
