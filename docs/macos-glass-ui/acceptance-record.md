@@ -2020,3 +2020,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B103：返回功能列表后收藏“两个整数相加”；fresh AX 显示“收藏的功能”区和“取消收藏”按钮。随后只取消该项收藏；新的完整 AX 快照显示收藏区消失、同一条目的操作恢复为“收藏 两个整数相加”。这次状态变化仅存在于隔离进程，不修改正式应用偏好。
 - 证据：未运行表单[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b102-b103-light/capability-form-not-run.png>) SHA-256 `554d75361c782155f58b0d489be21a0d9e9787d2b75d6357690c18409cc73be4`；收藏后[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b102-b103-light/favorite-added.png>) SHA-256 `46e8948446ba2579a6ec90e61f4c0bd70568afc4819571dff885f7dbea835bec`；取消后[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b102-b103-light/favorite-cancelled.png>) SHA-256 `f2ac1d14431c51677c56ea7f14abd3edea7fc63c16dfca4d3e0a8b88e6965736`。均为 1824×1488px、DPR 2。
 - 结论与限制：浅色 B102 进入表单且保持未运行、B103 收藏与取消回退的界面/内存状态通过。隔离 app 已优雅关闭；没有真实 Runtime 调用、连续按钮动效帧、Flutter `FrameTiming` 或物理面板 FPS 证据。UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B104 通用页面错误态浅色复验
+
+- 环境：临时 macOS Profile 夹具从生产 `PageState.error`、`AggregateActionButton` 和 macOS `GlassScene` 直接组成浅色页面；bundle ID `io.github.guog962464.aggregate.ui6b104lightv2`，PID 12631，窗口 800×632pt、DPR 2。正式应用未操作。
+- 结果：静置时 AX 显示“重试计数：0”。真实指针点一次“重试”后，fresh AX 显示“重试计数：1”。回调只递增夹具本地计数，不代表真实加载、网络请求或错误恢复。
+- 证据：静置[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b104-light/page-state-error-idle-light-profile-v2.png>) SHA-256 `7d801be899420af8017002a38e5c643586adc85d722d2a7751ea839764f6a2dc`；重试后[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b104-light/page-state-error-retry-light-profile-v2.png>) SHA-256 `948bc6c9221a158736d0d9bdd4dec075667865d2da773eee7fa6c0dd56f85608`。均为 1824×1488px、DPR 2。Profile 构建成功；验收后隔离 app 已优雅关闭，临时入口源码已删除。
+- 结论与限制：B104 浅色错误态静态呈现和本地重试回调通过；没有按下/释放动画帧、Flutter `FrameTiming` 或物理面板 FPS 证据。未运行测试；UI-6.7 仍部分验收。

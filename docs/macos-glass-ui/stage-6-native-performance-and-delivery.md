@@ -344,3 +344,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B102/B103 浅色功能页与收藏回退（2026-11-23）
 
 浅色隔离 Profile 打开“两整数相加”表单后 AX 仍为“尚未运行”，没有提交参数或调用 Runtime；同一进程中收藏再取消后，AX 读回收藏区移除且收藏动作恢复。截图 SHA、进程与 fixture 限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b102b103-浅色功能页与收藏回退)。只补当前功能行的浅色页面/收藏状态，不含按钮动画、Flutter `FrameTiming` 或面板 FPS，UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B104 通用错误态浅色复验（2026-11-23）
+
+生产 `PageState.error` 的浅色 Profile 夹具在真实指针点击“重试”后，AX 本地计数从 0 变为 1；不代表真实加载或网络请求。截图 SHA、构建环境与限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b104-通用页面错误态浅色复验)。仅补 B104 浅色状态及本地回调，按下关键帧、Flutter `FrameTiming` 和面板 FPS 仍未验，UI-6.7 仍部分验收。
