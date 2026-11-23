@@ -1,5 +1,7 @@
 # A3 NodeProbe Release BOM license mapping
 
+> **当前制品状态（2026-11-23）：**本页的 4/70 未解析记录对应较早的 license-mapping BOM。对精确 notice-updated APK/AAB 的后续复核将 `libv8_libbase.a` 标为条件性表达式候选后，当前 BOM 有 3/70 library rows 没有 `licenses` 字段；这不等于法律审查或该混合许可证范围已解决。见 [当前候选 BOM 复核](android-a3-license-source-followup-2026-11-20.md#2026-11-23-current-notice-updated-apkaab-bom-recheck)。
+
 ## Candidate identity and baseline coverage
 
 This mapping is locked to the unsigned, arm64-v8a NodeProbe Release candidate built from Node.js `24.22.3` / mobile `24.22.3-0`, upstream Node commit `e63cab040c09d43ceef8cb35508c40044614e906`, mobile source tree `f693fe78e1540052404756a6c83c1b12e4c01315` (source archive SHA-256 `6df67207ad3c607269e09622d170e9b1e3ed58e9c3b5e399f6cc5855f835028b`), recipe commit `d4aedf536d035bf4eeab7a7a6e18b73d154d0ea5`, and Android NDK r28c `28.2.13676358`. The official [Node.js v24.22.3 archive](https://nodejs.org/download/archive/v24.22.3) and [upstream commit](https://github.com/nodejs/node/commit/e63cab040c09d43ceef8cb35508c40044614e906) identify the source base; the candidate tree/archive hashes identify the mobile build input.
