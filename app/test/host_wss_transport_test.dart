@@ -28,6 +28,7 @@ void main() {
   late HostPairingAuthority pairing;
   late HostSetupCoordinator setup;
   late HostWssTransport transport;
+  late HostWssServices services;
   late HttpClient client;
   late String deviceId;
   late List<int> publicKeySpki;
@@ -62,12 +63,13 @@ void main() {
       ledger: ledger,
       authorization: pairing,
     );
+    services = HostWssServices(
+      identity: identity,
+      pairing: pairing,
+      dispatcher: dispatcher,
+    );
     transport = HostWssTransport(
-      loadServices: () async => HostWssServices(
-        identity: identity,
-        pairing: pairing,
-        dispatcher: dispatcher,
-      ),
+      loadServices: () async => services,
       bindAddressProvider: const _LoopbackAddressProvider(),
       bonjourPublisher: const NoopHostBonjourPublisher(),
       maxConnectionsPerDevice: 1,
@@ -89,6 +91,45 @@ void main() {
     protocols: const [hostWssSubprotocol],
     compression: CompressionOptions.compressionOff,
     customClient: client,
+  );
+
+  test(
+    'times out service preparation and ignores a late Keychain result',
+    () async {
+      final pendingServices = Completer<HostWssServices>();
+      final timedTransport = HostWssTransport(
+        loadServices: () => pendingServices.future,
+        bindAddressProvider: const _LoopbackAddressProvider(),
+        bonjourPublisher: const NoopHostBonjourPublisher(),
+        preparationTimeout: const Duration(milliseconds: 50),
+      );
+      final startup = timedTransport.start();
+      final outcome = await Future.any<Object?>([
+        startup.then<Object?>(
+          (_) => 'started',
+          onError: (Object error) => error,
+        ),
+        Future<void>.delayed(const Duration(milliseconds: 250))
+            .then((_) => null),
+      ]);
+
+      if (outcome == null) {
+        pendingServices.complete(services);
+        await startup;
+        await timedTransport.stop();
+        fail('Host service preparation did not time out');
+      }
+
+      expect(outcome, isA<TimeoutException>());
+      expect(timedTransport.isRunning, isFalse);
+      expect(timedTransport.endpoints, isEmpty);
+
+      pendingServices.complete(services);
+      await Future<void>.delayed(Duration.zero);
+      expect(timedTransport.isRunning, isFalse);
+      expect(timedTransport.endpoints, isEmpty);
+      await timedTransport.stop();
+    },
   );
 
   test(

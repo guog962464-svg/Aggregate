@@ -173,6 +173,7 @@ final class HostWssTransport
     this.maxConnections = 64,
     this.maxConnectionsPerAddress = 4,
     this.maxConnectionsPerDevice = 4,
+    this.preparationTimeout = const Duration(seconds: 30),
     this.handshakeTimeout = const Duration(seconds: 10),
     this.socketPingInterval = const Duration(seconds: 30),
   }) {
@@ -184,6 +185,7 @@ final class HostWssTransport
         maxConnectionsPerAddress > maxConnections ||
         maxConnectionsPerDevice < 1 ||
         maxConnectionsPerDevice > maxConnections ||
+        preparationTimeout <= Duration.zero ||
         handshakeTimeout <= Duration.zero ||
         socketPingInterval <= Duration.zero) {
       throw ArgumentError('Invalid Host WSS policy');
@@ -197,6 +199,10 @@ final class HostWssTransport
   final int maxConnections;
   final int maxConnectionsPerAddress;
   final int maxConnectionsPerDevice;
+
+  /// Bounds Keychain identity and other service loading before any listener
+  /// is bound. A late result is ignored after timeout.
+  final Duration preparationTimeout;
   final Duration handshakeTimeout;
   final Duration socketPingInterval;
   final List<HttpServer> _servers = [];
@@ -278,7 +284,7 @@ final class HostWssTransport
 
   Future<void> _start() async {
     if (_accepting) return;
-    final services = await loadServices();
+    final services = await loadServices().timeout(preparationTimeout);
     await services.pairing.initialize();
     final targets = await _validatedAddresses(
       await bindAddressProvider.addresses(),

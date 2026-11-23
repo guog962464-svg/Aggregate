@@ -560,3 +560,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**Mac en0 为 192.168.8.4/24，LGE AN10 wlan0 为 192.168.8.7/24；Mac 到手机经 en0 直连，手机到 Mac 与 Mac 到手机 ICMP 各 2/2，无丢包。设备仍为 Android 15/API 35/arm64/4 KB 页。
 - **Host：**TCP 47321/47322 均无 listener；ADB reverse 列表为空。Aggregate Debug 设置页仍显示 Host“正在启动”。本轮只读取界面状态和网络/端口，没有再次触发启动，也没有操作 Keychain/SecurityAgent。Keychain 授权结果与 OSStatus 仍未知，没有 production WSS、NSD、邀请、配对或 RPC 证据。
 - **范围：**网络路径已经恢复为同网段可达，但不能据此推断 Host 服务已启动。未进入 NodeProbe/testnode，也未运行无障碍测试。
+
+## 2026-11-24 A5 Host Keychain 启动挂起堆栈与服务准备超时（01:15–01:18 Asia/Shanghai）
+
+- **当前网络回读：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`，Mac→手机及手机→Mac ICMP 各 2/2；Host TCP `47321/47322` 均无 listener。Android 仍为 Android 15/API 35/arm64/4 KB 页。确认网络可达，不代表 production Host/WSS 已启动。
+- **挂起定位：**对两个旧 Aggregate Debug 进程采样；PID 10715 堆栈停在 `HostTlsIdentityChannel.init → MacHostTlsIdentity.loadOrCreate/material → SecKeyCopyExternalRepresentation` 私钥导出路径，PID 25563 停在 `loadOrCreate → readSecret/queryKeychain → SecItemCopyMatching` Keychain 查询路径。对应 UI 仍显示 Host“正在启动”。样本证明这两个进程当时等待在 Security.framework Keychain 操作中；不判定密码有效性、ACL 根因或系统最终授权结果。
+- **实现：**`HostWssTransport` 在加载身份、配对等服务阶段增加默认 30 秒 `preparationTimeout`，超时发生在端口绑定之前。`MacHostModule` 将此类传输启动异常回滚并发布 `failed/startupFailed`。超时后迟到的 Dart 服务加载结果不会继续进入配对初始化、地址发现或 listener 创建链；该 Future 超时机制不会取消已在执行的原生 Security.framework 调用，系统提示/调用仍可能继续，Keychain/ACL 状态未变更。
+- **验证：**`flutter test --no-pub test/host_wss_transport_test.dart test/mac_host_module_test.dart` 通过（8 tests）；定向 `dart analyze lib/platform/macos/host/host_wss_transport.dart test/host_wss_transport_test.dart` 无问题；`git diff --check` 通过。全量 `flutter analyze --no-pub` 仅报告未改动的 `lib/features/settings/glass_theme_switch.dart` 第 311、317、323 行三条 warning。未重建或重启当前 macOS Aggregate 进程，因此新超时行为尚无现场 UI 观测。
+- **验收边界：**本轮没有操作 SecurityAgent、输入凭据、修改/清理 Keychain/ACL、改变签名、启动生产 Host、WSS、NSD、配对或 RPC。端口仍无 listener；生产 Host 验收仍开放。未进入 NodeProbe/testnode，也未运行无障碍测试。
