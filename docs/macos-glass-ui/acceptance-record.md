@@ -1895,7 +1895,7 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 
 ### 2026-11-23 UI-6.7 B070 深色音乐暂停确认框补验
 
-- 环境：当前源码构建的 macOS Profile 隔离副本，bundle ID `io.github.guog962464.aggregate.ui6b070dark`，窗口 800×632pt、DPR 2；入口 `lib/preview/ui6_inspection_main.dart`，运行数据来自 `Ui6InspectionRuntime` 内存 fixture。Profile PID 32159 已正常退出；只通过隔离 bundle ID 操作，原应用未操作。
-- 操作与结果：全局迷你播放器的 AX “暂停”按钮打开确认框。AX 读到标题“暂停？”，说明“通过 示例网易云音乐 执行播放控制。”；“取消”和“执行”按钮边界均为 89×41pt。只点“取消”，确认框消失；随后截图显示音乐样例仍为“播放中”，暂停控件仍可见。没有点击“执行”，没有真实播放/暂停、外部服务或网络请求。
-- 证据：[深色暂停确认框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-confirm.png>) SHA-256 `483a8eaa687166a40850e81dd82447a90e04b3f68798ba741c2833c867e10793`；[取消后播放器状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-after-cancel.png>) SHA-256 `881f6c6e75a675c438097df6425cfc28e9e3ac97108cf7e4e7d2a2fa741df652`。两图由隔离应用窗口截图获得，输出 1824×1488 像素，scale factor 2。
-- 边界：本次只签收 B070 深色静态确认框、AX 尺寸和取消路径；点击/按下动效、执行路径与真实音乐控制仍未验，UI-6.7 继续部分验收。
+- 环境：当前源码构建的 macOS Profile 隔离副本，bundle ID `io.github.guog962464.aggregate.ui6b070dark`，窗口 800×632pt、DPR 2；入口 `lib/preview/ui6_inspection_main.dart`，音乐状态来自 `Ui6InspectionRuntime` 内存 fixture。原页面暂停图样本没有用于 B070，已另名保存为 `dark-music-page-confirm.png` / `dark-music-page-after-cancel.png`；本记录使用“设置”页底部的真实全局迷你播放器样本。隔离 PID 32159 与复开后 PID 36006 均正常退出；只操作隔离 bundle ID，原应用未操作。
+- 操作与结果：AX 先确认“设置”页包含全局迷你播放器，再点其“暂停”按钮（46×46pt），打开确认框。AX 读到标题“暂停？”，说明“通过 示例网易云音乐 执行播放控制。”；“取消”和“执行”按钮均为 89×41pt。只点“取消”，确认框消失；返回截图显示全局迷你播放器仍有“暂停”控件，内存歌曲仍为“播放中”。没有点击“执行”，没有真实播放/暂停、外部服务或网络请求。
+- 证据：[全局迷你播放器暂停确认框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-confirm.png>) SHA-256 `01f7c954837b1f4a844ea20addc8d324906d2422368392631eea280725627b58`；[取消后播放器与设置页](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-after-cancel.png>) SHA-256 `6d5e471fae62b20fd39bdd858b30c7ab4fb14de8707d734499f23750c47e8f21`。两图由隔离应用窗口截图获得，输出 1824×1488 像素，scale factor 2。
+- 边界：B070 只签收深色全局迷你播放器调用、静态确认框、AX 尺寸和取消路径；B071 补充深色静置截图/尺寸。两项都没有按下相位、点阵动画或真实音乐执行证据；UI-6.7 继续部分验收。
