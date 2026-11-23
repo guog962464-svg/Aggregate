@@ -1890,5 +1890,5 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 环境：由当前源码构建的深色 macOS Profile 隔离副本，bundle ID `io.github.guog962464.aggregate.ui6b022dark`，窗口 800×632pt、DPR 2；原应用 PID 1564 未操作。测试 fixture 为 `Ui6InspectionRuntime` 进程内存数据。
 - B021 紧凑布局复验：新增临时 `action1`，输入 `{}` 后执行“检查并预览参数”；AX 读到 `["仅内存预览", "--help"]`，界面显示“此操作不会运行程序”。未执行程序、服务或连接操作。
 - B022：临时新增 `action1` 后取消并重开，动作清单只含原有 `version`；取消与保存按钮在紧凑窗口内均可见。截图：[深色紧凑编辑器](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b022-action-cancel/dark-compact-editor.png>) SHA-256 `5ec44fd62434f2e732f170e134d9265a7050c8b4217650e63dc461a4a9e4986f`。
-- B023 紧凑布局边界：保存临时 `action1` 后编辑器关闭，确认保存回调可达；本轮随后重新打开并回读清单时，Profile 的 AX 窗口枚举失去响应，因此没有把紧凑布局的保存后回读记为通过。此前 B023 的自定义布局回读记录仍保留；紧凑布局回读待后续复核。退出时已结束隔离 Profile 进程，进程内 fixture 不落盘。
-- 验证：`flutter test --no-pub test/action_editor_test.dart` 4/4 通过；`flutter build macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart` 成功；`git diff --check` 通过。连续动画曲线、Flutter `FrameTiming`、物理面板 FPS 未由此签收；UI-6.7 仍部分验收。
+- B023 紧凑布局边界：保存临时 `action1` 后编辑器关闭，确认保存回调可达；本轮随后重新打开并回读清单时，Profile 的 AX 窗口枚举失去响应，因此没有把紧凑布局的原生 Profile 回读记为通过。补充的 800×632 Widget 回归现已验证保存后重开仍包含 `action1`，只签收布局和内存状态逻辑，不替代原生 AX 实窗回读。此前 B023 的自定义布局回读记录仍保留。退出时已结束隔离 Profile 进程，进程内 fixture 不落盘。
+- 验证：`flutter test --no-pub test/action_editor_test.dart` 5/5 通过；`flutter build macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart` 成功；`git diff --check` 通过。连续动画曲线、Flutter `FrameTiming`、物理面板 FPS 未由此签收；UI-6.7 仍部分验收。

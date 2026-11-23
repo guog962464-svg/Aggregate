@@ -206,6 +206,86 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
     expect(renderError, isNull);
   });
+
+  testWidgets('macOS compact action editor keeps footer reachable', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(800, 632);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final runtime = _ActionRuntime();
+    await tester.pumpWidget(
+      GlassMotionScope(
+        child: MaterialApp(
+          theme: AggregateTheme.forPlatform(
+            AggregateTheme.light,
+            TargetPlatform.macOS,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ActionEditorDialog(
+                      runtime: runtime,
+                      connection: runtime.connection,
+                    ),
+                  ),
+                  child: const Text('打开编辑器'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('打开编辑器'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('action-editor-panel')), findsNothing);
+    expect(find.byKey(const Key('action-manifest-json')), findsOneWidget);
+    final cancel = find.text('取消');
+    final save = find.text('保存动作');
+    expect(tester.getRect(cancel).bottom, lessThanOrEqualTo(632));
+    expect(tester.getRect(save).bottom, lessThanOrEqualTo(632));
+
+    await tester.tap(find.text('新增动作'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('action-manifest-json')))
+          .controller!
+          .text,
+      contains('action1'),
+    );
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(runtime.saved?['actions'], hasLength(2));
+
+    await tester.tap(find.text('打开编辑器'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('action-manifest-json')))
+          .controller!
+          .text,
+      contains('action1'),
+    );
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    final renderError = tester.takeException();
+    debugDefaultTargetPlatformOverride = null;
+    expect(renderError, isNull);
+  });
 }
 
 final class _HostConnectionRuntime implements RuntimePort {
@@ -262,7 +342,7 @@ final class _ActionRuntime implements RuntimePort {
   Future<List<Capability>> searchCapabilities(SearchQuery query) async => [];
 
   @override
-  Future<JsonMap?> loadActionManifest(ConnectionId id) async => null;
+  Future<JsonMap?> loadActionManifest(ConnectionId id) async => saved;
 
   @override
   Future<void> saveActionManifest(ConnectionId id, JsonMap manifest) async {
