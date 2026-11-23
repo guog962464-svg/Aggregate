@@ -547,3 +547,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **诊断改动：**`HostTlsIdentityChannel.swift` 增加只记录调用方法、Keychain 操作名及 OSStatus/NSError domain/code 的脱敏日志，不记录密码、密钥、PEM 或错误描述。`flutter build macos --debug --no-pub` 通过，`git diff --check` 通过；此次没有运行测试。
 - **现场结果：**00:07:29 `securityd` 为 Debug Aggregate PID 25563 显示 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串提示；该实例随后显示 Host 启动失败。00:11:59，普通运行实例 PID 10715 再次进入私钥读取/导出路径，`securityd` 为其记录新的 Keychain 提示；Aggregate UI 仍显示“正在启动”。本轮没有在该系统提示中输入密码或批准访问，也没有修改 Keychain 项、ACL 或签名身份。应用层没有观察到可用 OSStatus 日志，故失败状态码仍未知。
 - **Host 验收边界：**现场检查时 `47321/47322` 均无 listener；没有 production WSS、邀请、配对、grant 变更或 RPC。网络恢复不改变 Keychain 授权未完成的状态，本项不记为 production Host 通过。未切换 Android 前台、启动 NodeProbe/testnode 或运行无障碍测试。
+
+## 2026-11-24 用户确认网络一致后的现场回读（00:32 Asia/Shanghai）
+
+- **网络：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`；Mac 到手机、手机到 Mac 的 ICMP 各 2/2。Mac 到 `192.168.8.7` 的路由直连 `en0`，ARP 已解析。Android 仍为 Android 15/API 35/arm64、4 KB 页，普通 Aggregate `MainActivity` 处于前台；未切换或重启手机应用。
+- **Host：**只回读 TCP `47321/47322` 监听状态，均无 listener。本轮没有再次启动 Host，也没有操作 macOS SecurityAgent/Keychain 授权提示；上一轮 Keychain 授权结果和 OSStatus 仍未知。没有 production WSS、NSD、邀请、配对、grant 变更或 RPC。
+- **范围：**此次仅确认同网段和双向 IP 可达，不确认 Wi‑Fi SSID/AP 关联，也不构成 production Host 验收。未启动 NodeProbe/testnode，未运行无障碍测试。
