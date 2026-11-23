@@ -289,7 +289,11 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 ### UI-6.7 补证：B073 B074 音乐搜索授权提示（2026-11-23）
 
-隔离 Profile 中输入搜索词 `IU` 并按回车，原生深色授权框可见并完成截图；未点击取消或允许。窗口重激活后提示消失、AX 未枚举按钮，所以原生分支仍未验。`flutter test --no-pub test/music_search_permission_test.dart` 当前工作树 1/1 通过，证明 Widget runtime 取消不授权，允许后由 PreviewRuntime 返回两条 fixture 结果；没有执行音乐 CLI 或网络请求。截图 SHA 和边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b073-b074-音乐搜索授权原生提示复验)。本项只签收原生静态呈现，UI-6.7 继续部分验收。
+隔离 Profile 中输入搜索词 `IU` 并按回车，原生深色授权框可见并完成截图；未点击取消或允许。窗口重激活后提示消失、AX 未枚举按钮，所以原生分支仍未验。`flutter test --no-pub test/music_search_permission_test.dart` 当前工作树 2/2 通过，搜索用例证明 Widget runtime 取消不授权，允许后由 PreviewRuntime 返回两条 fixture 结果；没有执行音乐 CLI 或网络请求。截图 SHA 和边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b073-b074-音乐搜索授权原生提示复验)。本项只签收原生静态呈现，UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B075 B076 音乐播放授权 Widget 回归（2026-11-23）
+
+`music_search_permission_test.dart` 当前 2/2 通过；新增非 Preview 权限门用例确认播放弹窗取消不授权/不调用，允许后只向进程内 PreviewRuntime 调用一次。Widget 测试不替代原生 Profile 动作：B075 沿用历史暗色原生取消记录，B076 原生“执行”仍未点击；没有真实 CLI、网络或账号操作。原生图和测试边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b075-b076-音乐播放授权-widget-回归)。UI-6.7 继续部分验收。
 
 ### 桌面前台偏好与后续更正（2026-11-23）
 

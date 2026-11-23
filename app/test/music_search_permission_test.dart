@@ -78,11 +78,87 @@ void main() {
     );
     expect(session.searchAuthorized, isFalse);
   });
+
+  testWidgets(
+    'song playback asks before invoking and uses the explicit grant',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final runtime = _PermissionGateRuntime();
+      final session = MusicSession(runtime);
+      addTearDown(session.dispose);
+      addTearDown(runtime.delegate.dispose);
+      final connection = (await runtime.listConnections()).single;
+      final capabilities = await runtime.searchCapabilities(
+        const SearchQuery(''),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MusicPlayerPage(
+              connection: connection,
+              capabilities: capabilities,
+              runtime: runtime,
+              session: session,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('music-search')), 'IU');
+      await tester.tap(find.byTooltip('搜索歌曲'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('允许搜索'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('歌曲 · 2 首'), findsOneWidget);
+      expect(session.busy, isFalse);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      final playResult = find.byTooltip('播放 示例歌曲');
+      expect(playResult, findsOneWidget);
+      final playButton = find.ancestor(
+        of: playResult,
+        matching: find.byType(IconButton),
+      );
+      expect(playButton, findsOneWidget);
+      expect(tester.widget<IconButton>(playButton).onPressed, isNotNull);
+      await tester.ensureVisible(playButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(playButton);
+      await tester.pumpAndSettle();
+      expect(find.text('播放 示例歌曲？'), findsOneWidget);
+      expect(session.controlsAuthorized, isFalse);
+      expect(runtime.grantedPlays, 0);
+
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+      expect(session.controlsAuthorized, isFalse);
+      expect(runtime.grantedPlays, 0);
+
+      await tester.tap(playButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('执行'));
+      await tester.pumpAndSettle();
+      expect(session.controlsAuthorized, isTrue);
+      expect(runtime.grantedPlays, 1);
+      expect(session.title, '示例歌曲');
+      for (final seconds in const [1, 2, 2, 2, 2]) {
+        await tester.pump(Duration(seconds: seconds));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 final class _PermissionGateRuntime implements RuntimePort {
   final PreviewRuntime delegate = createPreviewRuntime();
   int grantedSearches = 0;
+  int grantedPlays = 0;
 
   @override
   bool get isPreview => false;
@@ -120,6 +196,11 @@ final class _PermissionGateRuntime implements RuntimePort {
         throw StateError('需要确认此功能的执行权限');
       }
       grantedSearches++;
+    } else if (id.name == 'play') {
+      if (!permissionGranted) {
+        throw StateError('需要确认音乐控制权限');
+      }
+      grantedPlays++;
     }
     return delegate.invoke(id, arguments, permissionGranted: permissionGranted);
   }

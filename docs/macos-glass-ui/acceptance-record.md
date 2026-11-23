@@ -1911,6 +1911,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 ### 2026-11-23 UI-6.7 B073 B074 音乐搜索授权原生提示复验
 
 - 环境：隔离 macOS Profile 副本，bundle ID `io.github.guog962464.aggregate.ui6b070dark`，PID 40874，窗口 800×632pt、DPR 2；入口为 `lib/preview/ui6_inspection_main.dart`，配置的音乐连接与运行时使用 `Ui6InspectionRuntime` 内存 fixture。搜索框输入 `IU` 后按回车，原生窗口中出现“允许搜索歌曲？”确认框。该副本的构建 SHA 未记录；正式应用未接收输入或点击。
-- 结果：截屏直接证明深色确认框的标题、说明和“取消/允许搜索”动作可见；本次没有点任一动作。随后窗口重激活时确认框消失，AX 快照也未提供其按钮，因此不能把原生取消或允许分支记为通过。源码中 `_confirmSearch` 只有在用户确认后才授权并继续调用；`Ui6InspectionRuntime.invoke` 委托给进程内 `PreviewRuntime`。2026-11-23 在当前工作树重跑 `flutter test --no-pub test/music_search_permission_test.dart`，1/1 通过：Widget 测试 runtime 的取消不授权/不调用，允许后返回两条样例结果。该测试不覆盖原生 Profile 按钮点击。
+- 结果：截屏直接证明深色确认框的标题、说明和“取消/允许搜索”动作可见；本次没有点任一动作。随后窗口重激活时确认框消失，AX 快照也未提供其按钮，因此不能把原生取消或允许分支记为通过。源码中 `_confirmSearch` 只有在用户确认后才授权并继续调用；`Ui6InspectionRuntime.invoke` 委托给进程内 `PreviewRuntime`。2026-11-23 首次重跑该用例时 1/1 通过；随后新增 B075/B076 播放确认用例后，当前命令 `flutter test --no-pub test/music_search_permission_test.dart` 为 2/2 通过，搜索用例仍验证取消不授权/不调用、允许后返回两条样例结果。Widget 测试不覆盖原生 Profile 按钮点击。
 - 证据：[隔离 Profile 深色搜索授权框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b073-music-search/dark-after-return.png>) SHA-256 `81adfd215879a8e82b134aeda0d8d5c5ee9608acc6ad3bf76da7f71c1f73e1a2`，1824×1488 像素，DPR 2。未调用真实音乐 CLI、未发出网络请求、未取得真实搜索结果。
 - 结论及限制：B073/B074 只补签深色原生授权提示的静态呈现；取消和允许分支仍只有 Widget 级证据，没有原生按钮点击结果。没有本项的浅色和动效采样；UI-6.7 继续部分验收。
+
+### 2026-11-23 UI-6.7 B075 B076 音乐播放授权 Widget 回归
+
+- 验证：扩展 `music_search_permission_test.dart`，通过非 Preview 权限门 wrapper 展示歌曲确认框；wrapper 的 `invoke` 委托给进程内 `PreviewRuntime`。运行 `flutter test --no-pub test/music_search_permission_test.dart`，2/2 通过。新增用例验证：取消后 `controlsAuthorized == false` 且播放调用数为 0；点击“执行”后授权为 true，播放调用数恰为 1，目标仅是内存 fixture。
+- 边界：本次没有可聚焦的隔离 Profile，因此新增测试只签收 Widget 取消/允许行为，不替代 macOS 原生窗口按钮点击或动效。历史暗色 Profile 确认框图仍见矩阵 `25-music-play-confirm-dark.png`；B076 的“执行”未在原生窗口点击，没有真实音乐 CLI、网络请求或账号服务操作。
+- 结论：B075/B076 的 Widget 权限门现有 2/2 回归覆盖；B075 原生取消沿用历史证据，B076 原生执行、浅色状态与交互动效仍未签收，UI-6.7 继续部分验收。
