@@ -574,3 +574,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - 在独立 detached worktree（源码提交 `618e0d78f187a822dcaf8b626cdd8a6ada9412ef`）中执行 `flutter build macos --debug --no-pub`，构建成功；产物主程序为 arm64 Mach-O。构建没有覆盖或启动用户当前工作区的 Aggregate app。该验证使用现有 workspace `.dart_tool` 配置并跳过依赖解析；产品源代码/Keychain 运行行为没有被启动验证。
 - 编译输出包含 `mobile_scanner` 对 macOS 10.15 起弃用摄像头 API 的 Swift warning，以及 Xcode Flutter Assemble Run Script 每次构建执行的 warning；均不阻止本次构建。
 - 本次不改变 Keychain、签名或 listener 状态；没有 SecurityAgent 操作、生产 Host/WSS/NSD/配对/RPC 或手机前台切换。构建成功只关闭该补丁的 macOS 编译验证，不关闭生产 Host 授权或 A5/A3.6/A8 其余门槛。
+
+## 2026-11-24 A5 超时后的 Keychain 重试保护（01:30–01:33 Asia/Shanghai）
+
+- **实现：**服务准备超时后保留原 Future 的挂起标记；在这条原生 Keychain 请求完成或失败前，后续 Host start 快速返回安全的 `transportFailure`，不再提交并行 Keychain 查询。原 Future 结束后解除标记，允许用户重试。若 Security.framework 永不返回，当前 app 生命周期内的重试会一直被阻止；Future timeout 仍不能取消原生调用。
+- **验证：**Host WSS 与 Mac Host module 定向测试 8 项通过；超时测试确认首次仅调用一次 loader、挂起期重试不增加调用数、迟到结果不打开 listener，原 Future 完成后可成功重试并正常停止。定向 `dart analyze` 无问题。对含该保护的源码补丁，在 detached worktree 用 `flutter pub get --offline`（当前工作区锁定版本，锁文件比较无差异）后执行 `flutter build macos --debug --no-pub`，构建成功并生成 arm64 Mach-O。编译有 mobile_scanner 弃用 API 与 Flutter Assemble Run Script 警告。
+- **边界：**隔离 app 未启动，未操作 SecurityAgent 或 Keychain，也没有生产 Host/WSS/NSD/配对/RPC。此次验证关闭超时重试保护的测试、分析与编译缺口，不证明实际 Keychain 授权或 production Host 可用。

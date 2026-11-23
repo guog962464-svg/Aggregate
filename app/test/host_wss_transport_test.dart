@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate/platform/host/host_pairing_protocol.dart';
 import 'package:aggregate/platform/host/host_wss_protocol.dart';
+import 'package:aggregate/platform/macos/host/host_control_port.dart';
 import 'package:aggregate/platform/macos/host/host_device_signature_verifier.dart';
 import 'package:aggregate/platform/macos/host/host_operation_ledger.dart';
 import 'package:aggregate/platform/macos/host/host_pairing_authority.dart';
@@ -97,8 +98,12 @@ void main() {
     'times out service preparation and ignores a late Keychain result',
     () async {
       final pendingServices = Completer<HostWssServices>();
+      var loadServicesCalls = 0;
       final timedTransport = HostWssTransport(
-        loadServices: () => pendingServices.future,
+        loadServices: () {
+          loadServicesCalls++;
+          return pendingServices.future;
+        },
         bindAddressProvider: const _LoopbackAddressProvider(),
         bonjourPublisher: const NoopHostBonjourPublisher(),
         preparationTimeout: const Duration(milliseconds: 50),
@@ -121,13 +126,30 @@ void main() {
       }
 
       expect(outcome, isA<TimeoutException>());
+      expect(loadServicesCalls, 1);
       expect(timedTransport.isRunning, isFalse);
       expect(timedTransport.endpoints, isEmpty);
+
+      await expectLater(
+        timedTransport.start(),
+        throwsA(
+          isA<HostControlException>().having(
+            (error) => error.code,
+            'code',
+            HostControlErrorCode.transportFailure,
+          ),
+        ),
+      );
+      expect(loadServicesCalls, 1);
 
       pendingServices.complete(services);
       await Future<void>.delayed(Duration.zero);
       expect(timedTransport.isRunning, isFalse);
       expect(timedTransport.endpoints, isEmpty);
+
+      await timedTransport.start();
+      expect(loadServicesCalls, 2);
+      expect(timedTransport.isRunning, isTrue);
       await timedTransport.stop();
     },
   );

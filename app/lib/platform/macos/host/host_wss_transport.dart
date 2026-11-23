@@ -215,6 +215,7 @@ final class HostWssTransport
   List<HostWssEndpoint> _endpoints = const [];
   Future<void>? _startOperation;
   Future<void>? _stopOperation;
+  Future<HostWssServices>? _timedOutServicePreparation;
   var _accepting = false;
 
   bool get isRunning => _accepting;
@@ -284,7 +285,25 @@ final class HostWssTransport
 
   Future<void> _start() async {
     if (_accepting) return;
-    final services = await loadServices().timeout(preparationTimeout);
+    if (_timedOutServicePreparation != null) {
+      throw const HostControlException(HostControlErrorCode.transportFailure);
+    }
+
+    final servicePreparation = loadServices();
+    late final HostWssServices services;
+    try {
+      services = await servicePreparation.timeout(preparationTimeout);
+    } on TimeoutException {
+      _timedOutServicePreparation = servicePreparation;
+      unawaited(
+        servicePreparation.then<void>(
+          (_) => _clearTimedOutServicePreparation(servicePreparation),
+          onError: (Object _, StackTrace _) =>
+              _clearTimedOutServicePreparation(servicePreparation),
+        ),
+      );
+      rethrow;
+    }
     await services.pairing.initialize();
     final targets = await _validatedAddresses(
       await bindAddressProvider.addresses(),
@@ -353,6 +372,14 @@ final class HostWssTransport
         } catch (_) {}
       }
       throw const HostControlException(HostControlErrorCode.transportFailure);
+    }
+  }
+
+  void _clearTimedOutServicePreparation(
+    Future<HostWssServices> servicePreparation,
+  ) {
+    if (identical(_timedOutServicePreparation, servicePreparation)) {
+      _timedOutServicePreparation = null;
     }
   }
 
