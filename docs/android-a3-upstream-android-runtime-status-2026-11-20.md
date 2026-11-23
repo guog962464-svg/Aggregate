@@ -44,3 +44,9 @@ Termux stable APT 当前索引记录了 Node.js `24.22.3` 的 `aarch64`、`arm`�
 - **`capawesome-team/nodejs-mobile`：**[Latest release](https://github.com/capawesome-team/nodejs-mobile/releases/latest)为 2026-10-14 的 `18.20.4-capawesome.3`，声明 Android 16 KB 对齐，但基于已 EOL 的 Node 18，不满足当前 Node 24 安全线。
 - **`jackwener/DSH-Android`：**[最新应用发行](https://github.com/jackwener/DSH-Android/releases/latest)为 `v0.3.11`（2026-11-06），原生目录说明使用 Node `24.22.1`；GitHub 显示该仓库于 2026-11-20 已归档。它展示了完整 Android 应用中嵌入 Node/JNI 的一种实现，但不是独立运行时 SDK，也不再是可持续接收上游更新的供应来源。
 - **结论与范围：**这次发现并核对了更多公开 Android Node 发行源，但未发现其中有同时匹配 Node `24.22.3`、可审计 Android 嵌入制品和当前安全修复的候选。Termux 仍发布 `24.22.3`，但其 `$TERMUX_PREFIX` 可执行文件包不等于 Flutter/JNI `libnode.so` SDK。来源清单仍是有边界的公开仓库调查，不代表所有第三方分发渠道；没有安装或运行这些项目。A3.6 的供应来源、二进制 SBOM/许可、法律审查及 16 KB 真机门槛仍开放。
+
+## 2026-11-23 lakutata/libnode v24.20.0 arm64 归档静态复核
+
+- 从 [`lakutata/libnode v24.20.0`](https://github.com/lakutata/libnode/releases/tag/v24.20.0)只读下载 Android arm64 归档、`SHA256SUMS` 和 `manifest.json` 到 `/tmp`。归档 SHA-256 为 `c11b570621a67cadc718bc42376d9482a09336159b3dc5bcb43cc9634a12a97f`，与发布清单及 manifest 中记录值相符；manifest 大小为 26,283,287 bytes，标记 Node `24.20.0`、Android `arm64-v8a`、NDK r27d、最低 API 24，recipe commit `7c55423d731f7fec83ac52ab158901ce20a57356`。
+- 归档含 `lib/libnode.so`、Node 头文件、Node `LICENSE` 和 `libnode.json`；归档清单中未见 `libc++_shared.so` 或 SPDX/CycloneDX/SBOM 文件。使用本机 NDK r28c `llvm-readelf` 检查提取出的 ELF：4 个 `PT_LOAD` 的 `p_align` 均为 `0x4000`；动态依赖包含 Android `libc++_shared.so`。因此 16 KB ELF 对齐有独立静态证据，但仍需确认应用提供匹配的 C++ runtime，并补齐完整 native/platform 依赖与许可/BOM 闭包。
+- 该资产仍是 Node `24.20.0`，而 [Node.js `24.22.3` 安全版本](https://nodejs.org/en/blog/release/v24.22.3/)于 2026-11-11 发布。该归档不满足当前项目 `24.22.3` 基线，不能作为候选运行时采纳。本次没有安装、链接、构建或运行归档，没有 Android 16 KB 实机；静态 ELF 对齐不能替代设备验收。A3.6 维护来源、许可/法律审核、完整依赖闭包、正式签名和 16 KB 真机门槛继续开放。

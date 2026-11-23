@@ -466,3 +466,8 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **隔离 runner 修复：**首次临时 runner 命令未传 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true`，构建并更新了普通 applicationId Debug 包；由于该包没有验收 Host 记录，断言在请求配对或 RPC 前失败。随后从当前 checkout 重建普通 Debug APK 并用 `adb install -r` 恢复；未卸载或清除普通包数据，Package Manager `firstInstallTime` 保持不变。通过隔离 Gradle 属性及 `--no-uninstall` 重跑后，验收使用 `.integration` 包，临时 runner 和源码随后删除。
 - **清理：**Mac 侧撤销本轮只读 grant、停止 Host、确认端口无 listener；用户原登录 Keychain 的默认项与搜索列表恢复为原值，临时 Keychain 已删除。手机卸载 `.integration` 包并回到 Launcher；普通 `io.github.guog962464.aggregate` 包仍安装，ADB reverse 列表为空。没有启动 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
 - **结论边界：**补足当前同网段直接 LAN/WSS 配对与最小只读 RPC 证据，不新增 Bonjour/NSD 证据，也不覆盖签名 Release 主界面、production 业务 RPC、真实账号/播放或 16 KB 系统运行。A5.5 业务闭环、A3.6 发行/许可门槛和 16 KB 真机仍开放。此前跨网段失败记录仍作为当时观察保留；本节更新当前网络状态。
+
+## 2026-11-23 用户确认网络一致后的现场复读（22:05 Asia/Shanghai）
+
+- **网络与设备：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`，均属 `192.168.8.0/24`。Mac `networksetup -getairportnetwork en0` 仍报告未关联 AirPort 网络，但两端地址均已配置；Mac→手机与手机→Mac 的 ICMP 各 2/2 成功。手机为 Android 15/API 35/arm64，`PAGE_SIZE=4096`。
+- **服务状态：**`47321/47322` 均无监听；Aggregate Debug 与 PID 16829 的 macOS `SecurityAgent` 进程仍存在。本轮没有操作该系统授权界面，没有启动 Host、生成邀请、配对或调用 RPC。因此这次只确认网络恢复可达，不新增 production WSS/配对/RPC 验收；此前 21:24 的同网段隔离配对与只读 RPC 记录仍按其原有范围有效。
