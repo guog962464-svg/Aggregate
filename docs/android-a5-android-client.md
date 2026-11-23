@@ -409,3 +409,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **接口与地址：**Mac 全部硬件端口中仅 Wi-Fi `en0` 配置 IPv4 `192.168.8.4/24`，路由器 `192.168.8.1`；`networksetup -getairportnetwork en0` 报告未关联。LGE AN10 `wlan0=192.168.31.136/24`，SSID `ws-5g`，网关 `192.168.31.1`。两端仍不在同一 `/24`，Mac 路由到手机目标使用 `192.168.8.1` 默认路由。
 - **连通性：**Mac 到手机的两次 ICMP 探测及 `47321/TCP` 探测均超时。本轮未改变任一端网络、启动 Host、生成邀请、配对或调用 RPC。
 - **结论：**当前 production LAN 不可达，本次不增加 Host/NSD/RPC 验收证据。无 testnode、NodeProbe 或无障碍测试。
+
+## 2026-11-23 17:04 Asia/Shanghai 网络地址变化后的复核
+
+- **接口与地址：**Mac `en0=192.168.10.239/24`，路由器 `192.168.10.1`，接口显示 `status: active`；`networksetup -getairportnetwork en0` 仍报告未关联 AirPort 网络。LGE AN10 `wlan0=192.168.31.136/24`，手机路由表显示其本地 `/24` 路由。两端地址仍不同子网，Mac 到手机目标走 `192.168.10.1` 默认路由。
+- **连通性与 Host：**Mac 到手机的两次 ICMP 探测和 `47321/TCP` 均超时；Mac `47321` 无 listener。本轮没有修改网络、启动 Host、生成邀请、配对或调用 RPC。
+- **结论：**Mac 地址变化后 direct LAN 仍不可达；本轮不构成 NSD、配对或 RPC 通过证据。没有运行 testnode、NodeProbe 或无障碍测试。
