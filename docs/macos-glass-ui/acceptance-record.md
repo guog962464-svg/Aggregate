@@ -1989,11 +1989,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B095：停止并重新启动 stub 以重新注入待处理样例，对 Pixel 9 实鼠标点击“允许连接向导”。后续 AX 显示 Pixel 9 已配对且权限为“读取连接 · 连接向导”；原 LGE AN10 样例的既有权限保留。结果截图：[浅色向导权限批准状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b095-light/wizard-approved.png>)，SHA-256 `56e4d93e443f85fcb87e1d4d6714f7d4b9b3f4214f1e47d4fff4a6390ec68013`，1824×1488px、DPR 2。
 - 结论与限制：B092 浅色拒绝回调与 B095 浅色连接向导批准状态通过，结果仅写入隔离进程的内存 fixture。没有采集按钮 hover/按下/释放曲线、Flutter `FrameTiming`、窗口连续帧或物理面板 FPS。Profile 已定向关闭；UI-6.7 仍部分验收。
 
-### 2026-11-23 UI-6.7 B096 B097 B101 浅色自定义权限批准与保存回读
+### 2026-11-23 UI-6.7 B096 B097 B100 B101 浅色自定义权限批准与保存回读
 
 - 环境：将现有 Profile 构建副本复制到隔离目录并改 bundle ID `io.github.guog962464.aggregate.ui6b096light`，PID 7434，窗口 800×632pt、DPR 2，入口 `lib/preview/ui6_inspection_main.dart`。Host 为 `Ui6InspectionHost` 进程内 stub，无 44321 listener；未访问真实设备、连接、网络、Keychain 或系统剪贴板。用户允许隔离窗口占用前台；正式应用未操作。
 - B096：启动 stub 并对待处理 Pixel 9 打开“自定义权限”。勾选“连接向导”，展开“示例 Git CLI”并选“本机控制”；AX 回读连接向导 checked，逐连接读取和本机控制已选择，外部写入未选择。实鼠标点“批准所选权限”后，待处理项消失，已配对 Pixel 9 卡仅显示全局“读取连接 · 连接向导”；原 LGE AN10 grant 未变。整个批准只改隔离进程 fixture。
-- B097/B101：打开 Pixel 9“修改权限”，AX 回读连接向导预选及 Git CLI 的读取/本机控制预选；随后勾选“连接管理”并给 Git CLI 增选“外部写入”。AX 显示连接管理 checked，Git CLI 的读取、本机控制、外部写入均已选择。实鼠标点“保存权限”后重新打开弹窗，AX 再读回连接向导、连接管理和三项 Git CLI 权限；点取消关闭弹窗。页面卡片摘要显示 Pixel 9“读取连接 · 连接向导 · 连接管理”，LGE AN10 原权限保留。
+- B097/B100/B101：打开 Pixel 9“修改权限”，AX 回读连接向导预选及 Git CLI 的读取/本机控制预选；随后勾选“连接管理”并给 Git CLI 增选“外部写入”。AX 显示连接管理 checked，Git CLI 的读取、本机控制、外部写入均已选择。实鼠标点“保存权限”后重新打开弹窗，AX 再读回连接向导、连接管理和三项 Git CLI 权限；点取消关闭弹窗。页面卡片摘要显示 Pixel 9“读取连接 · 连接向导 · 连接管理”，LGE AN10 原权限保留。
 - 证据：修改权限保存前的[逐连接权限界面](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b096-b097-light/edit-custom-permissions-selected-before-save.png>) SHA-256 `95a38b58937e4a5810b9cda0cac5a98e7c8b4d44fd0871c06fa56403be9a1be3`；保存及重新打开后[配对卡状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b096-b097-light/permissions-saved-paired-cards.png>) SHA-256 `8d1b0388bbb49ae415b0aed860291e6b87b7797a3b046a084f4fc69a82b74049`。均为 1824×1488px、DPR 2。
 - 结论与限制：B096 的浅色自定义批准、B097 的浅色权限修改与保存回读、B101 的浅色单连接权限选择和自动包含读取均通过；仅证明内存 fixture 的授权状态，不代表真实设备实际获得权限。未采按钮 hover/按下/释放曲线、连续窗口帧、Flutter `FrameTiming` 或物理面板 FPS。使用既有 Profile 构建副本，构建源码 SHA 未记录。Profile 已优雅退出，44321 无 listener；UI-6.7 仍部分验收。
 
