@@ -384,3 +384,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **刷新监听地址后的探测：**通过 Aggregate UI 停止并重新启动 Host 后，当前 listener 和新短时邀请端点变为 `192.168.10.239:47321`；macOS Application Firewall 显示 disabled。Android 到新地址的 TCP 探测仍为 `Timeout`。因此本轮不能判定 production WSS、NSD 或配对在当前网络上通过；旧的同网段只读成功记录仍只代表它记录的原时刻，不被本节追溯性否定。
 - **清理与范围：**Mac Host 最终停止，Aggregate Debug 进程退出，端口 `47321` 无 listener。Android 普通 Debug 包保留安装但已 force-stop，手机回到 Launcher；ADB reverse 为空。本轮未启动 testnode、未做无障碍/TalkBack 测试、未创建新配对 grant，也没有删除或修改既有 grant。
 - **后续条件：**需要在两端同一可互通局域网时重新读取接口地址与路由，再生成新邀请，依次复验 TCP、NSD/WSS、Mac 人工审批以及仅 `host.hello` 和只读 `connection.list`。当前不能仅凭用户反馈或历史同网段结果推定网络已经一致。
+
+## 2026-11-23 当前 HEAD A5.5 隔离真机业务夹具复验
+
+- **命令与结果：**在仓库 HEAD `bf1667008a8b04b5e2a87c7e10750761d50f879a` 执行 `python3 app/tool/run_android_host_setup_e2e.py --device AEMN022427001360`，退出码 0。runner 报告 `Mac loopback Host fixture: PASS`、`Android physical Keystore + WSS setup flow: PASS`。设备为 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页。
+- **隔离业务覆盖：**使用 Android 实体 Keystore 完成隔离 Host 配对；网易云向导检测、测试、保存、重复保存拒绝与草稿丢弃；Host 普通 CLI 与 HTTP/stdio MCP 的资源、提示和工具调用；未授权/未确认调用拒绝及隔离授权后的确认调用；假网易云播放状态与登录终端失败路径；TUI PTY 输入和 96×32 尺寸同步；Host 断开时连接转不可用、身份轮换清除本地 Host 记录、新身份配对，以及 abrupt TCP drop 后自动恢复和显式断开/重连。密钥未出现在 Host 元数据中。
+- **传输和清理：**夹具通过 USB ADB reverse 连接 Mac loopback WSS，使用临时证书、HOME、MacRuntime 数据及假 Node/npm/mpv/ncm-cli/MCP 服务。当前真实网络仍为 Mac `192.168.10.239/24`、手机 `192.168.8.7/24`，不同子网；本项不代表 production LAN/NSD 或 production Host 验收。运行后 `.integration`/测试包已卸载，普通 `io.github.guog962464.aggregate` 保留，ADB reverse 为空，Mac `47321/47322` 无 listener，手机回到 HONOR Launcher；没有启动 NodeProbe/testnode、生产 Host 或真实账号。
+- **结论边界：**刷新当前 HEAD 的隔离 CLI/TUI/MCP/向导和断线恢复真机证据；不证明真实 Host 业务、真实账号/播放、Wi‑Fi/路由掉线、正式签名或 16 KB 设备运行通过。A5.5 仍开放；无障碍/TalkBack 专项按用户要求排除。
