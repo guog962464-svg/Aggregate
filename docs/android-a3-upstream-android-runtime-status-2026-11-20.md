@@ -51,6 +51,12 @@ Termux stable APT 当前索引记录了 Node.js `24.22.3` 的 `aarch64`、`arm`�
 - 归档含 `lib/libnode.so`、Node 头文件、Node `LICENSE` 和 `libnode.json`；归档清单中未见 `libc++_shared.so` 或 SPDX/CycloneDX/SBOM 文件。使用本机 NDK r28c `llvm-readelf` 检查提取出的 ELF：4 个 `PT_LOAD` 的 `p_align` 均为 `0x4000`；动态依赖包含 Android `libc++_shared.so`。因此 16 KB ELF 对齐有独立静态证据，但仍需确认应用提供匹配的 C++ runtime，并补齐完整 native/platform 依赖与许可/BOM 闭包。
 - 该资产仍是 Node `24.20.0`，而 [Node.js `24.22.3` 安全版本](https://nodejs.org/en/blog/release/v24.22.3/)于 2026-11-11 发布。该归档不满足当前项目 `24.22.3` 基线，不能作为候选运行时采纳。本次没有安装、链接、构建或运行归档，没有 Android 16 KB 实机；静态 ELF 对齐不能替代设备验收。A3.6 维护来源、许可/法律审核、完整依赖闭包、正式签名和 16 KB 真机门槛继续开放。
 
+## 2026-11-23 digidem/nodejs-mobile v24.20.0-0 release provenance follow-up
+
+- [Immutable release `v24.20.0-0`](https://github.com/digidem/nodejs-mobile/releases/tag/v24.20.0-0) 标注于 2026-09-03 发布，发行说明记录 Node.js `24.19.0 → 24.20.0`，并指向 `recipe@7c55423d731f7fec83ac52ab158901ce20a57356`。该固定 recipe 的 [`upstream-base.txt`](https://github.com/digidem/nodejs-mobile/blob/7c55423d731f7fec83ac52ab158901ce20a57356/upstream-base.txt) pin 到官方 Node `v24.20.0`；[`expected-tree.txt`](https://github.com/digidem/nodejs-mobile/blob/7c55423d731f7fec83ac52ab158901ce20a57356/expected-tree.txt) pin 到重建源码树 `408864fba897050cd2bf10e1a1ff3ad3ba838bf1`。同一 recipe commit 的 [README](https://github.com/digidem/nodejs-mobile/blob/7c55423d731f7fec83ac52ab158901ce20a57356/README.md)描述了从固定上游应用 patch/mobile overlay 并检查源码树哈希的流程，但其“Current line”仍写 `v24.18.0`，与 `upstream-base.txt` 中的 `v24.20.0` 不一致，说明该说明文字有滞后；精确版本以固定文件及发行说明为准。
+- GitHub 的[发行资产列表](https://github.com/digidem/nodejs-mobile/releases/expanded_assets/v24.20.0-0)列出 Android full ZIP SHA-256 `f5ffbaf4f2679fa9180b0758c637c2f8fc8828300f95129badf213a028fb37bb`，lite ZIP SHA-256 `cacb6202264232d490d2bd8c96f531ad3d1d70da4b4356ff590e9a3fb16bf421`，并提供 Release attestation JSON。下载并解析该 JSON 后，in-toto release statement 的 subject 包含此仓库/tag 及两项 Android 资产摘要；DSSE 签名可由随附 leaf certificate 验证。此处未验证 leaf certificate 的受信任链、OIDC 身份和时间戳，也未下载 ZIP 独立重算资产哈希；因此不把它记作完整的二进制 provenance 验收。
+- 该发行的 Node `24.20.0` 低于 [Node.js `24.22.3`（2026-11-11 安全发行）](https://nodejs.org/en/blog/release/v24.22.3/)。此次仅下载 attestation JSON，没有下载、安装、构建或运行 Android ZIP，也未检查其中 ELF、SBOM/许可证闭包或 16 KB 真机表现。该候选补足 recipe 与发行声明的证据，不满足当前安全版本，A3.6 维护来源、许可/法律审查、完整依赖闭包、正式签名及 16 KB 真机门槛仍开放。
+
 ## 2026-11-23 maintained Node 24 Android release recheck (22:58 Asia/Shanghai)
 
 - Node.js 官方 [24.22.3 LTS 发布记录](https://nodejs.org/en/blog/release/v24.22.3/)将该版本标为 2026-11-11 的安全版本。
