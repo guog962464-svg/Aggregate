@@ -2,8 +2,13 @@ import Foundation
 import FlutterMacOS
 import CryptoKit
 import Security
+import os
 
 final class HostTlsIdentityChannel {
+  private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "io.github.guog962464.aggregate",
+    category: "HostTLSIdentity"
+  )
   private let channel: FlutterMethodChannel
   private let identity = MacHostTlsIdentity()
   private let identityQueue = DispatchQueue(
@@ -29,6 +34,7 @@ final class HostTlsIdentityChannel {
             : self.identity.loadOrCreate()
           DispatchQueue.main.async { result(material) }
         } catch {
+          self.logIdentityFailure(error, method: call.method)
           DispatchQueue.main.async {
             result(FlutterError(
               code: "identity_failure",
@@ -38,6 +44,20 @@ final class HostTlsIdentityChannel {
           }
         }
       }
+    }
+  }
+
+  private func logIdentityFailure(_ error: Error, method: String) {
+    switch error as? HostIdentityFailure {
+    case let .some(.keychainFailure(operation, status)):
+      logger.error("Host identity \(method, privacy: .public) failed: \(operation, privacy: .public), OSStatus=\(status, privacy: .public)")
+    case let .some(.securityFailure(operation, domain, code)):
+      logger.error("Host identity \(method, privacy: .public) failed: \(operation, privacy: .public), domain=\(domain, privacy: .public), code=\(code, privacy: .public)")
+    case let .some(.systemFailure(operation, status)):
+      logger.error("Host identity \(method, privacy: .public) failed: \(operation, privacy: .public), status=\(status, privacy: .public)")
+    default:
+      let nsError = error as NSError
+      logger.error("Host identity \(method, privacy: .public) failed: domain=\(nsError.domain, privacy: .public), code=\(nsError.code, privacy: .public)")
     }
   }
 }
@@ -192,7 +212,7 @@ private final class MacHostTlsIdentity {
     let status = SecItemCopyMatching(query as CFDictionary, &result)
     if status == errSecItemNotFound { return nil }
     guard status == errSecSuccess, let result else {
-      throw HostIdentityFailure.keychainFailure
+      throw HostIdentityFailure.keychainFailure(operation: "SecItemCopyMatching(private-key)", status: status)
     }
     // The query is restricted to kSecClassKey with kSecReturnRef, so the
     // successful result is guaranteed by Security.framework to be a SecKey.
@@ -209,7 +229,7 @@ private final class MacHostTlsIdentity {
     ]
     let status = SecItemDelete(query as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
-      throw HostIdentityFailure.keychainFailure
+      throw HostIdentityFailure.keychainFailure(operation: "SecItemDelete(private-key)", status: status)
     }
   }
 
@@ -226,7 +246,19 @@ private final class MacHostTlsIdentity {
   private func externalRepresentation(of key: SecKey) throws -> Data {
     var error: Unmanaged<CFError>?
     guard let data = SecKeyCopyExternalRepresentation(key, &error) as Data? else {
-      throw error?.takeRetainedValue() ?? HostIdentityFailure.keychainFailure
+      if let error = error?.takeRetainedValue() {
+        let nsError = error as NSError
+        throw HostIdentityFailure.securityFailure(
+          operation: "SecKeyCopyExternalRepresentation",
+          domain: nsError.domain,
+          code: nsError.code
+        )
+      }
+      throw HostIdentityFailure.securityFailure(
+        operation: "SecKeyCopyExternalRepresentation",
+        domain: "unknown",
+        code: 0
+      )
     }
     return data
   }
@@ -263,8 +295,9 @@ private final class MacHostTlsIdentity {
       der(0x31, derSequence([derObjectIdentifier("2.5.4.10"), derUtf8("Aggregate")])),
     ])
     var serial = [UInt8](repeating: 0, count: 16)
-    guard SecRandomCopyBytes(kSecRandomDefault, serial.count, &serial) == errSecSuccess else {
-      throw HostIdentityFailure.keyGenerationFailed
+    let randomStatus = SecRandomCopyBytes(kSecRandomDefault, serial.count, &serial)
+    guard randomStatus == errSecSuccess else {
+      throw HostIdentityFailure.systemFailure(operation: "SecRandomCopyBytes", status: randomStatus)
     }
     serial[serial.count - 1] |= 1
     let now = Date()
@@ -407,7 +440,7 @@ private final class MacHostTlsIdentity {
     let (status, value) = try queryKeychain(query)
     if status == errSecItemNotFound { return nil }
     guard status == errSecSuccess, let data = value as? Data else {
-      throw HostIdentityFailure.keychainFailure
+      throw HostIdentityFailure.keychainFailure(operation: "SecItemCopyMatching(generic-password)", status: status)
     }
     return data
   }
@@ -418,18 +451,19 @@ private final class MacHostTlsIdentity {
     if updateStatus == errSecItemNotFound {
       var add = query
       add[kSecValueData as String] = value
-      guard SecItemAdd(add as CFDictionary, nil) == errSecSuccess else {
-        throw HostIdentityFailure.keychainFailure
+      let addStatus = SecItemAdd(add as CFDictionary, nil)
+      guard addStatus == errSecSuccess else {
+        throw HostIdentityFailure.keychainFailure(operation: "SecItemAdd(generic-password)", status: addStatus)
       }
     } else if updateStatus != errSecSuccess {
-      throw HostIdentityFailure.keychainFailure
+      throw HostIdentityFailure.keychainFailure(operation: "SecItemUpdate(generic-password)", status: updateStatus)
     }
   }
 
   private func deleteSecret(account: String) throws {
     let status = SecItemDelete(secretQuery(account: account) as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
-      throw HostIdentityFailure.keychainFailure
+      throw HostIdentityFailure.keychainFailure(operation: "SecItemDelete(generic-password)", status: status)
     }
   }
 }
@@ -438,7 +472,9 @@ private enum HostIdentityFailure: Error {
   case keyGenerationFailed
   case invalidKeyEncoding
   case invalidStoredIdentity
-  case keychainFailure
+  case keychainFailure(operation: String, status: OSStatus)
+  case securityFailure(operation: String, domain: String, code: Int)
+  case systemFailure(operation: String, status: OSStatus)
 }
 
 private struct StoredIdentity: Codable {

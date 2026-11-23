@@ -540,3 +540,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**Mac Wi-Fi 接口 `en0=192.168.8.4/24`，路由到手机地址 `192.168.8.7` 直接走 `en0` 且 ARP 邻居解析成功；Mac 到 LGE AN10 和手机到 Mac 的 ICMP 均为 2/2。手机 `wlan0=192.168.8.7/24`，Android 15/API 35/arm64/4 KB 页，普通 Aggregate `MainActivity` 处于 resumed 前台。`networksetup -getairportnetwork en0` 报告未关联 AirPort 网络，因此只能确认同网段和双向 IP 可达，不能确认 SSID/AP 关联。
 - **Host 与范围：**Host 端口 `47321/47322` 均无 listener。本轮没有再次启动 Host，因为最近同网段尝试仍卡在 Keychain 私钥导出授权，期间没有 Keychain/签名状态变化。没有邀请、配对、grant 变更、WSS 或 RPC；未进入 NodeProbe/testnode，也未运行无障碍测试。
 - **结论：**用户确认的网络一致性已由双向 ping 与直接路由复核；此项不代表 production Host、NSD、配对或 RPC 验收。A5 production 路径继续受 Keychain 授权阻塞。
+
+## 2026-11-24 A5 同网段 production Host Keychain 诊断复核（00:07–00:12 Asia/Shanghai）
+
+- **网络与设备：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，Mac→手机和手机→Mac ICMP 各 2/2。Android 15/API 35/arm64，`PAGE_SIZE=4096`。`networksetup -getairportnetwork en0` 仍报告未关联 AirPort 网络；本项确认同网段地址及双向 IP 可达，不确认 SSID/AP 关联。
+- **诊断改动：**`HostTlsIdentityChannel.swift` 增加只记录调用方法、Keychain 操作名及 OSStatus/NSError domain/code 的脱敏日志，不记录密码、密钥、PEM 或错误描述。`flutter build macos --debug --no-pub` 通过，`git diff --check` 通过；此次没有运行测试。
+- **现场结果：**00:07:29 `securityd` 为 Debug Aggregate PID 25563 显示 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串提示；该实例随后显示 Host 启动失败。00:11:59，普通运行实例 PID 10715 再次进入私钥读取/导出路径，`securityd` 为其记录新的 Keychain 提示；Aggregate UI 仍显示“正在启动”。本轮没有在该系统提示中输入密码或批准访问，也没有修改 Keychain 项、ACL 或签名身份。应用层没有观察到可用 OSStatus 日志，故失败状态码仍未知。
+- **Host 验收边界：**现场检查时 `47321/47322` 均无 listener；没有 production WSS、邀请、配对、grant 变更或 RPC。网络恢复不改变 Keychain 授权未完成的状态，本项不记为 production Host 通过。未切换 Android 前台、启动 NodeProbe/testnode 或运行无障碍测试。
