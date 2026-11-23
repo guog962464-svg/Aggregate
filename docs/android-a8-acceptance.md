@@ -1,6 +1,6 @@
 # Android A8 发布前检查与文档验收
 
-> 检查日期：2026-11-23。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
+> 检查日期：2026-11-24（最近 Release 复验）。A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
 
 ## A8.4 安全、依赖与分发检查
 
@@ -285,3 +285,12 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 
 - At current `main` (`3b5e0f0` plus documentation-only commits), `app/android/app/build.gradle.kts` assigns the Android Debug test signer only when `aggregateIsolatedIntegration=true`; the product Release build remains unsigned until a separately managed production signing configuration is supplied.
 - Read-only inspection found no `key.properties`, JKS, or keystore file under `app/android`. No release key was created, opened, copied, or added to the repository. Thus an official product-signed artifact and upgrade from its production certificate cannot be verified in this environment; prior test-signed v8→v9 evidence remains limited to the isolated package.
+
+
+## 2026-11-24 当前 HEAD 952d87e Release 重建与 4 KB 隔离冷启动
+
+- **基线与构建：**源代码基线为 main HEAD 952d87e56adc1193495aea4eca713d4fc4c4279e。主 App arm64 Release APK 与 AAB 使用 Flutter --no-pub 构建，均成功；pubspec.lock SHA-256 保持 9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500。aapt 确认包名 io.github.guog962464.aggregate、versionCode 8、versionName 0.3.7、minSdk 24、targetSdk 36、arm64 only。
+- **产品工件：**APK 为 27,845,236 bytes，SHA-256 ff6e681c9c5bd554b26434ceaa6e2d6ea2d5960107f26030b0eaab2748706e20；AAB 为 25,570,163 bytes，SHA-256 e2f080c0b33c07021e248b93bcc0a992ed1feb7e9936411e9fa2c0aa83ce443b。APK 与 AAB 均有 7 个 arm64 原生库，不含 NodeProbe、NodeBridge、libnode.so、nodejs-mobile 或 npm node_modules。产品 APK/AAB 未签名，apksigner 对产品 APK 的缺签名结果符合当前配置。
+- **静态 16 KB 检查：**Build Tools 36.0.0 zipalign -c -P 16 4 通过；APK/AAB ZIP CRC 均通过。NDK 28.2.13676358 llvm-readelf 检查两个工件各自的 7 个库，共 21 个 PT_LOAD，所有段满足 p_align 至少 0x4000 且文件偏移与虚拟地址对 16 KB 同余，异常数为 0。Bundletool 1.18.3 JAR SHA-256 为 a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29；validate 通过，AAB 配置为 PAGE_ALIGNMENT_16K。
+- **4 KB 真机启动：**隔离 applicationId io.github.guog962464.aggregate.integration 的 Release APK SHA-256 为 d81ee6c95148cf8c3ad1dc51bb2cc30f4695e3ba4f4aced332b9339ad47789c7，使用 Android Debug test signer（证书 SHA-256 55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832），验签及 16 KB zipalign 通过。LGE AN10 / Android 15 / API 35 / arm64 / PAGE_SIZE=4096 上，冷启动返回 Status: ok、LaunchState: COLD；MainActivity resumed，进程 PID 30095 在约 3,078 ms 后仍存活。隔离包随后已卸载；普通 Aggregate 包保留安装，ADB reverse 为空。
+- **范围：**本项更新当前 HEAD 的 Release 静态工件证据并补充 4 KB 测试签名隔离包冷启动。它不表示正式签名/签名升级、16 KB 系统实机、production Host、CLI 或真实账号音乐链路通过；无障碍/TalkBack 测试按用户决定不纳入。此次未启动 NodeProbe/testnode。

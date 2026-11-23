@@ -553,3 +553,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`；Mac 到手机、手机到 Mac 的 ICMP 各 2/2。Mac 到 `192.168.8.7` 的路由直连 `en0`，ARP 已解析。Android 仍为 Android 15/API 35/arm64、4 KB 页，普通 Aggregate `MainActivity` 处于前台；未切换或重启手机应用。
 - **Host：**只回读 TCP `47321/47322` 监听状态，均无 listener。本轮没有再次启动 Host，也没有操作 macOS SecurityAgent/Keychain 授权提示；上一轮 Keychain 授权结果和 OSStatus 仍未知。没有 production WSS、NSD、邀请、配对、grant 变更或 RPC。
 - **范围：**此次仅确认同网段和双向 IP 可达，不确认 Wi‑Fi SSID/AP 关联，也不构成 production Host 验收。未启动 NodeProbe/testnode，未运行无障碍测试。
+
+
+## 2026-11-24 同网段恢复后的现场复核（01:00–01:01 Asia/Shanghai）
+
+- **网络：**Mac en0 为 192.168.8.4/24，LGE AN10 wlan0 为 192.168.8.7/24；Mac 到手机经 en0 直连，手机到 Mac 与 Mac 到手机 ICMP 各 2/2，无丢包。设备仍为 Android 15/API 35/arm64/4 KB 页。
+- **Host：**TCP 47321/47322 均无 listener；ADB reverse 列表为空。Aggregate Debug 设置页仍显示 Host“正在启动”。本轮只读取界面状态和网络/端口，没有再次触发启动，也没有操作 Keychain/SecurityAgent。Keychain 授权结果与 OSStatus 仍未知，没有 production WSS、NSD、邀请、配对或 RPC 证据。
+- **范围：**网络路径已经恢复为同网段可达，但不能据此推断 Host 服务已启动。未进入 NodeProbe/testnode，也未运行无障碍测试。
