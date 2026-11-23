@@ -375,3 +375,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 为避免键盘焦点框影响玻璃主题开关的指针材质对照，指针按下时隐藏该框，Space、Enter 和方向键操作时恢复。11 项定向 Widget 测试、macOS Profile 构建及隔离原生窗口交互均通过；实窗 AX 验证鼠标点击可在深浅主题间切换，键盘动作显示整轨焦点环，鼠标再次操作后隐藏。太阳/月亮模拟、拖动与业务回调保持原实现。窗口截图和 SHA、原生实例范围见[验收记录](acceptance-record.md#2026-11-23-ui-6-8-主题开关键盘与指针焦点环实窗复验)。该项不替代原 MP4（已删除）逐帧对照、display-present FPS、VoiceOver 实际语音、UI-6.7 全量调用点或最终用户签收；UI-6.8/阶段 0–6 仍未完成。
 
 2026-11-24 重采样校正了网页完整把手行程，并确认 macOS 设置页实际使用 `ThemeSwitchCalibration.reference`。后续用只监听的 `CGEventTap` 记录系统输入时戳；在计时前预热隔离 helper 后，正反向 48 个移动点相对网页发送时间的中位差为 +0.7/+0.5 ms，原生 down→up 为 782.0/780.5 ms，网页计划 780 ms。把手归一化后，点阵轨迹接近；玻璃边缘光和背景折射仍有可见差异，因此不签收逐帧 1:1。完整坐标、帧配对、时间映射与证据 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-68-cgeventtap-输入时序校准后复核)。网页是已删除 MP4 之后的当前参照；displayTime 不等于物理面板呈现时间，UI-6.8、UI-6.7 及阶段 0–6 继续部分/未完成。
+
+### 2026-11-24 UI-6 ThemeSwitch Profile frame timing
+
+三轮 800×632 logical px Profile 拖动负载，每轮 30 秒、26 次交替方向拖动，60 Hz 屏幕；三轮 build/raster P95 分别为 7.238/8.676、7.676/9.262、7.420/9.327 ms。全量 5,394 帧中一帧 raster 为 18.291 ms，另两轮没有超过 16.667 ms 的 build/raster 帧；没有 >100 ms 长帧。输入时长、活动窗、帧间隔、运行环境及证据 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-6-themeswitch-profile-frame-timing)。历史长帧、display-present FPS、VoiceOver、逐项动态签收和用户视觉签收仍待完成；UI-6 阶段状态保持部分验收。

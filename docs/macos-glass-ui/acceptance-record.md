@@ -2093,3 +2093,27 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 环境：隔离 app `io.github.guog962464.aggregate.ui6focus` PID 27652 / CGWindowID 38441 与隔离 Chrome PID 27651 / CGWindowID 38446；用户允许隔离 app 占用前台。正式 Aggregate PID 10715 和用户 Chrome PID 50338 未操作；结束后主题为深色。输入日志、视频及派生图保存在下述证据目录。
 - 证据：[正向归一化接触表](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-eventtap-prewarm/ui68-normalized-forward-contact-sheet.png>) SHA-256 `3b90c37f0104b4d4e57bdee87a9d155bb8d8219998b28c653dd5a8fe5b179806`；[反向归一化接触表](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-eventtap-prewarm/ui68-normalized-reverse-contact-sheet.png>) SHA-256 `23440bbfe1133ad162dcfded882e1d48e1c2353c451ba6154a418dc4996b0687`；[正向 24/48](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-eventtap-prewarm/ui68-normalized-forward-pair24.png>) SHA-256 `42b86c6d3c41db957dc1fe580e089f91b10b84eea177c629ef4e472ac1700ddc`；[反向 24/48](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-eventtap-prewarm/ui68-normalized-reverse-pair24.png>) SHA-256 `d63317463e84187e5e881777a24e87ffcb59bba71bde9efec33ee743603acd80`；[CGEventTap 原始日志](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-eventtap-prewarm/ui68-cg-event-tap.jsonl>) SHA-256 `205d30ad5d5614da672204e32d1bb3bc020bad080a35d7f42653eb1e35335c01`。同目录还保留 app/web MOV、CDP 输入 JSONL 与 display frame 时间戳。
 - 结论与边界：前台隔离复验确认输入行程和送达时间已在毫秒范围内接近，仍看得到玻璃边缘光和背景光学差异。网页是用户指定的当前参照，不是已删除 MP4；不共享动画时钟，displayTime 不是面板扫描/光子响应时间。本记录不证明逐像素相同或原视频复原；UI-6.8、UI-6.7 与阶段 0–6 继续部分/未完成。
+
+### 2026-11-24 UI-6 ThemeSwitch Profile frame timing
+
+在 60 Hz macOS 屏幕上，对生产设置页使用的 GlassThemeSwitch 做三轮 30 秒 Profile 拖动采样。每轮从深色开始，26 次交替方向拖动（13 次往返），请求 down-to-up 450 ms、每次手势起点间隔 1,100 ms；每次拖动包含 30 个移动事件。三轮输入日志均有 26 个 down/up 配对，驱动器测得的 down-to-up 分别为 449.66–450.87 ms（均值 450.39 ms）、449.81–450.87 ms（均值 450.44 ms）和 449.58–450.87 ms（均值 450.40 ms）。结束后 AX 主题值为深色；没有逐次读取每个端点 AX 值。
+
+| 轮次 | Flutter 帧数 | build p50 / p95 / p99 / max (ms) | raster p50 / p95 / p99 / max (ms) | >16.667 ms 帧 | buildStart 间隔 p50 / p95 / max (ms) |
+| --- | ---: | --- | --- | ---: | --- |
+| 1 | 1,798 | 0.754 / 7.238 / 8.952 / 9.969 | 6.247 / 8.676 / 9.569 / 18.291 | 1 raster | 16.67 / 16.72 / 25.53 |
+| 2 | 1,798 | 5.918 / 7.676 / 9.125 / 10.013 | 5.514 / 9.262 / 9.946 / 12.144 | 0 | 16.67 / 16.72 / 16.79 |
+| 3 | 1,798 | 5.856 / 7.420 / 9.070 / 9.985 | 5.731 / 9.327 / 9.836 / 12.836 | 0 | 16.67 / 16.72 / 16.81 |
+
+按每轮首个 down 至最后一个 down 后 1,100 ms 合并活动窗口，每轮约 28.6 秒、1,716 帧。活动窗口 build/raster P95 分别为 7.246/8.691 ms、7.731/9.215 ms、7.479/9.320 ms；最大值分别为 9.969/18.291 ms、10.013/12.144 ms、9.985/12.836 ms。全量 5,394 帧仅一帧 raster 超过 16.667 ms（18.291 ms，第一轮）；没有 build/raster 超过 100 ms。第一轮出现一次 25.53 ms 的 buildStart 间隔，另两轮最大间隔为 16.79/16.81 ms。结果没有显示连续拖动下的持续超预算，但保留这一帧孤立掉帧；历史长帧异常仍未定位，UI-6.2 继续部分通过。
+
+环境：Mac17,9 / Apple M5 Pro，macOS 27.2.1 build 26B131；内置屏幕 3024×1964 像素、1512×982 logical px、scale 2、CoreGraphics 当前模式报告 60 Hz；Profile 窗口 800×632 logical px。Flutter 3.47.8 / Dart 3.13.7，仓库基线 commit 1577ebf0a5991b1fe9519fbc96177afa198af0ef，工作区当时已有用户改动；pubspec.lock SHA-256 为 9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500。使用 flutter build macos --profile --no-pub -t lib/preview/ui6_frame_timing_probe.dart 构建隔离应用；PreviewRuntime 的运行数据、连接和 Host 服务均为内存 stub。未执行依赖解析；当前 package_config 与已修改 lockfile 的一致性未单独验证。
+
+帧时间来自 Flutter FrameTiming build/raster；活动帧 wallTime 由首个 FrameTiming 回调建立的 wall-clock 偏移估算，事件时间来自隔离 helper 在 CGEvent.post 前记录的本地时钟，不是只读系统事件 tap。FrameTiming 列表和每个输入事件 JSONL 写入会带来未测量的采集开销；没有 CPU trace、屏幕录制或采样时截图，也没有对采集开销作校正。buildStart 间隔和活动窗口对齐是 Flutter 提交帧观测，不是物理 display-present/FPS 测量。主题状态机、手势和回调未修改；Profile fixture 不证明真实后端业务或其他按钮实例性能。
+
+原始数据保存在 /Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6-frame-timing/：
+
+- idle-30s.json：SHA-256 3ea71c2a36ebf3083409629c535f70d304ba7b295f243a655d3dcebbc252d48b
+- active-round-1.json：SHA-256 fdaa6ec00c8b366241d22038b3af0336dbbc1b4c90a7c4f65a073138d6dba471
+- active-round-2.json：SHA-256 f4fa33f18e1b297f770bc27a2b3503a9811334a17a3f88bfbb1335604f1cff74
+- active-round-3.json：SHA-256 af889ef2ae1bc15501122df27acdb308d08b0736ea994f870e942f89450f3b4f
+- active-input-events-aligned.jsonl：SHA-256 82ab4b3843d9eeec17d3bc958ce892e119b9c21d671fc8ef97e2c88e2518c154
