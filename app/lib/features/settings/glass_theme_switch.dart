@@ -311,18 +311,21 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
           onInvoke: (_) {
             _showKeyboardFocusRing();
             _select(!widget.light);
+            return null;
           },
         ),
         _DarkIntent: CallbackAction<_DarkIntent>(
           onInvoke: (_) {
             _showKeyboardFocusRing();
             _select(false);
+            return null;
           },
         ),
         _LightIntent: CallbackAction<_LightIntent>(
           onInvoke: (_) {
             _showKeyboardFocusRing();
             _select(true);
+            return null;
           },
         ),
       },

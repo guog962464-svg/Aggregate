@@ -2171,3 +2171,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 输入结果：`agent-desktop --headed hover` 连续两次在发出事件前因 `interaction_process_lock_timeout` 返回 `not_delivered`；两次间重新读取窗口和控件树。随后按当时已读到的“导出”AX bounds 中心 `(698.5,363)` 验证了进程/窗口及窗口矩形，并通过 CoreGraphics 发送 move 与一次左键 down/up；没有出现 Save sheet。后续 `agent-desktop --headed click` 在输入前检测到目标被 `SecurityAgent` 窗口遮挡，安全拒绝（`not_delivered`）。WindowServer 元数据读到 `SecurityAgent` PID 25593、窗口 38382、layer 1000、bounds `(539,225,434,186)`，覆盖按钮 bounds `(654,343,89,40)`。因早先坐标事件发出前未检查该遮挡层，不能确定该事件由应用或系统窗口接收；不把它算作按钮点击，也不推断系统窗口的状态变化。
 - 排查截图与 SHA-256：点击前窗口 [`export-before-physical.png`](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui6-7-b020-physical-button/export-before-physical.png>) `73c35fb30e2edd88b129ea8477c81d2ae7a2b6dbf50fdc9ec8c6c34be98054fd`；指针移动后窗口 [`export-physical-hover.png`](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui6-7-b020-physical-button/export-physical-hover.png>) `92920a0efc04fb55feb4d01fd6772bdae84cbbe56403461befba5b0122dbeef3`；按下尝试期间的窗口 [`export-physical-pressed.png`](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui6-7-b020-physical-button/export-physical-pressed.png>) `efa8b3fbf2773d9d239d6554d4ea070ec34cd30f27d0cc11b455bc232169e436`。这三张仅作排错记录，目标遮挡未排除，不能证明 hover/pressed 样式。
 - 收尾：Probe PID 47518 通过 `agent-desktop close-app` 优雅退出并确认进程消失；随后仍观测到 SecurityAgent 窗口存在，未读取其内容或进行操作。早前 AX Save sheet 打开/取消记录仍有效；本轮不提供实鼠标成功证据、文件写入结论或系统窗口处理结论。UI-6.7 继续部分验收。
+
+### 2026-11-24 UI-5.3 主题开关键盘回调返回值与静态分析
+
+- Dart analyzer 将 `CallbackAction.onInvoke` 的结果类型视作 `Object?`；三个主题键盘动作此前执行原回调后隐式返回 `null`，产生 `body_might_complete_normally_nullable` 警告。现在显式 `return null`，保持原返回值和动作顺序不变。
+- 没有改 `_select` 的主题选择、轨道/把手命中、拖动积分、释放提交或 `AppearancePreference` 映射。
+- `dart format --output=none --set-exit-if-changed lib/features/settings/glass_theme_switch.dart` 无变更；主题开关、模拟/实时/校准/光学与按钮/共享动效 7 个测试文件合计 55 项通过；`flutter analyze --no-pub` 零问题。
+- 验收范围仅关闭三个 analyzer 警告；VoiceOver 实际朗读、原生禁用态 AX 仍未通过，本记录不提升 UI-5.4、UI-5.7 或 UI-6 的阶段状态。
