@@ -1911,6 +1911,6 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 ### 2026-11-23 UI-6.7 B073 B074 音乐搜索授权原生提示复验
 
 - 环境：隔离 macOS Profile 副本，bundle ID `io.github.guog962464.aggregate.ui6b070dark`，PID 40874，窗口 800×632pt、DPR 2；入口为 `lib/preview/ui6_inspection_main.dart`，配置的音乐连接与运行时使用 `Ui6InspectionRuntime` 内存 fixture。搜索框输入 `IU` 后按回车，原生窗口中出现“允许搜索歌曲？”确认框。该副本的构建 SHA 未记录；正式应用未接收输入或点击。
-- 结果：截屏直接证明深色确认框的标题、说明和“取消/允许搜索”动作可见；本次没有点任一动作。随后窗口重激活时确认框消失，AX 快照也未提供其按钮，因此不能把原生取消或允许分支记为通过。源码中 `_confirmSearch` 只有在用户确认后才授权并继续调用；`Ui6InspectionRuntime.invoke` 委托给进程内 `PreviewRuntime`。既有 `music_search_permission_test.dart`（2026-11-19）通过内存 runtime 验证取消不授权/不调用、允许后返回两条样例结果；本轮没有重跑测试。
+- 结果：截屏直接证明深色确认框的标题、说明和“取消/允许搜索”动作可见；本次没有点任一动作。随后窗口重激活时确认框消失，AX 快照也未提供其按钮，因此不能把原生取消或允许分支记为通过。源码中 `_confirmSearch` 只有在用户确认后才授权并继续调用；`Ui6InspectionRuntime.invoke` 委托给进程内 `PreviewRuntime`。2026-11-23 在当前工作树重跑 `flutter test --no-pub test/music_search_permission_test.dart`，1/1 通过：Widget 测试 runtime 的取消不授权/不调用，允许后返回两条样例结果。该测试不覆盖原生 Profile 按钮点击。
 - 证据：[隔离 Profile 深色搜索授权框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b073-music-search/dark-after-return.png>) SHA-256 `81adfd215879a8e82b134aeda0d8d5c5ee9608acc6ad3bf76da7f71c1f73e1a2`，1824×1488 像素，DPR 2。未调用真实音乐 CLI、未发出网络请求、未取得真实搜索结果。
 - 结论及限制：B073/B074 只补签深色原生授权提示的静态呈现；取消和允许分支仍只有 Widget 级证据，没有原生按钮点击结果。没有本项的浅色和动效采样；UI-6.7 继续部分验收。

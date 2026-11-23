@@ -289,7 +289,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 ### UI-6.7 补证：B073 B074 音乐搜索授权提示（2026-11-23）
 
-隔离 Profile 中输入搜索词 `IU` 并按回车，原生深色授权框可见并完成截图；未点击取消或允许。窗口重激活后提示消失、AX 未枚举按钮，所以原生分支仍未验。既有 Widget 用例只证明内存 PreviewRuntime 取消不授权、允许后返回两条 fixture 结果；没有执行音乐 CLI 或网络请求。截图 SHA 和边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b073-b074-音乐搜索授权原生提示复验)。本项只签收原生静态呈现，UI-6.7 继续部分验收。
+隔离 Profile 中输入搜索词 `IU` 并按回车，原生深色授权框可见并完成截图；未点击取消或允许。窗口重激活后提示消失、AX 未枚举按钮，所以原生分支仍未验。`flutter test --no-pub test/music_search_permission_test.dart` 当前工作树 1/1 通过，证明 Widget runtime 取消不授权，允许后由 PreviewRuntime 返回两条 fixture 结果；没有执行音乐 CLI 或网络请求。截图 SHA 和边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b073-b074-音乐搜索授权原生提示复验)。本项只签收原生静态呈现，UI-6.7 继续部分验收。
 
 ### 桌面前台偏好与后续更正（2026-11-23）
 
