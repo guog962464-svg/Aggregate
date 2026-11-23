@@ -324,3 +324,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B092 B093 B094 B097 浅色 Host 配对卡（2026-11-23）
 
 浅色隔离 Profile 的内存 Host fixture 显示 Pixel 9 待处理卡和 LGE AN10 已配对卡；实鼠标“批准只读”后，Pixel 9 仅获得读取连接权限。首轮修改权限弹窗取消因失焦未确认送达；随后新隔离进程 PID 5734 通过物理坐标点击取消，fresh snapshot 确认弹窗消失，AX 仍读到 Pixel 9 仅有读取连接，未保存。没有真实 Host listener、设备或网络操作。单次失焦 CPU 读数未受控，不作性能结论；窗口帧、Flutter FrameTiming 和面板 FPS 仍待验。截图 SHA 及详细边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b092-b093-b094-b097-浅色-host-配对卡补核)与 B097 取消复验条目。UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B092/B095 浅色拒绝与连接向导批准（2026-11-23）
+
+浅色隔离 Profile 前台实点拒绝待审批 Pixel 9 后，AX 显示待审批空态；重启进程内 Host stub 重新注入样例，再实点“允许连接向导”后，AX 读回“读取连接 · 连接向导”，既有 LGE AN10 权限不变。详细环境、截图 SHA 与边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b092-b095-浅色拒绝与连接向导批准)。仅改变隔离进程内存 fixture，不访问真实 Host/设备/网络；没有按钮动效或性能时序数据，UI-6.7 继续部分验收。

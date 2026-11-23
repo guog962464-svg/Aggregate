@@ -1981,3 +1981,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 复验路径：启动内存 Host 后对 Pixel 9 执行批准只读，再实鼠标打开“修改权限”弹窗。live AX 中“取消”按钮 bounds 为 89×40pt，中心约为屏幕坐标 932,750；据此物理点击后立刻取样仍读到弹窗，随后 fresh snapshot 确认弹窗消失。AX find 读回 Pixel 9 与“读取连接”，LGE AN10 仍保留原范围；没有点击保存。
 - 证据：取消后 [配对卡截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/permissions-after-cancel.png>) SHA-256 8e3c8843821e2d1c176b8e1be4d85e4dc0a08ebfcab678f6c0e028cbf9be48be，1824×1488px、DPR 2。画面里迷你播放器出现鼠标悬停提示，不将其纳入本项按钮验收。
 - 结论与限制：B097 浅色修改权限的打开和取消后状态现已补证；首轮失焦失败记录保留为历史，随后这次新进程确认取消成功。仅作用于内存 fixture；没有权限保存、hover/按下/释放动画曲线、Flutter FrameTiming 或物理面板 FPS 证据。Profile 已按 PID 5734 退出，正式应用未操作。
+
+### 2026-11-23 UI-6.7 B092 B095 浅色拒绝与连接向导批准
+
+- 环境：浅色 macOS UI-6 inspection Profile，bundle ID `io.github.guog962464.aggregate.ui6b073lightcurrent`，PID 6237，窗口 800×632pt、DPR 2；窗口按用户最新偏好置前。Host 为 `Ui6InspectionHost` 进程内 stub，`lsof -nP -iTCP:44321 -sTCP:LISTEN` 无 listener。没有访问真实设备、网络、Keychain 或系统剪贴板；正式应用未操作。
+- B092：启动 stub 后对待处理 Pixel 9 实鼠标点击“拒绝”。后续 AX snapshot 显示空待审批态“暂时没有待批准的设备”，AX 查询不再找到 Pixel 9。拒绝后截图：[浅色空待审批状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b095-light/rejected-pending.png>)，SHA-256 `e3262e3b0342b31baa3eec0ecb3c003b82f4a985daefd673b606c89559a89b25`，1824×1488px、DPR 2。
+- B095：停止并重新启动 stub 以重新注入待处理样例，对 Pixel 9 实鼠标点击“允许连接向导”。后续 AX 显示 Pixel 9 已配对且权限为“读取连接 · 连接向导”；原 LGE AN10 样例的既有权限保留。结果截图：[浅色向导权限批准状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b095-light/wizard-approved.png>)，SHA-256 `56e4d93e443f85fcb87e1d4d6714f7d4b9b3f4214f1e47d4fff4a6390ec68013`，1824×1488px、DPR 2。
+- 结论与限制：B092 浅色拒绝回调与 B095 浅色连接向导批准状态通过，结果仅写入隔离进程的内存 fixture。没有采集按钮 hover/按下/释放曲线、Flutter `FrameTiming`、窗口连续帧或物理面板 FPS。Profile 已定向关闭；UI-6.7 仍部分验收。
