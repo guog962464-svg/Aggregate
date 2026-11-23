@@ -283,6 +283,10 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 在隔离的 Flutter 3.50.0 / Dart 3.14.0 macOS Profile（bundle `io.github.guog962464.aggregate.ui6buttons350`，800×796 logical px、DPR 2）中，用内存 `Ui6InspectionRuntime` 打开“示例 Git CLI”的动作编辑器。通过 AX 激活“导出”后，原生 Save sheet 出现；AX 读到默认文件名及 Cancel/Save 控件。激活 Cancel 后 sheet 消失、编辑器仍在、未选路径或写文件。截图与 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-flutter-350-profile-save-sheet-取消复核)。这是动作路径与取消回退的补证，不是实鼠标点击、悬停或按下帧验收；没有 Flutter FrameTiming 或物理面板 FPS，UI-6.7 继续部分验收。
 
+### UI-6.7 补证：B020 前台实鼠标重试被 SecurityAgent 遮挡（2026-11-24）
+
+用户允许隔离 Profile 占用前台后再次打开同一内存样例。`agent-desktop --headed hover` 两次在事件发出前超时并返回 `not_delivered`；随后对按钮中心发送的 CoreGraphics 鼠标事件未打开 Save sheet。复查发现系统 `SecurityAgent` 窗口（PID 25593，434×186pt，位置 `(539,225)`）覆盖 B020 目标；`agent-desktop --headed click` 因 `receives_events: occluded by window` 在发送前安全拒绝。早先坐标事件是否被该系统窗口接收无法确认，不能归为按钮点击或动效证据。隔离 Profile 已优雅退出；系统窗口未被操作。排查截图、SHA 和边界见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-前台物理输入重试与securityagent遮挡)。B020 仍只有 AX 打开/取消路径通过补核，鼠标悬停/按下/释放继续未验。
+
 ### UI-6.7 补证：B021 深色 Profile 参数预览结果（2026-11-23）
 
 深色 Profile 中临时新增 `action1`，输入 `{}` 后点击“检查并预览参数”；AX 读回 `["仅内存预览", "--help"]`，界面注明不运行命令。未执行外部程序或服务，临时清单只在进程内存。浅色路径沿用 2026-11-18 实窗记录。按下/悬停动效和 FrameTiming 未验，详见[验收记录](acceptance-record.md#2026-11-23-ui-67-b021-深色参数预览结果复验)。
