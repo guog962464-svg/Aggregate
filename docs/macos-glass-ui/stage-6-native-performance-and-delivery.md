@@ -108,6 +108,10 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 - [深色按钮样本](/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage6-native-review/button-samples-dark-800x632.png)：`72ee7dc973616cb2d2a05262d3c0abcf1e705ab645baac305207271d5f476baf`。
 - [浅色按钮样本](/Users/guo/.codex/visualizations/2026/11/13/01a1d606-f887-7930-ad30-645440d89f65/stage6-native-review/button-samples-light-800x632.png)：`6aa7a202f3dc0c994e0d58620a9b7b1f700dae2ab6cdffbce56eac0911af3207`。
 
+### UI-6.8 焦点环隐藏后的网页/Mac 双向连续帧复核（2026-11-23）
+
+为排除指针焦点环对材质观察的遮挡，在隔离网页与 macOS Profile 窗口中用 CDP/CGEvent 按同一预定起点执行正反向拖动；每向 48 个等距移动点、780 ms，释放后移出指针。两窗口的完整 display frame 分别为 395/391，视频到 display frame 的时间关联 RMS 为 0.477/0.465 ms。每方向 49 对关键进度样本，配对时间差最大值为 17.88 ms（正向）与 16.21 ms（反向）。接触表显示轨道和光弧整体接近；中段太阳点阵仍有可见形态差异，故不签收逐帧 1:1。原始视频、时间戳及 SHA 见[验收记录](acceptance-record.md#2026-11-23-ui-6-8-焦点环隐藏后的网页mac-双向连续帧复核)。页面不是已删除的 MP4，displayTime 也不是物理面板呈现时间。
+
 ## 6. 最终交付与回退
 
 提交前检查所有阶段记录，确认没有将待验收项填成通过。交付代码和必要测试基线、设计参数/实现对应表、原主题逻辑冻结证明与仅呈现差异说明、测试日志索引、原生深浅截图/动效证据和三轮性能报告。原始大量录屏、构建产物与敏感配置放在合适的本地证据目录，不直接纳入源码提交。

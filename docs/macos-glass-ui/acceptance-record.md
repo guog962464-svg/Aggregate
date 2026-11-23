@@ -2066,3 +2066,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 原生实窗：隔离 Profile bundle `io.github.guog962464.aggregate.ui6focus`，PID 22906，窗口 800×720 logical px、CGWindowID 38291；正式 Aggregate PID 10715 未操作。窗口使用单独的 `screencapture -l` 截图，尺寸 1824×1664px。物理鼠标点击将 AX 主题值从“深色”切至“浅色”；按右方向键后，窗口截图可见环绕整个轨道的橙色键盘焦点框；再次鼠标点击切回“深色”并将指针移出控件后，整轨焦点框消失。此结果确认键盘可见性保留、指针焦点不再遮挡控件材质；控件自身的太阳/月亮暖冷边缘光仍按原实时动画运行。
 - 截图：[键盘焦点环显示](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6focus-after-key.png>)（SHA-256 `da0165b788d4f95471a62579c6461c7d87a7b0b016a25e9c069967df695ecb5f`）；[指针交互后焦点环隐藏](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6focus-after-pointer-rehide.png>)（SHA-256 `8d85ae341b630d8b623e0e2d5dcc415b715d409d933567b177a67738a04e7912`）。
 - 结论与限制：焦点环在当前隔离 Profile 中按输入方式切换的行为通过。网页参考不是被删除的原 MP4；本次验收也不覆盖主题拖动与网页的逐帧相位误差、物理显示器呈现 FPS、VoiceOver 实际语音或 UI-6.7 全量按钮实例。UI-6.8、UI-6.7 及阶段 0–6 总体验收继续保持部分/未完成。
+
+### 2026-11-23 UI-6.8 焦点环隐藏后的网页/Mac 双向连续帧复核
+
+- 环境：将用户指定的 [Glass Light Toggle 页面](https://experiments.thisiswhitespace.com/glass-light-toggle) 与隔离 macOS Profile 窗口同时置前；页面窗口 701×721pt，应用窗口 800×720pt，使用各自独立窗口的 ScreenCaptureKit display frame。正式 Aggregate PID 10715 与用户 Chrome PID 50338 未操作。
+- 输入与采样：网页由 CDP、应用由 CGEvent helper 按同一预定起点执行深→浅和浅→深拖动，每向 48 个等距移动点、780 ms；松开后将指针移出控件以隐藏指针焦点环。应用视频 392 帧/391 个完整 display frame，网页视频 396 帧/395 个完整 display frame；视频与 display frame 时间关联 RMS 分别为 0.465 ms、0.477 ms。每方向生成 49 对进度样本；正向配对时间差最大/中位数为 17.88/7.88 ms，反向为 16.21/5.45 ms。
+- 目视结果：指针焦点环未再遮挡轨道。轨道、滑块外缘和光弧整体接近；反向第 24/48 进度、显示时间差约 7.1 ms 的样本中，太阳中央点阵的点位形态与局部光晕仍可见不同。因此这轮并未达到逐帧 1:1。
+- 证据：[正向接触表](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-focus-suppressed-paired/ui68-forward-focus-suppressed-contact-sheet.png>) SHA-256 `2ed998cdb8df9c358fc7a78eab3cf5eaade44f31347f41bc149bc289f7e1e91e`；[反向接触表](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui68-focus-suppressed-paired/ui68-reverse-focus-suppressed-contact-sheet.png>) SHA-256 `ddf8c13ae6987ab31223fb60c1fc9865b75aa7ea9136ad6592d5d8a32402c5d4`。两组原始视频和输入/显示时间戳 JSONL 保存在同一证据目录。
+- 边界：原 MP4 已删除，网页只是用户指定的当前参照。两套渲染器不共享动画时钟，配对时差仍达毫秒级；WindowServer displayTime 不是物理屏幕扫描或光子响应时间。本记录不证明零像素差、原视频复原或 1:1；UI-6.8 保持部分验收。
