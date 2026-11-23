@@ -452,3 +452,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **可达性：**Mac→手机及手机→Mac 的 ICMP 各丢失 2/2。为区分 ICMP 过滤和 TCP 路径，Mac 临时在 `192.168.10.239:47321` 绑定一次性诊断 listener；手机 `toybox nc -w 3 -n 192.168.10.239 47321` 超时，listener 20 秒后 accept 超时退出。临时探针结束后 `47321/47322` 均无监听。该结果表明当前跨网段 TCP 路径不可达；不构成 Host/WSS 服务测试。
 - **动作与范围：**本轮未启动 production Host（避免重复触发已记录的登录 Keychain ACL 提示），未切换 Android 前台，未生成邀请、提交配对、批准/撤销 grant 或调用 RPC；未改网络设置，也未启动 testnode/NodeProbe 或运行无障碍测试。
 - **结论：**用户报告网络一致，但本次系统地址、路由及 TCP 探针仍不支持直连。此前同网段的 TCP、NSD、WSS 及只读 RPC 通过记录保留为当时有效的历史结果；当前 A5.4 production 直连链路仍未复验。
+
+## 2026-11-23 A5 路由与过滤状态续核（19:57 Asia/Shanghai）
+
+- **实时地址与路由：**Mac `en0=192.168.10.239/24`、默认网关 `192.168.10.1`；LGE AN10 `wlan0=192.168.8.7/24`、Android policy table 1026 默认经 `192.168.8.1`。Mac 到手机的系统路由也经 Mac 默认网关。双方有路由表项，但仍不同 `/24`。
+- **过滤与可达性：**macOS Application Firewall 报告 disabled、block-all disabled、stealth mode off；`pfctl -s info` 返回 `/dev/pf: Permission denied`，PF 状态未知。Mac→手机和手机→Mac ICMP 各丢失 2/2。系统 Python 在 Mac `192.168.10.239:47321` 监听一次性 TCP 探针，Android `toybox nc -w 3 -n` 超时，listener 25 秒后 accept 超时退出。该读数确认当前端到端探针不可达，无法定位是否由 PF、路由设备或其他策略造成。
+- **范围与结论：**临时 listener 清理后 `47321/47322` 均无监听；未启动 production Host、未切换手机前台、未生成邀请、配对、改 grant 或调用 RPC，未改网络配置。A5 当前直连链路仍开放，历史同网段 WSS/RPC 结果不外推到当前网络。
