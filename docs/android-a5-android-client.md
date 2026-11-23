@@ -526,3 +526,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **临时签名：**本机 `security find-identity -v -p codesigning` 可用身份中有 Apple Development 身份，未发现 Developer ID Application/Apple Distribution。将当前 Debug bundle 复制到 `/tmp`，仅为副本 root bundle 使用该身份签名并保留 Debug entitlements；`codesign --verify --deep --strict` 通过，bundle identifier 保持不变且签名包含 TeamIdentifier。源 bundle、Xcode 配置和仓库均未修改。
 - **Host/Keychain：**从独立签名副本启动 Host 后，仍出现同一登录钥匙串“导出密钥”提示。输入用户此前提供的凭据并尝试“始终允许”与“允许”后提示仍然存在；为解除挂起，拒绝当前请求。签名副本的 UI 回到“启动 Host”，`47321/47322` 无 listener。随后关闭该窗口并删除仅本轮创建的临时 app 副本。
 - **当前设备态与结论：**Mac Wi‑Fi `192.168.8.4/24`，Android `192.168.8.7/24`，双向 ping 2/2；手机仍在 Aggregate 前台，Android 15/API 35/arm64/4 KB。稳定 TeamIdentifier 的临时副本也出现 Keychain 提示，因此 ad-hoc 签名并非已证实的唯一原因；凭据是否被系统接受、ACL 是否变化以及失败创建后的候选 Keychain 项状态仍未知。没有 production WSS、配对、邀请、grant 变更或 RPC，也没有执行身份轮换、Keychain 检索/清理、testnode 或无障碍测试。
+
+## 2026-11-23 A5 同网段 Host 重试与 Keychain 候选项只读检查（23:32–23:41 Asia/Shanghai）
+
+- **网络与设备：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`；双向 ping 均 2/2。手机保持在普通 Aggregate `MainActivity` 前台，ADB reverse 为空。
+- **Host/授权：**从 Aggregate Debug 设置再次点击“启动 Host”；SecurityAgent 显示登录钥匙串私钥导出提示。按用户先前授权将凭据填入安全字段并尝试“始终允许”及“允许”，提示仍留在前台，不能确认系统是否接受凭据或写入 ACL；随后点“拒绝”结束挂起。Aggregate 回到“启动 Host”，`47321/47322` 无 listener。无邀请、配对、grant 变更或 RPC。
+- **只读 Keychain 元数据：**对登录钥匙串执行元数据计数，发现 3 条匹配 Host TLS tag 前缀的密钥记录，其中 2 条 tag 含 `.candidate.`。未读取密钥数据或导出私钥，也没有修改、删除或轮换 Keychain 项。当前源码每次创建使用随机 candidate UUID，并在失败时 best-effort 删除；这些现存 candidate 与该失败清理路径相符，但无法证明它们由哪次运行创建、哪条是活动密钥或它们是否造成当前提示。最近 10 分钟的 `securityd` 日志过滤未返回可定位条目。
+- **当前结论：**同网段和双向 IP 可达已确认，生产 Host 仍卡在系统 Keychain 私钥导出授权，未达到 A5 production WSS/配对/只读 RPC 验收。Apple 文档说明 macOS Keychain ACL 按项目和操作授权应用，选择“始终允许”会把应用加入对应 ACL 的可信应用列表（[Access Control Lists](https://developer.apple.com/documentation/security/access-control-lists)）；当前授权状态与候选项目归属仍未知。未执行 Keychain 清理、身份轮换或绕过系统授权。
+- **范围：**本次只确认同网段、双向 ping、Host 提示/退出状态和 Keychain 密钥记录元数据；不新增 NSD、WSS、配对或 RPC 通过证据。此前隔离包的 `host.hello` 与只读 `connection.list` 仍只适用于其原测试范围。无 NodeProbe/testnode 或无障碍测试。
