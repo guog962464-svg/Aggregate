@@ -482,3 +482,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **真机验收：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB，普通 applicationId `io.github.guog962464.aggregate`、Debug `versionCode=8` / `versionName=0.3.7`。卸载前只读检查显示 app `filesDir` 仅有 `profileInstalled`，没有 `hosts.json`/`connections.json`；身份 SharedPreferences 的活动别名是 `aggregate.host.device.p256.v1`。临时集成用例通过真实 `AndroidHostManager`、`AndroidRuntimeStore` 和 `AndroidHostDeviceIdentity` 执行 `rotateDeviceIdentity()`：原/新 device ID 与公钥不同，`localHostRecordsCleared=true`，新身份回读稳定，轮换前后 ECDSA 签名均成功，Host 列表为空。用例 1 项通过，测试源文件随后删除。
 - **测试清理副作用与恢复：**Flutter 集成测试退出时卸载了普通包，Android 会随卸载清除应用私有数据和 Keystore。卸载前未发现保存的 Host/连接 JSON；此前 SharedPreferences 还包含插件配置和 Keystore 活动别名，但无法恢复已删除的私钥，也不能据此断言所有私有数据均无内容。随后用当前源码普通 Debug APK 重装（SHA-256 `52808bf745fbed7f29e75ae9bad5cb399475697ec39f6c6d27a087e7dd750db3`），安装成功；冷启动 `Status: ok`、`LaunchState: COLD`，无相关崩溃日志，ADB reverse 为空，手机已回到 Launcher。当前普通包为新安装状态，旧身份和任何未备份私有状态已重置。
 - **范围：**这项证明普通包名下 Android Manager→Android Keystore 的真实身份轮换和新密钥签名；没有生产 Host、配对、NSD 或 RPC。A5.4 的正式签名 Release、签名升级、Keychain 生产 Host 启动与 16 KB 真机仍开放。未启动 NodeProbe/testnode，未做无障碍测试。
+
+## 2026-11-23 同网段 production Host 重试（22:28 Asia/Shanghai）
+
+- **网络：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`；手机到 Mac ICMP 2/2 成功，ADB reverse 为空。
+- **Host 状态：**在 Aggregate 设置页点击“启动 Host”后，UI 保持“正在启动”；进程 `SecurityAgent` PID 19955 出现，端口 `47321/47322` 均未监听。未与系统授权窗口交互、未绕过它；本次没有生成邀请、配对、批准授权或调用 RPC。此前同网段 TCP 探针只证明网络层可达。
+- **结论：**用户已授权启动 Host 并限于只读配对/RPC，但当前启动仍停在 Keychain 系统授权流程；本节不记为 Host/WSS 或 production RPC 验收。此前 21:24 的只读链路证据仍按原样本和时间保留。
