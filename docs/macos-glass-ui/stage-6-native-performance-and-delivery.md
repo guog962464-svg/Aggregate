@@ -356,3 +356,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B107 浅色待确认结果恢复查询（2026-11-23）
 
 对浅色隔离 Profile 的唯一“查看 Git 状态”内存样例运行后，页面显示 `outcomeUnknown` 和不可直接重跑提示；该 fixture 生成进程内 `RunHandle`。真实指针点“检查活动状态”后，AX 仍为“结果待确认”，并读到“结果仍未知；请先在执行端确认，不要直接重跑。”。详见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b107-浅色结果待确认恢复查询)。没有调用真实 Git CLI/执行端/网络，没有连续按钮动画、Flutter `FrameTiming` 或面板 FPS；Profile 已关闭，UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B108/B109 浅色文件结果动作（2026-11-23）
+
+浅色隔离 Profile 的临时内存 RunSummary 返回文件路径字符串；实鼠标点 B108“预览文件”后 AX 显示该路径的说明文本，没有读取文件。点 B109“在访达中显示”后没有错误，Finder 仍无窗口；fixture 回调为空，所以实际生产 Finder 行为未验。完整截图 SHA、临时 fixture 源码恢复核对与范围见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b108b109-浅色本地文件结果动作)。没有连续动效、FrameTiming 或面板 FPS，Profile 已关闭，UI-6.7 仍部分验收。
