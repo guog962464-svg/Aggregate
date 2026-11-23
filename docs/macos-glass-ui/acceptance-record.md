@@ -2117,3 +2117,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - active-round-2.json：SHA-256 f4fa33f18e1b297f770bc27a2b3503a9811334a17a3f88bfbb1335604f1cff74
 - active-round-3.json：SHA-256 af889ef2ae1bc15501122df27acdb308d08b0736ea994f870e942f89450f3b4f
 - active-input-events-aligned.jsonl：SHA-256 82ab4b3843d9eeec17d3bc958ce892e119b9c21d671fc8ef97e2c88e2518c154
+
+### 2026-11-24 UI-6 设置页双主题背景连续性实窗抽查
+
+- 环境：macOS Profile 隔离包 `io.github.guog962464.aggregate.ui6activeprobe`（PID 35563，窗口 `w-38510`，800×632 logical px，DPR 2），使用 `PreviewRuntime` 内存数据。正式 Aggregate 和用户 Chrome 未操作。窗口处于前台，按用户最新授权完成截图与切换。
+- 操作：AX 将“外观主题”从深色切到浅色；读取值随即变为“浅色”。随后恢复深色并再次读取，值为“深色”。这只改变隔离预览进程的内存偏好，没有更改系统外观、正式应用偏好或太阳/月亮切换逻辑。
+- 目视：两主题截图中，开关外沿与应用 `GlassScene` 背景之间未见清晰的矩形裁剪边；冷暖灯光在开关附近渐变融合。此为静态 Profile 实窗抽查，不是像素差分或多窗口尺寸验证。
+- 证据：[深色窗口截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6-frame-timing/current-window-foreground-review-20261124.png>) SHA-256 `d86ed48d1c8a5faca9ef13ae156db55f70b2608514124ccba6edda7b18dcc006`；[浅色窗口截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6-frame-timing/foreground-review-light-20261124.png>) SHA-256 `f91667b274e398d36cebb2c9bce5b2b0e14094acd911777c116eab224bce352f`。
+- 边界：本抽查只补设置页静置背景连续性；不验证实时动画、原 MP4 逐帧匹配、全部窗口/DPR 或物理 display-present FPS。网页作为当前对照时仍存在边缘光和背景光学差异；UI-6.8 与 UI-6 总体继续部分验收。
