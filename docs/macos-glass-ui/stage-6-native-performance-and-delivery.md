@@ -380,6 +380,8 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 2026-11-24 重采样校正了网页完整把手行程，并确认 macOS 设置页实际使用 `ThemeSwitchCalibration.reference`。后续用只监听的 `CGEventTap` 记录系统输入时戳；在计时前预热隔离 helper 后，正反向 48 个移动点相对网页发送时间的中位差为 +0.7/+0.5 ms，原生 down→up 为 782.0/780.5 ms，网页计划 780 ms。把手归一化后，点阵轨迹接近；玻璃边缘光和背景折射仍有可见差异，因此不签收逐帧 1:1。完整坐标、帧配对、时间映射与证据 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-68-cgeventtap-输入时序校准后复核)。网页是已删除 MP4 之后的当前参照；displayTime 不等于物理面板呈现时间，UI-6.8、UI-6.7 及阶段 0–6 继续部分/未完成。
 
+2026-11-24 另复跑固定模型状态下官方 WebGL/Flutter 全帧比对：151 帧导出测试通过，平均 MAE `0.06317496/255`、最大单帧 `0.07471108/255`。这只验证相同输入状态下离屏 shader 的光学接近度；不能替代实时窗口拖动对照，实窗边缘光和背景折射仍有可见差异。详情见[验收记录](acceptance-record.md#2026-11-24-ui-68-官方-webgl-与-flutter-同状态全帧复核)；原 MP4 已删除，UI-6.8 与 UI-6 总体验收仍未完成。
+
 ### 2026-11-24 UI-6 ThemeSwitch Profile frame timing
 
 三轮 800×632 logical px Profile 拖动负载，每轮 30 秒、26 次交替方向拖动，60 Hz 屏幕；三轮 build/raster P95 分别为 7.238/8.676、7.676/9.262、7.420/9.327 ms。全量 5,394 帧中一帧 raster 为 18.291 ms，另两轮没有超过 16.667 ms 的 build/raster 帧；没有 >100 ms 长帧。输入时长、活动窗、帧间隔、运行环境及证据 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-6-themeswitch-profile-frame-timing)。历史长帧、display-present FPS、VoiceOver、逐项动态签收和用户视觉签收仍待完成；UI-6 阶段状态保持部分验收。

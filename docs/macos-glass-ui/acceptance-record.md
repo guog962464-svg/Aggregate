@@ -2125,3 +2125,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 目视：两主题截图中，开关外沿与应用 `GlassScene` 背景之间未见清晰的矩形裁剪边；冷暖灯光在开关附近渐变融合。此为静态 Profile 实窗抽查，不是像素差分或多窗口尺寸验证。
 - 证据：[深色窗口截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6-frame-timing/current-window-foreground-review-20261124.png>) SHA-256 `d86ed48d1c8a5faca9ef13ae156db55f70b2608514124ccba6edda7b18dcc006`；[浅色窗口截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/ui68-synchronized-capture/ui6-frame-timing/foreground-review-light-20261124.png>) SHA-256 `f91667b274e398d36cebb2c9bce5b2b0e14094acd911777c116eab224bce352f`。
 - 边界：本抽查只补设置页静置背景连续性；不验证实时动画、原 MP4 逐帧匹配、全部窗口/DPR 或物理 display-present FPS。网页作为当前对照时仍存在边缘光和背景光学差异；UI-6.8 与 UI-6 总体继续部分验收。
+
+### 2026-11-24 UI-6.8 官方 WebGL 与 Flutter 同状态全帧复核
+
+- 参照：重新核验用户指定的 [Glass Light Toggle 页面](https://experiments.thisiswhitespace.com/glass-light-toggle)当前脚本 `main.js?v=3`，SHA-256 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`。固定 LCG seed `1831565813`，113 颗粒子的轨迹 SHA-256 为 `fe107b7ef7e72e8e1ca49043c4c51e1ea173de00dc098ce6aed810746b2f00f2`；用 720×540、DPR 1、scale 0.76 的场景生成 151 个 WebGL 参考帧。
+- 自动导出：运行 `flutter test --no-pub --reporter=expanded tool/theme_switch_reference_frames_test.dart`，传入 `THEME_SWITCH_MODEL_INPUT` 与 `THEME_SWITCH_EXPORT_DIR`；测试通过（1 项），生成 151 张 Flutter shader 帧。测试逐帧使用与参考相同的模型状态，不重放录制视频帧。
+- 图像比较：151/151 帧均可比较；未使用遮罩、图像配准或颜色校正。全帧平均 MAE 为 `0.06317496/255`，最大单帧 MAE 为 `0.07471108/255`。比较指标与逐帧结果保存在 [`metrics.json`](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-current-reference-parity/comparison/metrics.json>)；原始参考帧、Flutter 帧和导出清单分别位于 `ui68-current-reference-parity/source/`、`flutter/`。
+- 结论与限制：这确认相同粒子、输入位置和时间状态下，两套离屏光学渲染接近，未发现需要据此修改太阳/月亮状态机或设置路由的参数偏差。它不证明实时输入、随机种子、renderer 时钟、Profile 窗口帧或物理 display-present 完全一致；同步实窗对照仍见到玻璃边缘光与背景折射差异。原 MP4 已删除，网页仅是当前参照，故 UI-6.8 和阶段 0–6 仍部分验收。
