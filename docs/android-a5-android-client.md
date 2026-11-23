@@ -568,3 +568,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **实现：**`HostWssTransport` 在加载身份、配对等服务阶段增加默认 30 秒 `preparationTimeout`，超时发生在端口绑定之前。`MacHostModule` 将此类传输启动异常回滚并发布 `failed/startupFailed`。超时后迟到的 Dart 服务加载结果不会继续进入配对初始化、地址发现或 listener 创建链；该 Future 超时机制不会取消已在执行的原生 Security.framework 调用，系统提示/调用仍可能继续，Keychain/ACL 状态未变更。
 - **验证：**`flutter test --no-pub test/host_wss_transport_test.dart test/mac_host_module_test.dart` 通过（8 tests）；定向 `dart analyze lib/platform/macos/host/host_wss_transport.dart test/host_wss_transport_test.dart` 无问题；`git diff --check` 通过。全量 `flutter analyze --no-pub` 仅报告未改动的 `lib/features/settings/glass_theme_switch.dart` 第 311、317、323 行三条 warning。未重建或重启当前 macOS Aggregate 进程，因此新超时行为尚无现场 UI 观测。
 - **验收边界：**本轮没有操作 SecurityAgent、输入凭据、修改/清理 Keychain/ACL、改变签名、启动生产 Host、WSS、NSD、配对或 RPC。端口仍无 listener；生产 Host 验收仍开放。未进入 NodeProbe/testnode，也未运行无障碍测试。
+
+## 2026-11-24 A5 服务准备超时修复的 macOS 隔离构建（01:26 Asia/Shanghai）
+
+- 在独立 detached worktree（源码提交 `618e0d78f187a822dcaf8b626cdd8a6ada9412ef`）中执行 `flutter build macos --debug --no-pub`，构建成功；产物主程序为 arm64 Mach-O。构建没有覆盖或启动用户当前工作区的 Aggregate app。该验证使用现有 workspace `.dart_tool` 配置并跳过依赖解析；产品源代码/Keychain 运行行为没有被启动验证。
+- 编译输出包含 `mobile_scanner` 对 macOS 10.15 起弃用摄像头 API 的 Swift warning，以及 Xcode Flutter Assemble Run Script 每次构建执行的 warning；均不阻止本次构建。
+- 本次不改变 Keychain、签名或 listener 状态；没有 SecurityAgent 操作、生产 Host/WSS/NSD/配对/RPC 或手机前台切换。构建成功只关闭该补丁的 macOS 编译验证，不关闭生产 Host 授权或 A5/A3.6/A8 其余门槛。
