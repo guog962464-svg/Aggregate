@@ -387,3 +387,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### 2026-11-24 UI-6 ThemeSwitch Profile frame timing
 
 三轮 800×632 logical px Profile 拖动负载，每轮 30 秒、26 次交替方向拖动，60 Hz 屏幕；三轮 build/raster P95 分别为 7.238/8.676、7.676/9.262、7.420/9.327 ms。全量 5,394 帧中一帧 raster 为 18.291 ms，另两轮没有超过 16.667 ms 的 build/raster 帧；没有 >100 ms 长帧。输入时长、活动窗、帧间隔、运行环境及证据 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-6-themeswitch-profile-frame-timing)。历史长帧、display-present FPS、VoiceOver、逐项动态签收和用户视觉签收仍待完成；UI-6 阶段状态保持部分验收。
+
+### 2026-11-24 UI-6.2 90 字段表单全行程 Profile 复验
+
+在隔离 worktree 用 Flutter 3.50.0 / Dart 3.14.0 构建 macOS Profile 诊断入口；Flutter 3.47.8 的 AOT `_Rect` 快照失败与上游记录的问题一致，原 SDK 未改动。800×632 logical px、DPR 2 的合成 `PreviewRuntime` 对 90 字段表单完成三轮全行程上下滚动，每轮 630 个滚轮事件、1,584/1,584/1,585 帧。build/raster P95 分别为 2.690–2.738/1.869–1.872 ms，所有最大值低于 16.667 ms；历史 112.742 ms 单帧异常仍未复现但原因未定位，因此 UI-6.2 仍部分验收。原始帧、事件、构建日志和字段 85–89 的范围校准截图见[验收记录](acceptance-record.md#2026-11-24-ui-62-90-字段表单全行程-profile-复验)。UI-6 阶段总体仍未完成。
