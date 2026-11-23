@@ -1892,3 +1892,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B022：临时新增 `action1` 后取消并重开，动作清单只含原有 `version`；取消与保存按钮在紧凑窗口内均可见。截图：[深色紧凑编辑器](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b022-action-cancel/dark-compact-editor.png>) SHA-256 `5ec44fd62434f2e732f170e134d9265a7050c8b4217650e63dc461a4a9e4986f`。
 - B023 紧凑布局边界：保存临时 `action1` 后编辑器关闭，确认保存回调可达；本轮随后重新打开并回读清单时，Profile 的 AX 窗口枚举失去响应，因此没有把紧凑布局的原生 Profile 回读记为通过。补充的 800×632 Widget 回归现已验证保存后重开仍包含 `action1`，只签收布局和内存状态逻辑，不替代原生 AX 实窗回读。此前 B023 的自定义布局回读记录仍保留。退出时已结束隔离 Profile 进程，进程内 fixture 不落盘。
 - 验证：`flutter test --no-pub test/action_editor_test.dart` 5/5 通过；`flutter build macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart` 成功；`git diff --check` 通过。连续动画曲线、Flutter `FrameTiming`、物理面板 FPS 未由此签收；UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B070 深色音乐暂停确认框补验
+
+- 环境：当前源码构建的 macOS Profile 隔离副本，bundle ID `io.github.guog962464.aggregate.ui6b070dark`，窗口 800×632pt、DPR 2；入口 `lib/preview/ui6_inspection_main.dart`，运行数据来自 `Ui6InspectionRuntime` 内存 fixture。Profile PID 32159 已正常退出；只通过隔离 bundle ID 操作，原应用未操作。
+- 操作与结果：全局迷你播放器的 AX “暂停”按钮打开确认框。AX 读到标题“暂停？”，说明“通过 示例网易云音乐 执行播放控制。”；“取消”和“执行”按钮边界均为 89×41pt。只点“取消”，确认框消失；随后截图显示音乐样例仍为“播放中”，暂停控件仍可见。没有点击“执行”，没有真实播放/暂停、外部服务或网络请求。
+- 证据：[深色暂停确认框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-confirm.png>) SHA-256 `483a8eaa687166a40850e81dd82447a90e04b3f68798ba741c2833c867e10793`；[取消后播放器状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-after-cancel.png>) SHA-256 `881f6c6e75a675c438097df6425cfc28e9e3ac97108cf7e4e7d2a2fa741df652`。两图由隔离应用窗口截图获得，输出 1824×1488 像素，scale factor 2。
+- 边界：本次只签收 B070 深色静态确认框、AX 尺寸和取消路径；点击/按下动效、执行路径与真实音乐控制仍未验，UI-6.7 继续部分验收。
