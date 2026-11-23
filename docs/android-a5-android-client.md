@@ -458,3 +458,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **实时地址与路由：**Mac `en0=192.168.10.239/24`、默认网关 `192.168.10.1`；LGE AN10 `wlan0=192.168.8.7/24`、Android policy table 1026 默认经 `192.168.8.1`。Mac 到手机的系统路由也经 Mac 默认网关。双方有路由表项，但仍不同 `/24`。
 - **过滤与可达性：**macOS Application Firewall 报告 disabled、block-all disabled、stealth mode off；`pfctl -s info` 返回 `/dev/pf: Permission denied`，PF 状态未知。Mac→手机和手机→Mac ICMP 各丢失 2/2。系统 Python 在 Mac `192.168.10.239:47321` 监听一次性 TCP 探针，Android `toybox nc -w 3 -n` 超时，listener 25 秒后 accept 超时退出。该读数确认当前端到端探针不可达，无法定位是否由 PF、路由设备或其他策略造成。
 - **范围与结论：**临时 listener 清理后 `47321/47322` 均无监听；未启动 production Host、未切换手机前台、未生成邀请、配对、改 grant 或调用 RPC，未改网络配置。A5 当前直连链路仍开放，历史同网段 WSS/RPC 结果不外推到当前网络。
+
+## 2026-11-23 同网段直连配对与只读 RPC 复验（21:24 Asia/Shanghai）
+
+- **设备与网络：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`；Mac `en0=192.168.8.4/24`，手机 `wlan0=192.168.8.7/24`，均属 `192.168.8.0/24`。Android 到 Mac 的路由选择 `wlan0`。Host 运行期间邀请中的 endpoint 为 `wss://192.168.8.4:47321/host`；停止 Host 后 ping 2/2 成功，`47321/47322` 均无监听。
+- **隔离配对与 RPC：**使用当前 Aggregate Host Debug app 和 Android `.integration` Debug 包。Mac UI 与 Android runner 确认码一致（`084241`）；Mac 只批准“读取连接”，grant scope 为 `readConnections`。Android 完成 WSS challenge 认证并通过 `host.hello`，随后只调用 `connection.list`，返回 1 条远程 CLI 连接，状态为 `unavailable`。本次没有调用 `capability.search`、setup、CLI/TUI/MCP、账号、终端、播放或写入 RPC；没有走 Bonjour/NSD discovery。
+- **隔离 runner 修复：**首次临时 runner 命令未传 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true`，构建并更新了普通 applicationId Debug 包；由于该包没有验收 Host 记录，断言在请求配对或 RPC 前失败。随后从当前 checkout 重建普通 Debug APK 并用 `adb install -r` 恢复；未卸载或清除普通包数据，Package Manager `firstInstallTime` 保持不变。通过隔离 Gradle 属性及 `--no-uninstall` 重跑后，验收使用 `.integration` 包，临时 runner 和源码随后删除。
+- **清理：**Mac 侧撤销本轮只读 grant、停止 Host、确认端口无 listener；用户原登录 Keychain 的默认项与搜索列表恢复为原值，临时 Keychain 已删除。手机卸载 `.integration` 包并回到 Launcher；普通 `io.github.guog962464.aggregate` 包仍安装，ADB reverse 列表为空。没有启动 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
+- **结论边界：**补足当前同网段直接 LAN/WSS 配对与最小只读 RPC 证据，不新增 Bonjour/NSD 证据，也不覆盖签名 Release 主界面、production 业务 RPC、真实账号/播放或 16 KB 系统运行。A5.5 业务闭环、A3.6 发行/许可门槛和 16 KB 真机仍开放。此前跨网段失败记录仍作为当时观察保留；本节更新当前网络状态。
