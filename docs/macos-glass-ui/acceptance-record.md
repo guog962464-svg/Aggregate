@@ -1996,3 +1996,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B097/B101：打开 Pixel 9“修改权限”，AX 回读连接向导预选及 Git CLI 的读取/本机控制预选；随后勾选“连接管理”并给 Git CLI 增选“外部写入”。AX 显示连接管理 checked，Git CLI 的读取、本机控制、外部写入均已选择。实鼠标点“保存权限”后重新打开弹窗，AX 再读回连接向导、连接管理和三项 Git CLI 权限；点取消关闭弹窗。页面卡片摘要显示 Pixel 9“读取连接 · 连接向导 · 连接管理”，LGE AN10 原权限保留。
 - 证据：修改权限保存前的[逐连接权限界面](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b096-b097-light/edit-custom-permissions-selected-before-save.png>) SHA-256 `95a38b58937e4a5810b9cda0cac5a98e7c8b4d44fd0871c06fa56403be9a1be3`；保存及重新打开后[配对卡状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b096-b097-light/permissions-saved-paired-cards.png>) SHA-256 `8d1b0388bbb49ae415b0aed860291e6b87b7797a3b046a084f4fc69a82b74049`。均为 1824×1488px、DPR 2。
 - 结论与限制：B096 的浅色自定义批准、B097 的浅色权限修改与保存回读、B101 的浅色单连接权限选择和自动包含读取均通过；仅证明内存 fixture 的授权状态，不代表真实设备实际获得权限。未采按钮 hover/按下/释放曲线、连续窗口帧、Flutter `FrameTiming` 或物理面板 FPS。使用既有 Profile 构建副本，构建源码 SHA 未记录。Profile 已优雅退出，44321 无 listener；UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B098 浅色撤销确认取消复验
+
+- 环境：浅色 macOS Profile 隔离副本 bundle ID `io.github.guog962464.aggregate.ui6b096light`，PID 8823，窗口 800×632pt、DPR 2；入口 `lib/preview/ui6_inspection_main.dart`。用户允许隔离窗口占用前台；Mac Host 为 `Ui6InspectionHost` 进程内 stub，没有真实设备或网络副作用。
+- 路径：启动内存 stub 后，从 LGE AN10 配对卡点击“撤销”，原生“撤销设备配对？”确认框显示设备名及断开说明。确认框“取消” AX bounds 为 `{x:807,y:545,width:89,height:41}`；因 native `Dismiss` 静态文本覆盖层使 AX hit-test 判定遮挡，改用 bounds 中心约 `(852,566)` 的一次真实指针点击取消。后续 fresh AX snapshot 确认确认框消失，仍读到 LGE AN10 及“读取连接 · 连接向导 · 连接管理”；没有点“撤销设备”。
+- 证据：撤销确认框[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b098-light/revoke-confirmation-cancel-only.png>) SHA-256 `f32878e024ebd9d71733d29f11a94b1ed9df6f52f4fd7097efe131763f9dfa92`；取消后配对卡[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b098-light/revoke-cancelled-card-retained.png>) SHA-256 `2e117150ce6684a3769ef87e2d5c990014ac10bf7fc011a43a52a4ebac09d9b5`。均为 1824×1488px、DPR 2。
+- 结论与限制：浅色 B098 的确认框呈现、取消关闭及配对卡/权限保留通过；变更只作用于进程内 fixture，没有撤销真实设备。没有采集按钮 hover/按下/释放曲线、连续帧、Flutter `FrameTiming` 或物理面板 FPS。隔离 Profile 已优雅退出，44321 无 listener；UI-6.7 仍部分验收。

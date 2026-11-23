@@ -332,3 +332,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B096/B097/B101 浅色自定义权限与保存回读（2026-11-23）
 
 浅色隔离 Profile 前台实鼠标对 Pixel 9 配置连接向导及 Git CLI 本机控制；随后修改已配对授权，增加连接管理和 Git CLI 外部写入，保存并重开验证权限仍选中。AX 回读确认本机控制/外部写入同时包含读取权限；Pixel 9 卡片显示读取连接、连接向导和连接管理，LGE AN10 原授权未变。操作只作用于 `Ui6InspectionHost` 内存 fixture。详细截图 SHA、Profile 身份与边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b096-b097-b101-浅色自定义权限批准与保存回读)。没有真实设备权限结果、按钮连续动效或性能时序证据；UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B098 浅色撤销确认取消（2026-11-23）
+
+浅色隔离 Profile 实鼠标打开 LGE AN10 撤销确认，再取消；fresh AX 读回卡片及原权限仍在。取消仅作用于 `Ui6InspectionHost` 内存 fixture；未撤销真实设备。AX click hit-test 被 native Dismiss 覆盖层挡住，使用按钮 bounds 中心的单次物理点击完成取消。确认框/取消后截图 SHA、环境与边界见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b098-浅色撤销确认取消复验)。没有按钮连续动效或性能时序证据；UI-6.7 继续部分验收。
