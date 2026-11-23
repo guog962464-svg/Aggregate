@@ -520,3 +520,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Keychain 调用路径：**`HostTlsIdentityChannel` 用 `SecItemCopyMatching` 取出 `SecKey`，随后经 `SecKeyCopyExternalRepresentation` 导出私钥，并构造成 PEM 返回给 Flutter channel。当前弹窗措辞是从钥匙串导出 Host 私钥，与该源码路径相符；这说明请求发生在哪个操作上，但不证明其失败根因。凭据接受情况、ACL 状态以及失败创建后的 Keychain 项是否已清理由本轮检查无法确认。未执行身份轮换、Keychain 检索/清理或签名变更。
 - **再次尝试与状态：**在用户已授权的只读 Host 验收范围内再次启动；将此前提供的凭据填入安全输入框并选择“始终允许”，提示仍在，随后拒绝以结束挂起请求。SecurityAgent 隐藏，Host UI 回到“启动 Host”，`47321/47322` 无 listener。Mac `192.168.8.4/24` 与 Android `192.168.8.7/24` 双向 ping 均 2/2，手机是 Android 15/API 35/arm64/4 KB，仍停留在 Aggregate 前台。
 - **结论与边界：**网络一致与双向连通已复核；生产 Host 仍未启动，无 WSS、配对、邀请、grant 变更或 RPC。三种 bundle 均 ad-hoc 是可复现事实，Keychain/签名之间的因果关系仍属未证实假设。没有启动 testnode 或进行无障碍测试。
+
+## 2026-11-23 A5 临时 Apple Development 签名副本复验（23:27 Asia/Shanghai）
+
+- **临时签名：**本机 `security find-identity -v -p codesigning` 可用身份中有 Apple Development 身份，未发现 Developer ID Application/Apple Distribution。将当前 Debug bundle 复制到 `/tmp`，仅为副本 root bundle 使用该身份签名并保留 Debug entitlements；`codesign --verify --deep --strict` 通过，bundle identifier 保持不变且签名包含 TeamIdentifier。源 bundle、Xcode 配置和仓库均未修改。
+- **Host/Keychain：**从独立签名副本启动 Host 后，仍出现同一登录钥匙串“导出密钥”提示。输入用户此前提供的凭据并尝试“始终允许”与“允许”后提示仍然存在；为解除挂起，拒绝当前请求。签名副本的 UI 回到“启动 Host”，`47321/47322` 无 listener。随后关闭该窗口并删除仅本轮创建的临时 app 副本。
+- **当前设备态与结论：**Mac Wi‑Fi `192.168.8.4/24`，Android `192.168.8.7/24`，双向 ping 2/2；手机仍在 Aggregate 前台，Android 15/API 35/arm64/4 KB。稳定 TeamIdentifier 的临时副本也出现 Keychain 提示，因此 ad-hoc 签名并非已证实的唯一原因；凭据是否被系统接受、ACL 是否变化以及失败创建后的候选 Keychain 项状态仍未知。没有 production WSS、配对、邀请、grant 变更或 RPC，也没有执行身份轮换、Keychain 检索/清理、testnode 或无障碍测试。
