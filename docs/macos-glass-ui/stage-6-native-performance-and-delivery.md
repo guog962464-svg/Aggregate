@@ -307,4 +307,8 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 ### UI-6.7 补证：B088 B089 Mac Host 深色启动及取消轮换（2026-11-23）
 
-深色隔离 Profile 的进程内 Host stub 经语义动作启动后，AX 与窗口画面均显示“运行中”和两台样例设备；“轮换 Mac Host 身份”原生确认框能够打开，AXPress 取消后 Host 和样例设备仍保留。没有执行轮换，也未访问真实 Host、Keychain、证书或网络。取消通过无障碍语义动作，不构成鼠标按下动画验收；截图、SHA 与详细限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b088-b089-mac-host-深色启动与轮换取消复验)。B081/B082 的本次深色复验因预置活动未出现在页面而保持未签收，不改变其历史记录。UI-6.7 继续部分验收。
+深色隔离 Profile 的进程内 Host stub 经语义动作启动后，AX 与窗口画面均显示“运行中”和两台样例设备；“轮换 Mac Host 身份”原生确认框能够打开，AXPress 取消后 Host 和样例设备仍保留。没有执行轮换，也未访问真实 Host、Keychain、证书或网络。取消通过无障碍语义动作，不构成鼠标按下动画验收；截图、SHA 与详细限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b088-b089-mac-host-深色启动与轮换取消复验)。B081/B082 首次深色复验未见预置活动，随后通过全新构建和隔离进程补验，见下节。UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B081/B082 深色活动清理路径（2026-11-23）
+
+全新暗色隔离 Profile 正确显示三条 `UI6_SEED_ACTIVITY` 内存记录。B081 原生确认框取消后仍见成功/失败/已取消三条样例；B082 确认后活动页显示空态。此次均由 AXPress 激活；只影响 `Ui6InspectionRuntime` 内存样例。此前失败运行的原因没有证据定位。一次性启动入口 Widget 反馈环 1/1 通过后已移除；静态截图、SHA 与详细边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b081-b082-深色清理路径干净-profile-补验)。未采集按下/释放动画、Flutter `FrameTiming` 或物理面板 FPS；UI-6.7 继续部分验收。

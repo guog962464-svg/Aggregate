@@ -1937,7 +1937,16 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B089：点击“轮换 Mac Host 身份”后出现原生深色确认框，说明撤销配对授权、替换 Host ID/TLS 证书并在执行后保持 Host 停止。确认框截图：[轮换身份确认](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b089-host-identity/dark-identity-rotation-confirm.png>)，SHA-256 `9a7f6db2eb820f1d805d5e0fea5362c1ccf105f1e3a823d44a2517f96974abfd`。以语义 AXPress“取消”后，AX 仍读到 Host“运行中”及原 fixture 设备；取消后截图：[Host 仍运行](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b089-host-identity/dark-after-rotation-cancel.png>)，SHA-256 `b0caee1aebd4fa7fa7fce815e23be0f9a14b582d9f122dd59a6d229fedba4fff`。另拍运行状态滚动位置图：[Host 操作按钮可见](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b089-host-identity/dark-host-rotation-control-running.png>)，SHA-256 `5e5e68af6f633a8329aaf6cb25ab2fe7d8ddfef21b477e62b8ce868f5d3e97a5`；窗口截图均为 1692×1356px。
 - 结论及限制：B088 深色 fixture 启动状态、B089 深色原生确认框和取消后保留状态通过；身份轮换没有执行。取消使用语义 AXPress，不能作为物理鼠标点击或按下动画证据；本项没有采样悬停/按下/释放动效、Flutter `FrameTiming` 或物理面板 FPS。Profile 已关闭；UI-6.7 仍部分验收。
 
-### 2026-11-23 UI-6.7 B081 B082 清理活动弹窗复验尝试（未签收）
+### 2026-11-23 UI-6.7 B081 B082 清理活动弹窗初次复验（未签收，随后补验）
 
 - 在深色隔离 Profile 中尝试重验清理活动确认框。物理 hit-test 的取消动作被 `Dismiss` 语义遮罩阻挡，随后以 AXPress 取消弹窗。进入活动页后，预期的三条预置样例没有出现在列表，因此无法验证当前实例的取消前后活动数量；没有触发危险确认或清理操作。
 - 结论：本次重验不作通过或失败判定，不覆盖既有 B081/B082 历史验收记录；后续需先确认隔离 fixture 注入和页面数据状态，再复测。未触碰持久活动数据，也未操作正式应用。
+
+### 2026-11-23 UI-6.7 B081 B082 深色清理路径干净 Profile 补验
+
+- 环境：使用当前源码执行 `flutter build macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=dark --dart-define=UI6_SEED_ACTIVITY=true` 成功；复制到隔离应用并改为 bundle ID `io.github.guog962464.aggregate.ui6b081clean`，PID 96509，窗口 800×632pt、DPR 2。运行时为 `Ui6InspectionRuntime` / `PreviewRuntime` 内存样例；Profile 已退出，正式应用未操作。之前空列表的原因没有足够证据定位，本次以全新构建和新进程复测。
+- 启动结果：AX 与深色窗口画面显示三条 fixture 活动：已取消“查看 Git 状态”、失败“两个整数相加”、成功“查看 Git 状态”。截图：[三条内存活动](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b081-b082-clean-entrypoint/dark-activity-seeded.png>)，SHA-256 `2a3208053c69d619e3f312cec48b758582cfb975c216e48e316d30ca41e907ca`。
+- B081：在设置页打开“清空活动记录？”原生对话框后，以语义 AXPress 取消；返回活动页，AX 仍列出上述三条活动。确认框截图：[深色清理确认框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b081-b082-clean-entrypoint/dark-clear-confirm.png>)，SHA-256 `aaeb6582da41740d807fdd2af60c2b5e9c06b88ca6ea54dff6f8a9404f4ad543`；取消后活动页：[三条样例仍在](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b081-b082-clean-entrypoint/dark-activity-after-cancel.png>)，SHA-256 `1b9f5ee79562d48045753453483c01ece94969841c02958a3ef494844e010e5a`。
+- B082：再次打开确认框并以语义 AXPress“清空记录”。随后活动页 AX 显示“还没有运行记录”，窗口也显示空态：[清空后](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b081-b082-clean-entrypoint/dark-activity-empty-after-confirm.png>)，SHA-256 `e95eb879f3e0683f3ee6bd5cbb56ae32ca4ecb5ee63935f9f7518c6d9438c039`。`Ui6InspectionRuntime.clearActivity()` 只清除此隔离进程的 `PreviewRuntime` 与内存 fixture，没有触碰持久活动历史。
+- 辅助回归环：临时 Widget harness 调用同一 inspection `main()`、设置 `UI6_SEED_ACTIVITY=true` 并导航到活动页，命令 `flutter test --no-pub --dart-define=UI6_SEED_ACTIVITY=true test/ui6_activity_entrypoint_repro_test.dart` 得到 1/1 通过；该一次性探针随后已移除，不作为持久测试基线。
+- 结论及限制：B081/B082 深色原生确认框的取消与确认回调、取消保留三条 fixture、确认后呈现空态通过。两个动作由语义 AXPress 激活，未签收物理指针按下/释放动画；没有连续动效采样、Flutter `FrameTiming` 或物理面板 FPS。截图均为 1692×1356px；UI-6.7 仍部分验收。
