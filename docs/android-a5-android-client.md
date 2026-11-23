@@ -589,3 +589,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **当前进程堆栈：**对隔离 app PID 36629 取 2 秒样本，线程停在 `HostTlsIdentityChannel.init → MacHostTlsIdentity.loadOrCreate → readSecret(account:) → queryKeychain → SecItemCopyMatching`；源码中该路径读取 generic-password 项。调用尚未返回，故没有可记录的当前 OSStatus；该样本不能确认项目 ACL、用户凭据或 SecurityAgent 对话框的最终结果。它说明本次等待发生在身份记录读取阶段，早于私钥导出和 listener 绑定。
 - **重试观察：**随后在失败态再点击一次，UI 在约 0.5 秒内仍返回启动失败，没有再经过服务准备等待期。这与挂起 Future 重试闸门的行为一致；单凭 UI 时间不足以证明原生层没有再次发起请求，定向单元测试仍是该性质的直接证据。
 - **安全与验收边界：**系统进程 `SecurityAgent`（PID 25593）仍在，但本轮没有读取到授权提示内容。CUA 拒绝控制 `com.apple.SecurityAgent`，因此没有输入用户凭据或选择允许/始终允许，也没有修改 Keychain、ACL 或签名。Host 端口仍无 listener；没有 production WSS、NSD、邀请、配对或 RPC。未切换 Android 前台、进入 NodeProbe/testnode 或运行无障碍测试。Keychain 授权结果和 OSStatus 仍未知，A5 production Host 验收开放。
+
+## 2026-11-24 A5 用户确认同网后的网络回读（02:23 Asia/Shanghai）
+
+- **网络：**用户确认 Mac 与 Android 现处于同一网络。本次重新读取 Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`；Mac→手机、手机→Mac ping 各 2/2。`adb reverse --list` 为空。
+- **Host 状态：**Mac TCP `47321/47322` 均无 listener。该回读确认网络路径可达，不表示 Host 服务已启动；本次未触发新的 Keychain 操作，也没有生产 WSS、Bonjour/NSD、配对或 RPC 证据。最近一次隔离 Debug 现场样本仍停在 active identity 通用密码 `SecItemCopyMatching`；OSStatus/授权结果未观察到。CUA 对 `com.apple.SecurityAgent` 的控制限制仍是现有验收边界。
+- **范围：**没有修改 Keychain、ACL、签名或网络设置；未进行无障碍测试、NodeProbe/testnode 操作或 Android 应用清理。本节只更新网络和 listener 的当前观察；A5 production Host 与只读 RPC 验收仍开放。
