@@ -1966,3 +1966,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 视觉与 AX：滚动后二维码、邀请到期时间、1 个本机网络地址和“复制配对信息”按钮均完整可见；AX 中二维码为 104×104，按钮 bounds 为 `{x:685,y:487,width:150,height:40}`。在其处于屏幕外时，AX 曾返回 150×1；滚入可见区后为 150×40。没有点击“复制配对信息”，避免改动系统剪贴板。
 - 证据：[浅色邀请卡滚动截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b090-light/host-invitation-scrolled.png>) SHA-256 `5ce97c422aba74fc747f2c5a9920a78ca5c2540169958756c37049f9065cc87e`，1824×1488px、DPR 2。
 - 结论及限制：当前浅色可视状态下 B090 二维码内容完整，复制按钮原生 AX 几何为 150×40pt；旧深色 Profile 中 `{width:139,height:1}` 的历史读数仍保留，但本次没有重现，亦不能据此断定旧读数的成因。没有验证复制行为或按下/释放动画；UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B092 B093 B094 B097 浅色 Host 配对卡补核
+
+- 环境：浅色 macOS Profile 隔离副本 bundle io.github.guog962464.aggregate.ui6b073lightcurrent，PID 4639，窗口 800×632pt、DPR 2；入口 lib/preview/ui6_inspection_main.dart。Ui6InspectionHost 是进程内 stub；lsof -nP -iTCP:44321 -sTCP:LISTEN 无 Host listener。没有访问真实设备、Keychain、配对网络或系统剪贴板。
+- B092/B093：启动 stub 后待处理 Pixel 9 卡显示拒绝、批准只读和连接向导；live AX bounds 分别 79×40、103×40、103×40pt。物理滚轮滚至配对卡后，原有 LGE AN10 样例可见。启动后待处理卡[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/host-settings-pairing-cards.png>) SHA-256 9348bb98cb8217785d7d4242c7d5a793a72e9c4fee535f34ee1833938110b88e。
+- B094：实鼠标点击 Pixel 9“批准只读”后，待处理卡消失，已配对列表变为 LGE AN10 与 Pixel 9；Pixel 9 只显示“读取连接”，LGE AN10 原权限不变。两张配对卡的修改权限/撤销按钮各为 111×40、119×40pt。结果[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/host-settings-paired-devices.png>) SHA-256 0542b95136dd0d8f12ea4420d7323968b8aeaf71b050d073cb9a8ee5c2c440a4。
+- B097：实鼠标点击 Pixel 9“修改权限”打开原生权限弹窗；浅色[弹窗截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b092-b093-light/edit-permissions-dialog.png>) SHA-256 038f783f8db8aebf5c4f204bdd7a6fd194df97bad78fabf232ce64f07c8a97ca，1692×1356px。随后取消点击因应用失焦未确认投递，焦点重取时窗口枚举报告 APP_UNRESPONSIVE；没有点击保存。仅按精确 PID 4639 终止隔离进程，正式应用未操作。
+- 结论与限制：浅色待处理/已配对设备卡、B094 只读批准状态以及 B097 弹窗打开路径获得实窗补证。此次没有验拒绝、连接向导、权限保存/取消收尾、按下/释放动效、Flutter FrameTiming 或物理面板 FPS。失焦期间单次 ps CPU 读数为 107.9%，采样未受控，不据此下性能结论。UI-6.7 继续部分验收。

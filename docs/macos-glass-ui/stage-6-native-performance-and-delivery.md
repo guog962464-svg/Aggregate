@@ -320,3 +320,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B090 浅色邀请二维码当前 Profile 复核（2026-11-23）
 
 浅色隔离 Profile 中以本地 Host stub 启动并生成邀请，真实滚动后二维码、有效期、地址数与复制按钮完整可见；按钮 live AX bounds 为 150×40pt，屏外时则曾为 150×1。旧深色 Profile 的 139×1 读数仍作为历史保留，本轮未确定差异成因。无 Host listener、Keychain 或系统剪贴板操作；未点击复制按钮或采集按下动画。截图与范围见[验收记录](acceptance-record.md#2026-11-23-ui-6.7-b090-浅色邀请二维码实窗复核)。UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B092 B093 B094 B097 浅色 Host 配对卡（2026-11-23）
+
+浅色隔离 Profile 的内存 Host fixture 显示 Pixel 9 待处理卡和 LGE AN10 已配对卡；实鼠标“批准只读”后，Pixel 9 仅获得读取连接权限。修改权限按钮打开弹窗，但失焦期间取消动作未确认送达；未保存。没有真实 Host listener、设备或网络操作。单次失焦 CPU 读数未受控，不作性能结论；窗口帧、Flutter FrameTiming 和面板 FPS 仍待验。截图 SHA 及详细边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b092-b093-b094-b097-浅色-host-配对卡补核)。UI-6.7 继续部分验收。
