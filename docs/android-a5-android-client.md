@@ -340,3 +340,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **结果与 runner 限制：**Android integration test 1 项通过、退出码 0。Mac Host test body 完成确认码校验、只读授权、grant 撤销和 Host 停止；授权集合由原先 2 条恢复为同一组 2 条。Mac Flutter integration runner 随后因 `A SemanticsHandle was active at the end of the test` 在 teardown 返回退出码 1；这是本次验收 helper 的测试框架收尾错误，故不记录为 Mac runner 全绿。Host listener、grant 清理和 Android RPC 结果有独立读回。
 - **钥匙串提示：**Host 启动时短暂出现登录钥匙串访问提示；安全字段引用在自动化输入前失效，写入结果为 `not_delivered`，随后提示消失且 Host listener 成功启动。本轮没有输入密码、选择“始终允许”或更改钥匙串 ACL；没有轮换身份。
 - **清理与范围：**临时 Host 与 Bonjour 服务均已停止，Mac `47321/47322` 无 listener；隔离 `.integration` 包已卸载，手机回到 HONOR Launcher，Aggregate/NodeProbe/testnode 包均未安装，ADB reverse 为空。此结果补齐当前提交的 direct LAN、真实 Host Bonjour/NSD、配对和最小只读 RPC；不覆盖普通签名 Release 权限、日常 App 身份轮换、16 KB 设备，或 A5.5 的 CLI/TUI/MCP/向导/账号业务闭环。无障碍/TalkBack 测试按用户要求排除。
+
+## 2026-11-23 普通 Android 包 Keystore 身份轮换验收（A5.4）
+
+- **版本与设备：**在 `62a1ee542575ba51226b2478374bf25d796f7910` 的 detached worktree 中运行。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页；使用产品 applicationId `io.github.guog962464.aggregate` 的 Debug 包，不带 `.integration` 后缀。测试前设备没有 Aggregate 包；当前主工作区未提交的 UI/测试/lock 文件没有复制或修改。离线解析使用主工作区 `pubspec.lock` SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`。
+- **测试与结果：**`flutter test --no-pub --no-uninstall --reporter expanded integration_test/android_host_identity_test.dart integration_test/android_host_identity_rotation_ui_probe_test.dart -d AEMN022427001360` 共 2 项通过。实际产品 Android Keystore 创建身份、稳定读取、签名、删除后生成不同身份均通过。设置页真实 manager/Keystore 集成用例验证：打开轮换确认框不会改变身份；取消后身份保持；二次确认后身份 ID 改变，重复读取保持新 ID，界面显示成功消息。测试开始及结束时 Host 列表均为空，因此未覆盖已有配对记录的清除；该清理行为仍由 fake/Widget 测试覆盖。
+- **操作边界与清理：**未启动 Mac Host、未建立邀请、未配对、未调用 RPC 或连接网络。Flutter runner 结束后手动卸载普通 Debug 包；Package Manager 未检出 Aggregate、NodeProbe 或 testnode，手机回到 HONOR Launcher。没有执行无障碍/TalkBack 测试。
+- **范围结论：**当前普通 Debug 包的日常 Keystore 身份轮换验收已通过。未覆盖正式签名 Release 权限行为、已有配对记录轮换清理、16 KB 系统运行，或 A5.5 production CLI/TUI/MCP/连接向导/账号业务；这些门槛仍开放。
