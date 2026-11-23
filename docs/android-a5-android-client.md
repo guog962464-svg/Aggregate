@@ -324,3 +324,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **日常身份隔离轮换：**另运行 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true flutter test --no-pub --reporter expanded integration_test/android_host_identity_test.dart -d AEMN022427001360`，1 项通过。该项在隔离包真实 Android Keystore 验证身份创建/稳定读取、签名、删除和生成不同的新身份；日常 `io.github.guog962464.aggregate` 包及其身份未触碰。
 - **清理：**runner/test 删除隔离测试包、ADB reverse 与临时 fixture；普通 Aggregate 包未被目标操作。测试后手机回到 HONOR Launcher，`.integration` 包路径不存在，reverse 列表为空，Mac `47321/47322` 无 listener。没有访问 Mac 生产 Host、生产钥匙串、真实账号或音乐服务。
 - **验收边界：**本轮补齐隔离身份真实 Keystore 轮换与隔离 Host 业务路径证据；不代表 direct LAN/Bonjour/NSD、production WSS、日常身份轮换、正式 Release 权限、真实 CLI/账号/播放或 16 KB 系统通过。未启动 NodeProbe/testnode；按用户要求未运行无障碍/TalkBack 专项测试。A5.4/A5.5 仍保持开放。
+
+## 2026-11-23 LGE AN10 前台 Android UI smoke
+
+- **构建与启动：**从 HEAD `07fc3d2559599707cadf25d0c5d1776971bb163d` 使用 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true flutter build apk --debug --no-pub --target-platform android-arm64` 构建，APK SHA-256 为 `356a3649338b505faa6ef6fdeff007c1fb3eb6dd9a548c429bfd0cce8b9a34c5`。`aapt` 读回 applicationId `io.github.guog962464.aggregate.integration`、versionCode 8、versionName 0.3.7；安装前确认普通 Aggregate 包不存在，因此测试隔离在 `.integration` 包。
+- **设备与结果：**LGE-AN10 / Android 15 / API 35 / arm64 / 4096-byte page size，屏幕 1312×2848、density override 476。`am start -W` 返回 `Status: ok`、`LaunchState: COLD`；`MainActivity` 成为 top-resumed，进程存活。实际屏幕检查功能工作台、连接、活动、设置及 Mac Host 面板；空连接向导的执行设备选择、HTTP MCP 表单和系统 IME；聚焦名称字段后，“测试连接”操作仍位于键盘上方。空邀请提交显示“二维码内容无效或不受支持”的错误提示。启动后的最近 400 条 logcat 未匹配到 Flutter error 或 fatal crash。
+- **操作边界：**没有填写表单、保存连接、扫描相机二维码、请求配对、发出 RPC 或触碰 production Host。该项是前台渲染与手工触控 smoke，不是无障碍/读屏测试，也不替代生产 Host 或业务验收。
+- **清理与环境：**只卸载本轮构建的 `.integration` 包，手机恢复到 HONOR Launcher；包查询无 Aggregate/NodeProbe/testnode，ADB reverse 列表为空。Mac `en0=192.168.8.4/24` 与手机 `wlan0=192.168.31.136/24` 仍不同子网，Mac `47321/47322` 无 listener；本轮未启动 Host 或修改网络。A5.4/A5.5 的 production 网络/业务门槛继续开放。
