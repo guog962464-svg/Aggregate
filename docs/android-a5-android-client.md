@@ -309,3 +309,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **直接 LAN / Bonjour / WSS：**Android 到 `192.168.8.4:47321` 的 TCP 探测成功，无 ADB reverse。使用 Mac 原生生成的短时邀请和 Android Keystore 临时身份；Mac UI 核对确认码后只批准“读取连接”。Android NSD 发现 1 个 endpoint，`AndroidHostManager.connect()` 通过发现结果连接；WSS Host 身份与证书 pin 校验、`host.hello` 通过，之后只读 `connection.list` 返回 1 条。没有调用 `capability.search`、setup、CLI/TUI/MCP、账号、终端或写入型 RPC。
 - **清理：**只读测试 grant 已按测试设备名撤销，待批准列表为空，Mac 原有两条“这台手机 · 读取连接”grant 保留；Mac Host UI 显示已关闭且 `47321/47322` 无 listener。`.integration` 包已移除，`adb reverse --list` 为空，手机前台恢复为 `hg.zp.mengnews/com.zjonline.xsb_main.MainActivity`；临时 Debug app、worktree、邀请内容、截图和诊断文件均已清理。
 - **结论边界：**本轮补齐了同网段下隔离 Android Debug 身份的直接 LAN、Bonjour NSD、只读配对与 WSS/RPC 证据，不代表普通签名 Release 的本地网络权限、16 KB Android 运行、日常 Android 身份轮换或 A5.5 真实业务/账号流程通过。没有进行无障碍/TalkBack 测试，也没有启动 NodeProbe/testnode。
+
+## 2026-11-23 A5 本机协议与向导核心测试复验
+
+- 在当前工作区运行 6 个本机 Flutter 测试文件：`android_runtime_port_test.dart`、`connection_setup_runtime_test.dart`、`host_runtime_rpc_dispatcher_test.dart`、`host_pairing_authority_test.dart`、`host_setup_rpc_dispatcher_test.dart`、`android_host_pairing_client_test.dart`；共 47 项通过，0 项失败。runner 中的 HTTP 401 日志来自预期的拒绝分支，测试进程最终报告 `All tests passed!`。
+- 命令：`flutter test --no-pub --reporter expanded test/android_runtime_port_test.dart test/connection_setup_runtime_test.dart test/host_runtime_rpc_dispatcher_test.dart test/host_pairing_authority_test.dart test/host_setup_rpc_dispatcher_test.dart test/android_host_pairing_client_test.dart`（工作目录 `app/`）。
+- 按用户要求，未运行包含语义断言/无障碍特征注入的 `connection_setup_dialog_test.dart` 和 `connection_setup_target_test.dart`；未运行任何 TalkBack、读屏或无障碍专项测试。
+- 该结果来自本机 Flutter 测试 runner 与隔离测试依赖，没有启动 Android App、Mac Host 或 production WSS；不替代 Android 真机业务链路、LAN/NSD、真实账号/播放或 16 KB 系统验证。A5.4/A5.5 保持开放。
