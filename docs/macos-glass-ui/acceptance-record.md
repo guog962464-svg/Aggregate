@@ -2178,3 +2178,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 没有改 `_select` 的主题选择、轨道/把手命中、拖动积分、释放提交或 `AppearancePreference` 映射。
 - `dart format --output=none --set-exit-if-changed lib/features/settings/glass_theme_switch.dart` 无变更；主题开关、模拟/实时/校准/光学与按钮/共享动效 7 个测试文件合计 55 项通过；`flutter analyze --no-pub` 零问题。
 - 验收范围仅关闭三个 analyzer 警告；VoiceOver 实际朗读、原生禁用态 AX 仍未通过，本记录不提升 UI-5.4、UI-5.7 或 UI-6 的阶段状态。
+
+### 2026-11-24 UI-5.4 Flutter 3.50.0 restriction mapping 与原生 AX 复核
+
+- 版本核对：仓库 SDK Flutter 3.47.8 的 `AccessibilityBridge::SetStateFromFlutterUpdate` 没有把 `is_enabled=false` 传给 `AXNodeData::SetRestriction`；本机隔离的官方 Flutter 3.50.0 / Engine `371f77202a73e8dff57a8b3bff75bca55c090aee` 源码已包含 disabled/read-only restriction 分支（`engine/src/flutter/shell/platform/common/accessibility_bridge.cc:376–379`）。Flutter 官方 [PR #190353](https://github.com/flutter/flutter/pull/190353) 已合入并列于 [3.50.0 release notes](https://docs.flutter.dev/release/release-notes/release-notes-3.50.0)。
+- 该补丁没有通过本项目的 macOS AX 验收：既有 2026-11-17 精确 Profile fixture 在 3.50.0、窗口启动前开启 `AXEnhancedUserInterface` 的情况下，禁用玻璃按钮、标准 `TextButton` 和显式 `Semantics` 节点仍缺可读 AXRole、名称和 enabled 属性；启用玻璃按钮可读。对应的 Widget 语义测试则确认 framework 输出仍有名称、button 标志、`isEnabled=false` 且无 tap action。原始环境、查询和清理记录见上方 2026-11-17 条目。
+- 更新结论：3.47.8 的 `AXEnabled=true` 桥接缺口已由官方 3.50.0 补上，但这不能解释或解决 3.50.0 Profile 中禁用节点的属性不可读；后者的原生导出根因仍未知，也没有验证通过的无损应用层修复。VoiceOver 实际朗读亦未通过，UI-5.4/5.7 保持部分验收。
+- 本轮只对照当前 3.47.8 与隔离 3.50.0 SDK 源码、官方 release notes/PR，并复核已有精确 Profile 记录；没有重跑 GUI。当前 SecurityAgent 正显示登录钥匙串授权提示，本轮未对其输入或选择操作。此处复核不改变用户已授权隔离 App 占前台的偏好。
