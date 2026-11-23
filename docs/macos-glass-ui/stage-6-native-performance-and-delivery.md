@@ -340,3 +340,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B099 浅色权限弹窗取消（2026-11-23）
 
 浅色隔离 Profile 实鼠标点权限弹窗“取消”，截图显示弹窗关闭且 LGE AN10 原权限摘要仍在；未点击保存。取消后的 AX 树仅返回 `Dismiss`，故只签收当前截图所示关闭/保留状态，AX 回读部分未验。另在这次有 MiniPlayer 播放中的 Profile 观察到较高 OS `ps %CPU` 读数，4 秒 sample 含 Flutter BeginFrame/Dart 与 Metal command queue 栈；无暂停基线、帧时序和物理 FPS，不据此归因或判性能不通过。完整截图、哈希、采样文件与限制见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b099-浅色权限弹窗取消补验)。UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B102/B103 浅色功能页与收藏回退（2026-11-23）
+
+浅色隔离 Profile 打开“两整数相加”表单后 AX 仍为“尚未运行”，没有提交参数或调用 Runtime；同一进程中收藏再取消后，AX 读回收藏区移除且收藏动作恢复。截图 SHA、进程与 fixture 限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b102b103-浅色功能页与收藏回退)。只补当前功能行的浅色页面/收藏状态，不含按钮动画、Flutter `FrameTiming` 或面板 FPS，UI-6.7 仍部分验收。

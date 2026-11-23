@@ -2012,3 +2012,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 证据：打开弹窗[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b099-light/edit-permissions-before-cancel.png>) SHA-256 `6d076a9372c245663034eb8a8a03db4f43142277601ff7e4c44f8a74ed8af489`；取消后[卡片截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b099-light/after-cancel-card.png>) SHA-256 `85eda910339743d6046d50c6eebacb56631b4fdcaf6e03c05519dd5506e1ce3a`。均为 1824×1488px、DPR 2。
 - 旁路性能线索：该隔离 Profile 的 `ps %CPU` 读数在进程运行 4:19、5:07、10:19 时分别为 85.3、90.9、104.3；4 秒 `sample` 栈包括 Flutter Vsync/BeginFrame→Dart 和 Metal command queue 提交。画面中 MiniPlayer 处于内存样例“播放中”，没有暂停播放基线、Flutter `FrameTiming`、WindowServer 显示时序或面板 FPS；这些单次 Profile 读数不能定位原因，也不构成卡顿或性能通过结论。采样文件 [profile-sample-4s.txt](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b099-light/profile-sample-4s.txt>) SHA-256 `44e3c4ae21308a2a4cebb87c5c7d8907ab6a984bae04a2e5bf71bf3edca063b9`。
 - 清理与结论：PID 10245 的隔离 app 已优雅退出，44321 无 listener；正式应用未操作。B099 仅部分补证；需要在控制 MiniPlayer 状态的场景中另做可复现的帧耗时/CPU 对比，UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B102/B103 浅色功能页与收藏回退
+
+- 环境：浅色隔离 Profile 副本 bundle ID `io.github.guog962464.aggregate.ui6b096light`，PID 11173，窗口 800×632pt、DPR 2；功能页和状态来自 `Ui6InspectionRuntime` / `PreviewRuntime` 进程内夹具。用户允许隔离预览占用前台；正式应用未操作。
+- B102：从“所有功能”打开“两个整数相加”参数页。AX 显示两个空参数字段、“运行”按钮及“运行状态：尚未运行”。没有点“运行”或提交参数，没有调用功能服务。
+- B103：返回功能列表后收藏“两个整数相加”；fresh AX 显示“收藏的功能”区和“取消收藏”按钮。随后只取消该项收藏；新的完整 AX 快照显示收藏区消失、同一条目的操作恢复为“收藏 两个整数相加”。这次状态变化仅存在于隔离进程，不修改正式应用偏好。
+- 证据：未运行表单[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b102-b103-light/capability-form-not-run.png>) SHA-256 `554d75361c782155f58b0d489be21a0d9e9787d2b75d6357690c18409cc73be4`；收藏后[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b102-b103-light/favorite-added.png>) SHA-256 `46e8948446ba2579a6ec90e61f4c0bd70568afc4819571dff885f7dbea835bec`；取消后[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b102-b103-light/favorite-cancelled.png>) SHA-256 `f2ac1d14431c51677c56ea7f14abd3edea7fc63c16dfca4d3e0a8b88e6965736`。均为 1824×1488px、DPR 2。
+- 结论与限制：浅色 B102 进入表单且保持未运行、B103 收藏与取消回退的界面/内存状态通过。隔离 app 已优雅关闭；没有真实 Runtime 调用、连续按钮动效帧、Flutter `FrameTiming` 或物理面板 FPS 证据。UI-6.7 仍部分验收。
