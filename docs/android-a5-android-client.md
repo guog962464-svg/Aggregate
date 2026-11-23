@@ -362,3 +362,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **CAMERA 允许路径：**在“设置 → Mac Host → 扫描二维码”打开系统 CAMERA 授权后选择“仅使用期间允许”；Package Manager 显示 `CAMERA granted=true`，`appops` 为 `foreground/allow`，扫码预览正常。没有扫描二维码，没有填写邀请，没有请求配对，也没有连接 Host 或调用 RPC。
 - **网络与范围：**本轮复核 Mac `en0=192.168.8.4/24`、手机 `wlan0=192.168.8.7/24`，手机到 `192.168.8.4` 的路由选择 `wlan0`。本轮没有重启 Mac Host；production LAN/NSD 的只读验收见 [当前提交 Host LAN 与 NSD 只读复验](#2026-11-23-当前提交-production-host-lan-与-nsd-只读复验)。
 - **清理与限制：**测试后 force-stop 并卸载普通包，Package Manager 无 Aggregate/NodeProbe/testnode 包，前台恢复 HONOR Launcher；卸载清除了本次 CAMERA 授权，临时 APK/证书/截图均删除。普通包名的 CAMERA 拒绝回退分支本轮未复验；此前隔离 `.integration` Release 的 Android 15 允许/拒绝路径见[相机权限补验](#2026-11-18-隔离-test-signed-android-release-相机权限补验)。本项不代表正式签名、正式签名更新兼容或 16 KB 真机验收；没有运行无障碍/TalkBack 测试。
+
+## 2026-11-23 普通包名 Release CAMERA 拒绝回退状态
+
+- **设备与版本：**LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`；使用当前 HEAD `226c5b28b8975303a453e3cd7fba0915ff22d100` 的 arm64 Release APK，由临时 RSA 测试证书签名并安装为普通包名 `io.github.guog962464.aggregate`。
+- **拒绝状态与界面：**测试前卸载状态为空；通过 Android Package Manager 对该包执行 CAMERA revoke，并设置 `user-set`、`user-fixed` 标志。`dumpsys package` 报 `CAMERA granted=false`，AppOps 为 `CAMERA: ignore`。打开“设置 → Mac Host → 扫描二维码”后，扫码预览显示 `permissionDenied`，并给出“请允许相机访问，或返回后粘贴二维码内容”的回退提示；没有权限提示弹窗，`MainActivity` 保持前台并显示回退文案。
+- **边界：**这是在普通包名 Release 上对拒绝状态与 UI 回退的系统级构造验收，没有在 CAMERA 弹窗中点选“禁止”，也没有验证正式签名行为。此前隔离 `.integration` Release 的真实 CAMERA 允许/拒绝弹窗路径见[相机权限补验](#2026-11-18-隔离-test-signed-android-release-相机权限补验)。没有扫描邀请、配对、连接 Host 或调用 RPC；没有运行无障碍/TalkBack 测试。
+- **清理：**force-stop 并卸载普通包，临时 APK、密钥和截图删除；Package Manager 无 Aggregate/NodeProbe/testnode 包，前台回到 HONOR Launcher。卸载清除本轮 permission flags。
