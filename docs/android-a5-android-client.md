@@ -507,3 +507,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**Mac Wi‑Fi `192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，手机到 Mac ping 2/2 成功；设备仍是 Android 15/API 35/arm64/4 KB 页，ADB reverse 为空。
 - **Host 当前态：**Aggregate 设置页回到“启动 Host”；`47321/47322` 均无 listener，之前的 `SecurityAgent` PID 19955 已退出。此次只读回状态，没有再次启动 Host；当前没有钥匙串提示，也没有产生邀请、配对、grant 变更或 RPC。
 - **结论：**网络连通性保持正常；钥匙串授权没有成功完成，生产 Host 尚未启动。此前 21:24 的隔离测试签名 WSS 与只读 RPC 仍是最近一次配对/RPC 证据，不扩展为本次 production 验收。
+
+## 2026-11-23 A5 同网段后重试 Host 启动（23:06 Asia/Shanghai）
+
+- **网络：**重新读取 Mac Wi‑Fi `192.168.8.4/24` 与 LGE AN10 `wlan0=192.168.8.7/24`；Android 15/API 35/arm64，`PAGE_SIZE=4096`。网络仍一致。
+- **Host 尝试：**从 Aggregate 设置点击“启动 Host”。SecurityAgent 弹出导出 Host TLS 私钥的登录钥匙串请求；在安全输入框填入用户此前提供的钥匙串凭据，并依次尝试“始终允许”和“允许”，窗口仍未关闭。为解除挂起请求，最后选择“拒绝”；SecurityAgent 随后隐藏，Aggregate 回到“启动 Host”，`47321/47322` 均无 listener。
+- **结论与边界：**本轮没有生产 WSS、配对、邀请、grant 变更或 RPC。不能据此判断凭据是否有效或 Keychain ACL 的根因；生产 Host 验收继续受钥匙串访问阻塞。手机保持在 Aggregate 前台，未启动 testnode，也未做无障碍测试。
