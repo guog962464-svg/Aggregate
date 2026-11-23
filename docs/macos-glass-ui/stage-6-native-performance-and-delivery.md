@@ -360,3 +360,8 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B108/B109 浅色文件结果动作（2026-11-23）
 
 浅色隔离 Profile 的临时内存 RunSummary 返回文件路径字符串；实鼠标点 B108“预览文件”后 AX 显示该路径的说明文本，没有读取文件。点 B109“在访达中显示”后没有错误，Finder 仍无窗口；fixture 回调为空，所以实际生产 Finder 行为未验。完整截图 SHA、临时 fixture 源码恢复核对与范围见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b108b109-浅色本地文件结果动作)。没有连续动效、FrameTiming 或面板 FPS，Profile 已关闭，UI-6.7 仍部分验收。
+
+
+### UI-6.7 补证：B108/B109 生产本地文件路径复验（2026-11-23）
+
+随后将同一浅色 Profile 夹具委派到生产 MacRuntime 本地文件方法，并使用隔离 Runtime 目录与一次性普通文件。B108 AX 读回文件真实两行内容；B109 的 Finder 窗口 AX 将该精确文件标为 selected。临时源码已恢复并与 HEAD 校验一致，Profile、Finder 窗口和样例文件已清理。截图 SHA 与验收边界见[记录](acceptance-record.md#2026-11-23-ui-67-b108b109-浅色生产本地文件路径复验)。此项仅覆盖该普通文件和浅色 800×720pt Profile；其他文件边界及按钮连续动效、Flutter FrameTiming、物理面板 FPS 未验，UI-6.7 仍部分验收。
