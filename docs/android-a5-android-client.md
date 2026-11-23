@@ -403,3 +403,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **地址与接口：**收到最新网络状态反馈后重新读取。LGE AN10 `wlan0=192.168.31.136/24`，SSID `ws-5g`，网关 `192.168.31.1`；Mac `en0=192.168.8.4/24`，`networksetup -getairportnetwork en0` 报告 Wi-Fi 未关联，Mac 到手机地址走 `192.168.8.1` 默认路由。两端当前不在同一 `/24`。
 - **连通性与 Host：**Mac 到 `192.168.31.136` 的 3 次 ICMP 探测均无回复，`47321/TCP` 连接超时；Mac 本机没有 `47321` listener。没有改动网络设置，也没有启动 Host、生成邀请、发起配对或调用 RPC。
 - **结论：**按当前系统接口和路由回读，网络尚未一致或可直连；本次不构成 production LAN/NSD/配对验收。待实际连通后，继续沿用已授权的最小只读范围复验；没有启动 testnode、NodeProbe 或无障碍测试。
+
+## 2026-11-23 16:50 Asia/Shanghai 当前 LAN 复读
+
+- **接口与地址：**Mac 全部硬件端口中仅 Wi-Fi `en0` 配置 IPv4 `192.168.8.4/24`，路由器 `192.168.8.1`；`networksetup -getairportnetwork en0` 报告未关联。LGE AN10 `wlan0=192.168.31.136/24`，SSID `ws-5g`，网关 `192.168.31.1`。两端仍不在同一 `/24`，Mac 路由到手机目标使用 `192.168.8.1` 默认路由。
+- **连通性：**Mac 到手机的两次 ICMP 探测及 `47321/TCP` 探测均超时。本轮未改变任一端网络、启动 Host、生成邀请、配对或调用 RPC。
+- **结论：**当前 production LAN 不可达，本次不增加 Host/NSD/RPC 验收证据。无 testnode、NodeProbe 或无障碍测试。
