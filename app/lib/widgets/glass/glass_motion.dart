@@ -8,7 +8,7 @@ import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
 
 const _glyphMorphDuration = Duration(milliseconds: 360);
-const _idleMotionUpdateInterval = Duration(milliseconds: 100);
+const _idleMotionUpdateInterval = Duration(milliseconds: 33);
 
 /// A monotonic time source used by [GlassMotionScope].
 ///
@@ -248,7 +248,6 @@ class GlassMotionScopeState extends State<GlassMotionScope>
       _syncTicker();
       return;
     }
-    if (time - _lastDelivery < _idleMotionUpdateInterval) return;
     _lastDelivery = time;
     _notifyClients(time);
   }

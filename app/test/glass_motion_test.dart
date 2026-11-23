@@ -459,6 +459,40 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('idle timer delivers each 33 ms update', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassMotionScope(
+          child: Center(
+            child: GlassActionButton(
+              label: '刷新',
+              glyph: GlassGlyph.refresh,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final controller = tester
+        .widget<GlassGlyphMark>(find.byType(GlassGlyphMark))
+        .motionController!;
+    var deliveries = 0;
+    void countDelivery() => deliveries++;
+    controller.addListener(countDelivery);
+
+    await tester.pump(const Duration(milliseconds: 33));
+    expect(deliveries, 1);
+    await tester.pump(const Duration(milliseconds: 33));
+    expect(deliveries, 2);
+    await tester.pump(const Duration(milliseconds: 33));
+    expect(deliveries, 3);
+
+    controller.removeListener(countDelivery);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('fully offscreen buttons leave the shared clock', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(400, 300);
