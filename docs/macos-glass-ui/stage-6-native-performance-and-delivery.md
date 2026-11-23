@@ -279,6 +279,10 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 深浅 Profile 均以 AX 打开“导出”的原生 Save 面板并取消；未选路径或写文件。双主题 Profile 构建通过，悬停窗口帧各采到 4/5，均缺 +0ms；物理按下未能确认回调，样本排除。图片、SHA 与边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b020-导出动作双主题悬停与保存取消补记)。物理按下/释放曲线、Flutter FrameTiming 和面板 FPS 仍未验，UI-6.7 继续部分验收。
 
+### UI-6.7 补证：B020 Flutter 3.50.0 Profile 原生 Save sheet 取消（2026-11-24）
+
+在隔离的 Flutter 3.50.0 / Dart 3.14.0 macOS Profile（bundle `io.github.guog962464.aggregate.ui6buttons350`，800×796 logical px、DPR 2）中，用内存 `Ui6InspectionRuntime` 打开“示例 Git CLI”的动作编辑器。通过 AX 激活“导出”后，原生 Save sheet 出现；AX 读到默认文件名及 Cancel/Save 控件。激活 Cancel 后 sheet 消失、编辑器仍在、未选路径或写文件。截图与 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-flutter-350-profile-save-sheet-取消复核)。这是动作路径与取消回退的补证，不是实鼠标点击、悬停或按下帧验收；没有 Flutter FrameTiming 或物理面板 FPS，UI-6.7 继续部分验收。
+
 ### UI-6.7 补证：B021 深色 Profile 参数预览结果（2026-11-23）
 
 深色 Profile 中临时新增 `action1`，输入 `{}` 后点击“检查并预览参数”；AX 读回 `["仅内存预览", "--help"]`，界面注明不运行命令。未执行外部程序或服务，临时清单只在进程内存。浅色路径沿用 2026-11-18 实窗记录。按下/悬停动效和 FrameTiming 未验，详见[验收记录](acceptance-record.md#2026-11-23-ui-67-b021-深色参数预览结果复验)。
