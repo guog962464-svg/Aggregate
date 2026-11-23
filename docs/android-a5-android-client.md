@@ -445,3 +445,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Keychain 隔离：**测试期间创建临时随机密码 Keychain，并临时将其设为唯一用户搜索项和默认 Keychain；退出后原搜索列表与默认 Keychain 均逐项读回一致，临时 Keychain 已删除。未将登录 Keychain 纳入搜索列表或默认项，也未触发登录 Keychain 提示。
 - **覆盖与结果：**Mac 原生 Host TLS 身份创建、重复读取稳定、轮换后 Host ID/证书指纹变化及稳定回读；证书 SHA-256 pin 的本地 WSS 回环；有效/篡改配对签名校验；临时 Keychain pairing grant 写入、读回并恢复前态，均通过。
 - **边界：**这是当前 HEAD 上的 macOS 原生 Keychain/WSS 集成用例，不是本轮 production Host 启停、Android LAN/NSD 配对或 RPC 验收；此前 Release Host 的登录 Keychain ACL 提示状态仍未知。命令使用 `--no-pub`，当前工作树根 `pubspec.lock` SHA-256 为 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`；未执行依赖解析，也未改源码。
+
+## 2026-11-23 用户再次反馈网络一致后的只读连通性复核（19:38 Asia/Shanghai）
+
+- **实时网络：**Mac `en0=192.168.10.239/24`，默认路由经 `192.168.10.1`；`networksetup -getairportnetwork en0` 报告未关联 Wi-Fi。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页 `wlan0=192.168.8.7/24`，Android policy table 1026 将 Mac 地址路由到 `192.168.8.1`。两端仍属于不同 `/24`，不是同一二层网段。
+- **可达性：**Mac→手机及手机→Mac 的 ICMP 各丢失 2/2。为区分 ICMP 过滤和 TCP 路径，Mac 临时在 `192.168.10.239:47321` 绑定一次性诊断 listener；手机 `toybox nc -w 3 -n 192.168.10.239 47321` 超时，listener 20 秒后 accept 超时退出。临时探针结束后 `47321/47322` 均无监听。该结果表明当前跨网段 TCP 路径不可达；不构成 Host/WSS 服务测试。
+- **动作与范围：**本轮未启动 production Host（避免重复触发已记录的登录 Keychain ACL 提示），未切换 Android 前台，未生成邀请、提交配对、批准/撤销 grant 或调用 RPC；未改网络设置，也未启动 testnode/NodeProbe 或运行无障碍测试。
+- **结论：**用户报告网络一致，但本次系统地址、路由及 TCP 探针仍不支持直连。此前同网段的 TCP、NSD、WSS 及只读 RPC 通过记录保留为当时有效的历史结果；当前 A5.4 production 直连链路仍未复验。
