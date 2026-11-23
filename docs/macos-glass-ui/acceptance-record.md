@@ -2034,3 +2034,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 路径与结果：在“所有功能”搜索“演示恢复状态”，进入参数页并点一次“运行”。它只触发 `Ui6InspectionRuntime.invoke` 的本地 `StateError('预览错误态：未联系任何执行端')`，AX 显示“运行状态：运行失败”和恢复提示，没有外部执行端或网络请求。滚动后“检查活动状态”按钮完整显示在 MiniPlayer 上方，live AX bounds 为 150×40pt；真实指针点击后 fresh AX 仍为“运行失败”。当前示例异常发生在 `RunHandle` 生成前，`_checkActivityStatus` 的 `handle == null` guard 会直接返回，所以该点击不执行活动查询，也没有重跑。
 - 证据：点击后完整恢复卡[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b106-light/failure-recovery-light-after-check.png>) SHA-256 `491b70a26dea8f58c21f917ad65e7f5656efc80d9abb0f5e74c5fe74fb0dac0f`，1824×1488px、DPR 2。
 - 结论与限制：B106 浅色错误结果卡及恢复按钮可见位置获得实窗补证；点击在没有 `RunHandle` 时直接返回，不能作为有效运行记录的活动状态查询验收。没有按钮按下帧、连续动画、Flutter `FrameTiming` 或物理面板 FPS 数据。隔离 app 已优雅关闭；UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B107 浅色结果待确认恢复查询
+
+- 环境：以当前提交 `1a17a07982280b11e3862dd1b3c2c24de14580e6` 的应用源码构建隔离 macOS Profile，入口 `lib/preview/ui6_inspection_main.dart`，启用 `PREVIEW_APPEARANCE=light` 与 `UI6_RESULT_UNKNOWN_FIXTURE=true`；bundle ID `io.github.guog962464.aggregate.ui6b107light`，PID 14321，窗口 800×632pt、DPR 2。夹具由 `Ui6InspectionRuntime` / `PreviewRuntime` 持有；正式应用 PID 10715 未操作。
+- 路径与结果：在唯一的“查看 Git 状态”内存样例点击“运行”，AX 显示“结果待确认”及“操作可能已经执行。先检查活动记录和执行端状态，不要直接重跑。”；该夹具生成有效的进程内 `RunHandle` 与 `RunSummary`，未调用 Git CLI、真实执行端、网络或设备。随后实鼠标点击“检查活动状态”，AX 仍显示“结果待确认”，并出现提示“结果仍未知；请先在执行端确认，不要直接重跑。”，证明此调用点读到待确认样例并阻止重跑。
+- 证据：检查前窗口截图[结果待确认状态](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b107-light/result-unknown-before-check.png>) SHA-256 `7d76db57001bb7b53caca79796f54155a85d40f7d5a6fb941f43e1bbf3cf4fd1`；实点后[结果与恢复提示](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b107-light/result-unknown-after-check.png>) SHA-256 `96db74314769e5463c523678e84d0882aad1f2839b7636af3e907abe51c3738f`。均为 1824×1488px、DPR 2。提示文本由点击后的即时 AX 快照确认；截图记录同一页的待确认结果与恢复卡。
+- 结论与限制：B107 浅色状态查询回读、保留待确认状态及防止直接重跑通过，仅代表进程内 fixture 的恢复查询。隔离 Profile 已通过关闭窗口优雅退出，PID 14321 消失，44321 无 listener。没有采集按钮按下/释放连续帧、Flutter `FrameTiming` 或物理面板 FPS；UI-6.7 仍部分验收。

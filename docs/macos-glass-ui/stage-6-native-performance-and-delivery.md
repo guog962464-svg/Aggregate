@@ -352,3 +352,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B106 浅色错误恢复动作（2026-11-23）
 
 浅色隔离 Profile 通过本地 `StateError` 呈现“运行失败”；实鼠标点击“检查活动状态”后 AX 仍为失败。该 fixture 在生成 `RunHandle` 前报错，生产 handler 因 `handle == null` 直接返回，所以只补错误卡、按钮位置与返回状态，不代表真实活动查询。截图 SHA 与限制见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b106-浅色错误结果恢复动作补验)。没有按钮连续帧、Flutter `FrameTiming` 或面板 FPS，UI-6.7 仍部分验收。
+
+### UI-6.7 补证：B107 浅色待确认结果恢复查询（2026-11-23）
+
+对浅色隔离 Profile 的唯一“查看 Git 状态”内存样例运行后，页面显示 `outcomeUnknown` 和不可直接重跑提示；该 fixture 生成进程内 `RunHandle`。真实指针点“检查活动状态”后，AX 仍为“结果待确认”，并读到“结果仍未知；请先在执行端确认，不要直接重跑。”。详见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b107-浅色结果待确认恢复查询)。没有调用真实 Git CLI/执行端/网络，没有连续按钮动画、Flutter `FrameTiming` 或面板 FPS；Profile 已关闭，UI-6.7 仍部分验收。
