@@ -1883,3 +1883,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 环境：沿用临时 Profile worktree `/private/tmp/aggregate-ui6-b020`、`lib/preview/ui6_inspection_main.dart` 与 `Ui6InspectionRuntime` 内存 fixture；深色窗口 800×632pt、DPR 2，生产调用点 `app/lib/features/connections/action_editor_dialog.dart:336`。本轮操作 PID 96700，原应用 PID 1564 未操作。
 - 操作与结果：AX 点击“新增动作”后确认 manifest 有临时 `action1`；预览输入设为 `{}` 并点击“检查并预览参数”。AX 随后读到 `[`"仅内存预览"`, `"--help"`]`，界面提示“只检查参数，不运行命令”。没有执行命令或服务，也没有读写文件；临时 manifest 只存在于隔离进程内存。
 - 视觉参考：[既有深色预览滚动截图](</Users/guo/.codex/visualizations/2026/11/19/aggregate-ui6-7-action-editor-dark-profile/preview-scrolled.png>) SHA-256 `48fe41e592067f9de41354f73b009b21d448cf891d564e7d436168df5a67ec29`。本轮另有 AX 快照确认即时结果，但当前单帧窗口截图没有用于视觉签收；此次没有重新复测浅色，沿用 2026-11-18 浅色实窗记录。按下/悬停连续动画、Flutter `FrameTiming` 和物理面板 FPS 未验，UI-6.7 继续部分验收。
+
+### 2026-11-23 UI-6.7 B022 紧凑窗口动作编辑器自适应布局复验
+
+- 修正：`action_editor_dialog.dart` 仅在 macOS、玻璃动效作用域可用且窗口至少 `760×720pt` 时呈现固定高度的定制编辑器；较矮窗口使用带 `SingleChildScrollView` 的标准 `AlertDialog`，其取消/保存操作区固定可见。800×632pt 隔离 Profile 因此走紧凑布局。改动只调整编辑器外壳选择，不改动作解析、预览、保存/取消实现，也不改明暗切换逻辑。
+- 环境：由当前源码构建的深色 macOS Profile 隔离副本，bundle ID `io.github.guog962464.aggregate.ui6b022dark`，窗口 800×632pt、DPR 2；原应用 PID 1564 未操作。测试 fixture 为 `Ui6InspectionRuntime` 进程内存数据。
+- B021 紧凑布局复验：新增临时 `action1`，输入 `{}` 后执行“检查并预览参数”；AX 读到 `["仅内存预览", "--help"]`，界面显示“此操作不会运行程序”。未执行程序、服务或连接操作。
+- B022：临时新增 `action1` 后取消并重开，动作清单只含原有 `version`；取消与保存按钮在紧凑窗口内均可见。截图：[深色紧凑编辑器](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b022-action-cancel/dark-compact-editor.png>) SHA-256 `5ec44fd62434f2e732f170e134d9265a7050c8b4217650e63dc461a4a9e4986f`。
+- B023 紧凑布局边界：保存临时 `action1` 后编辑器关闭，确认保存回调可达；本轮随后重新打开并回读清单时，Profile 的 AX 窗口枚举失去响应，因此没有把紧凑布局的保存后回读记为通过。此前 B023 的自定义布局回读记录仍保留；紧凑布局回读待后续复核。退出时已结束隔离 Profile 进程，进程内 fixture 不落盘。
+- 验证：`flutter test --no-pub test/action_editor_test.dart` 4/4 通过；`flutter build macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart` 成功；`git diff --check` 通过。连续动画曲线、Flutter `FrameTiming`、物理面板 FPS 未由此签收；UI-6.7 仍部分验收。

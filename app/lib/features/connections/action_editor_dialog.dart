@@ -235,9 +235,12 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context);
     final macDesign =
         defaultTargetPlatform == TargetPlatform.macOS &&
-        GlassMotionScope.maybeOf(context) != null;
+        GlassMotionScope.maybeOf(context) != null &&
+        viewport.width >= 760 &&
+        viewport.height >= 720;
     if (macDesign) return _macDialog(context);
     return AlertDialog(
       title: Text('编辑动作 · ${widget.connection.label}'),
