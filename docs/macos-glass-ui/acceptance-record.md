@@ -415,7 +415,7 @@ UI-0～UI-5 已按阶段独立提交；未通过的对比度与 VoiceOver 项仍
 - 改动：连接数或能力数小于 40 时保留自然展开的 `Column`；达到 40 项继续使用 `ListView.builder`/`ListView.separated`。抽出共用连接行 builder，选择回调、状态和业务逻辑未改。新回归覆盖 1 连接、1 能力，既有 90 项懒构建用例保留。
 - 验证：完整 UI review `12` 项通过，包含 DPR 1 的 `54` 个金样断言和 DPR 2 的完整导航/布局检查；连接懒构建专项 `4` 项通过；App 全量 `289` 项通过；`flutter analyze --no-pub` 无问题。金样文字使用 Flutter 测试字体，中文方框仍不作为文字可读性验收。
 - 边界：没有启动或聚焦应用窗口，没有鼠标注入；没有修改主题模拟/校准、太阳/月亮切换、偏好映射或回调。图像是 Flutter test 截图，不替代 Profile 原生窗口、动态逐帧、VoiceOver 或 UI-6 最终验收；UI-6 仍部分通过。
-- 切换逻辑冻结复核：`theme_switch_simulation.dart`、`theme_switch_calibration.dart`、`theme_switch_fitted_calibration.dart` 当前 SHA-256 分别为 `2bfa354d3b5511247d213284e36de18b418a7f332545c57f5d3e2625a8906a03`、`c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`、`11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`，与 UI-0 基线一致。对照 `297762e82730b8a99f324b190796c80aae426a9` 审阅差异：`glass_theme_switch.dart` 增加 scene 发布/清理、背景坐标传递和前景焦点绘制；shader 增加可选全窗背景坐标，零尺寸默认值仍退回原 viewport 公式；`appearance_selector.dart` 仅把 macOS glass-scope 下的“跟随系统”入口替换为统一按钮。`_down`/`_move`/`_finish`、tap/drag recognizer、键盘动作、`_select` 与偏好映射没有差异。
+- 当日切换逻辑冻结复核（状态截至 2026-11-17）：`theme_switch_simulation.dart`、`theme_switch_calibration.dart`、`theme_switch_fitted_calibration.dart` 当日 SHA-256 分别为 `2bfa354d3b5511247d213284e36de18b418a7f332545c57f5d3e2625a8906a03`、`c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`、`11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`，与 UI-0 基线一致。对照 `297762e82730b8a99f324b190796c80aae426a9b` 审阅差异：`glass_theme_switch.dart` 增加 scene 发布/清理、背景坐标传递和前景焦点绘制；shader 增加可选全窗背景坐标，零尺寸默认值仍退回原 viewport 公式；`appearance_selector.dart` 仅把 macOS glass-scope 下的“跟随系统”入口替换为统一按钮。该次审阅确认 `_down`/`_move`/`_finish`、tap/drag recognizer、键盘动作、`_select` 与偏好映射无差异。此哈希结论只描述当日；后续 UI-6.8 对实时模型采样方式的修改见 2026-11-18 记录及本文件末尾的复核，不代表当前模拟文件仍与基线相同。
 
 ### 2026-11-17 UI-2 生产按钮图标覆盖补齐
 
@@ -2139,3 +2139,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 操作与几何：对“跟随 macOS 系统”调用 AX `ScrollTo`，设置页滚动后按钮完整可见。深色状态 AX bounds 为 178×40pt、位置 `(672,690)`；MiniPlayer 操作按钮的上边界为 `y=736`，与主题按钮底边相隔 6pt。深/浅主题截图中两个控件均完整显示、没有重叠。检查后将隔离预览恢复深色；用户及系统偏好未改。
 - 证据：[深色滚动后截图](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-profile-after-scroll-to-follow-system.png>) SHA-256 `3e98c73b8f778950f06aadc25520de6794214438f3795f7bec2c03ab2c917036`；[浅色滚动后截图](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-profile-after-scroll-to-follow-system-light.png>) SHA-256 `ba2da8b8c33e97aff4097470926749a87ed7df4c8bb65ac432db5fc72c619b3a`。
 - 结论与限制：此尺寸下 Follow System 控件可通过 AX 滚动到可见区，并与 MiniPlayer 操作目标保持 6pt 间隔；静态截图不覆盖鼠标滚动手感、点击关键帧、全窗口/DPR 矩阵或全部设置控件动态。UI-6.8 与 UI-6 总体仍部分验收。
+
+### 2026-11-24 UI-6 主题切换逻辑不变量复核
+
+- 基线：以 UI-0 提交 `297762e82730b8a99f324b190796c80aae426a9b` 为准。当前 `theme_switch_simulation.dart` SHA-256 为 `152d5bf19038d0dc4eaed04bbe17170176af375eb61fa2d2b4b9f34e21eae030`，已不同于 UI-0；`theme_switch_calibration.dart` 与 `theme_switch_fitted_calibration.dart` 仍分别为 `c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`、`11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`。（校准文件当前 SHA 与上文 UI-0 记录一致。）
+- 有界变化：模拟器把固定 60 Hz 累加器改为每次实时帧按真实 `dt` 推进、单帧最多积分 1/30 秒，并移除了长隐藏间隔后吸附到主题端点的分支，以遵循用户指定网页的 `requestAnimationFrame` 更新方式。它改变动画采样/隐藏恢复的时间行为；没有改太阳/月亮的布尔状态映射、粒子状态公式或校准参数。
+- 状态机审阅：相对 UI-0，`GlassThemeSwitch._select`、`_move`、`_applyMove`、`_acceptDrag`、`_finish`、轨道/把手命中换算及 `AppearanceSelector` 的 `AppearancePreference.light/dark` 回调映射均无代码差异。`_down` 新增指针焦点环抑制；键盘动作在调用原 `_select` 前显示键盘焦点环；窗口进入 hidden/paused 时通过原取消路径结束手势。这些变化属于焦点及生命周期处理，不改变拖动位置积分、释放提交、点击切换或偏好映射。
+- 回归：本轮定向运行 `flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart test/theme_switch_calibration_test.dart test/theme_switch_optics_test.dart`，27 项通过。此组测试覆盖组件交互、模拟、实时节奏、校准和光学计算，不等于网页/Mac 实时逐帧同步验收。
+- 限制：网页与 Mac 仍未共享运行时钟或真实随机种子，实窗对照仍可见边缘光及背景折射差异；原 MP4 已删除。逐帧 1:1 未通过，UI-6.8 与阶段 0–6 总体验收保持部分完成。
