@@ -1899,3 +1899,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 操作与结果：AX 先确认“设置”页包含全局迷你播放器，再点其“暂停”按钮（46×46pt），打开确认框。AX 读到标题“暂停？”，说明“通过 示例网易云音乐 执行播放控制。”；“取消”和“执行”按钮均为 89×41pt。只点“取消”，确认框消失；返回截图显示全局迷你播放器仍有“暂停”控件，内存歌曲仍为“播放中”。没有点击“执行”，没有真实播放/暂停、外部服务或网络请求。
 - 证据：[全局迷你播放器暂停确认框](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-confirm.png>) SHA-256 `01f7c954837b1f4a844ea20addc8d324906d2422368392631eea280725627b58`；[取消后播放器与设置页](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b070-pause-confirmation/dark-after-cancel.png>) SHA-256 `6d5e471fae62b20fd39bdd858b30c7ab4fb14de8707d734499f23750c47e8f21`。两图由隔离应用窗口截图获得，输出 1824×1488 像素，scale factor 2。
 - 边界：B070 只签收深色全局迷你播放器调用、静态确认框、AX 尺寸和取消路径；B071 补充深色静置截图/尺寸。两项都没有按下相位、点阵动画或真实音乐执行证据；UI-6.7 继续部分验收。
+
+### 2026-11-23 UI-6.7 B072 MusicRunPanel 深色静态与取消路径
+
+- 环境：当前源码构建的 macOS Profile 隔离副本，bundle ID `io.github.guog962464.aggregate.ui6b070dark`，PID 38203，窗口 800×632pt、DPR 2；入口 `lib/preview/ui6_inspection_main.dart`，运行时为进程内存 `Ui6InspectionRuntime` / `PreviewRuntime` fixture。Profile 已正常退出；原应用未操作。
+- 实例区分：能力“暂停播放”运行页中，AX 读到 `MusicRunPanel` 动作行：上一首/下一首各 102×40pt，暂停 89×40pt，停止播放/刷新状态各 115×40pt；底部全局迷你播放器是另一组独立 AX 控件，各 46×46pt。运行页按钮点击位置对应 `MusicRunPanel`，没有误记为全局播放器实例。
+- 操作与结果：先打开能力运行页并截取暗色静置状态；点击运行页“暂停”后，AX 确认弹出共享控制确认框；只点“取消”，随后 AX 树回到原能力运行页，五个动作仍可见。“运行”按钮虽出现在 AX 树中，但本轮没有触发；没有执行播放控制或调用外部服务。`Ui6InspectionRuntime` 源码注释说明所有操作仅限当前进程，确认逻辑在取消时提前返回、不调用 `session.execute()`。
+- 证据：暗色静置页 [截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b072-run-panel/dark-run-panel-idle.png>) SHA-256 `87c6c7960cb42de62e4a2739b4c7de3bb9d88fcd9e182e3d1e5b135d3588e6dd`；暂停确认框 [截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b072-run-panel/dark-pause-confirm.png>) SHA-256 `278b3fa2619f854a5dab1a3a26f34e26c5521e9959fe07ba2acc066da21b9076`；取消后回到运行页 [截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b072-run-panel/dark-after-cancel.png>) SHA-256 `164aeff250798580c27eeea4b1d8e173b97bf8c854f47f573c58ea77cda7d233`。三张窗口截图均为 1824×1488 像素，scale factor 2。
+- 边界：仅签收 B072 深色静态外观、运行页控件 AX 几何和安全取消回退；本次没有逐按钮执行、采样悬停/按下/释放动画或浅色对照，也没有 Flutter `FrameTiming` / 物理面板 FPS 证据。UI-6.7 继续部分验收。
