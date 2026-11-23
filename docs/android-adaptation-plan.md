@@ -373,6 +373,6 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ## 2026-11-23 验收增量
 
-- **A5 隔离真机链路：**LGE AN10 实体设备使用 Android Keystore，经 USB ADB reverse 连接本机 loopback Host fixture；setup E2E 通过。fixture 使用隔离 MacRuntime/HOME 和假 Node/npm/mpv/ncm-cli，不访问生产 Host、钥匙串或音乐账号。测试包、临时 fixture 与 reverse 已清理，普通 Aggregate 包未操作。Mac `192.168.8.4/24` 与手机 `192.168.31.136/24` 仍不同网段，因此本轮不覆盖 production direct LAN/NSD。
+- **A5 隔离真机链路：**LGE AN10 实体设备使用 Android Keystore，经 USB ADB reverse 连接本机 loopback Host fixture；当前 setup/CLI/TUI/HTTP+stdio MCP/权限/断连重连集成 runner 通过。另有 1 项实体 Keystore 创建、签名、删除与隔离新身份轮换测试通过。fixture 使用隔离 MacRuntime/HOME 和假 Node/npm/mpv/ncm-cli，不访问生产 Host、钥匙串或音乐账号。测试包、临时 fixture 与 reverse 已清理，普通 Aggregate 包未操作。Mac `192.168.8.4/24` 与手机 `192.168.31.136/24` 仍不同网段，因此本轮不覆盖 production direct LAN/NSD；A5.4/A5.5 的真实生产验收仍开放。
 - **A8 当前源码发布检查：**当前 HEAD 的 arm64 unsigned Release APK/AAB 构建通过；Bundletool 1.18.3 validate 与 `PAGE_ALIGNMENT_16K`、APK zipalign、7 个原生库的 21 个 ELF LOAD 段静态检查均通过。隔离 test-signed Release 在 LGE AN10 4 KB 真机冷启动通过；此结果不等同于正式签名或 16 KB 系统运行。
 - **未关闭门槛：**A3.6 的候选运行时许可/法律审查、完整 native/platform 依赖闭包、维护方 Android 发行、正式签名及 16 KB 真机仍未解决；A5.4/A5.5 的日常身份轮换和 production 网络/业务验收仍开放。无障碍/TalkBack 专项测试按用户要求不在验收范围。

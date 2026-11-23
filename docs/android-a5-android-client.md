@@ -320,6 +320,7 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 ## 2026-11-23 Android 实体 Keystore 与隔离 Host setup E2E
 
 - **命令与环境：**在 `app/` 运行 `python3 tool/run_android_host_setup_e2e.py --device AEMN022427001360`。设备为 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页；Mac en0 为 `192.168.8.4/24`，手机 wlan0 为 `192.168.31.136/24`，仍处于不同子网。
-- **结果：**`Mac loopback Host fixture: PASS`、`Android physical Keystore + WSS setup flow: PASS`。Android 使用实体设备 Keystore 和隔离 `.integration` 包，通过 USB ADB reverse 连接本机 loopback Host fixture；向导使用隔离 HOME/MacRuntime 数据及假 Node/npm/mpv/ncm-cli。
-- **清理：**runner 删除隔离测试包、ADB reverse 与临时 fixture；普通 Aggregate 包未被目标操作。测试后手机回到 HONOR Launcher，reverse 列表为空，Mac `47321/47322` 无 listener。没有访问 Mac 生产 Host、生产钥匙串、真实账号或音乐服务。
-- **验收边界：**这是实体 Android Keystore/WSS 和隔离 setup 工作流证据，不代表 direct LAN/Bonjour/NSD、production WSS、日常身份轮换、真实 CLI/账号/播放或 16 KB 系统通过。未启动 NodeProbe/testnode；按用户要求未运行无障碍/TalkBack 专项测试。A5.4/A5.5 仍保持开放。
+- **结果：**`Mac loopback Host fixture: PASS`、`Android physical Keystore + WSS setup flow: PASS`。Android 使用实体设备 Keystore 和隔离 `.integration` 包，通过 USB ADB reverse 连接本机 loopback Host fixture；当前集成测试覆盖 setup 检测/测试/保存/丢弃、普通 CLI、TUI PTY 输入与 resize、HTTP/stdio MCP、权限拒绝与批准、断开及重连。fixture 使用隔离 HOME/MacRuntime 数据和假 Node/npm/mpv/ncm-cli/MCP 服务。
+- **日常身份隔离轮换：**另运行 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true flutter test --no-pub --reporter expanded integration_test/android_host_identity_test.dart -d AEMN022427001360`，1 项通过。该项在隔离包真实 Android Keystore 验证身份创建/稳定读取、签名、删除和生成不同的新身份；日常 `io.github.guog962464.aggregate` 包及其身份未触碰。
+- **清理：**runner/test 删除隔离测试包、ADB reverse 与临时 fixture；普通 Aggregate 包未被目标操作。测试后手机回到 HONOR Launcher，`.integration` 包路径不存在，reverse 列表为空，Mac `47321/47322` 无 listener。没有访问 Mac 生产 Host、生产钥匙串、真实账号或音乐服务。
+- **验收边界：**本轮补齐隔离身份真实 Keystore 轮换与隔离 Host 业务路径证据；不代表 direct LAN/Bonjour/NSD、production WSS、日常身份轮换、正式 Release 权限、真实 CLI/账号/播放或 16 KB 系统通过。未启动 NodeProbe/testnode；按用户要求未运行无障碍/TalkBack 专项测试。A5.4/A5.5 仍保持开放。
