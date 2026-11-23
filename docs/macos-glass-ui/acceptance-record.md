@@ -2132,3 +2132,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 自动导出：运行 `flutter test --no-pub --reporter=expanded tool/theme_switch_reference_frames_test.dart`，传入 `THEME_SWITCH_MODEL_INPUT` 与 `THEME_SWITCH_EXPORT_DIR`；测试通过（1 项），生成 151 张 Flutter shader 帧。测试逐帧使用与参考相同的模型状态，不重放录制视频帧。
 - 图像比较：151/151 帧均可比较；未使用遮罩、图像配准或颜色校正。全帧平均 MAE 为 `0.06317496/255`，最大单帧 MAE 为 `0.07471108/255`。比较指标与逐帧结果保存在 [`metrics.json`](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-current-reference-parity/comparison/metrics.json>)；原始参考帧、Flutter 帧和导出清单分别位于 `ui68-current-reference-parity/source/`、`flutter/`。
 - 结论与限制：这确认相同粒子、输入位置和时间状态下，两套离屏光学渲染接近，未发现需要据此修改太阳/月亮状态机或设置路由的参数偏差。它不证明实时输入、随机种子、renderer 时钟、Profile 窗口帧或物理 display-present 完全一致；同步实窗对照仍见到玻璃边缘光与背景折射差异。原 MP4 已删除，网页仅是当前参照，故 UI-6.8 和阶段 0–6 仍部分验收。
+
+### 2026-11-24 UI-6.8 设置页滚动后与 MiniPlayer 间距抽查
+
+- 环境：隔离 macOS Profile bundle `io.github.guog962464.aggregate.ui6activeprobe`（PID 35563），设置页窗口 800×632 logical px，DPR 2，MiniPlayer 使用进程内示例播放数据。该检查占用前台，未操作正式 Aggregate、用户连接或系统外观。
+- 操作与几何：对“跟随 macOS 系统”调用 AX `ScrollTo`，设置页滚动后按钮完整可见。深/浅主题的 AX bounds 均为 178×40pt，位置 `(672,690)`；MiniPlayer 操作按钮的上边界为 `y=736`，与主题按钮底边相隔 6pt。截图中两个控件没有重叠。检查后将隔离预览恢复深色；用户及系统偏好未改。
+- 证据：[深色滚动后截图](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-profile-after-scroll-to-follow-system.png>) SHA-256 `3e98c73b8f778950f06aadc25520de6794214438f3795f7bec2c03ab2c917036`；[浅色滚动后截图](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-profile-after-scroll-to-follow-system-light.png>) SHA-256 `ba2da8b8c33e97aff4097470926749a87ed7df4c8bb65ac432db5fc72c619b3a`。
+- 结论与限制：此尺寸下 Follow System 控件可通过 AX 滚动到可见区，并与 MiniPlayer 操作目标保持 6pt 间隔；静态截图不覆盖鼠标滚动手感、点击关键帧、全窗口/DPR 矩阵或全部设置控件动态。UI-6.8 与 UI-6 总体仍部分验收。

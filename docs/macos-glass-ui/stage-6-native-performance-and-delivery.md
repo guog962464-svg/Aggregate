@@ -382,6 +382,8 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 2026-11-24 另复跑固定模型状态下官方 WebGL/Flutter 全帧比对：151 帧导出测试通过，平均 MAE `0.06317496/255`、最大单帧 `0.07471108/255`。这只验证相同输入状态下离屏 shader 的光学接近度；不能替代实时窗口拖动对照，实窗边缘光和背景折射仍有可见差异。详情见[验收记录](acceptance-record.md#2026-11-24-ui-68-官方-webgl-与-flutter-同状态全帧复核)；原 MP4 已删除，UI-6.8 与 UI-6 总体验收仍未完成。
 
+同日还在 800×632 logical px 的隔离 Profile 中检查设置页滚动到底部的“跟随 macOS 系统”按钮：AX `ScrollTo` 可将完整 178×40pt 按钮带入可见区，至 MiniPlayer 操作目标的边界间隔为 6pt，深浅主题截图均未见遮挡。该静态位置抽查不覆盖手动滚动手感或全部控件动态；截图与 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-68-设置页滚动后与-miniplayer-间距抽查)。
+
 ### 2026-11-24 UI-6 ThemeSwitch Profile frame timing
 
 三轮 800×632 logical px Profile 拖动负载，每轮 30 秒、26 次交替方向拖动，60 Hz 屏幕；三轮 build/raster P95 分别为 7.238/8.676、7.676/9.262、7.420/9.327 ms。全量 5,394 帧中一帧 raster 为 18.291 ms，另两轮没有超过 16.667 ms 的 build/raster 帧；没有 >100 ms 长帧。输入时长、活动窗、帧间隔、运行环境及证据 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-6-themeswitch-profile-frame-timing)。历史长帧、display-present FPS、VoiceOver、逐项动态签收和用户视觉签收仍待完成；UI-6 阶段状态保持部分验收。
