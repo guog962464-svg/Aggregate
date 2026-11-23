@@ -287,6 +287,12 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 
 用户允许隔离 Profile 占用前台后再次打开同一内存样例。`agent-desktop --headed hover` 两次在事件发出前超时并返回 `not_delivered`；随后对按钮中心发送的 CoreGraphics 鼠标事件未打开 Save sheet。复查发现系统 `SecurityAgent` 窗口（PID 25593，434×186pt，位置 `(539,225)`）覆盖 B020 目标；`agent-desktop --headed click` 因 `receives_events: occluded by window` 在发送前安全拒绝。早先坐标事件是否被该系统窗口接收无法确认，不能归为按钮点击或动效证据。隔离 Profile 已优雅退出；系统窗口未被操作。排查截图、SHA 和边界见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-前台物理输入重试与securityagent遮挡)。B020 仍只有 AX 打开/取消路径通过补核，鼠标悬停/按下/释放继续未验。
 
+### UI-6.7 补证：B020 避开遮挡后的真实悬停/按下与保存取消（2026-11-24）
+
+后续在复核 `SecurityAgent` bounds 与按钮位置后，将同一隔离窗移到 `(0,186)`，目标中心 `(398,351)` 不再被系统提示覆盖。真实悬停截图可见按钮暖色光面增强；真实鼠标按压约 80.219 ms，随后打开原生 Save sheet 并取消，未选择路径或写文件。完整窗口截图 SHA、ScreenCaptureKit 采样和时间戳边界见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-重定位后前台实鼠标悬停按下与保存取消补验)。按下态全窗口差异不够明确，仍不签收该视觉状态；窗口服务器时戳不等于物理 scan-out，未测面板 FPS。前一条遮挡记录保留为历史，当前补证只替代其中“没有实鼠标成功证据”的结论；UI-6.7 仍部分验收。
+
+同一静置动作编辑器 Profile 两组进程 CPU 样本（预热值后约 63–84%）及 `sample` 中 Metal command queue 栈显示待查的可见渲染负载；原始 sample 哈希见验收记录。此 OS 级信号没有 Flutter `FrameTiming`、受控动画 A/B 或物理呈现数据，不能据此判定原因/通过性能门槛；UI-6.1/6.2 的相关性能问题继续待查。
+
 ### UI-6.7 补证：B021 深色 Profile 参数预览结果（2026-11-23）
 
 深色 Profile 中临时新增 `action1`，输入 `{}` 后点击“检查并预览参数”；AX 读回 `["仅内存预览", "--help"]`，界面注明不运行命令。未执行外部程序或服务，临时清单只在进程内存。浅色路径沿用 2026-11-18 实窗记录。按下/悬停动效和 FrameTiming 未验，详见[验收记录](acceptance-record.md#2026-11-23-ui-67-b021-深色参数预览结果复验)。
