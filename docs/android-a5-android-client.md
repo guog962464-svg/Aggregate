@@ -471,3 +471,8 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 
 - **网络与设备：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`，均属 `192.168.8.0/24`。Mac `networksetup -getairportnetwork en0` 仍报告未关联 AirPort 网络，但两端地址均已配置；Mac→手机与手机→Mac 的 ICMP 各 2/2 成功。手机为 Android 15/API 35/arm64，`PAGE_SIZE=4096`。
 - **服务状态：**`47321/47322` 均无监听；Aggregate Debug 与 PID 16829 的 macOS `SecurityAgent` 进程仍存在。本轮没有操作该系统授权界面，没有启动 Host、生成邀请、配对或调用 RPC。因此这次只确认网络恢复可达，不新增 production WSS/配对/RPC 验收；此前 21:24 的同网段隔离配对与只读 RPC 记录仍按其原有范围有效。
+
+## 2026-11-23 同网段 Host 端口 TCP 探针（22:09 Asia/Shanghai）
+
+- Mac 在 `192.168.8.4:47321` 开启一次性诊断 listener 后，LGE AN10 通过 `toybox nc` 从 `192.168.8.7` 建立 TCP 连接并发送 10 字节；listener 收到数据并返回 `ok` 后正常退出。
+- 探针后 `47321/47322` 无 listener、ADB reverse 列表为空，手机仍在 Launcher。该结果确认当前同网段 TCP 路径可达，不覆盖 production Host、TLS/WSS、配对授权或 RPC；SecurityAgent 授权界面未操作。
