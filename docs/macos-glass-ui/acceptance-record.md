@@ -2136,6 +2136,6 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 ### 2026-11-24 UI-6.8 设置页滚动后与 MiniPlayer 间距抽查
 
 - 环境：隔离 macOS Profile bundle `io.github.guog962464.aggregate.ui6activeprobe`（PID 35563），设置页窗口 800×632 logical px，DPR 2，MiniPlayer 使用进程内示例播放数据。该检查占用前台，未操作正式 Aggregate、用户连接或系统外观。
-- 操作与几何：对“跟随 macOS 系统”调用 AX `ScrollTo`，设置页滚动后按钮完整可见。深/浅主题的 AX bounds 均为 178×40pt，位置 `(672,690)`；MiniPlayer 操作按钮的上边界为 `y=736`，与主题按钮底边相隔 6pt。截图中两个控件没有重叠。检查后将隔离预览恢复深色；用户及系统偏好未改。
+- 操作与几何：对“跟随 macOS 系统”调用 AX `ScrollTo`，设置页滚动后按钮完整可见。深色状态 AX bounds 为 178×40pt、位置 `(672,690)`；MiniPlayer 操作按钮的上边界为 `y=736`，与主题按钮底边相隔 6pt。深/浅主题截图中两个控件均完整显示、没有重叠。检查后将隔离预览恢复深色；用户及系统偏好未改。
 - 证据：[深色滚动后截图](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-profile-after-scroll-to-follow-system.png>) SHA-256 `3e98c73b8f778950f06aadc25520de6794214438f3795f7bec2c03ab2c917036`；[浅色滚动后截图](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui96-review/ui68-profile-after-scroll-to-follow-system-light.png>) SHA-256 `ba2da8b8c33e97aff4097470926749a87ed7df4c8bb65ac432db5fc72c619b3a`。
 - 结论与限制：此尺寸下 Follow System 控件可通过 AX 滚动到可见区，并与 MiniPlayer 操作目标保持 6pt 间隔；静态截图不覆盖鼠标滚动手感、点击关键帧、全窗口/DPR 矩阵或全部设置控件动态。UI-6.8 与 UI-6 总体仍部分验收。
