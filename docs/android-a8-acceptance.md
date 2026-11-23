@@ -303,8 +303,8 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **当前 HEAD 4 KB 真机冷启动：**同一提交以 `ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true flutter build apk --release --no-pub --target-platform android-arm64 --build-number=9` 生成隔离 test-signed APK；SHA-256 `15bccba58f8548c17473e03f6205cf28d89d4f53bb715adc60f3d9e14f165bb2`、27,853,440 bytes，包名 `io.github.guog962464.aggregate.integration`，versionCode 9，证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`。zipalign 与 `apksigner` v2 验证通过。在 LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096` 上冷启动 `Status: ok`、`LaunchState: COLD`、`WaitTime: 1686 ms`；2 秒后 PID 11356 仍存活，`MainActivity` 为 top-resumed，按 PID 过滤的 logcat 没有 Flutter error/fatal exception。隔离包卸载后，普通 `io.github.guog962464.aggregate` 仍安装，PID 11980 与其 `MainActivity` 恢复为 top-resumed，ADB reverse 为空。
 - **未关闭的发布条件：**没有 16 KB 真机，也没有正式 Android 签名身份；静态 16 KB 结构和 4 KB 真机冷启动不证明 16 KB 系统运行兼容。A3.6 许可/来源闭包、法律审查及 A5 production Host Keychain/RPC/音乐业务也仍开放。未运行 NodeProbe/testnode 或无障碍测试。
 
-## 2026-11-24 HEAD b8cdfea A8 产品源码与锁文件延续核对
+## 2026-11-24 b8cdfea A8 产品源码与锁文件延续核对
 
-- **核对范围：**当前 HEAD `b8cdfea57ee115978ac89bff82d6d0e438a6df59` 与已完成 Release/4 KB 冷启动验证的提交 `36d0bffff56b7d6b52cc7946fb35259391d18546` 之间，提交差异只有文档。两个提交的 `app/` tree SHA-1 均为 `98813a338ce3267e412e88696b49ece9cc756a26`；根 `pubspec.lock` blob SHA-1 均为 `abf71868c5c521aae60eb060a422506034c6bf27`。
+- **核对范围：**核对时 HEAD `b8cdfea57ee115978ac89bff82d6d0e438a6df59` 与已完成 Release/4 KB 冷启动验证的提交 `36d0bffff56b7d6b52cc7946fb35259391d18546` 之间，提交差异只有文档。两个提交的 `app/` tree SHA-1 均为 `98813a338ce3267e412e88696b49ece9cc756a26`；根 `pubspec.lock` blob SHA-1 均为 `abf71868c5c521aae60eb060a422506034c6bf27`。
 - **结论：**先前 36d0bff 的 APK/AAB 静态检查和 4 KB 隔离 Release 冷启动适用于 b8cdfea 的已提交 app 源码与锁定依赖；本次没有在 b8cdfea 重新生成产品工件，因此 APK/AAB SHA-256 仍是 36d0bff 构建的哈希，不能称作本次 HEAD 的新构建产物。当前用户工作区另有未提交的 `pubspec.lock` 修改，不属于上述提交树，也未纳入这项延续判断。
 - **边界：**这只确认提交间产品源码/锁文件未变化，不增加 16 KB 真机、正式签名/签名升级、生产 Host 或真实 CLI/网易云业务证据。未运行 NodeProbe/testnode 或无障碍测试。
