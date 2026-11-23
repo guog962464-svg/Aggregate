@@ -336,3 +336,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B098 浅色撤销确认取消（2026-11-23）
 
 浅色隔离 Profile 实鼠标打开 LGE AN10 撤销确认，再取消；fresh AX 读回卡片及原权限仍在。取消仅作用于 `Ui6InspectionHost` 内存 fixture；未撤销真实设备。AX click hit-test 被 native Dismiss 覆盖层挡住，使用按钮 bounds 中心的单次物理点击完成取消。确认框/取消后截图 SHA、环境与边界见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b098-浅色撤销确认取消复验)。没有按钮连续动效或性能时序证据；UI-6.7 继续部分验收。
+
+### UI-6.7 补证：B099 浅色权限弹窗取消（2026-11-23）
+
+浅色隔离 Profile 实鼠标点权限弹窗“取消”，截图显示弹窗关闭且 LGE AN10 原权限摘要仍在；未点击保存。取消后的 AX 树仅返回 `Dismiss`，故只签收当前截图所示关闭/保留状态，AX 回读部分未验。另在这次有 MiniPlayer 播放中的 Profile 观察到较高 OS `ps %CPU` 读数，4 秒 sample 含 Flutter BeginFrame/Dart 与 Metal command queue 栈；无暂停基线、帧时序和物理 FPS，不据此归因或判性能不通过。完整截图、哈希、采样文件与限制见[验收记录](acceptance-record.md#2026-11-23-ui-6-7-b099-浅色权限弹窗取消补验)。UI-6.7 继续部分验收。

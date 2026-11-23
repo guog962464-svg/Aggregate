@@ -2003,3 +2003,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 路径：启动内存 stub 后，从 LGE AN10 配对卡点击“撤销”，原生“撤销设备配对？”确认框显示设备名及断开说明。确认框“取消” AX bounds 为 `{x:807,y:545,width:89,height:41}`；因 native `Dismiss` 静态文本覆盖层使 AX hit-test 判定遮挡，改用 bounds 中心约 `(852,566)` 的一次真实指针点击取消。后续 fresh AX snapshot 确认确认框消失，仍读到 LGE AN10 及“读取连接 · 连接向导 · 连接管理”；没有点“撤销设备”。
 - 证据：撤销确认框[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b098-light/revoke-confirmation-cancel-only.png>) SHA-256 `f32878e024ebd9d71733d29f11a94b1ed9df6f52f4fd7097efe131763f9dfa92`；取消后配对卡[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b098-light/revoke-cancelled-card-retained.png>) SHA-256 `2e117150ce6684a3769ef87e2d5c990014ac10bf7fc011a43a52a4ebac09d9b5`。均为 1824×1488px、DPR 2。
 - 结论与限制：浅色 B098 的确认框呈现、取消关闭及配对卡/权限保留通过；变更只作用于进程内 fixture，没有撤销真实设备。没有采集按钮 hover/按下/释放曲线、连续帧、Flutter `FrameTiming` 或物理面板 FPS。隔离 Profile 已优雅退出，44321 无 listener；UI-6.7 仍部分验收。
+
+### 2026-11-23 UI-6.7 B099 浅色权限弹窗取消补验
+
+- 环境：浅色隔离 Profile bundle ID `io.github.guog962464.aggregate.ui6b096light`，PID 10245，窗口 800×632pt、DPR 2。用户允许隔离窗口占用前台。Mac Host 使用进程内 `Ui6InspectionHost` fixture；未保存权限，没有真实设备或网络操作。
+- 操作与结果：启动内存 Host 后打开 LGE AN10“修改权限”，弹窗显示既有连接向导、连接管理选中状态。取消按钮 live bounds 为 `{x:887,y:730,width:89,height:40}`，在中心 `(932,750)` 实鼠标点击一次。截图中弹窗关闭，LGE AN10 卡片仍显示“读取连接 · 连接向导 · 连接管理”；没有点击“保存权限”。
+- AX 限制：取消后两次 fresh snapshot 仅列出系统 `Dismiss` 节点；等待 `LGE AN10` 文本 10 秒超时。`list-surfaces` 无残留原生 surface。故 B099 浅色可签收截图所示弹窗关闭与卡片/摘要保留，取消后的 AX 文本回读不完整，不将其扩展为完整 AX 通过。
+- 证据：打开弹窗[截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b099-light/edit-permissions-before-cancel.png>) SHA-256 `6d076a9372c245663034eb8a8a03db4f43142277601ff7e4c44f8a74ed8af489`；取消后[卡片截图](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b099-light/after-cancel-card.png>) SHA-256 `85eda910339743d6046d50c6eebacb56631b4fdcaf6e03c05519dd5506e1ce3a`。均为 1824×1488px、DPR 2。
+- 旁路性能线索：该隔离 Profile 的 `ps %CPU` 读数在进程运行 4:19、5:07、10:19 时分别为 85.3、90.9、104.3；4 秒 `sample` 栈包括 Flutter Vsync/BeginFrame→Dart 和 Metal command queue 提交。画面中 MiniPlayer 处于内存样例“播放中”，没有暂停播放基线、Flutter `FrameTiming`、WindowServer 显示时序或面板 FPS；这些单次 Profile 读数不能定位原因，也不构成卡顿或性能通过结论。采样文件 [profile-sample-4s.txt](</Users/guo/.codex/visualizations/2026/11/23/aggregate-ui96-review/b099-light/profile-sample-4s.txt>) SHA-256 `44e3c4ae21308a2a4cebb87c5c7d8907ab6a984bae04a2e5bf71bf3edca063b9`。
+- 清理与结论：PID 10245 的隔离 app 已优雅退出，44321 无 listener；正式应用未操作。B099 仅部分补证；需要在控制 MiniPlayer 状态的场景中另做可复现的帧耗时/CPU 对比，UI-6.7 仍部分验收。
