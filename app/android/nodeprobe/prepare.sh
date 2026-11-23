@@ -82,6 +82,26 @@ unzip -oq "$archive" 'include/node/*' -d "$bridge_root/vendor"
 cp "$license_file" "$bridge_root/src/main/assets/nodejs-mobile-LICENSE.txt"
 cp "$llvm_notice_file" "$bridge_root/src/main/assets/android-ndk-llvm-NOTICE.txt"
 cp "$ndk_notice_file" "$bridge_root/src/main/assets/android-ndk-NOTICE.txt"
+# Preserve V8's BSD/fdlibm license texts and the attributions found in retained sources.
+supplemental_notice_root="$bridge_root/src/main/assets/nodejs-mobile-static-licenses/deps/v8"
+for notice_spec in \
+  "LICENSE|6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509" \
+  "LICENSE.fdlibm|e7115e18444dae09d17f361ddc365fb1d342640fe500796209c63f7c80dfae10" \
+  "third_party/chromium/NOTICE-stack_trace_android.cc.txt|5581b0e431afac8472c5c84219fa6e601fdd4cfac67d6f5a1cb3fd42dcc34e97" \
+  "third_party/googletest/NOTICE-gtest_prod.h.txt|500ce084a8d904bc96ad514d6d9a1eebdb2acf553991168102182a615a4df00f"; do
+  notice_relative_path="${notice_spec%%|*}"
+  notice_expected="${notice_spec#*|}"
+  notice_path="$supplemental_notice_root/$notice_relative_path"
+  if [[ ! -f "$notice_path" ]]; then
+    echo "Pinned V8 supplemental notice not found: $notice_path" >&2
+    exit 1
+  fi
+  notice_actual="$(shasum -a 256 "$notice_path" | awk '{print $1}')"
+  if [[ "$notice_actual" != "$notice_expected" ]]; then
+    echo "V8 supplemental notice SHA-256 mismatch: $notice_path" >&2
+    exit 1
+  fi
+done
 # Build the test-only executable used by npm lifecycle scripts to resolve `node`.
 "$probe_root/prepare_node_launcher.sh" "$ndk_root"
 # AGP may reuse the JNI object after ignored vendor headers change.
