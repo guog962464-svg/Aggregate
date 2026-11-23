@@ -501,3 +501,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **实现与运行身份：**正在运行的 Debug bundle `app/build/macos/Build/Products/Debug/Aggregate.app` 显示为 ad-hoc 签名，没有 TeamIdentifier。当前 `HostTlsIdentityChannel` 将 `loadOrCreate`/`rotate` 放到专用 `identityQueue`，`SecItemCopyMatching` 读取私钥/通用密码项目；代码未显式配置 `kSecAttrAccess` 或 `kSecAttrAccessControl`，并把多类 Keychain 错误折叠成 `identity_failure`。当前观察不支持 Flutter 主线程被 Keychain 同步调用直接阻塞的判断。
 - **日志与归因：**本次重试后的最近 10 分钟 `securityd` 查询没有返回可定位本次请求的 ACL 记录。2026-11-19 的一次签名 Debug 副本复核曾记录同一 service 的 `ObjectAcl REJECTS access using ACL`，但属于不同运行与构建身份。结合当前 ad-hoc Debug 签名，这支持“Keychain 项目 ACL 与当前应用签名身份不匹配”作为可能原因；不能证明本次 ACL 拒绝，也不能判断用户提供的密码错误。
 - **处置：**没有更改 TLS identity、Keychain 项目/ACL、签名配置或源码。需要先得到一次已完成的系统钥匙串授权，才能继续验证启动；本轮不把 UI 弹窗或历史 ACL 日志当成 Host 成功证据。
+
+## 2026-11-23 A5 网络与 Host 当前态复核（23:00 Asia/Shanghai）
+
+- **网络：**Mac Wi‑Fi `192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，手机到 Mac ping 2/2 成功；设备仍是 Android 15/API 35/arm64/4 KB 页，ADB reverse 为空。
+- **Host 当前态：**Aggregate 设置页回到“启动 Host”；`47321/47322` 均无 listener，之前的 `SecurityAgent` PID 19955 已退出。此次只读回状态，没有再次启动 Host；当前没有钥匙串提示，也没有产生邀请、配对、grant 变更或 RPC。
+- **结论：**网络连通性保持正常；钥匙串授权没有成功完成，生产 Host 尚未启动。此前 21:24 的隔离测试签名 WSS 与只读 RPC 仍是最近一次配对/RPC 证据，不扩展为本次 production 验收。
