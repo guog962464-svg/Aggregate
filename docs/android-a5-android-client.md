@@ -438,3 +438,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络与服务：**LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页 `wlan0=192.168.8.7/24`（SSID“我没网”），Mac `en0=192.168.10.239/24`、默认网关 `192.168.10.1`；`networksetup -getairportnetwork en0` 显示 Mac 未关联 AirPort 网络。两端不在同一 `/24`；Mac→手机和手机→Mac 的 ICMP 探测各丢失 2/2。Host 未启动，`47321/47322` 均无 listener，故本轮没有有效的 Host TCP、NSD 或 WSS 检查。
 - **清理与范围：**Mac Release Aggregate 已退出；没有生成邀请、提交配对、修改 grant、调用 `host.hello`/`connection.list` 或其他 RPC。没有切换 Android 前台、启动 testnode/NodeProbe、改动网络设置或运行无障碍测试。A5.4/A5.5 继续开放；既有同网段成功记录仅适用于其记录的地址与时间。
 - **结论：**用户反馈网络已一致，但本次系统地址仍显示跨子网；本地 Host 启动又受 Keychain 授权提示阻断。本轮没有新增 production LAN/配对/RPC 通过证据。
+
+## 2026-11-23 A5.4 Mac Host TLS identity isolated integration rerun (19:17 Asia/Shanghai)
+
+- **基线与命令：**在仓库 HEAD `4b62b282fa1f0ed6689337735f212d249f665050` 执行 `flutter test --no-pub integration_test/macos_host_tls_identity_test.dart -d macos --dart-define=aggregateMacKeychainIsolated=true`，退出码 0，1 项通过。Flutter 输出 `Failed to foreground app; open returned 1` 提示，但已构建 macOS app、实际运行该用例并返回全绿。
+- **Keychain 隔离：**测试期间创建临时随机密码 Keychain，并临时将其设为唯一用户搜索项和默认 Keychain；退出后原搜索列表与默认 Keychain 均逐项读回一致，临时 Keychain 已删除。未将登录 Keychain 纳入搜索列表或默认项，也未触发登录 Keychain 提示。
+- **覆盖与结果：**Mac 原生 Host TLS 身份创建、重复读取稳定、轮换后 Host ID/证书指纹变化及稳定回读；证书 SHA-256 pin 的本地 WSS 回环；有效/篡改配对签名校验；临时 Keychain pairing grant 写入、读回并恢复前态，均通过。
+- **边界：**这是当前 HEAD 上的 macOS 原生 Keychain/WSS 集成用例，不是本轮 production Host 启停、Android LAN/NSD 配对或 RPC 验收；此前 Release Host 的登录 Keychain ACL 提示状态仍未知。命令使用 `--no-pub`，当前工作树根 `pubspec.lock` SHA-256 为 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`；未执行依赖解析，也未改源码。
