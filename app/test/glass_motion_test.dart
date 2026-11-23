@@ -424,6 +424,41 @@ void main() {
     expect(scopeKey.currentState!.registeredClientCountForTesting, 1);
   });
 
+  testWidgets('idle motion yields the frame ticker to interaction', (
+    tester,
+  ) async {
+    final scopeKey = GlobalKey<GlassMotionScopeState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassMotionScope(
+          key: scopeKey,
+          child: Center(
+            child: GlassActionButton(
+              label: '刷新',
+              glyph: GlassGlyph.refresh,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final scope = scopeKey.currentState!;
+    expect(scope.registeredClientCountForTesting, 1);
+    expect(scope.frameTickerActiveForTesting, isFalse);
+    expect(scope.idleMotionTimerActiveForTesting, isTrue);
+
+    final controller = tester
+        .widget<GlassGlyphMark>(find.byType(GlassGlyphMark))
+        .motionController!;
+    controller.trigger();
+    expect(scope.frameTickerActiveForTesting, isTrue);
+    expect(scope.idleMotionTimerActiveForTesting, isFalse);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('fully offscreen buttons leave the shared clock', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(400, 300);

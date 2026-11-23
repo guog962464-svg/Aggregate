@@ -8,6 +8,7 @@ import 'glass_design_tokens.dart';
 import 'glass_glyph.dart';
 
 const _glyphMorphDuration = Duration(milliseconds: 360);
+const _idleMotionUpdateInterval = Duration(milliseconds: 100);
 
 /// A monotonic time source used by [GlassMotionScope].
 ///
@@ -44,9 +45,9 @@ class ManualGlassMotionClock extends ChangeNotifier
 
 /// One shared clock for the decorative motion on a page or route.
 ///
-/// Visible buttons share one ticker. Idle samples are coalesced to 30 Hz;
-/// actions, morphs and hover/focus transitions use every available display
-/// frame. The stopwatch continues while the ticker is muted, so a hidden page
+/// Visible buttons share one clock. Idle samples update at 10 Hz; actions,
+/// morphs and hover/focus transitions use every available display frame. The
+/// stopwatch continues while motion delivery is paused, so a hidden page
 /// resumes at its current phase instead of replaying missed frames.
 class GlassMotionScope extends StatefulWidget {
   const GlassMotionScope({super.key, required this.child, this.clock});
@@ -76,6 +77,7 @@ class GlassMotionScopeState extends State<GlassMotionScope>
   Timer? _sizeVisibilityTimer;
   final Map<AxisDirection, double> _viewportDimensions = {};
   late final Ticker _ticker;
+  Timer? _idleMotionTimer;
   AppLifecycleListener? _lifecycleListener;
   Duration _lastDelivery = Duration.zero;
   Duration? _frameTime;
@@ -91,6 +93,13 @@ class GlassMotionScopeState extends State<GlassMotionScope>
 
   @visibleForTesting
   int get registeredClientCountForTesting => _clients.length;
+
+  @visibleForTesting
+  bool get frameTickerActiveForTesting => _ticker.isActive;
+
+  @visibleForTesting
+  bool get idleMotionTimerActiveForTesting =>
+      _idleMotionTimer?.isActive ?? false;
 
   void addVisibilityViewportListener(
     void Function(Size previous, Size current) listener,
@@ -136,6 +145,11 @@ class GlassMotionScopeState extends State<GlassMotionScope>
     oldWidget.clock?.removeListener(_onExternalTick);
     widget.clock?.addListener(_onExternalTick);
     _lastDelivery = Duration.zero;
+    if (widget.clock != null) {
+      _ticker.stop(canceled: false);
+      _idleMotionTimer?.cancel();
+      _idleMotionTimer = null;
+    }
     _deliverCurrentTime();
     _syncTicker();
   }
@@ -146,6 +160,7 @@ class GlassMotionScopeState extends State<GlassMotionScope>
     final wasEnabled = _routeEnabled;
     _routeEnabled = TickerMode.valuesOf(context).enabled;
     if (!wasEnabled && _routeEnabled) _deliverCurrentTime();
+    if (wasEnabled != _routeEnabled) _syncTicker();
   }
 
   bool _handleScrollMetricsChanged(ScrollMetricsNotification notification) {
@@ -223,6 +238,21 @@ class GlassMotionScopeState extends State<GlassMotionScope>
     _notifyClients(time);
   }
 
+  void _onIdleMotionTimer(Timer _) {
+    if (!_canDeliver || _clients.isEmpty) {
+      _syncTicker();
+      return;
+    }
+    final time = _readClock();
+    if (_clients.any((client) => client._needsDisplayRate(time))) {
+      _syncTicker();
+      return;
+    }
+    if (time - _lastDelivery < _idleMotionUpdateInterval) return;
+    _lastDelivery = time;
+    _notifyClients(time);
+  }
+
   void _onExternalTick() {
     if (!_canDeliver || _clients.isEmpty) return;
     final time = _readClock();
@@ -245,6 +275,7 @@ class GlassMotionScopeState extends State<GlassMotionScope>
     _lastFrameNeededDisplayRate = _clients.any(
       (client) => client._needsDisplayRate(time),
     );
+    _syncTicker();
   }
 
   void _register(GlassMotionController client) {
@@ -266,12 +297,28 @@ class GlassMotionScopeState extends State<GlassMotionScope>
 
   void _syncTicker() {
     if (widget.clock != null) return;
-    final shouldRun = _clients.isNotEmpty && _lifecycleEnabled;
-    if (shouldRun && !_ticker.isActive) {
+    final shouldRun = _clients.isNotEmpty && _canDeliver;
+    final needsDisplayRate =
+        shouldRun &&
+        _clients.any((client) => client._needsDisplayRate(_readClock()));
+    if (needsDisplayRate) {
+      _idleMotionTimer?.cancel();
+      _idleMotionTimer = null;
+    }
+    if (needsDisplayRate && !_ticker.isActive) {
       _lastDelivery = _readClock();
       _ticker.start();
-    } else if (!shouldRun && _ticker.isActive) {
+    } else if (!needsDisplayRate && _ticker.isActive) {
       _ticker.stop(canceled: false);
+    }
+    if (shouldRun && !needsDisplayRate) {
+      _idleMotionTimer ??= Timer.periodic(
+        _idleMotionUpdateInterval,
+        _onIdleMotionTimer,
+      );
+    } else if (!shouldRun) {
+      _idleMotionTimer?.cancel();
+      _idleMotionTimer = null;
     }
   }
 
@@ -288,6 +335,7 @@ class GlassMotionScopeState extends State<GlassMotionScope>
   void dispose() {
     _visibilityViewportTimer?.cancel();
     _sizeVisibilityTimer?.cancel();
+    _idleMotionTimer?.cancel();
     widget.clock?.removeListener(_onExternalTick);
     _lifecycleListener?.dispose();
     _ticker.dispose();
@@ -1269,6 +1317,7 @@ class GlassMotionController extends ChangeNotifier {
     _interactionFrom = current;
     _interactionTo = target;
     _syncActivity(time);
+    _scope?._syncTicker();
     surfaceMotion.notifyListeners();
     notifyListeners();
   }
@@ -1306,6 +1355,7 @@ class GlassMotionController extends ChangeNotifier {
           )
         : null;
     _syncActivity(time);
+    _scope?._syncTicker();
     surfaceMotion.notifyListeners();
     notifyListeners();
   }
@@ -1327,6 +1377,7 @@ class GlassMotionController extends ChangeNotifier {
       _ActionPulse(action: action, start: time, duration: duration),
     );
     _syncActivity(time);
+    _scope?._syncTicker();
     surfaceMotion.notifyListeners();
     notifyListeners();
   }
@@ -1353,7 +1404,7 @@ class GlassMotionController extends ChangeNotifier {
         (_interactionAt(time) - _interactionTo).abs() > .001;
     final surfaceInterval = interactionAnimating
         ? const Duration(milliseconds: 33)
-        : const Duration(milliseconds: 100);
+        : _idleMotionUpdateInterval;
     if (time - _lastSurfaceDelivery >= surfaceInterval) {
       _lastSurfaceDelivery = time;
       surfaceMotion.notifyListeners();

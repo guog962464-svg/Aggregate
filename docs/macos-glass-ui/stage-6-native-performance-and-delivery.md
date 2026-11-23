@@ -57,7 +57,7 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 
 新增 20 轮原生页面往返（80 次导航）及进程 RSS 时间序列：RSS 从约 176 MiB 增至约 203 MiB，循环结束约 199 MiB；后续 30 秒静置在约 195–208 MiB 间波动，未见单向增长。另用 Dart VM `getAllocationProfile(gc=true)` 在第 0、1、5、10、20 轮采样：`Ticker` 200、`_WidgetTicker` 29、`AnimationController` 222、`ui.Image` 2、`FragmentProgram` 2、`FragmentShader` 2 均保持稳定；`_NativePicture` 从 144 增至 181 后稳定。GC 后 heap 从约 16.29 MB 升至约 16.50 MB，并在后续循环保持稳定。该采样只统计 Dart VM 托管对象，不计 GPU、Skia/native 纹理等原生资源，也不说明 controller 是否正在 tick；证据与范围见[验收记录](acceptance-record.md#2026-11-18-ui-65-dart-vm-资源对象采样)。
 
-源码资源所有权审阅确认：`GlassMotionScope` 每个作用域持有一个共享 Ticker，并在 dispose 时取消 viewport/size timers、移除生命周期监听、dispose Ticker 并 detach clients；`GlassActionButton` dispose 自己的 motion/state controllers；`GlassThemeSwitch` dispose Ticker 和 FocusNode；`ThemeSwitchArtwork` dispose shader 及两张 `ui.Image`，更新贴图后在 post-frame dispose 旧图；`GlassScene` dispose 全窗 shader 与 frame notifier。Flutter 的 `FragmentProgram.fromAsset` 由 SDK 进程级缓存，因此按进程生命周期保留。源码没有额外 `AnimationController` 或 `Texture` widget。现有 `glass_motion_test.dart` 覆盖 reduced-motion 注销、离屏滚动/视口注销和生命周期暂停恢复；`glass_theme_switch_test.dart` 覆盖主题开关 reduced-motion snap。新增 Dart VM Profile 计数显示 20 轮导航中主要托管对象在一次预热后没有继续增长；此结果不覆盖 GPU/native 资源数、controller 活跃状态或真实显示呈现。
+源码资源所有权审阅确认：`GlassMotionScope` 每个作用域持有一个共享显示帧 Ticker，并在静置时使用一个 100 ms idle Timer；dispose 时取消该 Timer 与 viewport/size timers、移除生命周期监听、dispose Ticker 并 detach clients。`GlassActionButton` dispose 自己的 motion/state controllers；`GlassThemeSwitch` dispose Ticker 和 FocusNode；`ThemeSwitchArtwork` dispose shader 及两张 `ui.Image`，更新贴图后在 post-frame dispose 旧图；`GlassScene` dispose 全窗 shader 与 frame notifier。Flutter 的 `FragmentProgram.fromAsset` 由 SDK 进程级缓存，因此按进程生命周期保留。源码没有额外 `AnimationController` 或 `Texture` widget。现有 `glass_motion_test.dart` 覆盖 reduced-motion 注销、离屏滚动/视口注销和生命周期暂停恢复；新增测试验证 idle Timer 与交互 Ticker 的切换；`glass_theme_switch_test.dart` 覆盖主题开关 reduced-motion snap。新增 Dart VM Profile 计数显示 20 轮导航中主要托管对象在一次预热后没有继续增长；此结果不覆盖 GPU/native 资源数、controller 活跃状态或真实显示呈现。
 
 以下情况使本阶段仍不能结束：
 
@@ -405,3 +405,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### 2026-11-24 UI-6.2 90 字段表单全行程 Profile 复验
 
 在隔离 worktree 用 Flutter 3.50.0 / Dart 3.14.0 构建 macOS Profile 诊断入口；Flutter 3.47.8 的 AOT `_Rect` 快照失败与上游记录的问题一致，原 SDK 未改动。800×632 logical px、DPR 2 的合成 `PreviewRuntime` 对 90 字段表单完成三轮全行程上下滚动，每轮 630 个滚轮事件、1,584/1,584/1,585 帧。build/raster P95 分别为 2.690–2.738/1.869–1.872 ms，所有最大值低于 16.667 ms；历史 112.742 ms 单帧异常仍未复现但原因未定位，因此 UI-6.2 仍部分验收。原始帧、事件、构建日志和字段 85–89 的范围校准截图见[验收记录](acceptance-record.md#2026-11-24-ui-62-90-字段表单全行程-profile-复验)。UI-6 阶段总体仍未完成。
+
+### 2026-11-24 玻璃按钮待机动效成本补验
+
+隔离 Profile A/B 找到两项可控成本：闲置时仍运行的共享 Ticker 与动态图标逐帧高斯模糊。`GlassMotionScope` 已改为 100 ms idle Timer；交互过渡仍启用逐显示帧 Ticker。动态图标保留外扩抗锯齿点阵光晕，跳过每帧 MaskFilter 模糊。原始 B020 静置 Profile 的稳定进程 CPU 样本约 76.5–79.0%；干净候选构建同一页面 8 个一秒样本为 11.7–17.5%，中位数 15.2%。按钮/点阵/主题开关回归与静态分析通过，太阳/月亮组件和状态映射未改。完整 A/B、环境、SHA 和短采样限制见[验收记录](acceptance-record.md#2026-11-24-ui-6-按钮待机动效-cpu-诊断与优化)。该单页、单轮 9 秒的 `top` 结果不能替代本方案规定的 30 秒三轮 Flutter FrameTiming、实际交互和 display-present 验收；UI-6.1/6.2 与阶段 0–6 继续部分完成。

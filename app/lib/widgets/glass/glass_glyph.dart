@@ -381,6 +381,8 @@ class _GlassGlyphPainter extends CustomPainter {
       }
       for (var band = 0; band < haloPaths.length; band++) {
         if (haloCounts[band] == 0) continue;
+        // The expanded, antialiased path keeps the subpixel feather without
+        // forcing an offscreen Gaussian blur for every animated glyph frame.
         canvas.drawPath(
           haloPaths[band],
           Paint()
@@ -389,10 +391,6 @@ class _GlassGlyphPainter extends CustomPainter {
                   GlassDesignTokens.glyphHaloAlpha *
                   ((band + 1) / haloPaths.length) *
                   (1 + sample.energy * .22),
-            )
-            ..maskFilter = const MaskFilter.blur(
-              BlurStyle.normal,
-              GlassDesignTokens.glyphFeather,
             ),
         );
       }
