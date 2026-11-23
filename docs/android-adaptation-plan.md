@@ -213,6 +213,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
    - 2026-11-23 18:46 V8 notice 交付补验：NodeProbe 资源现包含 V8 BSD、fdlibm/Sun、Chromium 2012 与 GoogleTest 2006 四项精确来源许可/notice，`prepare.sh` 对四项均做 SHA-256 固定校验；当前 checkout 的 arm64 NodeProbe unsigned Release APK 构建成功，四个 assets 均在包内，APK ZIP CRC 与 Build Tools 36.0.0 的 16 KB zipalign 检查通过。仅关闭这四项 notice 拷贝缺口；aggregate V8/Node 许可字段、法律审查、正式签名与 16 KB 真机门槛仍开放。详见 [当前 checkout V8 notice 打包复验](android-a3-v8-libbase-member-audit-2026-11-20.md#2026-11-23-current-checkout-v8-notice-bundle-verification-1846-asiashanghai)。
 
+  - 2026-11-23 扩展第三方 Android runtime 发行核查：`lakutata/libnode` 最新 `24.20.0` 虽声明 API 24+ 与 16 KB，但早于 Node `24.22.3` 安全发行；fogtape Node 24 最新为 `24.22.1-0` 预发布，capawesome 仍为 EOL Node 18，DSH-Android 仓库已归档且使用 Node `24.22.1`。本轮未发现满足当前安全版本且经过本项目溯源验收的可嵌入候选；供应范围仍是有限的公开仓库调查。详见 [第三方 Android 发行源复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-23-扩展第三方-android-发行源复核)。
+
 ### A4：npm 包与 CLI 兼容性实验及选型决定
 
 **依赖：**A3 固定探针已在现有 4 KB 真机运行，可先做隔离的 Debug 包兼容性实验；A3.6 的 16 KB 真机、稳定维护库与许可门槛必须在本地 Node 产品化或 A4 发布判断前通过。把“Node 能运行”与“npm/CLI 能运行”分开验收。当前进度见 [A4 实验记录](android-a4-progress.md)。
