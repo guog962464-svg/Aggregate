@@ -376,3 +376,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **真实拒绝路径：**首次打开“设置 → Mac Host → 扫描二维码”后，系统 CAMERA 弹窗显示 Aggregate，并由测试直接选择“禁止”。随后 Package Manager 为 `CAMERA granted=false`、flags 含 `USER_SET`；AppOps 显示 `CAMERA: ignore`。扫码页正常留在前台，显示 `permissionDenied` 及“请允许相机访问，或返回后粘贴二维码内容”的提示；`MainActivity` 仍为 top-resumed。未输入或扫描邀请。
 - **验收范围：**这验证普通 applicationId Debug 包上的首次系统弹窗拒绝及 UI 回退。它不覆盖第二次拒绝形成的 `USER_FIXED` 状态或正式签名 Release 权限行为；普通包名 Release 的 `USER_FIXED` 回退状态构造验收见上一节，隔离 `.integration` Release 的真实拒绝弹窗见 2026-11-18 记录。
 - **清理：**force-stop 后执行卸载时 ADB 返回 `DELETE_FAILED_INTERNAL_ERROR`；随后的 `dumpsys package` 返回 `Unable to find package`，user 0 与平行空间 user 128 均无该包，`pm path` 和 PID 为空，ADB reverse 列表为空，设备回到 Launcher。系统未保留本轮 CAMERA 权限记录。没有连接 Mac Host、请求配对或调用 RPC；没有启动 NodeProbe/testnode，也没有运行无障碍/TalkBack 测试。
+
+## 2026-11-23 用户反馈网络一致后的最新实测
+
+- **当前网络读回：**收到“现在网络一致了”后再次检查。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页设备 `wlan0=192.168.8.7/24`，直连路由为 `192.168.8.0/24`，网关 `192.168.8.1` 可达；Mac `en0=192.168.10.239/24`，默认路由经 `192.168.10.1`。二者不在同一子网。macOS `networksetup -getairportnetwork en0` 同时报告未关联 AirPort 网络；没有改动任一端的网络设置。
+- **普通产品请求：**当时运行的 Mac Host listener 为旧地址 `192.168.8.4:47321`；Android 邻居表对该地址为 `FAILED`，`toybox nc` 返回 `No route to host`。普通 applicationId Debug 包（versionCode 8 / 0.3.7）在产品设置页提交完整短时邀请后显示“Mac Host 响应超时”，Mac 待批准列表为空。未批准、拒绝或修改任何现存设备授权，未调用 `host.hello`、`connection.list` 或其他 RPC。
+- **刷新监听地址后的探测：**通过 Aggregate UI 停止并重新启动 Host 后，当前 listener 和新短时邀请端点变为 `192.168.10.239:47321`；macOS Application Firewall 显示 disabled。Android 到新地址的 TCP 探测仍为 `Timeout`。因此本轮不能判定 production WSS、NSD 或配对在当前网络上通过；旧的同网段只读成功记录仍只代表它记录的原时刻，不被本节追溯性否定。
+- **清理与范围：**Mac Host 最终停止，Aggregate Debug 进程退出，端口 `47321` 无 listener。Android 普通 Debug 包保留安装但已 force-stop，手机回到 Launcher；ADB reverse 为空。本轮未启动 testnode、未做无障碍/TalkBack 测试、未创建新配对 grant，也没有删除或修改既有 grant。
+- **后续条件：**需要在两端同一可互通局域网时重新读取接口地址与路由，再生成新邀请，依次复验 TCP、NSD/WSS、Mac 人工审批以及仅 `host.hello` 和只读 `connection.list`。当前不能仅凭用户反馈或历史同网段结果推定网络已经一致。
