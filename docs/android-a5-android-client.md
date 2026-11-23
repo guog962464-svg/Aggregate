@@ -488,3 +488,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`；手机到 Mac ICMP 2/2 成功，ADB reverse 为空。
 - **Host 状态：**在 Aggregate 设置页点击“启动 Host”后，UI 保持“正在启动”；进程 `SecurityAgent` PID 19955 出现，端口 `47321/47322` 均未监听。未与系统授权窗口交互、未绕过它；本次没有生成邀请、配对、批准授权或调用 RPC。此前同网段 TCP 探针只证明网络层可达。
 - **结论：**用户已授权启动 Host 并限于只读配对/RPC，但当前启动仍停在 Keychain 系统授权流程；本节不记为 Host/WSS 或 production RPC 验收。此前 21:24 的只读链路证据仍按原样本和时间保留。
+
+## 2026-11-23 用户再次确认网络一致后的 Keychain 授权复核（22:44 Asia/Shanghai）
+
+- **网络：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，同属 `192.168.8.0/24`；手机到 Mac ICMP 2/2 成功，ADB reverse 为空。设备仍为 Android 15/API 35/arm64/4 KB 页。
+- **授权尝试：**Aggregate Host 启动继续触发 macOS 登录钥匙串对 `io.github.guog962464.aggregate.host.tls.v1` 的访问提示。按用户先前授权，在安全输入框中使用其提供的密码并尝试“始终允许”，但提示仍未关闭，无法确认密码是否被系统接受或 Keychain ACL 是否发生变化。为结束悬挂请求，点击“拒绝”关闭提示；未尝试通过命令行、脚本或其他途径绕过系统授权。
+- **Host 状态与范围：**提示关闭后 Aggregate UI 回到“启动 Host”待机态；`SecurityAgent` 进程仍存在，但 Host 端口 `47321/47322` 均无 listener。未生成邀请、提交配对、修改 grant 或调用 RPC；没有切换手机前台、启动 NodeProbe/testnode 或运行无障碍测试。
+- **结论：**当前同网段网络和 ICMP 可达已复核，但登录钥匙串授权没有完成，生产 Host/WSS/配对/只读 RPC 未通过本轮验收。此前 21:24 隔离包 WSS 与 `host.hello`/`connection.list` 结果只适用于该次测试签名 Debug/4 KB 环境，仍按历史范围保留。
