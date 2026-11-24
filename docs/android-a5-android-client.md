@@ -642,3 +642,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **窗口检查：**启动本次隔离 Debug app 后，`agent-desktop` 能列出窗口，但窗口 `accessible=false`，没有可供 UI 自动化使用的元素树；定向 snapshot 返回 `ACTION_NOT_SUPPORTED / window_without_accessibility_element`。精确窗口截图调用遇到 `TIMEOUT / global_window_inventory_unstable`；原生窗口截图也无法按返回 ID 生成图像。CUA 首次 `getState()` 调用在 30 秒超时并重置内核。没有点击 Host 控件，未出现或操作 SecurityAgent/Keychain 提示，因此未输入凭据、启动 Host 或授权钥匙串。
 - **清理与当前态：**只终止本次启动的 PID `18050` 并移除临时 worktree；未终止用户的 Profile app。Host `47321/47322` 无 listener，ADB reverse 为空；未配对、调用 RPC、修改 Keychain/签名/网络，也未切换手机前台。
 - **结论：**当前桌面 UI 自动化接口不能读取此 Flutter 窗口，故本轮无法继续到 Host 按钮或 Keychain 标准授权步骤。此项不改变此前 Keychain/生产 Host 的未验收状态；没有使用命令行、脚本或其他方式绕过系统授权。
+
+## 2026-11-24 A5 用户再次确认网络一致后的最新路径复核（13:33 Asia/Shanghai）
+
+- **地址与路由：**Mac Wi‑Fi `en0=192.168.8.4/24`、默认路由经 `192.168.8.1`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机 `wlan0=192.168.31.136/24`，Android 到 Mac 的路由经 `192.168.31.1`。两端 IPv4 子网不同。Mac `system_profiler` 报 Wi‑Fi Connected（2.4 GHz channel 2），但 `networksetup -getairportnetwork en0` 报未关联；CoreWLAN 当前 SSID 返回 unavailable，故不能用 SSID 判断是否同一无线网络。
+- **新路径探测：**Android→Mac endpoint ICMP 为 0/3。Mac 在本地地址绑定一次性随机端口 `60685`，Android `toybox nc` 返回退出码 1，Mac listener 5 秒内未接受连接后关闭。该结果只说明本轮当前手机→Mac TCP 直连失败，不等价于 WSS 握手测试。
+- **测试残留清理补记：**本轮发现较早的 Android 临时 TCP listener 仍在运行：设备 shell PID `8264` 为 `toybox` `inet_csk_accept`，对应 Mac PID `8274` 的 `adb shell toybox nc -l -p 50872`。已结束该设备 listener 与 ADB shell，并复查远端 toybox listener 进程消失；Mac `47321/47322` 无 listener，ADB reverse 为空。此前 11:22 记录中“临时 listener 均已结束”的状态描述不准确，本条更正清理状态，不推翻该次 TCP timeout 的观测。
+- **范围与结论：**保留用户关于网络已一致的反馈；当前路由与 TCP 证据尚未证明直连可用。本轮仅做只读路由/连通性检查和本次临时探针清理，未启动 Host、操作 Keychain、改网络、配对、调用 RPC、切换手机前台或运行无障碍/TalkBack 测试。A5 production Host、Bonjour/NSD、配对与 RPC 仍开放。
