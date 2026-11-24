@@ -25,8 +25,13 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
 LICENSE_FILE_PREFIXES = ("license", "licence", "notice", "copying", "copyright")
-SPDX_EXPRESSION_PATTERN = re.compile(
-    r"[A-Za-z0-9.+-]+(?: (?:AND|OR|WITH) [A-Za-z0-9.+-]+)*"
+SPDX_EXPRESSION_TOKEN_PATTERN = re.compile(
+    r"\s*(?:(?P<operator>AND|OR|WITH)(?![A-Za-z0-9.+:-])|"
+    r"(?P<identifier>[A-Za-z0-9][A-Za-z0-9.+:-]*)|(?P<open>\()|(?P<close>\)))"
+)
+SPDX_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9.-]*\+?")
+SPDX_LICENSE_REF_PATTERN = re.compile(
+    r"(?:DocumentRef-[A-Za-z0-9.-]+:)?LicenseRef-[A-Za-z0-9.-]+"
 )
 
 
@@ -40,6 +45,70 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def is_spdx_expression(value: str) -> bool:
+    """Check SPDX expression syntax, including grouping and LicenseRef IDs."""
+    value = value.strip()
+    if not value:
+        return False
+    tokens: list[str] = []
+    offset = 0
+    while offset < len(value):
+        match = SPDX_EXPRESSION_TOKEN_PATTERN.match(value, offset)
+        if match is None:
+            return False
+        token = next(item for item in match.groups() if item is not None)
+        tokens.append(token)
+        offset = match.end()
+    if not tokens:
+        return False
+
+    def identifier_is_valid(token: str) -> bool:
+        return bool(
+            SPDX_LICENSE_REF_PATTERN.fullmatch(token)
+            or SPDX_IDENTIFIER_PATTERN.fullmatch(token)
+        ) and token not in {"AND", "OR", "WITH"}
+
+    def parse_primary(index: int) -> int | None:
+        if index >= len(tokens):
+            return None
+        if tokens[index] == "(":
+            end = parse_or(index + 1)
+            if end is None or end >= len(tokens) or tokens[end] != ")":
+                return None
+            return end + 1
+        token = tokens[index]
+        if not identifier_is_valid(token):
+            return None
+        index += 1
+        if index < len(tokens) and tokens[index] == "WITH":
+            if index + 1 >= len(tokens) or not identifier_is_valid(tokens[index + 1]):
+                return None
+            index += 2
+        return index
+
+    def parse_and(index: int) -> int | None:
+        end = parse_primary(index)
+        if end is None:
+            return None
+        while end < len(tokens) and tokens[end] == "AND":
+            end = parse_primary(end + 1)
+            if end is None:
+                return None
+        return end
+
+    def parse_or(index: int) -> int | None:
+        end = parse_and(index)
+        if end is None:
+            return None
+        while end < len(tokens) and tokens[end] == "OR":
+            end = parse_and(end + 1)
+            if end is None:
+                return None
+        return end
+
+    return parse_or(0) == len(tokens)
 
 
 def elf_needed_libraries(data: bytes) -> list[str]:
@@ -403,7 +472,7 @@ def license_candidate_fields(
                 )
             if (
                 not isinstance(expression, str)
-                or SPDX_EXPRESSION_PATTERN.fullmatch(expression) is None
+                or not is_spdx_expression(expression)
             ):
                 raise ValueError(f"{owner} has an invalid SPDX candidate expression")
             license_properties.append(
@@ -952,8 +1021,19 @@ def main() -> int:
                         and notice.get("path") == evidence_path
                         and notice.get("sha256") == evidence_digest
                     ]
-                    if not matching_notice:
-                        raise ValueError(f"{name} license evidence is not bound to a packaged NDK notice")
+                    candidate_metadata = static_inventory.get("candidate")
+                    candidate_link_map_digest = (
+                        candidate_metadata.get("linkMapSha256")
+                        if isinstance(candidate_metadata, dict)
+                        else None
+                    )
+                    matching_link_map = (
+                        name == "libnode.so"
+                        and evidence_path == "candidate.linkMapSha256"
+                        and evidence_digest == candidate_link_map_digest
+                    )
+                    if not matching_notice and not matching_link_map:
+                        raise ValueError(f"{name} license evidence is not bound to a verified candidate source")
                 mapping = dict(raw_mapping)
                 mapping["_licenseEntries"] = license_entries
                 mapping["_licenseProperties"] = license_properties

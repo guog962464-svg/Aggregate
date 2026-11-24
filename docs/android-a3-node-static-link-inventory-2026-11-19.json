@@ -4,27 +4,27 @@
     "cycloneDxBoms": [
       {
         "kind": "apk",
-        "sha256": "bcf534e4df8d463f5c096fa17b31abe2ac9675c00cac4cae41845af73d642aaf",
+        "sha256": "059e93c247d3554f5f345ef1ff56cd2f85e39d9bebb480f2cb9ab7c2fb4919d7",
         "componentCount": 98,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 67,
-        "candidateLicenseExpressionCount": 63,
+        "libraryLicenseFieldCount": 68,
+        "candidateLicenseExpressionCount": 64,
         "candidateNamedTextLicenseCount": 2,
-        "unresolvedLicenseComponentCount": 3
+        "unresolvedLicenseComponentCount": 2
       },
       {
         "kind": "aab",
-        "sha256": "006c2d697b3b1075a7b0cd1fbef1af53425cccbc9a481b7e83cd862dee0177b8",
+        "sha256": "f6adb76bac6b8f38d9a9b0a2cc14ebbcb0911cdc7195655c972ffc29faaf2d3f",
         "componentCount": 98,
         "dependencyNodeCount": 45,
         "dependencyEdgeCount": 40,
         "composition": "incomplete",
-        "libraryLicenseFieldCount": 67,
-        "candidateLicenseExpressionCount": 63,
+        "libraryLicenseFieldCount": 68,
+        "candidateLicenseExpressionCount": 64,
         "candidateNamedTextLicenseCount": 2,
-        "unresolvedLicenseComponentCount": 3
+        "unresolvedLicenseComponentCount": 2
       }
     ],
     "libnodePackagedStrippedSha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
@@ -702,7 +702,7 @@
           "archiveMembers": 2
         }
       ],
-      "remainingScope": "libv8_libbase.a now has an evidence-supported candidate expression and hash-bound V8, fdlibm, GoogleTest and Chromium notice assets; legal approval and recipient-side CycloneDX 1.6 LicenseRef text interoperability remain open. The aggregate V8 source component, Node.js mobile runtime and Aggregate NodeProbe JNI bridge remain unresolved."
+      "remainingScope": "The aggregate V8 source component and Aggregate NodeProbe JNI bridge remain unresolved. A provisional expression candidate is now attached to the exact libnode.so binary, but custom LicenseRef text interoperability, legal approval and independent raw linker-map reparse remain open."
     }
   },
   "scope": "Exact source and static archive evidence for the isolated arm64 NodeProbe candidate. This supplements, but does not replace, the CycloneDX APK/AAB BOM; no legal sign-off or product release is implied.",
@@ -1536,12 +1536,15 @@
       },
       "sha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
       "licenseCandidate": {
-        "status": "unresolved",
-        "reason": "This composite binary contains Node core and multiple statically linked source groups; Node core MIT alone understates its modeled scope."
+        "status": "candidate",
+        "expression": "Apache-2.0 AND (Apache-2.0 WITH LLVM-exception) AND (BSD-2-Clause OR CC0-1.0) AND BSD-3-Clause AND (BSD-3-Clause AND LicenseRef-V8-fdlibm-Sun) AND LicenseRef-SQLite-public-domain-dedication AND MIT AND (MIT AND BSD-2-Clause AND ISC) AND (NCSA OR MIT) AND Unicode-3.0 AND Zlib",
+        "review": "Provisional expression derived from the exact retained-archive inventory. Legal approval and recipient-side CycloneDX 1.6 LicenseRef text interoperability remain pending; the raw linker map was not independently reparsed in this checkout."
       },
       "evidence": {
-        "path": "assets/nodejs-mobile-LICENSE.txt",
-        "sha256": "c373dabed995013e091b1908996a69a1647ef19d400e6c1fd4b7fb06d8bc0f66"
+        "path": "candidate.linkMapSha256",
+        "sha256": "7ce78f56a23d5b827e8573f3c5990b0809ad948d6c69dcc5116369f731ac06dc",
+        "packagedBinarySha256": "51a9366831b157e4e6056d54f487903a04286f8ec89a4b6c2405ac4cbaa2c418",
+        "scope": "Derived from 36 retained static archive inputs and 2,954 retained archive-object pairs; candidate expression only, without independent raw linker-map reparse."
       }
     }
   ]
