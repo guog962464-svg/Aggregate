@@ -484,7 +484,19 @@ class _GlassActionButtonState extends State<GlassActionButton> {
         value: widget.busy ? widget.busyLabel ?? '正在处理' : null,
         liveRegion: widget.busy,
         onTap: _enabled ? _handlePressed : null,
-        child: child,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(
+            end: states.contains(WidgetState.pressed) ? .9 : 0,
+          ),
+          duration: const Duration(milliseconds: 78),
+          curve: Curves.easeOutCubic,
+          builder: (context, pressDepth, child) => Transform.translate(
+            offset: Offset(0, pressDepth),
+            transformHitTests: false,
+            child: child,
+          ),
+          child: child,
+        ),
       ),
     );
   }
@@ -948,7 +960,7 @@ class _GlassButtonSurfacePainter extends CustomPainter {
     final lightStrength = isDisabled
         ? .025
         : isPressed
-        ? .86
+        ? .28
         : isHovered
         ? .56
         : restingLightStrength +

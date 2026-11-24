@@ -111,7 +111,10 @@ vec3 actionSubstrate(vec2 point) {
   float vertical = clamp((point.y + extent.y) / (2.0 * extent.y), 0.0, 1.0);
   float facing = smoothstep(-extent.y, extent.y, point.y);
   vec3 color = mix(buttonTop, buttonBottom, vertical);
-  color = mix(color, buttonInset, raised * 0.48);
+  // In the action-lens path, raised is the pressed fraction. The face sinks
+  // toward its inset substrate while its warm edge light contracts.
+  color = mix(color, buttonInset, raised * 0.62);
+  color *= 1.0 - raised * 0.025;
   float navigationWeight = mix(1.0, 0.78, buttonNavigation);
   color = mix(color, mix(color, lamp, 0.11), buttonSelected * (1.0 - raised));
   color += buttonTop * (0.035 + 0.025 * buttonPrimary) * (1.0 - facing);
@@ -167,7 +170,7 @@ void paintActionLens() {
   color = illuminate(color, exp(-max(emitterDistance, 0.0) / 4.5) * 0.55 * energy * navigationEmission * musicEmission * (1.0 - emitterMask));
   float rim = 1.0 - smoothstep(0.0, 1.3, abs(distanceToLens + 0.75));
   color += rim * mix(mix(0.035, 0.09, vertical), mix(-0.07, 0.07, vertical), daylight);
-  if (buttonHovered > 0.5 && buttonDisabled < 0.5) {
+  if (buttonHovered > 0.5 && buttonDisabled < 0.5 && raised < 0.5) {
     color = illuminate(color, 0.12);
   }
 

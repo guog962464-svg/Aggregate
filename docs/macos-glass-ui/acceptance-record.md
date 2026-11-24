@@ -2244,3 +2244,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 视觉判定：深浅主题的悬停暖色玻璃面可见；对比悬停与 80 ms 按下帧，以及浅色 254 ms 长按帧，未见稳定且清晰的独立压下外观。因此动作路径和离散窗口取帧通过，**按下态视觉未签收**。该结论基于窗口整体图像观察，不声称已完成按钮区域像素级差分。
 - 证据：[B064 汇总、各帧及时序 JSON](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-music-cancel/press-summary.json>) SHA-256 `d9fdfb82aabd9bff8268180bcc26fbdff21c1b0ccadccf7179b25324b8ca1394`；悬停图、前后页面图和时序/各窗口帧 SHA 均在汇总内。隔离 Profile 已无损退出，临时 worktree 已清理。
 - 限制：`SCStreamUpdateFrameDisplayTime` 只表示窗口服务器显示该窗口帧的时间戳，不是连续视频、完整动画曲线、Flutter `FrameTiming` 或物理面板 FPS。用户账户及真实音乐授权流程未验；UI-6.7 与阶段 0–6 仍部分完成。
+
+### 2026-11-24 UI-6.7 B064 按下反馈修订后双主题复验
+
+- 调整：共享 `GlassActionButton` 的可见内容和表面在按下时用 78 ms ease-out 下沉 0.9 logical px，`Transform` 不变更 hit test；按下暖光收至 `.28`，玻璃面更明显地压向内衬，pressed 时不再叠加 hover 提亮。shader 改动限定在 action-lens 绘制分支；`GlassThemeSwitch`、太阳/月亮模型、拖动、偏好和回调未改。
+- 环境：基于 `d2628e08f8fccf2bacc604e7d57a2843dbd5dd96` 加入本记录所述候选代码的隔离 macOS Profile；Flutter 3.47.8 / Dart 3.13.7，macOS 27.2.1 (26B131)、Mac17,9 / Apple M5 Pro；独立 bundle `io.github.guog962464.aggregate.ui6pressvisual`，800×632 logical px，ScreenCaptureKit 窗口帧 1600×1264 px。浅深主题分别用 `PREVIEW_APPEARANCE=light/dark` 构建，按钮位于同一个进程内预览扫码页。
+- 真实鼠标样本：短按深/浅分别 85.058/80.904 ms，按住期间分别选到 5/4 帧（浅色漏预设目标 16.7 ms；其余入选帧状态码均为 0）；WindowServer 回调 96/85。另对深/浅各做约 250 ms 长按（250.564/250.928 ms），每组 15 个预设目标全采到，其中各有 11 帧处于按住期间，所有状态码均为 0。四组总计 59 帧，31 帧位于物理按住期间。
+- 视觉及动作：以每次按下前同一运行里的 hover baseline 对照约 +67 ms 短按帧、约 +250 ms 长按帧，深浅两种底色下均可见表面下沉、内衬加深、暖光退出 hover 提亮；**B064 按下视觉通过**。点击后隔离账号面板返回未登录状态并恢复“扫码登录”按钮；实鼠标路径继续有效。
+- 回归：`flutter test --no-pub test/glass_action_button_test.dart test/glass_motion_test.dart` 30 项通过；主题开关、模拟、实时、光学与校准组 27 项通过；`flutter analyze --no-pub` 无问题；浅深 Profile 构建均通过。所有运行都只在 `Ui6InspectionRuntime` 内存夹具中进行，不含真实 QR URL、账户、音乐授权服务或网络。
+- 证据：[按下反馈汇总与逐帧 SHA-256](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-pressed-revision/press-summary.json>) SHA-256 `87d7ba6b2eacc351dc634597808924f4b0157d37fbb3981d0015a9b72750013a`；汇总含候选源码 SHA、四组 timing、hover baseline 和全部 59 张窗口帧。
+- 限制：视觉判断是窗口整体图像的人工对照，不是按钮区域像素差分；ScreenCaptureKit 的时间戳不等于连续动画曲线、Flutter `FrameTiming` 或物理面板 FPS。此项只签收 B064 的共享按钮压下反馈与模拟取消路径，UI-6.7 其他实例仍需逐项验收；阶段 0–6 继续部分完成。
