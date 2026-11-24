@@ -608,3 +608,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络现场：**用户确认 Mac 与 Android 网络现已一致。本次读取 Mac Wi-Fi 接口 `en0=192.168.10.239/24`、默认网关 `192.168.10.1`；LGE AN10 `wlan0=192.168.31.136/24`，Android Wi-Fi 显示已连接。两端地址仍不在同一 IPv4 子网。Mac 到手机的路由经 `192.168.10.1`，Mac→手机 ping 0/2；手机→当前 Mac 地址 `192.168.10.239` ping 0/2。macOS `networksetup -getairportnetwork en0` 报告未关联 AirPort 网络，尽管 `en0` 显示 active 且有 IPv4 地址，实际 AP/二层关联状态仍存在不一致证据。
 - **服务与设备：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空；手机通过 USB ADB 在线，仍为 Android 15/API 35/arm64/4 KB 页。本轮未启动 Host、操作 Keychain、配对或调用 RPC；没有新增 WSS/NSD/只读 RPC 验收证据。
 - **结论：**保留用户对网络已一致的确认，同时记录本机观测暂未证明两端 IP 可达；本次不更改网络设置。A5 production Host 与配对/RPC 验收继续开放。
+
+## 2026-11-24 A5 当前 Wi-Fi 与路由复核（10:32 Asia/Shanghai）
+
+- **无线关联：**Mac `en0=192.168.8.4/24`，Wi-Fi 服务为 DHCP、网关 `192.168.8.1`。`system_profiler SPAirPortDataType` 报 Wi-Fi `Status: Connected`、2.4 GHz channel 2，但网络名被系统输出为 `<redacted>`；`networksetup -getairportnetwork en0` 同时仍称未关联。Android `wlan0=192.168.31.136/24`，Wi-Fi 状态为 connected，默认路由经 `192.168.31.1`。两端同一 SSID 未能从当前只读输出确认，保留工具结果差异。
+- **路径验证：**Mac 默认网关 `192.168.8.1` 与 Android 默认网关 `192.168.31.1` 各自 ping 2/2；Mac→手机与手机→Mac 当前地址的 endpoint ping 均为 0/2。两端分属不同 IPv4 子网，IP 层设备间可达仍未建立。Host TCP `47321/47322` 无 listener，ADB reverse 为空，因此本轮没有可验证的 WSS 目标。
+- **范围：**本轮仅只读检查网络、路由、gateway/endpoint ICMP 与 listener；没有启动 Host、操作 Keychain、改 Wi-Fi、配对或 RPC。用户确认网络一致仍予保留，但 production Host 路径和 A5 验收未通过。
