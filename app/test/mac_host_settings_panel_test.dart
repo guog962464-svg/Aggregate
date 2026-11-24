@@ -46,11 +46,11 @@ void main() {
 
     await tester.tap(find.text('启动 Host'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('允许连接向导'));
+    await tester.tap(find.text('连接向导'));
     await tester.pumpAndSettle();
     expect(pairing._grants, hasLength(1));
 
-    await tester.tap(find.text('轮换 Mac Host 身份'));
+    await tester.tap(find.text('轮换身份'));
     await tester.pumpAndSettle();
     expect(identity.calls, 0);
     expect(find.text('撤销授权并轮换'), findsOneWidget);
@@ -60,7 +60,7 @@ void main() {
     expect(host.stopCalls, 0);
     expect(identity.calls, 0);
 
-    await tester.tap(find.text('轮换 Mac Host 身份'));
+    await tester.tap(find.text('轮换身份'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('撤销授权并轮换'));
     await tester.pumpAndSettle();
@@ -71,7 +71,7 @@ void main() {
     expect(identity.calls, 1);
     expect(events, ['revoke', 'stop', 'rotate']);
     expect(host.status.phase, HostPhase.stopped);
-    expect(find.text('已关闭'), findsOneWidget);
+    expect(find.text('已停止'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -105,9 +105,9 @@ void main() {
 
     await tester.tap(find.text('启动 Host'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('允许连接向导'));
+    await tester.tap(find.text('连接向导'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('轮换 Mac Host 身份'));
+    await tester.tap(find.text('轮换身份'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('撤销授权并轮换'));
     await tester.pumpAndSettle();
@@ -234,7 +234,7 @@ void main() {
     expect(pairing.invitationCalls, 1);
     expect(find.byType(QrImageView), findsOneWidget);
 
-    await tester.tap(find.text('允许连接向导'));
+    await tester.tap(find.text('连接向导'));
     await tester.pumpAndSettle();
     expect(pairing.approvedScopes, {
       HostGrantScope.readConnections,

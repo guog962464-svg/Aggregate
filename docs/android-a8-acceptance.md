@@ -344,3 +344,10 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 
 - **已提交产品输入：**当前 `HEAD:app` tree 为 `ca68074cdccb56bb1c0750233af43a5f725257d3`，与已完成 Flutter UI 检查及 Release/4 KB 验收的 `1d1f66c:app` tree 完全一致。当前 `HEAD:pubspec.lock` SHA-256 为 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`，与 A8 Release/严格锁验证记录相同。
 - **范围：**这只确认 A8 已提交源码和依赖锁身份未变化，因此既有 Release 静态检查与 4 KB 真机冷启动结果仍对应当前 HEAD；本次没有重建、重新安装或运行真机。主工作区未提交的测试文件与 `pubspec.lock` 修改不属于该产品输入，也未纳入本项结论。正式签名和 16 KB 真机门槛继续开放。
+
+## 2026-11-24 app/test 非无障碍全量验收与 A5 Host 面板测试定位（11:44–11:51 Asia/Shanghai）
+
+- **隔离与依赖：**在 detached worktree `/private/tmp/aggregate-a8-full-suite-20261124`（基线提交 `094c6a531a038013681186d2617928cf653e8b0a`）运行；`PUB_HOSTED_URL=https://pub.dev flutter pub get --enforce-lockfile` 成功，使用提交锁。
+- **A5 Host 面板测试：**全量首轮发现三个测试把语义标签当作可见文本查找、另有一个停机状态文案已变更。测试只改为查找 UI 实际显示的“连接向导”“轮换身份”“已停止”；产品代码和语义属性未改。`flutter test --no-pub test/mac_host_settings_panel_test.dart --reporter expanded` 5 项全部通过。
+- **非无障碍全量结果：**第一次未过滤的 `flutter test` 自动发现了用户已排除的 `accessibility_test.dart` 并执行其中一项；这是本轮误纳入的越界测试，后续没有重跑。随后显式排除该文件运行 app 测试集；A5 面板修正前为 365 通过、8 失败，修正后为 **368 通过、5 失败**（退出码 1）。剩余 5 项全部为 `TargetPlatform.macOS` 的玻璃文本对比（2 项）、减弱动态效果下玻璃开关文字（1 项）和宽屏布局断言（2 项）；本次全量执行中没有 Android 目标测试失败。
+- **范围与剩余项：**这不是全量 suite 通过。主工作区未提交的 `widget_test.dart`、玻璃对比测试与设计文件没有带入隔离 worktree；剩余 5 项未在本 Android 任务中改写。后续测试命令继续排除 `accessibility_test.dart`。本轮没有重建 APK/AAB、安装或操作手机；正式签名与 16 KB 真机门槛仍开放。
