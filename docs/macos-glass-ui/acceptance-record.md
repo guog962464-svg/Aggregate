@@ -2254,3 +2254,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 回归：`flutter test --no-pub test/glass_action_button_test.dart test/glass_motion_test.dart` 30 项通过；主题开关、模拟、实时、光学与校准组 27 项通过；`flutter analyze --no-pub` 无问题；浅深 Profile 构建均通过。所有运行都只在 `Ui6InspectionRuntime` 内存夹具中进行，不含真实 QR URL、账户、音乐授权服务或网络。
 - 证据：[按下反馈汇总与逐帧 SHA-256](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-pressed-revision/press-summary.json>) SHA-256 `87d7ba6b2eacc351dc634597808924f4b0157d37fbb3981d0015a9b72750013a`；汇总含候选源码 SHA、四组 timing、hover baseline 和全部 59 张窗口帧。
 - 限制：视觉判断是窗口整体图像的人工对照，不是按钮区域像素差分；ScreenCaptureKit 的时间戳不等于连续动画曲线、Flutter `FrameTiming` 或物理面板 FPS。此项只签收 B064 的共享按钮压下反馈与模拟取消路径，UI-6.7 其他实例仍需逐项验收；阶段 0–6 继续部分完成。
+
+
+### 2026-11-24 UI-6.7 B063/B065 按下反馈修订后复验
+
+- 候选与环境：在共享按钮 pressed 修订提交 `978a395bc26ef633d080a3d92c7600b65c1347ca` 上使用隔离 macOS Profile，入口 `lib/preview/ui6_inspection_main.dart`，800×632 logical px、ScreenCaptureKit 窗口帧 1600×1264 px；浅/深主题分别构建，窗口和按钮坐标每次都从新鲜 AX bounds 读取。独立 bundle `io.github.guog962464.aggregate.ui6pressfollowup`；没有修改生产逻辑或主题切换实现。
+- B063“关闭账号面板”：浅色真实按住 85.067 ms，深色 80.527 ms；分别采到 14/15 与 15/15 个窗口时点，浅色漏目标 333 ms，深色无漏点，所有已选帧状态码为 0。按下期帧分别有 4/5、5/5 落在物理按住期间。按下前 hover baseline 对照 +50/+67 ms 帧，深浅主题都能看到玻璃面下压、内衬变平、暖色 hover 光收敛；实鼠标点击后 fresh AX 均返回音乐页，账户入口恢复。
+- B065“刷新状态”：浅/深真实按住 80.174/80.747 ms；两组各采到 13/15 个窗口时点，浅色漏 0/550 ms，深色漏 0/650 ms，已选帧状态码均为 0；各有 4/5 个采样帧处于物理按住期间。深色与 hover baseline 对照可见表面变暗、暖光收敛；浅色该 quiet 按钮的 hover 基线不显示明显暖光面，按下帧可见独立的内衬表面与边缘。按下后浅色 full AX 仍显示“已登录 · 预览账号”、刷新控件和账号面板；深色的 pressed-run 只采了 interactive AX 树，静态账号文本未被该树列出，账号状态以同日较早的双主题 full-AX 刷新记录为准。
+- 结论：B063 双主题按下视觉通过；B065 深浅主题的按下表面反馈通过，浅色按下反馈按 quiet baseline 对照判定，不宣称浅色存在暖色 hover glow。动作结果分别按 fresh AX 读回；B065 刷新只操作进程内预览账号。
+- 证据：[按下帧补验汇总与每帧 SHA-256](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-pressed-followup/press-followup-summary.json>) SHA-256 `faf156add7a1d883af2612e3b34fe3498fb8cec0e32e7f7089abf155c83a8fc1`；汇总包含候选源码 SHA、四组 timing JSON、各选中帧 SHA 和按钮区域裁切对照。裁切图仅用于观察，不是像素阈值测试。
+- 限制：`SCStreamUpdateFrameDisplayTime` 只表示 WindowServer 呈现该窗口帧的时间戳；离散截图不等于连续动画曲线、Flutter `FrameTiming`、物理 scan-out 或面板 FPS。所有流程仅使用 `Ui6InspectionRuntime` 内存预览数据，没有真实账号、二维码 URL、服务、Host 或网络。UI-6.7 其他调用点仍需逐项验收；阶段 0–6 继续部分完成。
