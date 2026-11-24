@@ -356,3 +356,10 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 
 - **产品输入对照：**当前 `HEAD` 为 `9a7e50c0f07d37c009c95b16801acfad84eb18d3`。`app/lib`（tree `d0ebe510a651cd3d0e01c4465abfa98e0efe655b`）、`app/android`（tree `299e8a57fc45f8119dd0caa1b15b4fb3cc0a05f2`）、`app/pubspec.yaml`（blob `7a73244f5ce3c08e570eb9b92ced96a1bb3e69c7`）和根 `pubspec.lock`（SHA-256 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`）均与 A8 Release/4 KB 验收基线 `094c6a5` 一致；根 `pubspec.yaml` 也未变。`094c6a5..HEAD` 在 `app/` 下唯一差异是 `app/test/mac_host_settings_panel_test.dart` 的测试查找修正，不影响 Android Release 构建输入。工作区未提交的 `pubspec.lock` 修改不属于已提交输入。
 - **范围：**这仅确认已验收 Android 产品构建输入没有变化；本轮没有重新构建、运行测试、安装或操作手机。既有 Release 静态检查与 4 KB test-signed 冷启动证据可沿用到当前已提交产品输入。全量非无障碍 suite 仍有 5 个 macOS 目标失败；正式签名、16 KB 真机、A3.6 许可/来源闭包及 A5 production Host/配对/RPC 仍开放。
+
+## 2026-11-24 当前 UI 测试输入的非无障碍全量复验（13:26 Asia/Shanghai）
+
+- **隔离与输入：**在 detached worktree `/private/tmp/aggregate-a8-full-suite-20261124` 的提交 `094c6a531a038013681186d2617928cf653e8b0a` 复验，按已提交锁严格恢复依赖。`widget_test.dart` 和 `macos_dynamic_backdrop_text_contrast_test.dart` 从主工作区当前未提交版本复制到隔离 worktree；没有改写或暂存主工作区文件。为覆盖当前连续式设置页，对隔离副本中的旧 `Mac Host` 标签、旧 helper text、懒构建滚动及单视口逐标签 shader 截图定位作测试适配；`macos_reduce_motion_test.dart` 也仅在隔离 worktree 更新到当前 helper text。没有修改产品代码。
+- **套件结果：**显式排除 `test/accessibility_test.dart` 后运行 66 个测试文件，**372 项通过、1 项失败**。A5 Host 面板测试及当前工作区改过的宽屏几何/标题断言通过；Android 目标用例没有失败。`macos_reduce_motion_test.dart` 的 live-switch 文案回归通过；玻璃按钮标签全尺寸/主题矩阵通过。
+- **剩余失败：**仅 `macos_dynamic_backdrop_text_contrast_test.dart` 的 midpoint text halo 用例失败：macOS 800×600、暗色初始外观、shader phase `0.545` 的 appearance description 实测对比度 `4.428822014656451`，低于该用例 `4.5` 断言。保留阈值与实测失败，不将其改成通过。该项是 macOS 玻璃文本像素对比检查，不是 Android 目标失败；此次未运行 `accessibility_test.dart` 或 TalkBack 专项。
+- **范围：**结果只覆盖当前用户测试文件的隔离副本、上述临时测试适配及提交产品代码；临时适配没有合入仓库。没有重新构建 APK/AAB、安装手机、启动 NodeProbe/testnode 或操作手机前台。A8 测试集仍有 1 个 macOS 目标失败；正式签名、16 KB 真机、A3.6 闭包和 A5 production Host/配对/RPC 仍开放。

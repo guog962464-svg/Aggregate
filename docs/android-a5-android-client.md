@@ -635,3 +635,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **TCP 预检：**Mac 在 `192.168.8.4:53987` 临时监听 7 秒，Android 通过 USB ADB 的 `toybox nc` 尝试连接，3 秒后超时；listener 未接受连接并自行退出。临时端口与 Host 端口分离，没有遗留 listener。该结果验证手机向 Mac 的当前直连路径，不外推为 WSS 握手结果。
 - **服务与范围：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空。本轮没有启动 Host、触发 Keychain、改网络设置、配对或调用 RPC，也没有切换手机前台。
 - **结论：**保留用户关于网络已一致的反馈；本机读到的子网与手机至 Mac TCP 仍不能证明当前直连可用。A5 production Host、Bonjour/NSD、直连 WSS、配对及 RPC 验收继续开放；既有历史成功记录保留为各自当时环境的证据。
+
+## 2026-11-24 A5 当前 Debug Host 窗口交互检查
+
+- **隔离构建：**从提交 `10c347878f29bd69bd209d3c858b4aa15c350f2b` 新建 detached worktree，按已提交锁执行 `PUB_HOSTED_URL=https://pub.dev flutter pub get --enforce-lockfile` 和 `flutter build macos --debug --no-pub`，均通过。只有 mobile_scanner macOS 弃用 API 与 Flutter Assemble Run Script outputs 警告。构建输出是 arm64 Debug `Aggregate.app`。
+- **窗口检查：**启动本次隔离 Debug app 后，`agent-desktop` 能列出窗口，但窗口 `accessible=false`，没有可供 UI 自动化使用的元素树；定向 snapshot 返回 `ACTION_NOT_SUPPORTED / window_without_accessibility_element`。精确窗口截图调用遇到 `TIMEOUT / global_window_inventory_unstable`；原生窗口截图也无法按返回 ID 生成图像。CUA 首次 `getState()` 调用在 30 秒超时并重置内核。没有点击 Host 控件，未出现或操作 SecurityAgent/Keychain 提示，因此未输入凭据、启动 Host 或授权钥匙串。
+- **清理与当前态：**只终止本次启动的 PID `18050` 并移除临时 worktree；未终止用户的 Profile app。Host `47321/47322` 无 listener，ADB reverse 为空；未配对、调用 RPC、修改 Keychain/签名/网络，也未切换手机前台。
+- **结论：**当前桌面 UI 自动化接口不能读取此 Flutter 窗口，故本轮无法继续到 Host 按钮或 Keychain 标准授权步骤。此项不改变此前 Keychain/生产 Host 的未验收状态；没有使用命令行、脚本或其他方式绕过系统授权。
