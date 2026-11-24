@@ -1,6 +1,8 @@
 # A3 NodeProbe Release BOM license mapping
 
-> **当前制品状态（2026-11-24）：**精确 notice-updated APK/AAB BOM 现有 68/70 library rows 带 `licenses` 字段；`libnode.so` 使用由静态链接 inventory 推导的 provisional SPDX 表达式，JNI bridge 与 aggregate V8 两行仍未解析。该候选依赖未在本 checkout 独立重读的 linker map；两个自定义 `LicenseRef` 在 CycloneDX 1.6 中没有关联许可文本的原生字段，且尚无法律审查。详见本文末尾的本日复核。
+> **当前制品状态（2026-11-24）：**精确 notice-updated APK/AAB BOM 现有 68/70 library rows 带 `licenses` 字段；`libnode.so` 使用由静态链接 inventory 推导的 provisional SPDX 表达式，JNI bridge 与 aggregate V8 两行仍未解析。该候选依赖未在本 checkout 独立重读的 linker map；两个自定义 `LicenseRef` 在当前 SPDX-expression 表示中没有逐 token 关联到 CycloneDX 1.6 license text 对象的字段，且尚无法律审查。详见本文末尾的本日复核。
+
+> **CycloneDX 1.6 schema nuance：**独立 license 对象支持 `text` 附件；但 `licenseChoice` 要么是多个 license 对象列表，要么是单个 SPDX expression。expression 结构没有把其中每个 `LicenseRef` token 映射到文本对象的字段，因此当前 BOM 仍不能直接表示该逐项关联。见 [CycloneDX 1.6 JSON schema/reference](https://cyclonedx.org/docs/1.6/json/) 的 `licenseChoice` 与 `license.text` 定义。
 
 ## Candidate identity and baseline coverage
 
@@ -103,4 +105,4 @@ The four unresolved library rows are V8, `libv8_libbase.a`, the composite `libno
 - **生成器：**`tool/android/generate_nodeprobe_sbom.py` 的平铺正则拒绝括号表达式，现改为小型 SPDX 表达式语法解析器；自定义二进制许可证据可绑定到 inventory 记录的精确 `candidate.linkMapSha256`，而 `libc++_shared.so` 仍要求匹配包内 NDK NOTICE。4 项 Python 单元检查通过，覆盖复合表达式、DocumentRef、AND/OR 优先级、括号和非法语法。
 - **候选 BOM 更新：**从此前通过 CycloneDX 1.6 schema 的 98 组件 APK/AAB BOM 基线出发，仅修改 `Node.js mobile runtime` 这一组件的 `licenses` 与对应 evidence/status 属性；结构差异检查确认每份 BOM 只有该组件变化。更新后的 APK BOM SHA-256 为 `059e93c247d3554f5f345ef1ff56cd2f85e39d9bebb480f2cb9ab7c2fb4919d7`，AAB 为 `f6adb76bac6b8f38d9a9b0a2cc14ebbcb0911cdc7195655c972ffc29faaf2d3f`。两者各有 98 个组件、70 个库、68 个 license 字段（64 个 SPDX expression、2 个 named-text 条目）、45 个 dependency nodes、40 条边；引用闭合，CycloneDX 1.6 官方 Draft 7 schema 校验通过，`compositions.aggregate` 仍为 `incomplete`。
 - **生成范围说明：**精确 unsigned APK/AAB 位于既有 detached worktree，hash 与上方候选一致。原始外置 Gradle runtime manifest（SHA-256 `f0db6ec50c581fe5551946728b48a43741d306ac66c93ee37ac34385ffed4411`）不在当前目录；因此不能声称本轮从 APK/AAB 完整重新生成了 98 组件 BOM。使用当前 generator 和精确 archive/inventory 在临时目录生成的 archive-only BOM 为 96 个组件，确认新表达式、binary hash 与 static-link mapping 校验路径可运行；最终记录的 98 组件 BOM 是对已校验基线作单组件更新后重新计算并通过 schema/引用检查。
-- **仍未解决：**JNI bridge 没有可确认的项目许可，aggregate V8 source 仍有混合许可范围；`libnode.so` 的两个 LicenseRef 缺少 CycloneDX 1.6 原生文本绑定，候选 map 未独立重放。所有候选需要法律审查；移动运行时缺少同步当前 Node 安全线的维护方发行，平台库版本闭包、正式签名与 16 KB 实机加载/运行仍开放。A3.6 不关闭。
+- **仍未解决：**JNI bridge 没有可确认的项目许可，aggregate V8 source 仍有混合许可范围；`libnode.so` 的两个 LicenseRef 在当前 SPDX-expression 表示中没有逐 token 关联 CycloneDX 1.6 文本对象的字段，候选 map 未独立重放。所有候选需要法律审查；移动运行时缺少同步当前 Node 安全线的维护方发行，平台库版本闭包、正式签名与 16 KB 实机加载/运行仍开放。A3.6 不关闭。
