@@ -614,3 +614,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **无线关联：**Mac `en0=192.168.8.4/24`，Wi-Fi 服务为 DHCP、网关 `192.168.8.1`。`system_profiler SPAirPortDataType` 报 Wi-Fi `Status: Connected`、2.4 GHz channel 2，但网络名被系统输出为 `<redacted>`；`networksetup -getairportnetwork en0` 同时仍称未关联。Android `wlan0=192.168.31.136/24`，Wi-Fi 状态为 connected，默认路由经 `192.168.31.1`。两端同一 SSID 未能从当前只读输出确认，保留工具结果差异。
 - **路径验证：**Mac 默认网关 `192.168.8.1` 与 Android 默认网关 `192.168.31.1` 各自 ping 2/2；Mac→手机与手机→Mac 当前地址的 endpoint ping 均为 0/2。两端分属不同 IPv4 子网，IP 层设备间可达仍未建立。Host TCP `47321/47322` 无 listener，ADB reverse 为空，因此本轮没有可验证的 WSS 目标。
 - **范围：**本轮仅只读检查网络、路由、gateway/endpoint ICMP 与 listener；没有启动 Host、操作 Keychain、改 Wi-Fi、配对或 RPC。用户确认网络一致仍予保留，但 production Host 路径和 A5 验收未通过。
+
+## 2026-11-24 A5 Host 逻辑回归与 macOS Debug 构建
+
+- **源码/依赖：**在 detached worktree `/private/tmp/aggregate-a5-verify-982a513` 的提交 `982a513922d27e349b8d29a7fa3750508af09730` 上验证；`app/` tree `ca68074cdccb56bb1c0750233af43a5f725257d3`，根锁 SHA-256 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`。`PUB_HOSTED_URL=https://pub.dev flutter pub get --enforce-lockfile` 成功。
+- **Host 测试：**串行运行 9 个文件：`host_tls_identity_test.dart`、`mac_host_module_test.dart`、`mac_host_wss_transport_factory_test.dart`、`host_wss_transport_test.dart`、`host_rpc_protocol_test.dart`、`host_pairing_authority_test.dart`、`host_setup_coordinator_test.dart`、`host_setup_rpc_dispatcher_test.dart`、`host_runtime_rpc_dispatcher_test.dart`。75 项全部通过，覆盖身份抽象、启动/停止和超时、WSS factory、配对/RPC 授权、setup/revocation 与资源范围。
+- **macOS 构建：**`flutter build macos --debug --no-pub` 成功生成 Debug `Aggregate.app`。出现 `mobile_scanner` 对 `AVCaptureDevice.devices(for:)` 的弃用警告和 Flutter Assemble Run Script 未声明 outputs 的警告，未阻断构建。
+- **范围限制：**测试使用隔离单测/fake；此项只证明 Dart/Flutter Host 逻辑和当前 Swift/macOS Debug target 可编译，不证明真实登录 Keychain 授权、production Host listener、Bonjour/NSD、LAN WSS、Android 配对或 RPC。没有启动所构建 app、操作 Keychain、改变网络、进入 Android 前台或运行无障碍/TalkBack 测试。
