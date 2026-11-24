@@ -602,3 +602,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网关对照（10:10）：**Mac 网关 `192.168.8.1` 与手机网关 `192.168.31.1` 各自 ping 2/2；设备间双向 ping 仍为 0/2。两端各自的默认网关可达，跨网段设备互访未通；TCP WSS 可达性尚未实测，因为 Host 没有 listener。`networksetup -getairportnetwork en0` 报告 Mac 未关联 AirPort 网络，但 `en0` 仍为 active 且保有 `192.168.8.4/24`，实际 AP 关联状态存在未解释差异。
 - **服务状态：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空。本轮没有启动 Host、操作 Keychain 或进行配对；没有新增 WSS、NSD、邀请或 RPC 证据。
 - **当前结论：**这是一次新现场快照，取代 02:23 记录中“当前同网段可达”的状态判断；旧记录仍是当时有效的历史结果。没有更改任何网络设置。生产 Host 与只读 RPC 验收仍开放。
+
+## 2026-11-24 A5 用户确认网络一致后的最新回读（10:19–10:21 Asia/Shanghai）
+
+- **网络现场：**用户确认 Mac 与 Android 网络现已一致。本次读取 Mac Wi-Fi 接口 `en0=192.168.10.239/24`、默认网关 `192.168.10.1`；LGE AN10 `wlan0=192.168.31.136/24`，Android Wi-Fi 显示已连接。两端地址仍不在同一 IPv4 子网。Mac 到手机的路由经 `192.168.10.1`，Mac→手机 ping 0/2；手机→当前 Mac 地址 `192.168.10.239` ping 0/2。macOS `networksetup -getairportnetwork en0` 报告未关联 AirPort 网络，尽管 `en0` 显示 active 且有 IPv4 地址，实际 AP/二层关联状态仍存在不一致证据。
+- **服务与设备：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空；手机通过 USB ADB 在线，仍为 Android 15/API 35/arm64/4 KB 页。本轮未启动 Host、操作 Keychain、配对或调用 RPC；没有新增 WSS/NSD/只读 RPC 验收证据。
+- **结论：**保留用户对网络已一致的确认，同时记录本机观测暂未证明两端 IP 可达；本次不更改网络设置。A5 production Host 与配对/RPC 验收继续开放。
