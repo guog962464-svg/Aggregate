@@ -339,3 +339,8 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **静态分析与测试：**`flutter analyze --no-pub` 返回 `No issues found`。`flutter test --no-pub test/glass_motion_test.dart test/android_theme_transition_test.dart test/android_mobile_navigation_test.dart --reporter expanded` 三个文件共 21 项全部通过，覆盖共享玻璃动效/主题过渡与 Android 手机导航回归；未运行无障碍/TalkBack 测试，也没有操作手机前台。
 - **工作区隔离：**主工作区 `pubspec.lock` 仍为用户未提交的 SHA-256 `9cb893d677146b21667d4137117378b0db159e67927bf87942656d49b3658500`，本项未暂存。一次最初从主工作区执行的严格锁解析因该用户锁内容而拒绝解析；随后改在 detached worktree 按提交锁成功，主锁哈希复核未变。该结果不把用户锁或主工作区 `.dart_tool` 状态纳入验收。
 - **范围：**这补充当前共享 Flutter UI 的静态分析和定向回归证据；不替代全量 Flutter suite、16 KB 真机、正式签名或 A3.6/A4/A5 的开放验收门槛。
+
+## 2026-11-24 当前 HEAD 086c7aa A8 输入身份复核（11:43 Asia/Shanghai）
+
+- **已提交产品输入：**当前 `HEAD:app` tree 为 `ca68074cdccb56bb1c0750233af43a5f725257d3`，与已完成 Flutter UI 检查及 Release/4 KB 验收的 `1d1f66c:app` tree 完全一致。当前 `HEAD:pubspec.lock` SHA-256 为 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`，与 A8 Release/严格锁验证记录相同。
+- **范围：**这只确认 A8 已提交源码和依赖锁身份未变化，因此既有 Release 静态检查与 4 KB 真机冷启动结果仍对应当前 HEAD；本次没有重建、重新安装或运行真机。主工作区未提交的测试文件与 `pubspec.lock` 修改不属于该产品输入，也未纳入本项结论。正式签名和 16 KB 真机门槛继续开放。
