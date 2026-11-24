@@ -649,3 +649,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **新路径探测：**Android→Mac endpoint ICMP 为 0/3。Mac 在本地地址绑定一次性随机端口 `60685`，Android `toybox nc` 返回退出码 1，Mac listener 5 秒内未接受连接后关闭。该结果只说明本轮当前手机→Mac TCP 直连失败，不等价于 WSS 握手测试。
 - **测试残留清理补记：**本轮发现较早的 Android 临时 TCP listener 仍在运行：设备 shell PID `8264` 为 `toybox` `inet_csk_accept`，对应 Mac PID `8274` 的 `adb shell toybox nc -l -p 50872`。已结束该设备 listener 与 ADB shell，并复查远端 toybox listener 进程消失；Mac `47321/47322` 无 listener，ADB reverse 为空。此前 11:22 记录中“临时 listener 均已结束”的状态描述不准确，本条更正清理状态，不推翻该次 TCP timeout 的观测。
 - **范围与结论：**保留用户关于网络已一致的反馈；当前路由与 TCP 证据尚未证明直连可用。本轮仅做只读路由/连通性检查和本次临时探针清理，未启动 Host、操作 Keychain、改网络、配对、调用 RPC、切换手机前台或运行无障碍/TalkBack 测试。A5 production Host、Bonjour/NSD、配对与 RPC 仍开放。
+
+## 2026-11-24 A5 Debug 窗口截图与坐标输入复核（13:52 Asia/Shanghai）
+
+- **窗口与截图：**在当前提交 `b544d313fa6f65625f91d5569665341145153cdc` 上启动主工作区已有 Debug `Aggregate.app`，PID `21948`；既有 Profile PID `19693` 未终止。`agent-desktop snapshot --window-id` 只能读到原生窗口外框的三个控件，Flutter 内容仍无 AX 元素；`screenshot --app Aggregate` 因 Debug/Profile 两进程同名而拒绝，改用已解析的窗口 ID 后成功捕获 Aggregate 主界面截图。
+- **坐标操作结果：**根据截图尝试一次 `agent-desktop --headed mouse-click --xy 437,744` 点击“设置”入口。命令报告 `delivered_unverified`；随后窗口枚举显示两个 Aggregate 窗口都不可见、微信成为前台应用。无法证实点击实际落在 Aggregate 窗口，因此没有继续坐标操作；没有输入文本或提交任何内容。该输入可能只改变前台/选中状态，具体命中与界面效果未知。
+- **服务与清理：**没有出现 SecurityAgent/Keychain 授权提示；Host `47321/47322` 无 listener，ADB reverse 为空。只终止本轮 PID `21948`，保留 Profile PID `19693`；本轮三张临时截图已删除。未启动 Host、操作 Keychain、配对、调用 RPC、改网络或操作 Android 前台。
+- **结论：**已证明可通过窗口 ID 截取 Aggregate Debug 内容；现有物理坐标动作是全局输入，不能绑定该不可访问的 Flutter 内容窗口。A5 Host/Keychain 启动及生产连接验收仍未完成；后续需使用能将输入限定到目标窗口的交互方式，避免再用未确认坐标操作。
