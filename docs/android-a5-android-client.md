@@ -621,3 +621,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 测试：**串行运行 9 个文件：`host_tls_identity_test.dart`、`mac_host_module_test.dart`、`mac_host_wss_transport_factory_test.dart`、`host_wss_transport_test.dart`、`host_rpc_protocol_test.dart`、`host_pairing_authority_test.dart`、`host_setup_coordinator_test.dart`、`host_setup_rpc_dispatcher_test.dart`、`host_runtime_rpc_dispatcher_test.dart`。75 项全部通过，覆盖身份抽象、启动/停止和超时、WSS factory、配对/RPC 授权、setup/revocation 与资源范围。
 - **macOS 构建：**`flutter build macos --debug --no-pub` 成功生成 Debug `Aggregate.app`。出现 `mobile_scanner` 对 `AVCaptureDevice.devices(for:)` 的弃用警告和 Flutter Assemble Run Script 未声明 outputs 的警告，未阻断构建。
 - **范围限制：**测试使用隔离单测/fake；此项只证明 Dart/Flutter Host 逻辑和当前 Swift/macOS Debug target 可编译，不证明真实登录 Keychain 授权、production Host listener、Bonjour/NSD、LAN WSS、Android 配对或 RPC。没有启动所构建 app、操作 Keychain、改变网络、进入 Android 前台或运行无障碍/TalkBack 测试。
+
+## 2026-11-24 A5 用户再次确认网络一致后的双向 TCP 复核（11:22–11:23 Asia/Shanghai）
+
+- **地址与路由：**Mac `en0=192.168.8.4/24`，默认网关 `192.168.8.1`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机 `wlan0=192.168.31.136/24`，默认网关 `192.168.31.1`。两端不在同一 IPv4 子网，Android 到 Mac 的路由经 `.31.1`，Mac 到手机经 `.8.1`。Android 当前 Wi-Fi 已连接；macOS `networksetup -getairportnetwork en0` 报未关联。
+- **连通性：**两端默认网关各 ping 2/2；手机→Mac ICMP 为 0/2。两次新的临时 TCP 探测均超时：手机连接绑定 Mac `192.168.8.4` 的随机端口 `50794`；Mac 连接手机 `192.168.31.136:50872`。Mac Application Firewall 处于关闭状态。临时 listener 与连接均已结束，没有占用 Host 端口。
+- **服务与范围：**Host `47321/47322` 无 listener，ADB reverse 为空。本轮没有启动 Host、操作 Keychain、配对或调用 RPC；没有新增 WSS/NSD/只读 RPC 证据。
+- **结论：**保留用户关于网络已一致的反馈；当前接口地址和双向 TCP 实测仍未证明设备可直连。此结果只描述本轮现场，不覆盖此前同网段成功的历史验收。A5 production Host 与直连配对/RPC 继续开放。
