@@ -595,3 +595,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络：**用户确认 Mac 与 Android 现处于同一网络。本次重新读取 Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`；Mac→手机、手机→Mac ping 各 2/2。`adb reverse --list` 为空。
 - **Host 状态：**Mac TCP `47321/47322` 均无 listener。该回读确认网络路径可达，不表示 Host 服务已启动；本次未触发新的 Keychain 操作，也没有生产 WSS、Bonjour/NSD、配对或 RPC 证据。最近一次隔离 Debug 现场样本仍停在 active identity 通用密码 `SecItemCopyMatching`；OSStatus/授权结果未观察到。CUA 对 `com.apple.SecurityAgent` 的控制限制仍是现有验收边界。
 - **范围：**没有修改 Keychain、ACL、签名或网络设置；未进行无障碍测试、NodeProbe/testnode 操作或 Android 应用清理。本节只更新网络和 listener 的当前观察；A5 production Host 与只读 RPC 验收仍开放。
+
+## 2026-11-24 A5 当前跨网段回读（10:05 Asia/Shanghai）
+
+- **网络现场：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.31.136/24`。Mac 到手机的路由走默认网关 `192.168.8.1`；Android 到 Mac 的路由走 `192.168.31.1`。双向 ICMP 均为 0/2，当前不能确认两端可直连。Android 仍通过 USB ADB 在线，系统为 Android 15/API 35/arm64/4 KB 页。
+- **服务状态：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空。本轮没有启动 Host、操作 Keychain 或进行配对；没有新增 WSS、NSD、邀请或 RPC 证据。
+- **当前结论：**这是一次新现场快照，取代 02:23 记录中“当前同网段可达”的状态判断；旧记录仍是当时有效的历史结果。没有更改任何网络设置。生产 Host 与只读 RPC 验收仍开放。

@@ -451,3 +451,4 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 - **A3.6 `libnode.so` 复合许可元数据候选（2026-11-24）：**基于 36 个有保留对象的静态归档推导 provisional SPDX expression，更新后的 98 组件候选 BOM 仅改变 `Node.js mobile runtime` 一行；70 个库中 68 个有 license 字段，JNI bridge 与 aggregate V8 两行仍未解析，composition 仍 incomplete。原始 linker map 未独立重读、LicenseRef 文本互操作和法律审查仍开放；A3.6 不关闭。详见 [A3.6 BOM 许可映射](android-a3-bom-license-research.md)。
 - **A5 网络一致性现场复读（本轮）：**Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 同网段，双向 ping 各 2/2，ARP 邻居已解析；`47321/47322` 无 listener、ADB reverse 为空。确认 IP 层可达；未启动 Host 或操作 Keychain，因此没有新增 production WSS、NSD、配对或 RPC 证据。详见 [A5 客户端现场记录](android-a5-android-client.md)。
+- **A5 最新网络复读（2026-11-24 10:05 Asia/Shanghai）：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.31.136/24`，跨网段路由分别经过 `.8.1` 和 `.31.1`，双向 ping 均 0/2；ADB USB 在线，但 reverse 为空，Host `47321/47322` 无 listener。此现场覆盖先前 02:23 的同网段快照；未启动 Host 或操作 Keychain，production WSS/配对/RPC 仍无当前验收证据。详见 [A5 当前客户端现场记录](android-a5-android-client.md)。
