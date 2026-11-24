@@ -429,3 +429,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B064 pressed 反馈修订后复验（2026-11-24）
 
 前次窗口帧没有显出稳定按下变化，后调整共享按钮为约 0.9 logical px 下沉，按住时减少暖光并移除 hover 提亮。深浅 Profile 中约 80 ms 短按都采到按住期帧，约 251 ms 长按各采齐 15 个时点；同次 hover baseline 对照显示两种主题均有清晰内压面。B064 的取消动作仍回到“扫码登录”，命中区域未随视觉位移变化。ThemeSwitch 来源逻辑不改，主题开关相关 27 项及玻璃按钮/动效 30 项回归、静态分析通过。仅签收 B064 的模拟流程与共享按压外观；其他按钮实例、连续整段动画和物理面板 FPS 未签收。证据见[验收记录](acceptance-record.md#2026-11-24-ui-67-b064-按下反馈修订后双主题复验)。UI-6.7 和阶段 0–6 仍部分完成。
+
+### UI-6.7 补证：B020 实鼠标导出打开原生保存面板（2026-11-24）
+
+深色隔离 Profile 中，B020 导出按钮经真实 CGEvent down/up（84.013 ms，释放后指针留在目标）打开 macOS Save sheet；AX 读到 `Documents` 与默认文件名，Cancel 后 surface 消失，未写文件。此前释放后移开指针的采样没有观察到 sheet；本轮确认物理回调可用，但不能由两次不同采样方式单独归因先前漏观察的原因。完整环境、离散帧、AX 观察及 SHA-256 见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-cgevent-实鼠标导出保存取消复验)。未单独签收 hover/pressed 视觉、连续动画、Flutter `FrameTiming` 或物理面板 FPS；UI-6.7 与阶段 0–6 仍部分完成。
