@@ -351,3 +351,8 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **A5 Host 面板测试：**全量首轮发现三个测试把语义标签当作可见文本查找、另有一个停机状态文案已变更。测试只改为查找 UI 实际显示的“连接向导”“轮换身份”“已停止”；产品代码和语义属性未改。`flutter test --no-pub test/mac_host_settings_panel_test.dart --reporter expanded` 5 项全部通过。
 - **非无障碍全量结果：**第一次未过滤的 `flutter test` 自动发现了用户已排除的 `accessibility_test.dart` 并执行其中一项；这是本轮误纳入的越界测试，后续没有重跑。随后显式排除该文件运行 app 测试集；A5 面板修正前为 365 通过、8 失败，修正后为 **368 通过、5 失败**（退出码 1）。剩余 5 项全部为 `TargetPlatform.macOS` 的玻璃文本对比（2 项）、减弱动态效果下玻璃开关文字（1 项）和宽屏布局断言（2 项）；本次全量执行中没有 Android 目标测试失败。
 - **范围与剩余项：**这不是全量 suite 通过。主工作区未提交的 `widget_test.dart`、玻璃对比测试与设计文件没有带入隔离 worktree；剩余 5 项未在本 Android 任务中改写。后续测试命令继续排除 `accessibility_test.dart`。本轮没有重建 APK/AAB、安装或操作手机；正式签名与 16 KB 真机门槛仍开放。
+
+## 2026-11-24 当前 HEAD 9a7e50c A8 产品输入身份复核（11:55 Asia/Shanghai）
+
+- **产品输入对照：**当前 `HEAD` 为 `9a7e50c0f07d37c009c95b16801acfad84eb18d3`。`app/lib`（tree `d0ebe510a651cd3d0e01c4465abfa98e0efe655b`）、`app/android`（tree `299e8a57fc45f8119dd0caa1b15b4fb3cc0a05f2`）、`app/pubspec.yaml`（blob `7a73244f5ce3c08e570eb9b92ced96a1bb3e69c7`）和根 `pubspec.lock`（SHA-256 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`）均与 A8 Release/4 KB 验收基线 `094c6a5` 一致；根 `pubspec.yaml` 也未变。`094c6a5..HEAD` 在 `app/` 下唯一差异是 `app/test/mac_host_settings_panel_test.dart` 的测试查找修正，不影响 Android Release 构建输入。工作区未提交的 `pubspec.lock` 修改不属于已提交输入。
+- **范围：**这仅确认已验收 Android 产品构建输入没有变化；本轮没有重新构建、运行测试、安装或操作手机。既有 Release 静态检查与 4 KB test-signed 冷启动证据可沿用到当前已提交产品输入。全量非无障碍 suite 仍有 5 个 macOS 目标失败；正式签名、16 KB 真机、A3.6 许可/来源闭包及 A5 production Host/配对/RPC 仍开放。

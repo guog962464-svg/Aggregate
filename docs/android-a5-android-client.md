@@ -628,3 +628,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **连通性：**两端默认网关各 ping 2/2；手机→Mac ICMP 为 0/2。两次新的临时 TCP 探测均超时：手机连接绑定 Mac `192.168.8.4` 的随机端口 `50794`；Mac 连接手机 `192.168.31.136:50872`。Mac Application Firewall 处于关闭状态。临时 listener 与连接均已结束，没有占用 Host 端口。
 - **服务与范围：**Host `47321/47322` 无 listener，ADB reverse 为空。本轮没有启动 Host、操作 Keychain、配对或调用 RPC；没有新增 WSS/NSD/只读 RPC 证据。
 - **结论：**保留用户关于网络已一致的反馈；当前接口地址和双向 TCP 实测仍未证明设备可直连。此结果只描述本轮现场，不覆盖此前同网段成功的历史验收。A5 production Host 与直连配对/RPC 继续开放。
+
+## 2026-11-24 A5 用户再次确认网络一致后的手机至 Mac TCP 复测（11:55–11:57 Asia/Shanghai）
+
+- **地址、路由与无线状态：**Mac Wi‑Fi 接口 `en0=192.168.8.4/24`、默认网关 `192.168.8.1`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页真机 `wlan0=192.168.31.136/24`、默认网关 `192.168.31.1`，两端不在同一 IPv4 子网。Android Wi‑Fi 报已连接；macOS `system_profiler` 报 Wi‑Fi Connected 但网络名为 `<redacted>`，`networksetup -getairportnetwork en0` 仍报未关联，故本轮无法确认两端 SSID 相同。两端 endpoint ICMP 均 0/3。
+- **TCP 预检：**Mac 在 `192.168.8.4:53987` 临时监听 7 秒，Android 通过 USB ADB 的 `toybox nc` 尝试连接，3 秒后超时；listener 未接受连接并自行退出。临时端口与 Host 端口分离，没有遗留 listener。该结果验证手机向 Mac 的当前直连路径，不外推为 WSS 握手结果。
+- **服务与范围：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空。本轮没有启动 Host、触发 Keychain、改网络设置、配对或调用 RPC，也没有切换手机前台。
+- **结论：**保留用户关于网络已一致的反馈；本机读到的子网与手机至 Mac TCP 仍不能证明当前直连可用。A5 production Host、Bonjour/NSD、直连 WSS、配对及 RPC 验收继续开放；既有历史成功记录保留为各自当时环境的证据。
