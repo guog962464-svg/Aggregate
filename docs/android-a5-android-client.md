@@ -599,5 +599,6 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 ## 2026-11-24 A5 当前跨网段回读（10:05 Asia/Shanghai）
 
 - **网络现场：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.31.136/24`。Mac 到手机的路由走默认网关 `192.168.8.1`；Android 到 Mac 的路由走 `192.168.31.1`。双向 ICMP 均为 0/2，当前不能确认两端可直连。Android 仍通过 USB ADB 在线，系统为 Android 15/API 35/arm64/4 KB 页。
+- **网关对照（10:10）：**Mac 网关 `192.168.8.1` 与手机网关 `192.168.31.1` 各自 ping 2/2；设备间双向 ping 仍为 0/2。两端各自的默认网关可达，跨网段设备互访未通；TCP WSS 可达性尚未实测，因为 Host 没有 listener。`networksetup -getairportnetwork en0` 报告 Mac 未关联 AirPort 网络，但 `en0` 仍为 active 且保有 `192.168.8.4/24`，实际 AP 关联状态存在未解释差异。
 - **服务状态：**Host TCP `47321/47322` 均无 listener，ADB reverse 为空。本轮没有启动 Host、操作 Keychain 或进行配对；没有新增 WSS、NSD、邀请或 RPC 证据。
 - **当前结论：**这是一次新现场快照，取代 02:23 记录中“当前同网段可达”的状态判断；旧记录仍是当时有效的历史结果。没有更改任何网络设置。生产 Host 与只读 RPC 验收仍开放。
