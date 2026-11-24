@@ -72,12 +72,12 @@
 | B057 | `app/lib/features/invocation/terminal_page.dart:419` | 功能调用：终端输出与输入 | 全内存终端无文本选择时“复制”呈禁用外观；未点击或读取终端剪贴内容。见 `112-terminal-stub-light.png` |
 | B058 | `app/lib/features/invocation/terminal_page.dart:427` | 功能调用：终端输出与输入 | 浅色全内存终端“粘贴”可见但未点击，避免读取系统剪贴板；仅有静态画面证据 `112-terminal-stub-light.png` |
 | B059 | `app/lib/features/invocation/terminal_page.dart:469` | 功能调用：终端输出与输入 | 浅色全内存终端仅验证 Tab 与 ↑ 两个按键控件产生本地交互；未逐项检查其余按键。见 `114-terminal-key-interaction-light.png` |
-| B060 | `app/lib/features/music/music_account_control.dart:105` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证管理账号按钮打开面板；Widget 状态回归通过，未验证原生玻璃外观或动效 |
+| B060 | `app/lib/features/music/music_account_control.dart:105` | 网易云音乐：账户/授权控制 | 深/浅色隔离 Profile 中由 AXPress 打开生产账户面板；只验路由，不作为入口按钮的物理动效证据。见 2026-11-24 B060/B063/B065 实窗补验 |
 | B061 | `app/lib/features/music/music_account_control.dart:200` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证退出确认取消后不调用退出；仅 Widget 行为证据 |
 | B062 | `app/lib/features/music/music_account_control.dart:206` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证确认退出后进入未登录态；仅 Widget 行为证据 |
-| B063 | `app/lib/features/music/music_account_control.dart:394` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
+| B063 | `app/lib/features/music/music_account_control.dart:394` | 网易云音乐：账户/授权控制 | 深/浅色实窗悬停可见暖色玻璃光效与“关闭账号面板”提示；实鼠标关闭后截图及 fresh AX 确认回到音乐页。未采连续按下帧或 FPS。见 2026-11-24 B060/B063/B065 实窗补验 |
 | B064 | `app/lib/features/music/music_account_control.dart:473` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证取消扫码后会话关闭；仅 Widget 行为证据 |
-| B065 | `app/lib/features/music/music_account_control.dart:480` | 网易云音乐：账户/授权控制 | 无账户面板截图 |
+| B065 | `app/lib/features/music/music_account_control.dart:480` | 网易云音乐：账户/授权控制 | 深/浅色实窗悬停从静置态显出玻璃表面；实鼠标刷新后 fresh AX 仍为“已登录 · 预览账号”（进程内 stub）。未采连续按下帧或 FPS。见 2026-11-24 B060/B063/B065 实窗补验 |
 | B066 | `app/lib/features/music/music_account_control.dart:488` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证确认退出并清除音乐会话授权；仅 Widget 行为证据 |
 | B067 | `app/lib/features/music/music_account_control.dart:497` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证切换账号先退出再开始扫码登录；仅 Widget 行为证据 |
 | B068 | `app/lib/features/music/music_account_control.dart:507` | 网易云音乐：账户/授权控制 | `music_account_control_test.dart` 验证扫码登录、取消与完成登录；仅使用内存测试 runtime |

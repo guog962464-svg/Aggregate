@@ -409,3 +409,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### 2026-11-24 玻璃按钮待机动效成本补验
 
 隔离 Profile A/B 找到两项可控成本：闲置时仍运行的共享 Ticker 与动态图标逐帧高斯模糊。动态图标保留外扩抗锯齿点阵光晕，跳过每帧 `MaskFilter.blur`。交互过渡仍启用逐显示帧 Ticker，静置使用 33 ms Timer；旧 100 ms Timer 的 `_lastDelivery` 重复限速会把实际通知降至约 200 ms，已移除。原 B020 单页面静置 `top` 方向性结果和源码 SHA 仍保留在[首次诊断记录](acceptance-record.md#2026-11-24-ui-6-按钮待机动效-cpu-诊断与优化)，但该 9 秒单轮结果不代表最终节拍。之后对 12 种生产按钮变体的隔离夹具在浅/深主题各完成三轮 30 秒 Profile：Flutter 提交帧估算约 30.30 Hz，build/raster P95 均低于 16.667 ms、超预算帧为零；进程 CPU 中位数约 31.8%（深）与 28.7%（浅）。新增 33 ms 连续通知回归，按钮/点阵/主题开关回归与静态分析通过；太阳/月亮组件和状态映射未改。完整环境、六轮数据、证据 SHA 和限制见[最终节拍复验](acceptance-record.md#2026-11-24-ui-6-按钮待机节拍双主题多轮-profile-复验)。`Flutter.Frame` 是 build/raster timing，不是 display-present/物理面板 FPS；该 12 按钮夹具也不能代替实际产品页面或用户对动态质感的签收。此项只通过 12 按钮双主题待机 Profile 子场景，UI-6.1/6.2 与阶段 0–6 继续部分完成。
+
+### UI-6.7 补证：音乐账户面板 B060/B063/B065（2026-11-24）
+
+深/浅色隔离 Profile 实窗确认 B060 可打开生产账户面板；B063 悬停光效/提示及实鼠标关闭回页；B065 悬停玻璃表面及实鼠标刷新后的内存预览账号 AX 回读。B060 只用 AXPress 验路由，刷新仅作用于进程内 stub。没有连续按下帧、Flutter FrameTiming 或物理面板 FPS，UI-6.7 仍部分验收。完整环境和逐图 SHA 见[验收记录](acceptance-record.md#2026-11-24-ui-67-b060b063b065-音乐账户面板深浅主题实窗补验)。
