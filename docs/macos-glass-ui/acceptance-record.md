@@ -2273,3 +2273,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 结论：B020 的物理鼠标导出回调和原生 Save sheet 打开/取消路径通过。此前“点击后未观察到 sheet”的重试在释放后移动了指针；本轮保持指针在目标时能观察到 sheet，但两轮的差异不足以证明指针移动是先前漏观察的唯一原因。此结果不再作为导出按钮产品故障证据。
 - 证据：[WindowServer 离散时序与帧索引](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-press-followup/stay-pointer/export-timing.json>) SHA-256 `a3c2cf50ede06c093dc94bbf431869941f86fc2fe7e0a75dbe6c50cfccb21848`；[Save sheet 窗口帧（约 +648 ms）](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-press-followup/stay-pointer/export-0650ms.png>) SHA-256 `1bbcef8a817700058e150b7bb57c23e5a7216570523bf6fc6eb30f4cfff375b1`；[AX 面板与取消观察记录](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-press-followup/stay-pointer/save-sheet-observation.json>) SHA-256 `98fe8aba1024dc46ac93f9a8d659654205ff14dec0479b350fc2462161ced71e`；[采样 helper 源码](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-press-followup/stay-pointer/press_capture_stay.swift>) SHA-256 `daf9589962338ace72ed1b3650d94e3adcca3d27d67c72aa62ba8e8363bbc893`。
 - 限制：该静置帧在指针进入前采集，不能作为同次 hover baseline；按钮 hover 与 press 未隔离签收，也没有连续动画、Flutter `FrameTiming` 或物理面板 FPS。`SCStreamUpdateFrameDisplayTime` 是 WindowServer 时间戳。UI-6.7 仍部分验收，阶段 0–6 继续未完成。
+
+### 2026-11-24 UI-6.7 共享玻璃按钮按下/释放行为回归
+
+- 回归：`app/test/glass_action_button_test.dart` 新增真实 Widget 指针 down/up 用例。按住 39 ms 时读取 `TextButton` 的屏幕位置，确认共享按钮下沉 `0.5–0.9 logical px`；按住阶段业务回调仍为 0，释放后恰好调用一次，并在接下来 78 ms 内回到初始位置。该测量覆盖 `GlassActionButton` 共用压下变换，不改变按钮实现或主题切换逻辑。
+- 验收：`flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart` 共 31 项通过；`flutter analyze --no-pub` 无问题；`dart format --output=none --set-exit-if-changed test/glass_action_button_test.dart` 和 `git diff --check` 通过。
+- 边界：这是 Flutter Widget 层的输入与几何回归，不是 Profile 窗口截图、独立 hover/press 图像对照或 display-present 证据。B020 的原生实鼠标动作仍通过，但 hover 与 pressed 视觉仍未隔离签收；UI-6.7 和阶段 0–6 继续未完成。

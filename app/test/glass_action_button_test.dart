@@ -466,6 +466,50 @@ void main() {
     semantics.dispose();
   }, variant: _macOS);
 
+  testWidgets('pressed action visibly depresses and releases after one tap', (
+    tester,
+  ) async {
+    var calls = 0;
+    const actionKey = ValueKey('pressed-action');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassActionButton(
+              key: actionKey,
+              label: '导出动作清单',
+              glyph: GlassGlyph.save,
+              size: GlassButtonSize.compactAction,
+              onPressed: () => calls++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final button = find.descendant(
+      of: find.byKey(actionKey),
+      matching: find.byType(TextButton),
+    );
+    expect(button, findsOneWidget);
+    final idleTop = tester.getTopLeft(button).dy;
+    final gesture = await tester.startGesture(tester.getCenter(button));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 39));
+
+    final pressedTop = tester.getTopLeft(button).dy;
+    expect(pressedTop - idleTop, inInclusiveRange(.5, .9));
+    expect(calls, 0);
+
+    await gesture.up();
+    await tester.pump();
+    expect(calls, 1);
+    await tester.pump(const Duration(milliseconds: 39));
+    expect(tester.getTopLeft(button).dy, lessThan(pressedTop));
+    await tester.pump(const Duration(milliseconds: 39));
+    expect(tester.getTopLeft(button).dy, closeTo(idleTop, .01));
+  });
+
   testWidgets('busy and disabled states suppress the operation', (
     tester,
   ) async {
