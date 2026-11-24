@@ -71,6 +71,10 @@
 - 整轮 11 个 npm 操作均能写出 app-private JSON 结果。首轮验证器把 `npmResult` 到达后立即读取 Logcat，`0/11` 终态统计有时序竞争，不计为有效结果；修正为等待最多 3 秒后，下一轮日志确认普通 registry 安装和离线安装都收到 Messenger `kind=3`。清除 app-private npm CLI 目录后再次运行 `npm --version`，资源重拷贝与终态 Messenger 结果也通过。另一轮在本地 tarball 的 `script-ignored` 阶段 Service 断开，单独运行精确授权的 `script-allowed` 也写出 npm 127 结果后触发 Android tagged-pointer fatal；根因未确认。当前证据指向本地生命周期脚本样本附近的不稳定，不能泛化为全部 npm 操作都没有 Messenger 终态。
 - **验收结论：**A4.4 的 Debug 可行性样本完成，证明受限纯 JS 安装路径在单台 4 KB arm64 设备可工作，也明确暴露脚本执行和本地 tarball 样本附近的 Service 稳定性缺口。手机端 npm 与任意 CLI 不进入产品能力；后续产品白名单/Host/不支持决策留在 A4.7。未覆盖 Play 预审、16 KB 真机、其他 ABI、缓存配额/清理策略或长期稳定性。
 
+### 2026-11-24 当前 Node 24.22.3 Release 单动作复验
+
+当前 JNI argv 修正版与 Node 24.22.3 候选构建的一次本地 `script-ignored` 安装返回 npm 0、marker 不存在，且收到 Messenger `kind=3` 与 `kind=5`；本轮没有复现历史 pointer-tag fatal。原 2026-11-17 Release APK 已不可用，故不能对旧故障根因定论；该单动作结果也不代表完整 npm suite 或长期稳定性。详见 [当前 JNI 代码下的 Release 复验](android-a4-npm-install-research.md#2026-11-24-当前-jni-代码下的-node-24223-release-script-ignored-复验)。
+
 ## A4.5 nodejs-mobile API 文档与真机边界（2026-11-12）
 
 - LGE AN10、Android 15/API 35、arm64、4 KB 页上的 8 个固定 Debug 样本全部完成，Node v24.22.1 / `process.versions.mobile=24.22.1-0`；每项均写出结果并收到 Messenger `kind=3` 终态。探针结束后卸载。该结果不覆盖其他设备、ABI、Node 构建或 16 KB 页。
