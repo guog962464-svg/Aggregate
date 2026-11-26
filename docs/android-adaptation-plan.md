@@ -532,3 +532,9 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 ## 2026-11-26 A5 当前 LAN TCP 前置条件复核
 
 Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 Android ADB shell 到绑定 Mac Wi‑Fi 地址的一次性 TCP listener 完成请求/响应，证明当前直连 TCP 可达。该探针不经过 Aggregate App，也不代表 Host/WSS、NSD、配对或 RPC 验收。当前没有 Host listener；`active-identity` Keychain 数据读取/解密挂起仍是 A5 的实际阻塞。详见 [A5 同网段 TCP 直连预检复核](android-a5-android-client.md#2026-11-26-a5-同网段-tcp-直连预检复核)。
+
+## 2026-11-27 A3.6/A4 fellow99 Node + npm/CLI 隔离集成验收
+
+- 在 detached 基线 `b7d2a26` 的临时 arm64 APK 中，fellow99 Node 26.13.0 runtime 与匹配 CLI AAR 的 Gradle 集成构建通过；APK 79,830,343 B，SHA-256 `ab0a6883f786e3a16387f78eb1e639026e4728e6b1d57f2be3dff4eee5253438`。4 个 ELF 的全部 `PT_LOAD` 静态 16 KB 对齐及 `zipalign -c -P 16 4` 通过。
+- LGE AN10 Android 15/API 35、arm64、4 KB 真机上，JNI `node::Start`、standalone Node CLI、npm 11.20.0，以及一项预置本地 fixture + 精确 `file:` allowlist lifecycle 均成功。结果只适用于临时 probe、该固定 fixture 和该设备；不构成 Aggregate 产品集成，也没有验证 16 KB 系统运行。
+- 候选仍比 Node 官方 26.13.1 安全发行落后一补丁；provenance、NOTICE/许可证/SBOM 闭包、正式签名、包体成本审查及 16 KB 真机仍开放。**A3.6/A4 不关闭，A4.7 的产品端 npm/CLI 能力边界不变。**详见 [A4 详细记录](android-a4-progress.md) 和 [运行时调查](android-a3-maintained-runtime-survey-2026-11-20.md)。
