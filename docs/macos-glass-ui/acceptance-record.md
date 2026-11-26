@@ -2655,3 +2655,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 在当前提交 `e107a039fa4caaa8ed8606dedf58ee97182aa52c` 的 `app/` 执行 `flutter test --no-pub test/phase4_common_ui_test.dart test/page_frame_test.dart test/page_state_layout_test.dart test/connections_page_lazy_test.dart test/music_design_geometry_test.dart test/macos_settings_theme_switch_geometry_test.dart`，18 项全部通过。覆盖公共页面骨架与状态区、桌面/紧凑连接列表懒构建、音乐设计几何，以及主题开关当前窗口尺寸约束。
 - 本轮只运行 Widget/布局回归；没有启动 Aggregate 或采集桌面截图，系统前台保持 Google Chrome。用户未提交的预览设计、`widget_test.dart`、锁文件和 `test/failures/` 未触碰。
 - 边界：通过结果确认所测 Flutter 布局和几何断言；不覆盖原生窗口像素、连续 resize/滚动帧时、VoiceOver 或网页参考同步逐帧对比。UI-4 既有完成状态不变，UI-6.8 仍部分验收。
+
+### 2026-11-27 UI-5.2 离屏页面矩阵复核
+
+- 修复 `app/tool/ui_review_test.dart` 中已过期的预览交互定位：音乐首页宽屏搜索提交改用 `music-search-submit` key，首页播放动作按实际 `ValueKey` 定位；能力目录运行结果继续按其玻璃图标按钮的 tooltip 定位。没有修改产品控件或业务回调。
+- 使用普通测试执行六组 2×（800×600、1024×768、1440×900 × 浅/深主题），路由与点击流程 6 项通过。另以临时诊断副本跳过截图比较，六组 1× 路由/点击流程 6 项通过；临时副本已删除。两组共证明 12 个组合的 Flutter 离屏流程和布局没有抛错。
+- 当前正式金样比较仍失败。首次检查的 800×600 浅色音乐首页图与现有 `work/ui-review/` 金样差异 77.47%；该差异出现于交互之前的首页截图，旧定位器修复不能解释它。没有运行 `--update-goldens`，也没有批量覆盖金样。测试输出位于忽略目录 `app/tool/failures/`，用于后续逐图审阅。
+- 结论：按当前页面与设计稿逐张确认并决定哪些金样应更新前，UI-5.2 保持部分验收。此轮没有启动 Aggregate、打开桌面窗口或截图；前台保护要求继续有效。

@@ -69,14 +69,17 @@ void main() {
             await checkpoint('player');
 
             await tester.enterText(find.byKey(const Key('music-search')), '示例');
-            await tester.ensureVisible(find.byTooltip('搜索歌曲'));
+            final submitSearch = find.byKey(const Key('music-search-submit'));
+            await tester.ensureVisible(submitSearch);
             await tester.pumpAndSettle();
-            await tester.tap(find.byTooltip('搜索歌曲'));
+            await tester.tap(submitSearch);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
             expect(find.text('歌曲 · 2 首'), findsOneWidget);
             await checkpoint('player-results');
-            final homePlay = find.byTooltip('播放 示例歌曲');
+            final homePlay = find.byKey(
+              const ValueKey('music-search-result-action-播放 示例歌曲'),
+            );
             await tester.ensureVisible(homePlay);
             await tester.tap(homePlay);
             await tester.pump(const Duration(milliseconds: 300));
