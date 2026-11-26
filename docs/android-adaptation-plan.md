@@ -632,3 +632,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 复核 Mac 192.168.8.4/24 与手机 192.168.8.7/24 及 wlan0 直连路由后，构建并启动当前工作树的 Debug Host UI。安全字段凭据提交后，现有 TLS 登录钥匙串提示在尝试“允许”和“始终允许”后仍未消失。没有观察到 Host listener、WSS、NSD、配对或只读 RPC；提示随后关闭，持久 ACL 状态未知。
 - 当前同网段路径已满足前置条件；现有 Host 身份钥匙串访问结果未能确认，生产 Host 未启动。A5.4/A5.5 保持开放。详情见 [A5 same-subnet Debug Host retry](android-a5-android-client.md#2026-11-27-a5-same-subnet-current-worktree-debug-host-retry-0617-asiashanghai)。
+
+## 2026-11-27 A3.6 Node 26.13.1 compile-input closure follow-up
+
+- 对现存候选的 3,654 个 Node target object 编译命令逐一运行依赖模式 -M，补足原始 -MMD 未包含的系统头文件。8,760 个唯一输入全部存在并有 SHA-256；覆盖 Node 源码、生成构建输入和 NDK 30 sysroot/toolchain。
+- 这只关闭已链接对象的编译器 include-dependency inventory 缺口，不是干净源码构建或 attestation。完整 code-generator 输入和 NDK implicit archive member source map 仍未闭合；法务/许可、正式签名、产品集成和 16 KB 真机也仍开放。A3.6/A4.7 不关闭。详见 [Node 26.13.1 compile-input inventory](android-a3-runtime-research.md#2026-11-27-node-26131-target-object-compile-input-inventory-0646-asiashanghai) 与 [完整清单](android-a3-node26.13.1-compile-input-inventory.json)。
