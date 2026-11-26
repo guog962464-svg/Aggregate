@@ -465,3 +465,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B018 浅色 Profile 按下态（2026-11-26）
 
 浅色隔离 Profile 对 B018“新增动作”采集 hover-only 与真实 CGEvent press：按住 85.041 ms，hover 与 press 均有 14/15 个离散目标帧有效（分别缺 +16.7 ms、+0 ms），有效帧状态码均为 0。hover +200 ms 按钮偏暖；按下后实际显示于 +41.418 ms 和 +76.872 ms 的两帧表面更中性、暖光收敛。动作只加入未保存草稿；取消后返回管理页，重开仅有 `version`，Profile PID 16044 已优雅退出。选定按下期帧和取消路径通过；连续回弹、完整动画、Flutter FrameTiming 和物理面板 FPS 未签收。环境、帧证据及 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b018-浅色-profile-按下态复验)。UI-6.7 与阶段 0–6 继续部分验收。
+
+### UI-6.7 补证：B022/B023 浅色 Profile 按下态与保存回读（2026-11-26）
+
+B022“取消”真实 CGEvent 按住 84.611 ms，hover 14/15（缺 +0 ms）、press 15/15；+55.204/+72.091 ms 按住帧比 hover 更中性、暖光收敛，释放后 fresh AX 回到管理连接详情且三条示例连接未变。B023“保存动作”真实 CGEvent 按住 81.407 ms，hover 14/15（缺 +0 ms）、press 15/15；+52.708/+70.990 ms 按住帧也比 hover 更中性。保存只更新 `Ui6InspectionRuntime` 的进程内清单；重开后 JSON AX value 含 `version` 与 `action1`，原生菜单截图同时显示两个选项；隔离 PIDs 16498 与 16992 均优雅退出。两按钮浅色按下期选定帧、B022 取消路径及 B023 内存保存回读通过；释放回弹、完整连续动画、Flutter FrameTiming 和物理面板 FPS 未签收。完整环境、截图和 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b022b023-浅色-profile-按下态与保存回读)。UI-6.7 与阶段 0–6 继续部分验收。
