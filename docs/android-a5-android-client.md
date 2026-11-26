@@ -678,3 +678,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **本机能力：**只读调用 `LAContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error:)` 返回可用，`biometryType` 为 `.touchID`；这是能力探测，没有发起认证或访问钥匙串。Apple 将 `.touchID` 定义为设备支持 Touch ID，见 [`LABiometryType`](https://developer.apple.com/documentation/localauthentication/labiometrytype)。
 - **可行方式：**Apple 的 Keychain 生物识别流程要求项目具备相应 access control，并可通过 `LAContext`/`kSecUseAuthenticationContext` 提供本地认证上下文；`biometryCurrentSet` 会在当前已登记指纹集合改变时使项目失效。参见 [Accessing Keychain Items with Face ID or Touch ID](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id)、[`kSecUseAuthenticationContext`](https://developer.apple.com/documentation/security/ksecuseauthenticationcontext) 与 [`biometryCurrentSet`](https://developer.apple.com/documentation/security/secaccesscontrolcreateflags/biometrycurrentset)。
 - **结论与边界：**当前弹出的“登录”钥匙串密码/ACL 对话框不能现场切换为 Touch ID；应用需要设计并实现受生物识别保护的项目及迁移流程。迁移必须保留现有 Host ID、证书 pin 与配对授权的语义，不能通过删除旧项目或自动轮换身份来规避授权。本轮仅做源码与官方 API 文档核对，没有更改代码、Keychain、Host 身份或用户配对数据。
+
+## 2026-11-26 A5 用户反馈网络一致后的当前路由与 TCP 复核（18:22–18:26 Asia/Shanghai）
+
+- **地址与路由：**Mac `en0=192.168.10.239/24`、路由到手机 `192.168.8.7` 经 `192.168.10.1`；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机 `wlan0=192.168.8.7/24`，路由到 Mac `192.168.10.239` 经 `192.168.8.1`。两端当前不在同一 IPv4 子网；本轮未读取 SSID，不能据此判断是否连接同一 Wi‑Fi。
+- **TCP 预检：**Mac 临时在 `192.168.10.239:57355` 监听 15 秒；手机经 `toybox nc -w 4` 连接该端点超时，listener 未接受连接并自动退出。此为普通 TCP 预检，不是 Host/WSS 测试。
+- **清理与范围：**确认测试端口及 Host `47321/47322/47323` 无 listener，ADB reverse 为空。本轮未启动 Host、触发 Keychain、修改权限/网络、配对或调用 RPC；未启动 NodeProbe/testnode、未切换手机前台。
+- **结论：**本轮地址、路由与 TCP 结果尚未证明 Mac 与手机可直连；用户关于网络一致的反馈保留为用户报告，与本次实测分开记录。A5 direct LAN、Bonjour/NSD、配对及 RPC 验收继续开放。
