@@ -484,6 +484,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ## 2026-11-26 A3.6 与 A5 现场复核
 
+- **A3.6 fellow99 运行时/CLI 发行新鲜度复核（2026-11-26）：**Node 官方 26.13.1 LTS 是 11 月 11 日安全发行，包含多项高危 TLS 修复；fellow99 Runtime Releases、main `runtime.lock.json` 仍显示 Node 26.13.0 为 Latest/active。配套 CLI Releases 仍为 v26.13.0，README 明确尚未发布 Maven Central。Runtime README 写 NDK r28/`--with-intl=none`，而活动 runtime lock 记录 NDK r30/`small-icu`、关闭 Temporal；此前已检查的 AAR 与 lock 哈希/元数据一致，故此处记录为上游文档差异待澄清。没有下载或构建新资产，本次仅复核官方 Node 与两个上游仓库页面；该候选仍不满足当前安全版本与发行闭环，不关闭 A3.6/A4。详见 [fellow99 发行新鲜度复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-26-fellow99-android-runtime-and-npm-cli-release-freshness-recheck)。
+
 - **A5 Release Host 钥匙串输入边界复核（19:06–19:08 Asia/Shanghai）：**既有 Release `Aggregate.app` 的设置页可经 `agent-desktop` 操作；点击“启动 Host”后，macOS `SecurityAgent` 为 Host TLS 密钥弹出登录钥匙串授权。`agent-desktop` 可读该弹窗，但安全文本框输入返回 `POLICY_DENIED / delivery=not_delivered`；CUA `getState()` 再次超时。未输入密码或选择任何授权按钮；关闭本轮 Release 实例后弹窗消失，47321/47322/47323 均无监听、ADB reverse 为空。没有 WSS、Bonjour/NSD、邀请、配对或 RPC 新证据；A5 仍开放。详见 [Release Host 与钥匙串输入边界复核](android-a5-android-client.md)。
 
 - **A3.6 发行新鲜度：**官方当前安全线为 Node 26.13.1 与 24.22.3；已核对的 nodejs-mobile/fogtape 移动发行仍落后于对应安全线或处于预发布状态，Termux 24.22.3 包不是嵌入式 `libnode.so` SDK，Towartz 26.13.1 是无 npm 的独立可执行文件。没有找到可据此关闭 A3.6 的维护方 Android 嵌入发行；本轮仅复核公开发行元数据，没有下载、构建或运行设备。详见 [A3.6 发行复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-26-maintained-android-node-runtime-freshness-recheck)。
