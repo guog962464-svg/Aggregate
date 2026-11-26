@@ -2459,3 +2459,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - `theme_switch_simulation.dart` 并非零差异。提交 `052a92d` 为匹配用户指定网页的 `requestAnimationFrame` 节奏，将固定 60 Hz 累积步改为按实际帧 delta 推进并限制每次最多 `1/30 s`；`b010bd7` 按同一参考移除长暂停后直接吸附端点的行为。它们改变时间积分方式，属于显式授权的动画时钟调整；控件手势入口、拖动映射、点击/拖动方向、端点与主题映射、只在释放时提交、取消回滚、反向拖动不在途中提交及回调语义保持。完整边界见 `stage-0-baseline.md` 与 UI-6.8 记录。
 - 离屏回归 `flutter test --no-pub test/glass_theme_switch_test.dart test/macos_reduce_motion_test.dart`：13/13 通过，覆盖实时拖动释放提交、途中反向、指针取消恢复端点、外部主题更新与取消、隐藏应用取消拖动及 Reduce Motion 状态。此次同时把 Reduce Motion 测试选择器更新为当前设置说明，并同步文字描边终点 `0.55`。
 - 验收限制：这些是 Flutter Widget/模拟器回归，不证明网页与应用共享时钟、原视频逐帧相位、display-present 物理帧或真实面板流畅度；UI-6.8 与阶段 0–6 仍未整体完成。本次复核没有启动应用窗口或截取屏幕。
+
+
+<a id="ui-53-shift-tab-full-keyboard-relaunch-2026-11-26"></a>
+### 2026-11-26 UI-5.3 全键盘控制重启后 Profile 补测（保持未验）
+
+- 环境：Flutter 3.47.8 macOS Profile，入口 lib/preview/ui7_design_preview_main.dart 委托到 ui6_inspection_main.dart，使用 Ui6InspectionRuntime 进程内样例；窗口 AX bounds 为 800×632 pt。未访问用户连接或触发业务操作。
+- 偏好与输入：测试前 AppleKeyboardUIMode=0。临时写为 2 并读回后，先在当前 Profile、再在重启后的新 Profile 复测。agent-desktop 将 AX 焦点设到“搜索所有功能”后发送 Tab，完整 AX 快照仍报告搜索按钮 focused；将焦点设到“添加连接”后发送 Shift+Tab，快照仍报告“添加连接” focused。另在初始值为 0 的首次运行中，System Events 发送 Shift+Tab 后 AX 仍报告“添加连接” focused。
+- 证据存在冲突：首次运行 Shift+Tab 后捕获的截图中焦点环看起来位于“示例 Git CLI”，而同一时段 AX 快照报告“添加连接”。截图 [shift-tab-after.png](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui53-fullkey-relaunch/shift-tab-after.png>) SHA-256 2cc30295ed034bb0305a13914f5ca072ae6dbd89f8a723276571cbeb02e87212。键盘命令结果为 delivered_unverified；本轮没有在生产壳层添加 HardwareKeyboard 事件记录，因此不能证明 Flutter 实际收到 Shift 修饰键。
+- 结论：当前证据不能判 UI-5.3 通过，也不足以判定应用反向遍历失败；该项保持未验。Profile 已退出，AppleKeyboardUIMode 恢复为原值 0，随后确认没有 Aggregate 进程且系统前台为 Google Chrome。
