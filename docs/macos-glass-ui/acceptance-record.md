@@ -2468,3 +2468,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 偏好与输入：测试前 AppleKeyboardUIMode=0。临时写为 2 并读回后，先在当前 Profile、再在重启后的新 Profile 复测。agent-desktop 将 AX 焦点设到“搜索所有功能”后发送 Tab，完整 AX 快照仍报告搜索按钮 focused；将焦点设到“添加连接”后发送 Shift+Tab，快照仍报告“添加连接” focused。另在初始值为 0 的首次运行中，System Events 发送 Shift+Tab 后 AX 仍报告“添加连接” focused。
 - 证据存在冲突：首次运行 Shift+Tab 后捕获的截图中焦点环看起来位于“示例 Git CLI”，而同一时段 AX 快照报告“添加连接”。截图 [shift-tab-after.png](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui53-fullkey-relaunch/shift-tab-after.png>) SHA-256 2cc30295ed034bb0305a13914f5ca072ae6dbd89f8a723276571cbeb02e87212。键盘命令结果为 delivered_unverified；本轮没有在生产壳层添加 HardwareKeyboard 事件记录，因此不能证明 Flutter 实际收到 Shift 修饰键。
 - 结论：当前证据不能判 UI-5.3 通过，也不足以判定应用反向遍历失败；该项保持未验。Profile 已退出，AppleKeyboardUIMode 恢复为原值 0，随后确认没有 Aggregate 进程且系统前台为 Google Chrome。
+
+<a id="ui-53-native-shift-tab-2026-11-26"></a>
+### 2026-11-26 UI-5.3 原生 Shift-Tab 实际焦点闭环补验
+
+- 环境：Flutter 3.47.8 macOS Profile，隔离入口 `ui53_keyboard_probe_main.dart` 委托到 `ui6_inspection_main.dart`，bundle `io.github.guog962464.aggregate.ui5shifttabprobe`，使用 `Ui6InspectionRuntime` 进程内样例。临时非消费型探针只记录 `HardwareKeyboard` 键事件和 Flutter `FocusManager.primaryFocus` 变化；没有访问用户连接、触发业务回调或改动生产入口。
+- 输入与焦点：全键盘控制临时设为 `AppleKeyboardUIMode=2`。从 Flutter 自己的 primary focus 开始，用 System Events 发送 Tab：焦点环到全局搜索；再按 Tab 到“添加连接”；随后发送 Shift-Tab 返回全局搜索。Flutter 键日志观察到 Shift Left down、Tab down/up（Tab 期间 Shift 状态为 true）以及 Shift Left up；本次不使用 AX SetFocus 作为起点或焦点移动判断。三张截图的可见焦点环与这一路径一致。
+- 结果：原生双向焦点路径通过。结合既有 `glass_action_button_test.dart` 的完整 Tab/Shift-Tab 顺序、单次键盘激活，以及 `widget_test.dart`/`capability_run_page_test.dart` 对 ⌘K、⌘↵确认与 Esc 恢复焦点的回归，UI-5.3 验收通过。较早的“未验”记录描述的是输入通道失去 Shift 或 AX/Flutter 焦点不一致；本条为后续有效补验。
+- 限制与清理：本轮反向遍历运行在安全隔离的 `Ui6InspectionRuntime` Profile 中，不代表真实服务后端；此前生产应用壳层 Profile 已验证前向 Tab。本轮关闭 Profile 后确认没有 Aggregate 进程、系统前台恢复 Google Chrome，`AppleKeyboardUIMode` 恢复为原值 `0`；临时探针源码已删除。
+- 证据：[Tab 后搜索](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui53-native-shift-back/01-search-after-tab.png>) SHA-256 `c93c3f31f8d56f49ae2409667df5513e37bf4973fe1ac808f2b1c059813db9aa`；[Tab 后添加连接](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui53-native-shift-back/02-add-after-tab.png>) `f8b5b2d09919e59c0909e5bb4fd140e1579683d258e7721e5a1dc90eca19af2a`；[Shift-Tab 返回搜索](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui53-native-shift-back/03-search-after-shift-tab.png>) `ddb37e9a05ed26ac5215cdf7c1095476eb7cc718ba1dc1d70093f57961866aea`。截图保存在用户级视觉证据目录，不提交到仓库。
