@@ -2624,3 +2624,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 本轮只读检查到当前前台应用为 Google Chrome，Aggregate 与截图进程均未运行。这只证明检查时没有遗留的 Aggregate 窗口，不用于否认之前发生过的遮挡。
 - 当前 `agent-desktop` 2.6 命令行拒绝 `sandbox` 子命令，因此没有可用的隔离 macOS 桌面。之后本轮未启动 App，也未采集桌面截图；仅运行离屏 `glass_action_button_test.dart` 与 `accessibility_test.dart`，19 项通过。
 - 后续严格按本文件前台保护流程执行。在隔离显示环境准备好之前，UI-5.4/5.7 原生 AX/VoiceOver、UI-6 的原生视觉与性能补验保持未验证；离屏测试结果不替代这些验收。
+
+### 2026-11-27 UI-6.8 当前分支离屏回归复核
+
+- 在 `app/` 执行 `flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart test/theme_switch_calibration_test.dart test/theme_switch_optics_test.dart test/macos_settings_theme_switch_geometry_test.dart`，28 项通过。该组覆盖开关交互/取消、实时积分、粒子模拟与校准、离屏光学探针，以及 480×224 pt 设置页几何。
+- `flutter analyze --no-pub` 通过，无问题。检查期间没有启动 App 或桌面截图；前台保护复核仍为 Google Chrome，Aggregate 进程已退出。
+- 这些结果确认当前 Flutter 状态模型、离屏渲染和几何回归；它们不证明 macOS WindowServer 连续帧、物理显示呈现、VoiceOver 或原生性能指标通过。UI-6.8 与阶段 0–6 保持部分验收。
