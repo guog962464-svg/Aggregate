@@ -439,6 +439,11 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 同一暗色隔离 Profile 先做 hover-only，再以指针留在按钮上的首帧作 press baseline；真实 CGEvent down/up 按住 `83.482 ms`。按钮中心来自 fresh AX bounds `(654,343,89,40)`；WindowServer 目标帧中 13/15 有效，缺 `+83.3 ms`、`+250 ms`，结束时隔离 Profile 仍在前台。按住 `+55.794 ms` 的按钮面暖光收敛并变暗；按钮 178×80 px 区域平均绝对 RGB 差异 `0.11732`，整窗 `0.00118`、邻区 `0.00000`，只作为局部变化佐证，不是视觉阈值。物理导出打开原生 Save 面板后取消，默认文件未写入。证据及 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b020-暗色-profile-按下视觉实窗补验)。这只签收 B020 暗色按住期选定帧；释放后面板遮暗窗口，release 曲线、连续动画、Flutter `FrameTiming` 与物理面板 FPS 仍未验，UI-6.7 和阶段 0–6 继续部分完成。
 
 
+### UI-6.7 补证：B019 浅色 Profile 按下态（2026-11-26）
+
+浅色隔离 Profile 对 B019“导入”采集 hover 与真实 CGEvent press：按住 85.049 ms，press 14/15 个离散目标帧有效（缺 +66.7 ms）；+58.133 ms 按住帧比 hover baseline 更暗、暖光收敛，+77.090 ms 帧仍在按下窗口。hover 11/15（缺 +0/+450/+550/+650 ms）。物理导入打开 Open sheet，AX 确认后取消，没有选择/读取文件。B019 浅色按下期选定帧与取消路径通过；完整动画、Flutter FrameTiming 和物理面板 FPS 仍未验。证据与 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b019-浅色-profile-按下态复验)。UI-6.7 与阶段 0–6 继续部分验收。
+
+
 ### UI-6.7 补证：B020 浅色 Profile 按下态（2026-11-26）
 
 浅色隔离 Profile 对 B020“导出”采集 hover 与真实 CGEvent press：按住 85.043 ms，press 13/15 个离散窗口目标帧有效（缺 +66.7/+333 ms）；+57.161 ms 按住帧比同轮 hover baseline 更暗、暖光收敛，+75.641 ms 帧仍在鼠标按下期间。导出打开原生 Save sheet，AX 确认后取消，未选路径或写文件。B020 浅色按下期选定帧与取消路径通过；释放回弹、完整按压曲线、Flutter FrameTiming 和物理面板 FPS 仍未验。证据及 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b020-浅色-profile-按下态复验)。UI-6.7 与阶段 0–6 继续部分验收。
