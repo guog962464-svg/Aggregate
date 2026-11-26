@@ -685,3 +685,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **TCP 预检：**Mac 临时在 `192.168.10.239:57355` 监听 15 秒；手机经 `toybox nc -w 4` 连接该端点超时，listener 未接受连接并自动退出。此为普通 TCP 预检，不是 Host/WSS 测试。
 - **清理与范围：**确认测试端口及 Host `47321/47322/47323` 无 listener，ADB reverse 为空。本轮未启动 Host、触发 Keychain、修改权限/网络、配对或调用 RPC；未启动 NodeProbe/testnode、未切换手机前台。
 - **结论：**本轮地址、路由与 TCP 结果尚未证明 Mac 与手机可直连；用户关于网络一致的反馈保留为用户报告，与本次实测分开记录。A5 direct LAN、Bonjour/NSD、配对及 RPC 验收继续开放。
+
+## 2026-11-26 A5 网络再次一致后的双向 ping 与直连 TCP 预检（18:57 Asia/Shanghai）
+
+- **设备与地址：**Mac `en0=192.168.8.4/24`、默认网关 `192.168.8.1`；LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096` 真机 `wlan0=192.168.8.7/24`。Android 路由表把 `192.168.8.4` 判为 wlan0 直连目标。USB ADB 在线；测试前后没有切换手机前台，也没有启动 NodeProbe/testnode。
+- **连通性：**Mac 到手机和 Android 到 Mac 的 ICMP 各收到 2/2 回复。随后 Mac 在 `192.168.8.4` 的临时端口 `60968` 监听一次性 TCP 连接，Android 使用 `toybox nc -w 4` 收到 `aggregate-readonly-tcp-ok`；服务端记录 peer `192.168.8.7:37946` 后立即退出。该结果确认本轮直连 TCP 可达，不代表 Host/WSS/Bonjour/NSD。
+- **Host 与清理：**本轮没有启动 Host、触发 Keychain、生成邀请、配对或调用 RPC。临时 listener 已随单次连接退出；Host 端口 `47321` 无 listener，ADB reverse 为空。未改网络或任何授权。
+- **结论：**用户再次反馈后的当前地址、双向 ICMP 和一次 TCP 会话均支持两台设备当前可在局域网直连。A5 Host 仍需在安全 UI 可操作的条件下继续启动与只读配对；本轮没有新增 WSS 或业务验收结果。
