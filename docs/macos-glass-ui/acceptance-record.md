@@ -2550,3 +2550,14 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 目视结论：接触表在两向 0%/50%/100% 进度展示太阳/月亮主体、拖动方向和主要光效过渡，整体接近；粒子局部位置/亮度、边缘光轮廓/强度及背景梯度仍有可见差异。因此此项补强同步动态对照，不签收逐帧 1:1。两窗口使用独立渲染器与动画时钟，WindowServer 帧时间不是物理面板 scan-out；原 MP4 已删除，当前网页只是用户指定的可访问参照。
 - 证据：[完整复核报告](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/report.md>)；[双向关键进度接触表](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/visuals/cursor-progress-contact.png>) SHA-256 07b80d0d2bc100999a0fb3bc8a1d206669ef819a0531ed2ac32d99585460c3d0；[逐帧配对 JSON](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/capture/full-frame-cursor-progress-pairs.json>) SHA-256 1c54f891fca69d1b87fde7c7ad6c5f2fb71aa0fb66abeac38984d1c31fcc03ef；原始 MOV 与输入/帧时间日志均在同一证据目录。此前因 Chrome 遮挡 App 或网页初始端点/录制窗口不合格的尝试已单独归档，未纳入以上结果。
 - 本轮只更新验收证据，没有改产品源码、原开关逻辑或系统外观。UI-6.8、UI-6 与阶段 0–6 仍部分完成。
+
+<a id="ui-68-v84-window-wide-glow-continuity-2026-11-27"></a>
+### 2026-11-27 UI-6.8 v8.4 全窗口光晕连续性补验
+
+- 根因与实现：主题开关着色器此前同时绘制窗口底色与 LED 溢光，但只覆盖控件画布；画布边界处恢复到普通窗口底色，形成可见矩形色差。现在开关每帧向 `GlassSceneFrame` 发布只读光源几何与强度，窗口背景着色器按相同光弧距离、衰减与明暗色混合绘制全窗口光晕；远离把手轮廓 280 设计像素后跳过角度和指数计算，参考能量下被裁掉的尾光低于 `0.015`。只改背景呈现与渲染状态发布；太阳/月亮仿真、动画时钟推进、拖动方向、点击/释放提交、取消与回调未改。
+- 验收环境：Flutter `3.47.8` macOS Profile 检查器，入口 `lib/preview/ui6_inspection_main.dart`，仅使用进程内 `Ui6InspectionRuntime`/Host stub。窗口 `912×744 pt`，捕获为 `1824×1488 px`、scale factor `2.0`；Host 未启动。获准让该检查器临时占用前台；AX 分别确认深色与浅色状态，切换仅发生在内存 fixture，没有写入用户偏好。
+- 回归与构建：`flutter test --no-pub test/glass_design_tokens_test.dart test/glass_theme_switch_test.dart test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart` 共 34 项通过；`flutter analyze --no-pub` 无问题；macOS Profile 构建通过。既有主题开关实时拖动/提交/取消测试与粒子模拟源模型回归均通过。
+- 实窗结论：查看深色、浅色 Profile 截图，画布外的暖/冷光现在连续延伸进页面背景，未再观察到原先的直角裁切边。比较前图仅用于展示该背景问题；本项不覆盖连续同步拖动后的逐像素差分或实际物理显示呈现时间。
+- 证据：[深色改动前](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/visuals/settings-dark-before-window-glow.png>) SHA-256 `93c165868428e694df42a47c3e455ca5644d34345a3d763f385fa184c2c6b5b7`；[深色改动后](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/visuals/settings-dark-after-window-glow.png>) SHA-256 `86382276648cbefe7246a0bde3a0d12dfab893d76cfef3026a31fe874b4a7f39`；[浅色改动后](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/visuals/settings-light-after-window-glow.png>) SHA-256 `b506c4c3a289d18548f7f203642511279620fe661bf532a434badb1205d1cd9f`。
+- 结论边界：此项只通过开关溢光与整体窗口背景的浅/深静态连续性。同步逐帧接触表仍显示点阵局部位置/亮度、边缘光轮廓/强度及背景渐变有差异；原 MP4 已删除，网页仍只是用户指定的可访问参照。UI-6.8、UI-6 及阶段 0–6 继续部分完成，不签收 1:1。
+- 清理：Profile 检查器以 graceful exit 关闭；系统外观、VoiceOver 和真实 Host 均未更改或启动。

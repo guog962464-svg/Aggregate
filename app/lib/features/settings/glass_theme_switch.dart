@@ -43,6 +43,8 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   GlassSceneScope? _sceneScope;
   bool _sceneLayoutRefreshScheduled = false;
   Offset _backdropOrigin = Offset.zero;
+  Offset? _sceneCenter;
+  double? _sceneScale;
   bool _focused = false;
   bool _suppressPointerFocusRing = false;
   bool _hoveredOnTrack = false;
@@ -81,7 +83,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _sceneScope = GlassSceneScope.maybeOf(context);
-    _sceneScope?.frame.publishThemeSwitch(_time, _simulation.snapshot.theme);
+    _publishSceneFrame();
     _reduceMotion = MediaQuery.disableAnimationsOf(context);
     if (_reduceMotion) {
       _ticker.stop();
@@ -110,7 +112,7 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
         _simulation.setLight(widget.light);
       }
     }
-    _sceneScope?.frame.publishThemeSwitch(_time, _simulation.snapshot.theme);
+    _publishSceneFrame();
   }
 
   void _tick(Duration elapsed) {
@@ -120,8 +122,42 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
     _lastTick = elapsed;
     _time += dt;
     _simulation.advanceRealtime(dt, _time);
-    _sceneScope?.frame.publishThemeSwitch(_time, _simulation.snapshot.theme);
+    _publishSceneFrame();
     setState(() {});
+  }
+
+  void _publishSceneFrame() {
+    final snapshot = _simulation.snapshot;
+    final optics = widget.calibration.optics;
+    GlassSceneEmitter? emitter;
+    final center = _sceneCenter;
+    final scale = _sceneScale;
+    if (center != null && scale != null) {
+      double lampChannel(int shift) {
+        final moon = (optics.moonRgb >> shift) & 0xff;
+        final sun = (optics.sunRgb >> shift) & 0xff;
+        return (moon + (sun - moon) * snapshot.theme) / 255;
+      }
+
+      emitter = GlassSceneEmitter(
+        center: center,
+        scale: scale,
+        handle: Offset(snapshot.knobX, 0),
+        extent: Size(snapshot.halfWidth, snapshot.halfHeight),
+        rounding: snapshot.radius,
+        orbitAngle: snapshot.theta,
+        energy: snapshot.led,
+        lampRed: lampChannel(16),
+        lampGreen: lampChannel(8),
+        lampBlue: lampChannel(0),
+        stripHalfAngle: optics.stripHalfAngle,
+      );
+    }
+    _sceneScope?.frame.publishThemeSwitch(
+      _time,
+      snapshot.theme,
+      emitter: emitter,
+    );
   }
 
   void _refreshAfterSceneLayout(BuildContext context) {
@@ -335,6 +371,18 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
             constraints.maxWidth,
             constraints.maxWidth * widget.heightFactor,
           );
+          final scene = widget.calibration.scene;
+          final scale = ThemeSwitchArtwork.sceneScale(size, scene);
+          final backdropOrigin =
+              _sceneScope?.originFor(
+                context,
+                onLayoutDeferred: () => _refreshAfterSceneLayout(context),
+              ) ??
+              _backdropOrigin;
+          _sceneCenter =
+              backdropOrigin + ThemeSwitchArtwork.sceneOrigin(size, scene);
+          _sceneScale = scale;
+          _publishSceneFrame();
           final theme = Theme.of(context);
           final focusColor =
               theme.extension<GlassDesignTokens>()?.focusRing ??
@@ -402,14 +450,8 @@ class _GlassThemeSwitchState extends State<GlassThemeSwitch>
                           frame: _simulation.snapshot,
                           time: _time,
                           optics: widget.calibration.optics,
-                          scene: widget.calibration.scene,
-                          backdropOrigin:
-                              _sceneScope?.originFor(
-                                context,
-                                onLayoutDeferred: () =>
-                                    _refreshAfterSceneLayout(context),
-                              ) ??
-                              _backdropOrigin,
+                          scene: scene,
+                          backdropOrigin: backdropOrigin,
                           backdropSize: _sceneScope?.size ?? Size.zero,
                         ),
                         if (_focused)

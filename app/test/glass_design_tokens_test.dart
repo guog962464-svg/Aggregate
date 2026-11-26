@@ -336,6 +336,29 @@ void main() {
     frame.dispose();
   });
 
+  test('glass scene publishes the theme switch emitter across the window', () {
+    final frame = GlassSceneFrame();
+    const emitter = GlassSceneEmitter(
+      center: Offset(480, 260),
+      scale: 0.97,
+      handle: Offset(-104, 0),
+      extent: Size(99, 99),
+      rounding: 58,
+      orbitAngle: 0.6,
+      energy: 1.89,
+      lampRed: 0.435,
+      lampGreen: 0.525,
+      lampBlue: 1,
+      stripHalfAngle: 0.92,
+    );
+    frame.publishThemeSwitch(1, 0.12, emitter: emitter);
+    expect(frame.themeSwitchEmitter, emitter);
+
+    frame.clearThemeSwitch();
+    expect(frame.themeSwitchEmitter, isNull);
+    frame.dispose();
+  });
+
   test('glass scene halo changes only at the measured contrast window', () {
     final frame = GlassSceneFrame();
     final haloStates = <bool>[];
@@ -358,6 +381,8 @@ void main() {
     frame.publishThemeSwitch(1.09, 0.535);
     expect(frame.textContrastNeedsHalo.value, isTrue);
     frame.publishThemeSwitch(1.10, 0.545);
+    expect(frame.textContrastNeedsHalo.value, isTrue);
+    frame.publishThemeSwitch(1.11, 0.555);
     expect(frame.textContrastNeedsHalo.value, isFalse);
     frame.clearThemeSwitch();
 

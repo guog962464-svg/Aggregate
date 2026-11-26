@@ -158,6 +158,7 @@ class GlassSceneFrame extends ChangeNotifier {
 
   double _seconds = 0;
   double? _switchDaylight;
+  GlassSceneEmitter? _themeSwitchEmitter;
   bool _disposed = false;
   bool _textContrastUpdateScheduled = false;
   bool? _pendingTextContrastUsesDarkForeground;
@@ -169,12 +170,18 @@ class GlassSceneFrame extends ChangeNotifier {
 
   double get seconds => _seconds;
   double? get switchDaylight => _switchDaylight;
+  GlassSceneEmitter? get themeSwitchEmitter => _themeSwitchEmitter;
   ValueListenable<bool?> get textContrastUsesDarkForeground =>
       _textContrastUsesDarkForeground;
   ValueListenable<bool> get textContrastNeedsHalo => _textContrastNeedsHalo;
 
-  void publishThemeSwitch(double seconds, double daylight) {
+  void publishThemeSwitch(
+    double seconds,
+    double daylight, {
+    GlassSceneEmitter? emitter,
+  }) {
     if (_disposed) return;
+    final nextEmitter = emitter ?? _themeSwitchEmitter;
     final usesDarkForeground = daylight >= 0.5;
     _updateTextContrastForeground(usesDarkForeground);
     // A pixel sweep of the production settings text found the low-contrast
@@ -187,16 +194,19 @@ class GlassSceneFrame extends ChangeNotifier {
     final changed =
         (_seconds - seconds).abs() > 0.000001 ||
         _switchDaylight == null ||
-        (_switchDaylight! - daylight).abs() > 0.000001;
+        (_switchDaylight! - daylight).abs() > 0.000001 ||
+        nextEmitter != _themeSwitchEmitter;
     _seconds = seconds;
     _switchDaylight = daylight;
+    _themeSwitchEmitter = nextEmitter;
     if (changed) notifyListeners();
   }
 
   void clearThemeSwitch() {
     if (_disposed) return;
-    if (_switchDaylight == null) return;
+    if (_switchDaylight == null && _themeSwitchEmitter == null) return;
     _switchDaylight = null;
+    _themeSwitchEmitter = null;
     _updateTextContrastForeground(null);
     _updateTextContrastHalo(false);
     notifyListeners();
@@ -256,6 +266,68 @@ class GlassSceneFrame extends ChangeNotifier {
   }
 }
 
+/// A rendering-only light source whose spill is drawn across the whole scene.
+/// Keeping it in window coordinates avoids clipping the theme switch's glow at
+/// the bounds of its interactive widget.
+@immutable
+class GlassSceneEmitter {
+  const GlassSceneEmitter({
+    required this.center,
+    required this.scale,
+    required this.handle,
+    required this.extent,
+    required this.rounding,
+    required this.orbitAngle,
+    required this.energy,
+    required this.lampRed,
+    required this.lampGreen,
+    required this.lampBlue,
+    required this.stripHalfAngle,
+  });
+
+  final Offset center;
+  final double scale;
+  final Offset handle;
+  final Size extent;
+  final double rounding;
+  final double orbitAngle;
+  final double energy;
+  final double lampRed;
+  final double lampGreen;
+  final double lampBlue;
+  final double stripHalfAngle;
+
+  @override
+  bool operator ==(Object other) =>
+      other is GlassSceneEmitter &&
+      center == other.center &&
+      scale == other.scale &&
+      handle == other.handle &&
+      extent == other.extent &&
+      rounding == other.rounding &&
+      orbitAngle == other.orbitAngle &&
+      energy == other.energy &&
+      lampRed == other.lampRed &&
+      lampGreen == other.lampGreen &&
+      lampBlue == other.lampBlue &&
+      stripHalfAngle == other.stripHalfAngle;
+
+  @override
+  int get hashCode => Object.hash(
+    center,
+    scale,
+    handle,
+    extent,
+    rounding,
+    orbitAngle,
+    energy,
+    lampRed,
+    lampGreen,
+    lampBlue,
+    stripHalfAngle,
+  );
+}
+
 class _GlassScenePainter extends CustomPainter {
   const _GlassScenePainter({
     required this.shader,
@@ -288,6 +360,22 @@ class _GlassScenePainter extends CustomPainter {
     effect.setFloat(2, frame.switchDaylight ?? tokens.daylight);
     effect.setFloat(3, frame.seconds);
     effect.setFloat(4, pixelRatio);
+    final emitter = frame.themeSwitchEmitter;
+    effect.setFloat(5, emitter == null ? 0 : 1);
+    effect.setFloat(6, emitter?.center.dx ?? 0);
+    effect.setFloat(7, emitter?.center.dy ?? 0);
+    effect.setFloat(8, emitter?.scale ?? 1);
+    effect.setFloat(9, emitter?.handle.dx ?? 0);
+    effect.setFloat(10, emitter?.handle.dy ?? 0);
+    effect.setFloat(11, emitter?.extent.width ?? 99);
+    effect.setFloat(12, emitter?.extent.height ?? 99);
+    effect.setFloat(13, emitter?.rounding ?? 58);
+    effect.setFloat(14, emitter?.orbitAngle ?? 0);
+    effect.setFloat(15, emitter?.energy ?? 0);
+    effect.setFloat(16, emitter?.lampRed ?? 0);
+    effect.setFloat(17, emitter?.lampGreen ?? 0);
+    effect.setFloat(18, emitter?.lampBlue ?? 0);
+    effect.setFloat(19, emitter?.stripHalfAngle ?? 0.92);
     canvas.drawRect(Offset.zero & size, Paint()..shader = effect);
   }
 
