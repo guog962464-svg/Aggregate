@@ -656,3 +656,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **坐标操作结果：**根据截图尝试一次 `agent-desktop --headed mouse-click --xy 437,744` 点击“设置”入口。命令报告 `delivered_unverified`；随后窗口枚举显示两个 Aggregate 窗口都不可见、微信成为前台应用。无法证实点击实际落在 Aggregate 窗口，因此没有继续坐标操作；没有输入文本或提交任何内容。该输入可能只改变前台/选中状态，具体命中与界面效果未知。
 - **服务与清理：**没有出现 SecurityAgent/Keychain 授权提示；Host `47321/47322` 无 listener，ADB reverse 为空。只终止本轮 PID `21948`，保留 Profile PID `19693`；本轮三张临时截图已删除。未启动 Host、操作 Keychain、配对、调用 RPC、改网络或操作 Android 前台。
 - **结论：**已证明可通过窗口 ID 截取 Aggregate Debug 内容；现有物理坐标动作是全局输入，不能绑定该不可访问的 Flutter 内容窗口。A5 Host/Keychain 启动及生产连接验收仍未完成；后续需使用能将输入限定到目标窗口的交互方式，避免再用未确认坐标操作。
+
+## 2026-11-26 A5 当前 Host 真机只读 RPC 的 USB reverse 验收
+
+- **版本与入口：**当前 `main` 为 `c68d944`。隔离 Release Host 与 Android 集成测试由祖先提交 `e0fdc4a` 构建；对照确认 `app/lib/platform/android`、`app/lib/platform/macos/host`、`app/android`、依赖清单及锁文件在两提交间无差异。Mac 通过 `LocalRuntimePort.createLive()` 启动当前 production Host/WSS 实现；LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机运行真实 `AndroidRuntimePort` 与 Android Keystore 的隔离 `.integration` 测试包。
+- **路径：**Mac `en0=192.168.8.4/24`，手机 `wlan0=192.168.31.136/24`，路由仍分属不同子网。手机到 Host `192.168.8.4:47321` 的 TCP 探测超时。随后只为本轮测试建立 `adb reverse tcp:47322`、`tcp:47323`：WSS 经绑定 `127.0.0.1:47322` 的临时 TCP relay 转到 Mac `192.168.8.4:47321`；本机控制端只绑定 `127.0.0.1:47323`。邀请只替换 endpoint，Host ID、TLS 证书 pin、nonce 和有效期由当前 Host 生成。该路径不覆盖直连 LAN 或 Bonjour/NSD。
+- **授权与 RPC：**控制端仅对唯一测试设备名、对应 deviceId、Android 平台和本次确认码自动批准 `readConnections`，且 `connectionPermissions` 为空。Android 完成真实签名配对与 Host 认证；`host.hello` 成功，`connection.list` 返回 1 条连接。没有执行写 RPC、向导、CLI/TUI、MCP、账号、终端或播放操作。
+- **结果与清理：**定向 Flutter analyze 无问题；`ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true PUB_HOSTED_URL=https://pub.dev flutter test --no-pub --no-uninstall integration_test/a5_current_host_readonly_probe_test.dart -d AEMN022427001360 --timeout=240s --reporter expanded` 通过（1 项）。验收脚本确认 Host 原有 3 条 grant 与测试后完全一致，测试 grant 已撤销，Host 已停止。首次探针曾因显式第二次 `host.hello` 漏传必需 `protocolVersion` 而被正确拒绝；修正探针参数后通过，产品代码未修改。ADB reverse 已清空、测试包已卸载、Mac 测试端口均无监听，手机前台恢复为用户原来的新闻 App。
+- **边界：**本轮证明当前 Host/Android 配对与只读 RPC 可经 USB reverse 完成；当前 Wi-Fi 直连、Bonjour/NSD、普通产品包 Release 配对 UI、CLI/TUI/MCP/向导/账号等业务闭环仍未在本轮验收。没有 16 KB 实体机，不能据此关闭 16 KB 运行门槛；A5 继续开放。
