@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
 import 'package:aggregate/platform/host/host_pairing_protocol.dart';
@@ -370,6 +371,91 @@ void main() {
       await revokedIterator.cancel();
     },
   );
+
+  test('rejects fragmented client frames before RPC decoding', () async {
+    await transport.start();
+    final invitation = await transport.createInvitation();
+    final socket = await _connectRawWebSocket(
+      client,
+      invitation.endpoints.single.uri,
+    );
+    final closed = Completer<void>();
+    final subscription = socket.listen(
+      (_) {},
+      onError: (Object _) {
+        if (!closed.isCompleted) closed.complete();
+      },
+      onDone: () {
+        if (!closed.isCompleted) closed.complete();
+      },
+    );
+    try {
+      socket.add(
+        _maskedWebSocketFrame(
+          opcode: 1,
+          fin: false,
+          payload: utf8.encode('{"jsonrpc":"2.0",'),
+        ),
+      );
+      await socket.flush();
+      await closed.future.timeout(const Duration(seconds: 3));
+    } finally {
+      await subscription.cancel();
+      socket.destroy();
+    }
+  });
+}
+
+Future<Socket> _connectRawWebSocket(HttpClient client, Uri uri) async {
+  final key = base64Encode(
+    List<int>.generate(16, (_) => Random.secure().nextInt(256)),
+  );
+  final request = await client.openUrl('GET', uri.replace(scheme: 'https'));
+  request.followRedirects = false;
+  request.headers
+    ..set(HttpHeaders.connectionHeader, 'Upgrade')
+    ..set(HttpHeaders.upgradeHeader, 'websocket')
+    ..set('Sec-WebSocket-Key', key)
+    ..set('Sec-WebSocket-Protocol', hostWssSubprotocol)
+    ..set('Sec-WebSocket-Version', '13');
+  final response = await request.close();
+  expect(response.statusCode, HttpStatus.switchingProtocols);
+  expect(response.headers.value('Sec-WebSocket-Protocol'), hostWssSubprotocol);
+  return response.detachSocket();
+}
+
+Uint8List _maskedWebSocketFrame({
+  required int opcode,
+  required bool fin,
+  required List<int> payload,
+}) {
+  const mask = [0x13, 0x37, 0x42, 0x5a];
+  final header = <int>[(fin ? 0x80 : 0) | opcode];
+  if (payload.length < 126) {
+    header.add(0x80 | payload.length);
+  } else if (payload.length <= 0xffff) {
+    header
+      ..add(0x80 | 126)
+      ..add((payload.length >> 8) & 0xff)
+      ..add(payload.length & 0xff);
+  } else {
+    header.add(0x80 | 127);
+    var length = payload.length;
+    final extendedLength = List<int>.filled(8, 0);
+    for (var index = extendedLength.length - 1; index >= 0; index--) {
+      extendedLength[index] = length & 0xff;
+      length >>= 8;
+    }
+    header.addAll(extendedLength);
+  }
+  header.addAll(mask);
+  header.addAll(
+    List<int>.generate(
+      payload.length,
+      (index) => payload[index] ^ mask[index & 3],
+    ),
+  );
+  return Uint8List.fromList(header);
 }
 
 Map<String, Object?> _signedRpcFrame({

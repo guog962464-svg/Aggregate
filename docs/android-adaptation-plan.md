@@ -525,5 +525,5 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 - **A5 数据读取诊断：**对当前 Host generic-password 的 `active-identity` 执行只读对照：属性查询以 `kSecReturnAttributes` 3 ms 返回；完整数据读取即使使用 `LAContext.interactionNotAllowed=true`、禁止认证界面，仍在 2 秒/25 秒超时；探针没有产生新的认证 UI。结合已有 Release 栈，该阻塞落在 `SecItemCopyMatching` 的数据解密/取值路径；具体根因仍无法区分条目状态/访问策略与 SecurityServer 等待。Touch ID 需要另行设计 Keychain 迁移，不能由此推断能解决该挂起。A5.4/A5.5 未通过；本探针未输入密码或修改 Keychain，本轮仍无 Host listener、WSS、配对或 RPC 新证据。
 - **A8 安全复扫与修复：**`app/` 的扫描输入与 `dcdb196` 相同；Codex Security Standard 扫描（`825e1492-7867-4870-be4e-8052a43d22a5`）报告低严重度、高置信度 CWE-400：Android Host WSS 客户端原先未限制入站单帧长度。共享 WSS 协议现在提供 1 MiB 上限，Android 客户端应用该限制，Mac Host 继续使用同值；针对合法、边界、超限文本和二进制帧的回归及相邻配对测试 15/15 通过。详见 [A8 WSS 安全复扫与单帧修复](android-a8-acceptance.md#2026-11-26-当前-android-host-wss-安全复扫与单帧修复)。
-- **A8 剩余资源边界：**本机 Dart SDK 按单个 WebSocket frame 检查 `maxPayloadLength`，分片消息帧会聚合到 `_payload`，没有跨片段累计总量检查；此项来自 SDK 源码审查，未做运行时分片利用，单帧上限没有解决它。A8 安全完整验收仍需处理或明确接受该残余风险。正式签名、16 KB 真机仍开放。
-- **仍开放：**A3.6 来源/安全版本/许可与 SBOM 闭包、A4 产品端 npm/CLI 选型与集成决策、A5 当前生产 Host 读取/直连 LAN/NSD/配对/RPC、A6 真实音乐账号与播放、A8 分片消息总量策略、正式签名和 16 KB 真机。TalkBack/accessibility 按用户决定不纳入验收。
+- **A8 分片消息边界（2026-11-26）：**已通过共享帧前置检查器在 Android 客户端与 Mac Host 服务端拒绝 WSS 分片/压缩帧，并按 Host WSS 约定限制为单一数据帧、不超过 1 MiB。SDK 解码器收到内容前即拒绝，Android 配对/RPC 与 Mac Host WSS 回归通过。详见 [A8 WSS 分片边界闭合](android-a8-acceptance.md#2026-11-26-wss-分片边界闭合)。该帧策略的第三方分片兼容性仍是明确协议约束，若将来需要支持分片，需先加入有界重组器。
+- **仍开放：**A3.6 来源/安全版本/许可与 SBOM 闭包、A4 产品端 npm/CLI 选型与集成决策、A5 当前生产 Host 读取/直连 LAN/NSD/配对/RPC、A6 真实音乐账号与播放、正式签名和 16 KB 真机。TalkBack/accessibility 按用户决定不纳入验收。

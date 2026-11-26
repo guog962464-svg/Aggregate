@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:aggregate_contracts/aggregate_contracts.dart';
+import 'package:crypto/crypto.dart';
 
 import 'host_control_port.dart';
 import 'host_pairing_authority.dart';
@@ -11,6 +12,7 @@ import 'host_setup_rpc_dispatcher.dart';
 import 'host_tls_identity.dart';
 import 'host_transport_port.dart';
 import '../../host/host_pairing_protocol.dart';
+import '../../host/host_wss_frame_guard_socket.dart';
 import '../../host/host_wss_protocol.dart';
 
 typedef HostWssServicesLoader = Future<HostWssServices> Function();
@@ -520,13 +522,7 @@ final class HostWssTransport
     WebSocket? socket;
     _HostWssConnection? context;
     try {
-      socket = await WebSocketTransformer.upgrade(
-        request,
-        protocolSelector: (protocols) =>
-            protocols.contains(hostWssSubprotocol) ? hostWssSubprotocol : '',
-        compression: CompressionOptions.compressionOff,
-        maxPayloadLength: hostRpcMaxFrameBytes,
-      );
+      socket = await _upgradeBoundedHostWebSocket(request);
       if (!_accepting) {
         await socket.close(WebSocketStatus.goingAway, 'Host stopped');
         return;
@@ -574,6 +570,29 @@ final class HostWssTransport
         }
       }
     }
+  }
+
+  Future<WebSocket> _upgradeBoundedHostWebSocket(HttpRequest request) async {
+    final key = request.headers.value('Sec-WebSocket-Key')!;
+    final accept = base64Encode(
+      sha1.convert(utf8.encode('$key$hostWssWebSocketGuid')).bytes,
+    );
+    final response = request.response;
+    response.statusCode = HttpStatus.switchingProtocols;
+    response.headers
+      ..set(HttpHeaders.connectionHeader, 'Upgrade')
+      ..set(HttpHeaders.upgradeHeader, 'websocket')
+      ..set('Sec-WebSocket-Accept', accept)
+      ..set('Sec-WebSocket-Protocol', hostWssSubprotocol);
+    response.contentLength = 0;
+    final rawSocket = await response.detachSocket();
+    return WebSocket.fromUpgradedSocket(
+      HostWssFrameGuardSocket(rawSocket, serverSide: true),
+      protocol: hostWssSubprotocol,
+      serverSide: true,
+      compression: CompressionOptions.compressionOff,
+      maxPayloadLength: hostRpcMaxFrameBytes,
+    );
   }
 
   Future<void> _serveSocket(_HostWssConnection context) async {

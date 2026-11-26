@@ -1,6 +1,6 @@
 # Android A8 发布前检查与文档验收
 
-> 检查日期：2026-11-26（安全复扫与单帧上限复验；最近 Release 复验见下文 9b7c310）。此前 A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；本轮复扫发现的 Android Host WSS 单帧无上限问题已按协议设置 1 MiB 上限，并通过超限文本/二进制回归验证。Dart SDK 的上限按单帧应用，尚不能限制多帧拼接后的消息总长度，该资源边界仍待处理。Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
+> 检查日期：2026-11-26（安全复扫与 WSS 分片边界复验；最近 Release 复验见下文 9b7c310）。Android 与 Mac Host 现共用 WSS 帧前置检查器：每条消息必须是未压缩、未分片、至多 1 MiB 的单数据帧；在交给 Dart `WebSocket` 解码器前检查，避免其分片累积绕过单帧上限。针对 Android 客户端和 Mac Host 服务端均有原始帧回归测试；完整 Dart 分析、定向测试与 Android Debug 构建通过。Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
 
 ## A8.4 安全、依赖与分发检查
 
@@ -417,5 +417,13 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **发现：低严重度 / 高置信度 CWE-400。**`app/lib/platform/android/android_host_pairing_client.dart:287-292` 的 Android `WebSocket.connect` 没设置 `maxPayloadLength`；当前 Dart 默认上限接近 `int` 最大值。用户扫描攻击者控制的邀请并开始配对后，固定私有 IPv4 WSS 端点可发送超大帧，在 JSON 解码前消耗 App 进程内存并导致崩溃。Mac Host 的 1 MiB 入站上限约束服务端收到的数据，不会限制恶意服务端发给 Android 客户端的出站帧。
 - **修复：**共享 WSS 协议新增 `hostWssMaxFrameBytes=1 MiB`；Mac Host 继续使用该同一值限制入站帧，Android `WebSocket.connect` 也设置 `maxPayloadLength`。超限时不把消息交付给上层，既有 TLS pin、子协议、超时及合法 RPC 路径保持不变。
 - **验证：**先在未修代码上运行回归用例，合法小帧通过，1 MiB+1 的文本和二进制帧均被交付，测试按预期失败；修复后 `flutter test --no-pub test/android_host_socket_connector_test.dart test/android_host_pairing_client_test.dart` 15/15、`flutter test --no-pub test/host_wss_transport_test.dart test/host_rpc_protocol_test.dart test/android_host_setup_wss_e2e_test.dart` 28/28 通过。覆盖小帧、恰好 1 MiB、超限文本及超限二进制。四个修改/新增 Dart 文件的 `dart analyze` 通过。全量 `flutter analyze --no-pub` 报两个 `avoid_print` info，均位于用户未跟踪文件 `app/lib/preview/ui53_keyboard_probe_main.dart`，没有修改该文件。
-- **剩余边界：**本机 Dart 3.13.7 `dart:io` decoder 的长度检查针对每个 WebSocket frame；分片消息片段会累积进 `BytesBuilder`，当前实现没有跨片段总长度上限。此项是按 SDK 源码发现的额外资源边界，未用运行时分片攻击验证，也未由本次单帧修复解决；A8 安全验收不能宣称所有 WSS 消息都已有总长度上限。尚无 16 KB 实机，正式签名、生产 Host 与真实音乐链路仍开放。
+- **当时剩余边界：**该次单帧修复没有限制分片消息的总长度。后续处理见“WSS 分片边界闭合”小节。尚无 16 KB 实机，正式签名、生产 Host 与真实音乐链路仍开放。
 - **报告：**原始只读扫描报告保留于 `/Users/guo/.codex/state/plugins/codex-security/scans/aggregate-security-dcdb1968/unversioned_20261126T142508Z_tqynfyj3/report.md`。该扫描没有运行 App、设备、攻击流量或外部服务。
+
+## 2026-11-26 WSS 分片边界闭合
+
+- **SDK 行为：**Dart 3.13.7 的 `maxPayloadLength` 检查逐帧执行；非最终数据帧会累积到 `BytesBuilder`，解码器没有跨帧消息总量限制。控制帧与分片消息共用该 builder，因此任意分片还可能影响同一消息的内容。只设置 `maxPayloadLength` 不足以限制总分配。
+- **实现策略：**新增共享 `HostWssFrameGuardSocket`，在 Dart WebSocket 解码器读取前解析帧头，要求 FIN、无 RSV 扩展位、正确的 client/server mask、合法控制帧，并对每个数据帧应用 1 MiB 上限。Host WSS 业务消息现在要求单一未压缩数据帧；分片文本和二进制消息会在载荷转交前关闭连接。Android 侧保留证书 pin、TLS 有效期/目标校验、HTTP 101/`Sec-WebSocket-Accept`/子协议校验、禁用重定向与压缩；Mac Host 继续先校验原有 Upgrade/路径/Origin/子协议/连接配额，再进行受限升级。`WebSocket.fromUpgradedSocket` 的 `maxPayloadLength` 仍作为第二层检查。
+- **兼容约束：**RFC 6455 允许把一条消息拆成多个帧；本项目 Host WSS 现在明确收紧为每条文本/二进制消息一个完整帧。当前 Dart 客户端和 Host 服务都按 `WebSocket.add` 逐条发送完整 RPC 消息，互通回归通过。未来若加入会主动分片的第三方 WSS 对端，必须先实现有界的分片重组器再放宽策略。
+- **验证：**`flutter test --no-pub test/android_host_socket_connector_test.dart test/android_host_pairing_client_test.dart test/host_wss_transport_test.dart test/host_rpc_protocol_test.dart test/android_host_setup_wss_e2e_test.dart` 49/49 通过；覆盖小帧、1 MiB 边界、超限文本/二进制、错误 `Sec-WebSocket-Accept`、错误子协议、TLS pin 不匹配、Android 收到分片、Mac Host 收到分片、配对与只读/设置 RPC。六个修改 Dart 文件的格式检查和定向 `dart analyze` 通过；`flutter analyze --no-pub` 无问题；`flutter build apk --debug --no-pub` 成功。
+- **实机边界：**本次 WSS 原始帧回归在本机 loopback TLS 上运行，未安装或操作手机。4 KB 真机已有此前的冷启动/运行时证据，本次没有重新测真机 WSS；没有 16 KB 页设备，不能据此声称 16 KB 系统运行通过。A5 production Host/配对、正式签名与真实音乐链路仍开放。

@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import '../host/host_pairing_protocol.dart';
+import '../host/host_wss_frame_guard_socket.dart';
 import '../host/host_wss_protocol.dart';
 import 'android_host_device_identity.dart';
 
@@ -284,12 +285,10 @@ final class PinnedAndroidHostSocketConnector
       return matches;
     };
     try {
-      final socket = await WebSocket.connect(
-        uri.toString(),
-        protocols: const [hostWssSubprotocol],
-        compression: CompressionOptions.compressionOff,
-        customClient: client,
-        maxPayloadLength: hostWssMaxFrameBytes,
+      final socket = await _connectBoundedHostWebSocket(
+        uri,
+        client,
+        timeout,
       ).timeout(timeout);
       if (socket.protocol != hostWssSubprotocol) {
         await socket.close(
@@ -303,6 +302,7 @@ final class PinnedAndroidHostSocketConnector
       }
       return _IoAndroidHostSocket(socket, client);
     } on AndroidHostPairingException {
+      client.close(force: true);
       rethrow;
     } on TimeoutException {
       client.close(force: true);
@@ -321,6 +321,67 @@ final class PinnedAndroidHostSocketConnector
       );
     }
   }
+}
+
+Future<WebSocket> _connectBoundedHostWebSocket(
+  Uri uri,
+  HttpClient client,
+  Duration timeout,
+) async {
+  final nonce = base64Encode(
+    List<int>.generate(16, (_) => Random.secure().nextInt(256)),
+  );
+  final httpUri = uri.replace(scheme: 'https');
+  final request = await client.openUrl('GET', httpUri).timeout(timeout);
+  request.followRedirects = false;
+  request.headers
+    ..set(HttpHeaders.connectionHeader, 'Upgrade')
+    ..set(HttpHeaders.upgradeHeader, 'websocket')
+    ..set('Sec-WebSocket-Key', nonce)
+    ..set('Sec-WebSocket-Protocol', hostWssSubprotocol)
+    ..set('Sec-WebSocket-Version', '13')
+    ..set(HttpHeaders.cacheControlHeader, 'no-cache');
+  final response = await request.close().timeout(timeout);
+  final expectedAccept = base64Encode(
+    sha1.convert(utf8.encode('$nonce$hostWssWebSocketGuid')).bytes,
+  );
+  final connectionTokens =
+      (response.headers[HttpHeaders.connectionHeader] ?? const <String>[])
+          .expand((value) => value.split(','))
+          .map((value) => value.trim().toLowerCase());
+  final acceptHeaders =
+      response.headers['Sec-WebSocket-Accept'] ?? const <String>[];
+  final upgradeHeaders =
+      response.headers[HttpHeaders.upgradeHeader] ?? const <String>[];
+  final protocolHeaders =
+      response.headers['Sec-WebSocket-Protocol'] ?? const <String>[];
+  final validUpgrade =
+      response.statusCode == HttpStatus.switchingProtocols &&
+      connectionTokens.contains('upgrade') &&
+      upgradeHeaders.length == 1 &&
+      upgradeHeaders.single.toLowerCase() == 'websocket' &&
+      acceptHeaders.length == 1 &&
+      acceptHeaders.single == expectedAccept &&
+      protocolHeaders.length == 1 &&
+      protocolHeaders.single == hostWssSubprotocol &&
+      (response.headers['Sec-WebSocket-Extensions'] ?? const <String>[])
+          .isEmpty;
+  if (!validUpgrade) {
+    final rejectedSocket = await response.detachSocket();
+    rejectedSocket.destroy();
+    throw const AndroidHostPairingException(
+      AndroidHostPairingFailure.protocolMismatch,
+    );
+  }
+
+  final socket = await response.detachSocket();
+  return WebSocket.fromUpgradedSocket(
+    HostWssFrameGuardSocket(socket, serverSide: false),
+    protocol: hostWssSubprotocol,
+    serverSide: false,
+    compression: CompressionOptions.compressionOff,
+    maxPayloadLength: hostWssMaxFrameBytes,
+  );
 }
 
 final class _IoAndroidHostSocket implements AndroidHostSocket {
