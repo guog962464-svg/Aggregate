@@ -2643,3 +2643,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 两份校准文件仍与 UI-0 哈希一致：`theme_switch_calibration.dart`=`c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`，`theme_switch_fitted_calibration.dart`=`11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`。本次检查时，这六个受保护文件均没有未提交改动。
 - 在 `app/` 执行 `flutter test --no-pub test/glass_theme_switch_test.dart`，11 项全部通过，包含实时拖动到释放才提交、取消回到端点、反向拖动、隐藏期间取消、可见 inactive 不取消、键盘焦点及 Reduce Motion。测试为 Widget 离屏验证；没有启动 Aggregate 窗口。
 - 限制：这项复核确认源码差异范围与正常交互回归，不证明原 MP4 逐帧 1:1、原生 display-present 或物理屏幕 FPS；UI-6.8 仍部分验收。
+
+### 2026-11-27 UI-5.4/UI-5.7/UI-6.7 共享控件离屏回归复跑
+
+- 在当前 checkout `00fa07a1144f28dba21d08bb1c6a170be9c9ea51` 的 `app/` 执行 `flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart test/accessibility_test.dart`，36 项全部通过。覆盖文字缩放至 200% 的按钮可用性、两主题文字/焦点像素门槛、glyph 点阵映射、60 种 glyph 的共享动画配置、30/60/120 Hz 与不规则采样节奏、Reduce Motion 下保留点击功能、离屏按钮退出共享时钟及操作回调。
+- 本轮只运行 Flutter Widget tests，没有启动 Aggregate、打开桌面窗口或采集截图；产品源码未修改。系统前台仍为 Google Chrome，Aggregate 进程不存在。
+- 边界：结果只证明 Flutter Widget/共享组件层行为；不能替代 macOS AX 禁用状态、VoiceOver 控件朗读、110 个生产按钮实例逐项目视，或 WindowServer/display-present 帧率测量。UI-5.4、UI-5.7、UI-6.7 仍部分验收。
