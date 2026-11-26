@@ -511,3 +511,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 - 当前 HEAD `452ffb0` 的 Android 产品源码、Gradle 配置、manifest、pubspec 与提交锁和已验收基线 `25b405e` 相同；Release APK/AAB 静态 16 KB 检查及 LGE AN10 4 KB 真机冷启动证据可沿用。正式签名及 16 KB 真机运行仍未验证。
 - `452ffb0` 非无障碍 app/test 全集为 **373 通过、4 失败**：3 项 macOS UI 断言、1 项共享玻璃 halo 对比阈值。测试不全绿；TalkBack/accessibility 按用户决定排除。详细输入、失败名称和发布门槛见 [A8 验收记录](android-a8-acceptance.md#2026-11-26-当前-head-452ffb0-a8-输入延续与非无障碍套件复验)。
+
+## 2026-11-26 A5 当前提交 Release Host 复验
+
+- 在 `e619f5e` detached worktree 上按提交锁重建 macOS Release 并验签后，从设置页启动 Host。现场采样再次定位在 `active-identity` generic-password 的 `SecItemCopyMatching`/SecurityServer 解密等待；没有 Host listener、WSS、Bonjour/NSD、配对或 RPC。
+- 安全弹窗对应已经退出的旧 worktree PID `24664`；按用户先前授权输入凭据并尝试一次性允许，但结果未知，未设“始终允许”或更改 ACL。手机仍在 Launcher，ADB reverse 为空，本轮 Host PID 已关闭。A5.4/A5.5 继续开放；详见 [A5 当前 HEAD Release Host 复验](android-a5-android-client.md#a5-current-head-e619f5e-release-host)。

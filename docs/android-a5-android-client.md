@@ -731,3 +731,12 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **钥匙串状态：**默认登录钥匙串 `security show-keychain-info` 显示 `no-timeout`；只读 `SecKeychainGetStatus` 返回 `status=0 unlocked=true readable=true writable=true`（该 API 已弃用）。这些状态不解释当前解密调用为何未返回，也不证明钥匙串数据或访问控制配置正常。
 - **验收边界与清理：**没有输入密码、触发或完成 Touch ID 认证，也没有更改 Keychain、ACL、Host identity 或授权。Host `47321/47322/47323` 均无 listener；本次没有 WSS、Bonjour/NSD、邀请、配对或 RPC。手机 `topResumedActivity` 为系统 launcher，ADB reverse 为空。诊断 worktree 已移除；临时线程样本未包含凭据。当前只能确认 Host 在身份读取阶段等待并最终超时，A5.4/A5.5 仍开放。
 - **Touch ID 关系：**本轮现有 generic-password 查询没有 `kSecAttrAccessControl`/`kSecUseAuthenticationContext`；没有系统认证弹窗可选择指纹。当前实现不能把该查询的登录钥匙串授权现场改为 Touch ID；已有可行性与迁移边界见[前述 Touch ID 核对](#2026-11-26-keychain-touch-id-可行性核对)。
+
+<a id="a5-current-head-e619f5e-release-host"></a>
+## 2026-11-26 A5 当前 HEAD `e619f5e` exact-lock Release Host 复验（21:32–21:37 Asia/Shanghai）
+
+- **构建输入：**在 detached worktree `/tmp/aggregate-a5-host-current-e619f5e` 的 `e619f5e84529f10d19e95729d0a5813bddef64ea` 上，`PUB_HOSTED_URL=https://pub.dev flutter pub get --enforce-lockfile` 通过；提交锁 SHA-256 为 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`。`flutter build macos --release --no-pub` 成功，产物 52.5 MB；Bundle ID `io.github.guog962464.aggregate`，ad-hoc 签名、无 Team ID，`codesign --verify --deep --strict` 通过。构建只在临时 worktree，不包含主工作区未提交的 UI/玻璃测试改动和锁文件改动。
+- **Host 结果：**从该精确 Release 的设置页只点一次“启动 Host”；界面随后显示“Host 启动失败。请检查 Keychain、网络接口和本地网络权限后重试。”只读采样 PID `41386` 的线程栈停在 `HostTlsIdentityChannel.init → MacHostTlsIdentity.loadOrCreate → readSecret(account:) → SecItemCopyMatching → CSSM_DecryptDataFinal → SecurityServer decrypt → mach_msg`。因此此次仍阻塞在 `active-identity` generic-password 解密读取阶段，早于 Host listener、接口发现和 Bonjour；具体 SecurityServer 原因仍未知。
+- **旧授权提示边界：**启动前 `SecurityAgent` 中已有 Host TLS Keychain 提示；统一日志将其关联到已退出 PID `24664` 和旧路径 `/tmp/aggregate-a5-host-20d1b7e/.../Aggregate.app`，不是本轮 PID `41386` 的当前请求。按用户先前授权，在安全字段中投递已提供的密码并点过一次性“允许”，但投递未验证、等待未返回，不能确认密码被接受或旧请求获准。未选择“始终允许”，没有更改 Keychain 条目或持久 ACL。后续尝试关闭残留提示后，SecurityAgent 仍在无可见窗口的快照中保留一个隐藏可操作请求和一个禁用请求；没有对该隐藏请求继续输入或重复授权。
+- **服务、设备和清理：**本轮没有观察到新的 SecurityAgent 请求；Host `47321/47322/47323` 无 listener，无 WSS、Bonjour/NSD、邀请、配对或 RPC。手机前台仍是 Launcher，ADB reverse 为空；未启动 NodeProbe/testnode、未改网络。只通过 `agent-desktop close-app` 正常关闭本轮 PID `41386`；其余 Profile app 未触碰。临时 Release worktree 在记录后移除。
+- **结论：**当前提交的 exact-lock Release 再次复现钥匙串身份读取挂起。旧 PID 的残留授权 UI 和本轮查询挂起同时存在，但现有证据不能证明两者因果。Touch ID 不在当前旧式登录钥匙串提示中可选；迁移到 Data Protection Keychain/生物识别保护也未实现，且不保证解决这次 SecurityServer 挂起。A5.4/A5.5、生产 LAN/WSS/配对/RPC 继续开放。
