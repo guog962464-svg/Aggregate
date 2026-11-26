@@ -85,6 +85,7 @@ class BinaryLicenseInventoryTest(unittest.TestCase):
                         }
                     ],
                     "provenance": {
+                        "status": "reproduced-transform",
                         "source": "NDK arm64 sysroot libc++_shared.so",
                         "sourceSha256": "a" * 64,
                         "transform": "llvm-strip --strip-unneeded",
@@ -94,11 +95,15 @@ class BinaryLicenseInventoryTest(unittest.TestCase):
             ],
         }
 
-    def validate(self, inventory: dict[str, object] | None = None):
+    def validate(
+        self,
+        inventory: dict[str, object] | None = None,
+        names: list[str] | None = None,
+    ):
         with zipfile.ZipFile(self.archive_path) as archive:
             return GENERATOR.validate_binary_license_inventory(
                 inventory if inventory is not None else self.inventory,
-                archive.namelist(),
+                names if names is not None else archive.namelist(),
                 archive,
                 self.archive_hash,
                 self.archive_path.stat().st_size,
@@ -157,6 +162,74 @@ class BinaryLicenseInventoryTest(unittest.TestCase):
         inventory = json.loads(json.dumps(self.inventory))
         inventory["binaries"][0]["provenance"]["outputSha256"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "output hash"):
+            self.validate(inventory)
+
+    def test_accepts_unresolved_license_without_evidence(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        mapping = inventory["binaries"][0]
+        mapping["licenseCandidate"] = {
+            "status": "unresolved",
+            "reason": "Static-link and applicable grant evidence are incomplete.",
+        }
+        mapping.pop("evidence")
+        mapping["provenance"]["status"] = "source-identified-build-unverified"
+
+        result = self.validate(inventory)[self.binary_path]
+
+        self.assertEqual(result["_licenseEntries"], None)
+        self.assertEqual(result["evidence"], [])
+        self.assertIn(
+            {
+                "name": "aggregate:license-candidate-status",
+                "value": "unresolved",
+            },
+            result["_licenseProperties"],
+        )
+        self.assertIn(
+            {
+                "name": "aggregate:binary-provenance-status",
+                "value": "source-identified-build-unverified",
+            },
+            result["_provenanceProperties"],
+        )
+
+    def test_candidate_license_still_requires_packaged_evidence(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"][0]["evidence"] = []
+        with self.assertRaisesRegex(ValueError, "packaged license evidence"):
+            self.validate(inventory)
+
+    def test_complete_coverage_accepts_all_packaged_native_libraries(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["coverage"] = "all-packaged-native-libraries"
+        result = self.validate(inventory)
+        self.assertEqual(set(result), {self.binary_path})
+
+    def test_complete_coverage_rejects_an_unmapped_native_library(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["coverage"] = "all-packaged-native-libraries"
+        with zipfile.ZipFile(self.archive_path) as archive:
+            names = archive.namelist()
+        names.append("lib/arm64-v8a/libnode.so")
+        with self.assertRaisesRegex(ValueError, "unmapped=.*libnode.so"):
+            self.validate(inventory, names)
+
+    def test_rejects_unsupported_coverage(self) -> None:
+        for coverage in ("all-libraries-maybe", ["partial"]):
+            with self.subTest(coverage=coverage):
+                inventory = json.loads(json.dumps(self.inventory))
+                inventory["coverage"] = coverage
+                path = self.root / "invalid-inventory.json"
+                path.write_text(json.dumps(inventory), encoding="utf-8")
+                with self.assertRaisesRegex(
+                    ValueError, "unsupported binary-license inventory coverage"
+                ):
+                    GENERATOR.load_binary_license_inventory(path)
+
+    def test_requires_provenance_status(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"][0]["provenance"].pop("status")
+        with self.assertRaisesRegex(ValueError, "provenance status"):
             self.validate(inventory)
 
 

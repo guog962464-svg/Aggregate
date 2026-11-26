@@ -541,6 +541,12 @@ def load_binary_license_inventory(path: Path) -> dict[str, object]:
         raise ValueError("binary-license inventory is missing its archive identity")
     if not isinstance(inventory.get("binaries"), list) or not inventory["binaries"]:
         raise ValueError("binary-license inventory must contain at least one binary")
+    coverage = inventory.get("coverage", "partial")
+    if not isinstance(coverage, str) or coverage not in {
+        "partial",
+        "all-packaged-native-libraries",
+    }:
+        raise ValueError("unsupported binary-license inventory coverage")
     return inventory
 
 
@@ -606,9 +612,14 @@ def validate_binary_license_inventory(
         if sha256(archive.read(packaged_path)) != expected_binary_hash:
             raise ValueError(f"packaged binary hash mismatch for {packaged_path}")
 
-        raw_evidence = raw_mapping.get("evidence")
-        if not isinstance(raw_evidence, list) or not raw_evidence:
-            raise ValueError(f"{owner} must contain packaged license evidence")
+        candidate = raw_mapping.get("licenseCandidate")
+        candidate_status = candidate.get("status") if isinstance(candidate, dict) else None
+        raw_evidence = raw_mapping.get("evidence", [])
+        if (
+            not isinstance(raw_evidence, list)
+            or (candidate_status == "candidate" and not raw_evidence)
+        ):
+            raise ValueError(f"{owner} must contain a list of packaged license evidence")
         evidence: list[dict[str, str]] = []
         evidence_paths: set[str] = set()
         for evidence_index, raw_evidence_item in enumerate(raw_evidence):
@@ -636,7 +647,6 @@ def validate_binary_license_inventory(
                 raise ValueError(f"packaged license evidence hash mismatch: {evidence_path}")
             evidence.append({"path": evidence_path, "sha256": expected_evidence_hash})
 
-        candidate = raw_mapping.get("licenseCandidate")
         license_entries, license_properties = license_candidate_fields(
             candidate, packaged_path, evidence
         )
@@ -649,6 +659,9 @@ def validate_binary_license_inventory(
             raise ValueError(f"{owner} provenance source must be non-empty")
         if not isinstance(transform, str) or not transform.strip():
             raise ValueError(f"{owner} provenance transform must be non-empty")
+        provenance_status = provenance.get("status")
+        if not isinstance(provenance_status, str) or not provenance_status.strip():
+            raise ValueError(f"{owner} provenance status must be non-empty")
         source_hash = validate_inventory_digest(
             provenance.get("sourceSha256"), f"{owner} source sha256"
         )
@@ -665,12 +678,27 @@ def validate_binary_license_inventory(
         mapping["_licenseEntries"] = license_entries
         mapping["_licenseProperties"] = license_properties
         mapping["_provenanceProperties"] = [
+            property_item("aggregate:binary-provenance-status", provenance_status),
             property_item("aggregate:binary-source", source),
             property_item("aggregate:binary-source-sha256", source_hash),
             property_item("aggregate:binary-transform", transform),
             property_item("aggregate:binary-output-sha256", output_hash),
         ]
         result[packaged_path] = mapping
+
+    if inventory.get("coverage", "partial") == "all-packaged-native-libraries":
+        packaged_native_paths = {
+            path
+            for path in names
+            if path.endswith(".so") and path.startswith(lib_prefixes)
+        }
+        if packaged_native_paths != set(result):
+            missing = sorted(packaged_native_paths - set(result))
+            unexpected = sorted(set(result) - packaged_native_paths)
+            raise ValueError(
+                "binary-license inventory coverage does not match packaged native libraries; "
+                f"unmapped={missing}, unexpected={unexpected}"
+            )
     return result
 
 
@@ -963,7 +991,7 @@ def main() -> int:
     static_inventory_stats: dict[str, int] = {}
     binary_license_inventory: dict[str, object] | None = None
     binary_license_inventory_hash: str | None = None
-    binary_license_inventory_stats: dict[str, int] = {}
+    binary_license_inventory_stats: dict[str, object] = {}
     if args.static_link_inventory is not None:
         static_inventory = load_static_link_inventory(args.static_link_inventory)
         candidate = static_inventory["candidate"]
@@ -1227,6 +1255,7 @@ def main() -> int:
             binary_license_mappings_by_path.update(external_binary_mappings)
             binary_license_inventory_stats = {
                 "mappedBinaries": len(external_binary_mappings),
+                "coverage": binary_license_inventory.get("coverage", "partial"),
             }
 
         for path in sorted(names):
@@ -1455,11 +1484,18 @@ def main() -> int:
             "candidate-specific static archives and direct linker edges are included; source and license evidence is not legal approval; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator"
         )
     if binary_license_inventory is not None:
-        scope_limit += (
-            "; binary license/provenance evidence is limited to "
-            f"{binary_license_inventory_stats['mappedBinaries']} explicitly mapped packaged "
-            "native libraries and does not establish full static-link closure or legal approval"
-        )
+        if binary_license_inventory_stats["coverage"] == "all-packaged-native-libraries":
+            scope_limit += (
+                "; license/provenance status records cover all "
+                f"{binary_license_inventory_stats['mappedBinaries']} packaged native libraries, "
+                "but unresolved rows remain and this does not establish full static-link closure or legal approval"
+            )
+        else:
+            scope_limit += (
+                "; binary license/provenance evidence is limited to "
+                f"{binary_license_inventory_stats['mappedBinaries']} explicitly mapped packaged "
+                "native libraries and does not establish full static-link closure or legal approval"
+            )
     if gradle_runtime_manifest is not None:
         scope_limit += "; Android Gradle runtime graph is limited to the supplied resolved configuration manifest"
     metadata_properties = [
@@ -1516,6 +1552,10 @@ def main() -> int:
                 property_item(
                     "aggregate:binary-license-inventory-mapped-binaries",
                     binary_license_inventory_stats["mappedBinaries"],
+                ),
+                property_item(
+                    "aggregate:binary-license-inventory-coverage",
+                    binary_license_inventory_stats["coverage"],
                 ),
             ]
         )

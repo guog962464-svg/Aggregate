@@ -1,0 +1,84 @@
+{
+  "format": "aggregate-nodeprobe-binary-license-inventory-v1",
+  "coverage": "all-packaged-native-libraries",
+  "archive": {
+    "sha256": "ebbc373ce6690e6aa646872c12dd56fb81804350d17c82d17f14b304855a77e1",
+    "sizeBytes": 36815259
+  },
+  "binaries": [
+    {
+      "archivePath": "lib/arm64-v8a/libaggregate_node_probe.so",
+      "sha256": "20c28530ee1952e96a16bf49e85d975a24cf1742ec30d9f64a9064d42fcc4f0e",
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "No applicable explicit project license grant was found in the checked repository paths; the JNI link graph and NDK/compiler source closure are incomplete, so no license expression is asserted."
+      },
+      "evidence": [],
+      "provenance": {
+        "status": "source-identified-build-unverified",
+        "source": "app/android/nodebridge/src/main/cpp/node_probe.cpp",
+        "sourceSha256": "986ef089614486768f59b39d37c21dc0c19ddf77f266e1541d3645d2927796f3",
+        "transform": "CMake/NDK shared-library build; exact NDK cache and static C++ runtime linkage are not reconciled",
+        "outputSha256": "20c28530ee1952e96a16bf49e85d975a24cf1742ec30d9f64a9064d42fcc4f0e"
+      }
+    },
+    {
+      "archivePath": "lib/arm64-v8a/libc++_shared.so",
+      "sha256": "b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f",
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "NCSA OR MIT"
+      },
+      "evidence": [
+        {
+          "path": "assets/a3-node-runtime/NOTICE-NDK-30-toolchain",
+          "sha256": "6b8633011d874b75629180e60de13ebfd546a10e56dc7d0380a35f6609f30617"
+        }
+      ],
+      "provenance": {
+        "status": "source-and-transform-reproduced",
+        "source": "Android NDK 30.0.16248370 arm64 sysroot libc++_shared.so",
+        "sourceSha256": "7466ed097631a564ed6bff0b47768caa76bf03270d2047b5a65c03f497b824df",
+        "transform": "NDK 30.0.16248370 llvm-strip --strip-unneeded",
+        "outputSha256": "b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f"
+      }
+    },
+    {
+      "archivePath": "lib/arm64-v8a/libnode.so",
+      "sha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "The packaged Node LICENSE covers Node's project terms, but the custom output's retained static third-party object/source closure and corresponding license set are incomplete."
+      },
+      "evidence": [
+        {
+          "path": "assets/a3-node-runtime/LICENSE",
+          "sha256": "8e603aa87c70d36e497004f0dec63111511cb61b7d65ace12e10ea791599286c"
+        }
+      ],
+      "provenance": {
+        "status": "official-source-archive-identified-build-unverified",
+        "source": "Official Node.js v26.13.1 source archive node-v26.13.1.tar.xz",
+        "sourceSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6",
+        "transform": "Custom Android arm64 Node build; output reproduction and complete linked-source closure are not attested",
+        "outputSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a"
+      }
+    },
+    {
+      "archivePath": "lib/arm64-v8a/libnode_cli.so",
+      "sha256": "53716252481ae9486d11c3b15264a794c9b8616f35fe17d807750dacf3e8d54a",
+      "licenseCandidate": {
+        "status": "unresolved",
+        "reason": "No applicable explicit project license grant was found in the checked repository paths, and direct NDK rebuilds have not reproduced the packaged binary; no license expression is asserted."
+      },
+      "evidence": [],
+      "provenance": {
+        "status": "source-identified-build-unverified",
+        "source": "app/android/nodeprobe/native/node_launcher.cpp",
+        "sourceSha256": "33de60cc84db7472d1adfac386ec66d513276a6f304c89c619196ede7b30938e",
+        "transform": "NDK r27.3, r28.2, and r30 direct rebuild attempts did not reproduce the packaged output; producing toolchain remains unresolved",
+        "outputSha256": "53716252481ae9486d11c3b15264a794c9b8616f35fe17d807750dacf3e8d54a"
+      }
+    }
+  ]
+}
