@@ -547,3 +547,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 ## 2026-11-27 A3.6 fellow99 runtime 与 CLI 发行刷新
 
 - 复核 Node 官方安全公告与 fellow99 两个 Release 页：Node 官方 26.13.1 仍是比较基线；Android arm64 runtime `libnode.so` 与匹配 CLI 仍以 26.13.0 为 Latest，没有 26.13.1 成对发行。没有下载、构建或运行新工件。此前 4 KB 隔离 JNI/npm 样本仍有效，但候选的安全版本、provenance、NOTICE/许可证/SBOM、产品集成与 16 KB 实机门槛继续开放；详见[发行复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-27-fellow99-android-runtime-and-cli-release-recheck)。
+
+## 2026-11-27 Aggregate-built Node 26.13.1 JNI and npm feasibility update
+
+- A3.6/A4 以官方 Node `26.13.1` 源码做了一次临时 arm64/API 24/NDK r30 `libnode.so` 构建；4 KB LGE AN10 真机上 JNI `node::Start` 成功运行 npm 12.2.2 的本地固定安装用例，精确允许的 lifecycle 脚本又启动同一构建产出的 Node `26.13.1` 子进程。隔离 APK 的 ELF `PT_LOAD` 静态 16 KB 对齐与 `zipalign -P 16` 通过；APK 展开约 100.1 MB。详见 [A3.6 Node 26.13.1 运行时记录](android-a3-runtime-research.md#2026-11-27-aggregate-built-node-26131-arm64-jni-and-npm-candidate)及 [A4 设备端 npm 验收](android-a4-progress.md#2026-11-27-node-26131-local-libnode-jni-and-npm-lifecycle-smoke)。
+- 此记录更新此前“尚无 Node 26.13.1 本机构建/实跑工件”的当前状态；不推翻“没有上游成对发行”的调查结论。单次 macOS 构建需手工调整 host 工具链，源码签名/provenance、完整 NOTICE 与二进制 SBOM、陷阱处理器改动安全审查、维护与产品集成、正式签名以及 16 KB 真机运行仍未完成。A3.6 不关闭，A4.7 的产品能力边界不变；A5.4/A5.5 Host 与业务验收也不受本次探针结果替代。
