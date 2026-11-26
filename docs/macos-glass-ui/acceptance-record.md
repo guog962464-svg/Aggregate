@@ -2617,3 +2617,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 实时拖动关联证据：相同 `480×224 pt` 外框与 `scale=1.5` 的纯开关隔离 fixture 已进行双向实时拖动并与固定种子的网页参照配对；正向/反向各有 `45/45` 个配对帧，`|Δprogress| p95` 为 `0.0154/0.0081`，`|Δt| p95` 为 `11.61/6.217 ms`。[双向同进度接触表](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-reference-sigma4/attempt-05/visuals/cursor-progress-contact-valid-size.png>) SHA-256 `3a5f61399ad9ae85e5ebf8e3e311540793622b2c67a9910eb829296612209b8e`；[逐帧配对 JSON](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-reference-sigma4/attempt-05/capture/full-frame-cursor-progress-pairs.json>)。该数据来自独立渲染时钟和窗口帧，不代表物理面板呈现时刻，也不消除可见光效/背景差异。
 - 证据：[后台原生深色设置页](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-background-settings-size/settings-dark.png>) SHA-256 `c35acc5b116646a1e8d1eb7a650c701ffefbc936049fae8817b7da4a71035b25`；[浅色设置页](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-background-settings-size/settings-light.png>) `0c02f7c8469deaebb6e5f8d20386e27a3c99746aa5dce9b0ee79445aca47555a`；[深色 AX tree](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-background-settings-size/ax-dark.json>) `e0d0f8acaf0541e4fc9a496cb05931f7d13f5b1fe881f9ee8ff62af02832967b`；[浅色 AX tree](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-background-settings-size/ax-light.json>) `33e04202d4a200af2e0c41928bf9bd8e7a23e13d4006adfb6200393febb03f8f`。截图和采集时序信息位于同一用户级证据目录。
 - 更正与边界：本记录取代前一条 v8.4 设置宽度项的 `466.667/467/422 pt` 几何值；前一版本的实时拖动与旧尺寸网页配对统计仅作为历史样本，不迁移到新尺寸。原 MP4 已删除，当前网页只是替代参照；本轮只通过尺寸回归、后台原生主题往返和既有同尺寸实时拖动片段，不宣称逐帧 `1:1`、真实显示 FPS、UI-6.8 或阶段 0–6 全部完成。
+
+### 2026-11-27 前台保护验收边界
+
+- 用户再次反馈打开 App/截图仍占用工作前台。此前仅检查 `is_focused=false`，不能证明窗口没有覆盖桌面；该证据不足以签收“后台验收”。
+- 本轮只读检查到当前前台应用为 Google Chrome，Aggregate 与截图进程均未运行。这只证明检查时没有遗留的 Aggregate 窗口，不用于否认之前发生过的遮挡。
+- 当前 `agent-desktop` 2.6 命令行拒绝 `sandbox` 子命令，因此没有可用的隔离 macOS 桌面。之后本轮未启动 App，也未采集桌面截图；仅运行离屏 `glass_action_button_test.dart` 与 `accessibility_test.dart`，19 项通过。
+- 后续严格按本文件前台保护流程执行。在隔离显示环境准备好之前，UI-5.4/5.7 原生 AX/VoiceOver、UI-6 的原生视觉与性能补验保持未验证；离屏测试结果不替代这些验收。
