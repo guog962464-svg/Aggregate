@@ -12,6 +12,13 @@ import 'theme_switch_calibration.dart';
 
 const _appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '开发版');
 
+// Keep the reference switch's simulation, particles, and optics unchanged.
+// The macOS settings card has room for the full-size glass track, so only its
+// scene presentation scale differs from the compact default instances.
+const _macSettingsThemeSwitchCalibration = ThemeSwitchCalibration(
+  scene: ThemeSwitchScene(scale: 1.5),
+);
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({
     super.key,
@@ -112,7 +119,7 @@ class SettingsPage extends StatelessWidget {
       macSettingsLayout: true,
       switchWidth: 448,
       switchHeightFactor: .5,
-      calibration: ThemeSwitchCalibration.reference,
+      calibration: _macSettingsThemeSwitchCalibration,
       appearance: preferences.appearance,
       systemLabel: '跟随 macOS 系统',
       helperText: '切换控件保持原始实时拖动、方向反转与太阳/月亮内部变化。',
