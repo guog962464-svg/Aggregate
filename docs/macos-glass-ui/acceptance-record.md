@@ -2630,3 +2630,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 在 `app/` 执行 `flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simulation_test.dart test/theme_switch_realtime_test.dart test/theme_switch_calibration_test.dart test/theme_switch_optics_test.dart test/macos_settings_theme_switch_geometry_test.dart`，28 项通过。该组覆盖开关交互/取消、实时积分、粒子模拟与校准、离屏光学探针，以及 480×224 pt 设置页几何。
 - `flutter analyze --no-pub` 通过，无问题。检查期间没有启动 App 或桌面截图；前台保护复核仍为 Google Chrome，Aggregate 进程已退出。
 - 这些结果确认当前 Flutter 状态模型、离屏渲染和几何回归；它们不证明 macOS WindowServer 连续帧、物理显示呈现、VoiceOver 或原生性能指标通过。UI-6.8 与阶段 0–6 保持部分验收。
+
+### 2026-11-27 UI-5.5 对比度离屏回归复跑
+
+- 在 `app/` 执行 `flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart`，3 项全部通过。第一项检查五个生产页面的文字区域在六种窗口尺寸/DPR、深浅初始主题和临界切换相位中的对比度；第二项检查六种窗口/DPR下深浅主题中的玻璃按钮标签；第三项检查 101 个主题插值相位中的普通、主、危险、禁用、忙碌及参考按钮文字。
+- 本项使用 Flutter Widget 离屏绘制与像素采样，未启动 Aggregate 窗口或桌面截图；没有修改产品源码。
+- 边界：这是已存在矩阵的当前 checkout 复跑，不扩展生产按钮实例、全页面状态或原生 Profile/display-present 覆盖，也不验证 VoiceOver；UI-5.5 仍部分验收。
