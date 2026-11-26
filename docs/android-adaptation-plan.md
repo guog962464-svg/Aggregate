@@ -484,6 +484,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 ## 2026-11-26 A3.6 与 A5 现场复核
 
+- **A5 Release Host 钥匙串输入边界复核（19:06–19:08 Asia/Shanghai）：**既有 Release `Aggregate.app` 的设置页可经 `agent-desktop` 操作；点击“启动 Host”后，macOS `SecurityAgent` 为 Host TLS 密钥弹出登录钥匙串授权。`agent-desktop` 可读该弹窗，但安全文本框输入返回 `POLICY_DENIED / delivery=not_delivered`；CUA `getState()` 再次超时。未输入密码或选择任何授权按钮；关闭本轮 Release 实例后弹窗消失，47321/47322/47323 均无监听、ADB reverse 为空。没有 WSS、Bonjour/NSD、邀请、配对或 RPC 新证据；A5 仍开放。详见 [Release Host 与钥匙串输入边界复核](android-a5-android-client.md)。
+
 - **A3.6 发行新鲜度：**官方当前安全线为 Node 26.13.1 与 24.22.3；已核对的 nodejs-mobile/fogtape 移动发行仍落后于对应安全线或处于预发布状态，Termux 24.22.3 包不是嵌入式 `libnode.so` SDK，Towartz 26.13.1 是无 npm 的独立可执行文件。没有找到可据此关闭 A3.6 的维护方 Android 嵌入发行；本轮仅复核公开发行元数据，没有下载、构建或运行设备。详见 [A3.6 发行复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-26-maintained-android-node-runtime-freshness-recheck)。
 - **A5 当前网络与 Host：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，同属 `192.168.8.0/24`；4 KB 手机仍在用户新闻 App 前台。尝试启动本机已有的 Release Host 构建后，界面停在“正在启动”，系统出现 Keychain 授权请求；桌面自动化工具因安全限制拒绝操作 `SecurityAgent`，没有输入密码或点选“始终允许”。本轮只终止了自己启动的 Release 进程，Host 端口和 ADB reverse 均为空；未生成邀请、配对或调用 RPC。因此同网段已由当前读数确认，但当前 direct LAN/WSS 仍无新通过证据。详见 [A5 当前同网段 Host 启动记录](android-a5-android-client.md#2026-11-26-a5-当前同网段现场与-keychain-授权阻塞)。
 - **A5 Touch ID 可行性：**源码读取/创建 Host identity 的 Keychain 项没有设置生物识别 access control，也没有使用 `LAContext`；当前系统 ACL 对话框不能直接切换为 Touch ID。本机能力探测显示 Touch ID 可用，但只检查能力，未执行认证。若加入 Touch ID，需要带保留 Host ID、证书 pin 与既有 grant 的迁移设计。本轮未改代码或用户 Keychain。详见 [Keychain Touch ID 核对](android-a5-android-client.md#2026-11-26-keychain-touch-id-可行性核对)。

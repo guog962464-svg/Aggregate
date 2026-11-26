@@ -692,3 +692,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **连通性：**Mac 到手机和 Android 到 Mac 的 ICMP 各收到 2/2 回复。随后 Mac 在 `192.168.8.4` 的临时端口 `60968` 监听一次性 TCP 连接，Android 使用 `toybox nc -w 4` 收到 `aggregate-readonly-tcp-ok`；服务端记录 peer `192.168.8.7:37946` 后立即退出。该结果确认本轮直连 TCP 可达，不代表 Host/WSS/Bonjour/NSD。
 - **Host 与清理：**本轮没有启动 Host、触发 Keychain、生成邀请、配对或调用 RPC。临时 listener 已随单次连接退出；Host 端口 `47321` 无 listener，ADB reverse 为空。未改网络或任何授权。
 - **结论：**用户再次反馈后的当前地址、双向 ICMP 和一次 TCP 会话均支持两台设备当前可在局域网直连。A5 Host 仍需在安全 UI 可操作的条件下继续启动与只读配对；本轮没有新增 WSS 或业务验收结果。
+
+## 2026-11-26 A5 Release Host 启动与系统钥匙串输入边界复核（19:06–19:08 Asia/Shanghai）
+
+- **启动入口：**使用已有 Release `Aggregate.app`（未重建）打开设置页，并通过 `agent-desktop` 的语义界面操作点击“启动 Host”。设置页可访问；点击后系统 `SecurityAgent` 显示针对 `io.github.guog962464.aggregate.host.tls.v1` 的登录钥匙串授权请求。
+- **授权边界：**`agent-desktop` 能读取授权弹窗与安全文本框，但对该 secure text field 的输入返回 `POLICY_DENIED`（`semantic action is unavailable and focus fallback is denied`），结果明确为 `delivery=not_delivered`。没有密码进入字段，没有点击“始终允许”“允许”或“拒绝”，也没有使用脚本/API 绕过系统授权。CUA 的 `getState()` 本轮再次超时并重置运行时。
+- **清理与观察：**终止仅由本轮启动的 Release PID `17669` 后，SecurityAgent 弹窗消失；对其重新快照结果为 hidden/`ref_count=0`。保留另一既有 Profile Aggregate 进程。复查 Host `47321/47322/47323` 无监听，ADB reverse 为空；Android 前台仍为系统 Wi‑Fi 快捷页，未启动 NodeProbe/testnode，也未改网络、Keychain、身份或配对数据。
+- **结论：**当前双向 ping 与普通 TCP 连通证据仍有效，但生产 Host 未能越过 macOS 钥匙串授权，因此本轮没有新增 WSS、Bonjour/NSD、邀请、配对或 RPC 结果。密码未发送，A5 direct-LAN 业务验收继续开放；恢复条件是有可用且允许向该安全文本框输入的系统界面通道后，再从设置页启动 Host，并严格只读验收 `host.hello`、`connection.list`。
