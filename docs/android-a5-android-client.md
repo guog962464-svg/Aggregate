@@ -713,3 +713,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络与启动：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`；Mac→手机和手机→Mac ping 各 2/2。把本轮 Release app 窗口明确聚焦后，从“设置 → Mac Host”再次启动；约 25 秒后 UI 显示通用“Host 启动失败”。`SecurityAgent` 无可见窗口，Host TLS identity 日志查询无记录。现有通用错误无法区分 Keychain、接口或本地网络等失败来源，因此不把根因归到某一项。
 - **服务与清理：**Host TCP `47321/47322/47323` 无 listener，ADB reverse 为空；无本轮 WSS、Bonjour/NSD、邀请、配对或 RPC。仅终止本轮 PID `24664`；另一个 Profile Aggregate 进程未触碰。手机保持启动器前台，未启动 NodeProbe/testnode。没有输入钥匙串密码、操作 Keychain/ACL 或改变 Host identity。
 - **验收结论：**本次 exact-lock Release 构建和签名完整性检查通过，Host 运行验收失败；没有观察到安全提示或服务 listener。A5.4/A5.5 仍开放。临时 worktree 与其构建产物在结果归档后清理。
+
+<a id="2026-11-26-a5-current-network-clean-release-host-retry"></a>
+## 2026-11-26 A5 当前同网段下干净 Release Host 重试（20:35–20:38 Asia/Shanghai）
+
+- **网络复核：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，同属 `/24`；手机 `PAGE_SIZE=4096`。Mac→手机和手机→Mac ping 各 2/2。Mac 临时监听 `192.168.8.4:55043`，Android 单次 TCP 发来 `aggregate-readonly-tcp-ok`，对端为 `192.168.8.7:38540`；连接后 listener 立即退出。该探针仅验证直连 TCP。
+- **构建：**在 detached worktree `/tmp/aggregate-a5-host-retry-debb10f`、提交 `debb10f2e94b810ddd0cc3987b23cbebb9f7ba4c` 上，以提交锁运行 `PUB_HOSTED_URL=https://pub.dev flutter pub get --enforce-lockfile` 和 `flutter build macos --release --no-pub`，均成功。锁 SHA-256 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`；bundle ID `io.github.guog962464.aggregate`，ad-hoc 签名、无 Team ID，`codesign --verify --deep --strict` 通过。构建输入与随后 docs-only 提交 `fdcd719` 的 Host/macOS 源码相同。
+- **Host 结果：**从设置页只点击一次“启动 Host”。UI 先显示“正在启动…”，约 21 秒后进入“Host 启动失败。请检查 Keychain、网络接口和本地网络权限后重试。”本轮没有可见 `SecurityAgent` 窗口；对该进程最近 5 分钟的统一日志按 Host/TLS/Keychain/error 等关键词过滤，没有匹配记录。无法据此确定失败阶段或根因。Host `47321/47322/47323` 均无 listener；无本轮 WSS、Bonjour/NSD、邀请、配对或 RPC。
+- **清理与结论：**未输入钥匙串密码或修改 Keychain/ACL/Host identity。仅关闭本轮启动的 PID `28990`；临时 worktree 随后移除。手机保持 Android launcher，ADB reverse 为空，未启动 NodeProbe/testnode。当前同网段双向 ping 与 TCP 直连均通过，但 Release Host 启动仍失败；A5.4/A5.5 保持开放。
