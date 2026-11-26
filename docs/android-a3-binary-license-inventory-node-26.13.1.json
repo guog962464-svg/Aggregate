@@ -57,10 +57,10 @@
         }
       ],
       "provenance": {
-        "status": "official-source-archive-identified-build-unverified",
+        "status": "source-build-unverified-link-and-strip-reproduced",
         "source": "Official Node.js v26.13.1 source archive node-v26.13.1.tar.xz",
         "sourceSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6",
-        "transform": "Custom Android arm64 Node build; output reproduction and complete linked-source closure are not attested",
+        "transform": "Existing compiled archive/object inputs relinked byte-identically with a generated link map; NDK 30.0.16248370 llvm-strip --strip-unneeded reproduces the packaged DSO; clean source compilation, full license closure, and signed build attestation remain unverified",
         "outputSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a"
       }
     },

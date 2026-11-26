@@ -598,3 +598,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 当前双向 ping 各 2/2；手机路由为经 `wlan0` 直连。临时 worktree 中的 exact-lock Debug 启动前置 `flutter pub get --enforce-lockfile` 失败（将改变 106 项依赖）；随后仅在该隔离目录普通解析依赖并成功启动 Debug UI，主工作区 lock 未更改。
 - 用户提供的凭据经 SecurityAgent secure field 提交两次并尝试一次性“允许”后，提示仍未结束；退出 Debug app 后对残留请求做一次拒绝以清除，不曾选择“始终允许”。Host 按钮回到“启动 Host”，`47321/47322/47323` 无 listener，ADB reverse 为空，手机在 Launcher；没有 WSS、Bonjour/NSD、邀请、配对或 `host.hello`/只读 `connection.list` 新结果。此次无法判断密码是否被接受，也没有查出此前 `SecItemCopyMatching`/SecurityServer 等待的原因。
 - 该尝试不是 exact-lock 或 Release 通过证据；A5.4/A5.5 继续开放。完整状态见 [A5 当前 Debug Host 复验](android-a5-android-client.md)。
+
+## 2026-11-27 A3.6 Node 26.13.1 link-stage 复现
+
+- 基于当前隔离候选的既有 object/archive 输出重放生成的链接命令，新增 map 输出后，未剥离 `libnode.so` 与原构建逐字节一致；NDK 30 `llvm-strip --strip-unneeded` 又复现了 APK 内的精确 `libnode.so`。Map 记录 37 个 `--whole-archive` 输入、两个隐式 NDK 静态归档和对应哈希，摘要在 [Node 26.13.1 link-map summary](android-a3-node26.13.1-link-map-summary.json)。
+- BOM 随后刷新为 SHA-256 `d7e129ff9752faa8902494c04e110f2640090c2b81e7ac38fef07a649834d5ec`，308 components / 152 dependency nodes / 362 edges，schema 0 errors；Node license status 仍 unresolved，`composition=incomplete`。
+- 这关闭了当前候选“链接阶段输出与静态归档输入尚无可核对 map”的缺口；没有重建 C/C++ 源码，也没有完成每个归档对象的来源、许可证和 NOTICE 闭包。A3.6/A4.7 继续开放；正式签名、产品集成、法律审查和 16 KB 真机仍未验收。

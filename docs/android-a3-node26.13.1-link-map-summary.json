@@ -1,0 +1,398 @@
+{
+  "format": "aggregate-node26-link-map-summary-v1",
+  "candidate": {
+    "nodeVersion": "26.13.1",
+    "androidAbi": "arm64-v8a",
+    "androidApi": 24,
+    "ndkRevision": "30.0.16248370",
+    "sourceArchiveSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6",
+    "unstrippedLibnodeSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
+    "packagedLibnodeSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
+    "apkSha256": "ebbc373ce6690e6aa646872c12dd56fb81804350d17c82d17f14b304855a77e1",
+    "apkSizeBytes": 36815259,
+    "apkLibnodePath": "lib/arm64-v8a/libnode.so"
+  },
+  "linkReproduction": {
+    "method": "Extracted exact clang++ link command from make -C out BUILDTYPE=Release -n V=1 libnode; added only -Wl,-Map=<temporary> and -Wl,--cref; redirected output to a temporary path.",
+    "originalAndRelinkedUnstrippedByteIdentical": true,
+    "linkMapSha256": "55bfab80ebaf4932ec2ff793b94a1e87c2bba357f557df40e10af8339e682bd7",
+    "linkMapSizeBytes": 136916923,
+    "explicitArchiveCount": 37,
+    "implicitNdkArchiveCount": 2,
+    "explicitArchiveMemberEntries": 3653,
+    "implicitNdkArchiveMemberEntries": 296,
+    "mapExplicitArchiveMemberLabels": 3644,
+    "mapImplicitArchiveMemberLabels": 60,
+    "reproducedStrippedOutputSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
+    "strippedTransformMatchesPackagedFile": true,
+    "strippedTransformMatchesApkEntry": true,
+    "strippedTool": "NDK 30.0.16248370 llvm-strip --strip-unneeded",
+    "explicitLinkMode": "All 37 explicit .a inputs appear between --whole-archive and --no-whole-archive in the captured link command.",
+    "directNonArchiveInputs": [
+      "libnode/src/node_snapshot_stub.o"
+    ],
+    "explicitDynamicSystemInputs": [
+      "-lm",
+      "-ldl",
+      "-llog"
+    ]
+  },
+  "archives": [
+    {
+      "path": "toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21/lib/linux/aarch64/libunwind.a",
+      "role": "implicit-ndk-toolchain-input",
+      "name": "libunwind.a",
+      "sha256": "bfbe474acf75b59fd2f19f0b7210588aa662410d5d8d0996812fe50e9e0143ab",
+      "sizeBytes": 92456,
+      "archiveMemberEntries": 9,
+      "memberLabelsWithMapSections": 5
+    },
+    {
+      "path": "toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-aarch64-android.a",
+      "role": "implicit-ndk-toolchain-input",
+      "name": "libclang_rt.builtins-aarch64-android.a",
+      "sha256": "7e900bcdd0bb6f05824fd7e96c9309ee9c47c22751a1b3c98242d1f4902e4632",
+      "sizeBytes": 517438,
+      "archiveMemberEntries": 287,
+      "memberLabelsWithMapSections": 55
+    },
+    {
+      "path": "out/Release/obj.target/deps/ada/libada.a",
+      "role": "explicit-link-input",
+      "name": "libada.a",
+      "sha256": "f368a04759b128e874919f30150c9c4916c82b15c34752deed80bb6514435590",
+      "sizeBytes": 619766,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/brotli/libbrotli.a",
+      "role": "explicit-link-input",
+      "name": "libbrotli.a",
+      "sha256": "53658223881bcf00e74be6947f63d886521cd64430702e0b5a882f8835075195",
+      "sizeBytes": 956808,
+      "archiveMemberEntries": 35,
+      "memberLabelsWithMapSections": 34
+    },
+    {
+      "path": "out/Release/obj.target/deps/cares/libcares.a",
+      "role": "explicit-link-input",
+      "name": "libcares.a",
+      "sha256": "eb212670d15fab4e856e46afc5971ff289dde9f49751e892f8b80476e5e1cba9",
+      "sizeBytes": 2852710,
+      "archiveMemberEntries": 91,
+      "memberLabelsWithMapSections": 91
+    },
+    {
+      "path": "out/Release/obj.target/deps/histogram/libhistogram.a",
+      "role": "explicit-link-input",
+      "name": "libhistogram.a",
+      "sha256": "5d6dcc78d73e8ce9d2d5e2cdc0148d5edf4ad7ad358a1549bc6ccee6573ef9d3",
+      "sizeBytes": 23468,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/inspector_protocol/libcrdtp.a",
+      "role": "explicit-link-input",
+      "name": "libcrdtp.a",
+      "sha256": "be26bcd4ce5ed62ae71919885023ffe8a0733f1c832673ca4c7705467fa4c7fc",
+      "sizeBytes": 282382,
+      "archiveMemberEntries": 9,
+      "memberLabelsWithMapSections": 9
+    },
+    {
+      "path": "out/Release/obj.target/deps/libffi/libffi.a",
+      "role": "explicit-link-input",
+      "name": "libffi.a",
+      "sha256": "ad980b4c800a72c93b05839e8136c5695c78bad204c644467b01c5558cb1aa63",
+      "sizeBytes": 32076,
+      "archiveMemberEntries": 9,
+      "memberLabelsWithMapSections": 9
+    },
+    {
+      "path": "out/Release/obj.target/deps/llhttp/libllhttp.a",
+      "role": "explicit-link-input",
+      "name": "libllhttp.a",
+      "sha256": "19c948dc8db73360f5d675dbb8d1464dc2ae33277d465fa2e7cc97ae8bfe34df",
+      "sizeBytes": 104486,
+      "archiveMemberEntries": 3,
+      "memberLabelsWithMapSections": 3
+    },
+    {
+      "path": "out/Release/obj.target/deps/merve/libmerve.a",
+      "role": "explicit-link-input",
+      "name": "libmerve.a",
+      "sha256": "f8b02ef7e33c16f0be892ed9ce7cea440ac8f1b0fd2b674d497cac9c12331698",
+      "sizeBytes": 72786,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/nbytes/libnbytes.a",
+      "role": "explicit-link-input",
+      "name": "libnbytes.a",
+      "sha256": "fb5a90f1d1cb9cbcb886889cb38f8fbef7afb2f975f34dcbe029eb980b23cea7",
+      "sizeBytes": 6990,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/ncrypto/libncrypto.a",
+      "role": "explicit-link-input",
+      "name": "libncrypto.a",
+      "sha256": "8669c125c44c3c1acf7feb5a4359eaf711b89fb9954a541ab4acc6fe45b94f10",
+      "sizeBytes": 388474,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/ncrypto/libncrypto_engine.a",
+      "role": "explicit-link-input",
+      "name": "libncrypto_engine.a",
+      "sha256": "3fb2781b22f0a4c34c62aee3c15a1de9984ac23d594b68a5d69aa3e4dd34a6dd",
+      "sizeBytes": 6708,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/nghttp2/libnghttp2.a",
+      "role": "explicit-link-input",
+      "name": "libnghttp2.a",
+      "sha256": "2601e11e0b29e81664c2911c0997fd2bf6a40458406657e60bc46bc47cfd354f",
+      "sizeBytes": 326688,
+      "archiveMemberEntries": 26,
+      "memberLabelsWithMapSections": 26
+    },
+    {
+      "path": "out/Release/obj.target/deps/openssl/libopenssl.a",
+      "role": "explicit-link-input",
+      "name": "libopenssl.a",
+      "sha256": "50599fdd080498b538664b5419cf4397ae79b927709bb9d94eab5e603412d733",
+      "sizeBytes": 12683414,
+      "archiveMemberEntries": 1107,
+      "memberLabelsWithMapSections": 1107
+    },
+    {
+      "path": "out/Release/obj.target/deps/simdjson/libsimdjson.a",
+      "role": "explicit-link-input",
+      "name": "libsimdjson.a",
+      "sha256": "439ec669a67dd46c1a1831759877c9cb4b594fd5dbdd65af1e18b28612180c77",
+      "sizeBytes": 180484,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/sqlite/libsqlite.a",
+      "role": "explicit-link-input",
+      "name": "libsqlite.a",
+      "sha256": "b264252dcb239c15f8eda21ef6f8c3f399b33ee9487dbea76a329875c5bd50b5",
+      "sizeBytes": 2987710,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/uv/libuv.a",
+      "role": "explicit-link-input",
+      "name": "libuv.a",
+      "sha256": "932f2c10afaac499b6ee90b5ad87f0e84d43a25460d38ccf1c6ab1423631f22a",
+      "sizeBytes": 1749546,
+      "archiveMemberEntries": 36,
+      "memberLabelsWithMapSections": 36
+    },
+    {
+      "path": "out/Release/obj.target/deps/uvwasi/libuvwasi.a",
+      "role": "explicit-link-input",
+      "name": "libuvwasi.a",
+      "sha256": "445355739a68e4cf4f62bc5e3e36173aa2911fb8d97830b3e4204a6c5b79350a",
+      "sizeBytes": 88372,
+      "archiveMemberEntries": 9,
+      "memberLabelsWithMapSections": 9
+    },
+    {
+      "path": "out/Release/obj.target/deps/zlib/libzlib.a",
+      "role": "explicit-link-input",
+      "name": "libzlib.a",
+      "sha256": "c589f2d9fd204c32a1c7471aa59669df790c6eec66f676598fcb68231aafa3cf",
+      "sizeBytes": 127018,
+      "archiveMemberEntries": 16,
+      "memberLabelsWithMapSections": 16
+    },
+    {
+      "path": "out/Release/obj.target/deps/zlib/libzlib_adler32_simd.a",
+      "role": "explicit-link-input",
+      "name": "libzlib_adler32_simd.a",
+      "sha256": "3f492dfb5ff2255819abcc4b619cc6d44e3f264e3e0ff356370e3488caa9c5f2",
+      "sizeBytes": 2638,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/zlib/libzlib_arm_crc32.a",
+      "role": "explicit-link-input",
+      "name": "libzlib_arm_crc32.a",
+      "sha256": "1c03b58fbb9f9bdf4556d00f56d24d7ef052f5f0e73434eee1fe03ec38e6abfd",
+      "sizeBytes": 2832,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/deps/zlib/libzlib_data_chunk_simd.a",
+      "role": "explicit-link-input",
+      "name": "libzlib_data_chunk_simd.a",
+      "sha256": "f958b68d082aaabf5c1df636a9244ec583a29ae45dfb663ce8fa6cb7f5d6605a",
+      "sizeBytes": 27626,
+      "archiveMemberEntries": 2,
+      "memberLabelsWithMapSections": 2
+    },
+    {
+      "path": "out/Release/obj.target/deps/zstd/libzstd.a",
+      "role": "explicit-link-input",
+      "name": "libzstd.a",
+      "sha256": "a2c56cfd935405db39c8a5f25c50294cdb45c91b0154856427f5a0c7a30420fe",
+      "sizeBytes": 648424,
+      "archiveMemberEntries": 26,
+      "memberLabelsWithMapSections": 26
+    },
+    {
+      "path": "out/Release/obj.target/libnode_base.a",
+      "role": "explicit-link-input",
+      "name": "libnode_base.a",
+      "sha256": "c142206add59a3569f88bbe5668ccfda8fe83291dd5df7a1638073f45161aece",
+      "sizeBytes": 36232662,
+      "archiveMemberEntries": 200,
+      "memberLabelsWithMapSections": 200
+    },
+    {
+      "path": "out/Release/obj.target/tools/icu/libicudata.a",
+      "role": "explicit-link-input",
+      "name": "libicudata.a",
+      "sha256": "845aae296ffdfb89621fe4795cde73a86330b1186ad14b95a9280b2f5294b9f4",
+      "sizeBytes": 3907366,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/tools/icu/libicui18n.a",
+      "role": "explicit-link-input",
+      "name": "libicui18n.a",
+      "sha256": "dabcff78092a46a58ed76dc130548cf5afc2bfc55d0427b30869244e9188fbcb",
+      "sizeBytes": 6614758,
+      "archiveMemberEntries": 254,
+      "memberLabelsWithMapSections": 254
+    },
+    {
+      "path": "out/Release/obj.target/tools/icu/libicustubdata.a",
+      "role": "explicit-link-input",
+      "name": "libicustubdata.a",
+      "sha256": "37b78015072e4ddcd8cc30dbe19d95c0c59ae993225f8e812abd133b0e0f9d9f",
+      "sizeBytes": 1204,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/tools/icu/libicuucx.a",
+      "role": "explicit-link-input",
+      "name": "libicuucx.a",
+      "sha256": "973dbd625f0021ba1054296195965636e523064fe7dbad1398faa3e2f15b831a",
+      "sizeBytes": 3452890,
+      "archiveMemberEntries": 202,
+      "memberLabelsWithMapSections": 202
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libabseil.a",
+      "role": "explicit-link-input",
+      "name": "libabseil.a",
+      "sha256": "d3be5ede9ef312da009e3d4e584d6093e65c6b121fe3412535c1c9dce886f6f7",
+      "sizeBytes": 1922064,
+      "archiveMemberEntries": 110,
+      "memberLabelsWithMapSections": 109
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libhighway.a",
+      "role": "explicit-link-input",
+      "name": "libhighway.a",
+      "sha256": "000e8fd18dc68a0a5f53e7ebc8ed14293be3fffdb0bbbe1d4edbd907077c38ce",
+      "sizeBytes": 64704,
+      "archiveMemberEntries": 7,
+      "memberLabelsWithMapSections": 7
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libsimdutf.a",
+      "role": "explicit-link-input",
+      "name": "libsimdutf.a",
+      "sha256": "fef9735b3c2bf64b34369e19598f18819008ca52ef23078014d872a52e8ab2f3",
+      "sizeBytes": 435358,
+      "archiveMemberEntries": 1,
+      "memberLabelsWithMapSections": 1
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_base_without_compiler.a",
+      "role": "explicit-link-input",
+      "name": "libv8_base_without_compiler.a",
+      "sha256": "6f4cbd400e882c5bd710efa9a19e3ca8e88040ada42fc2c9d17b2b438db2cf9b",
+      "sizeBytes": 58331052,
+      "archiveMemberEntries": 946,
+      "memberLabelsWithMapSections": 939
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_compiler.a",
+      "role": "explicit-link-input",
+      "name": "libv8_compiler.a",
+      "sha256": "efd3970e665139bf91f955fa1369e44714d7cfb112059e1cd113056c0bb4ddea",
+      "sizeBytes": 53311114,
+      "archiveMemberEntries": 184,
+      "memberLabelsWithMapSections": 184
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_initializers.a",
+      "role": "explicit-link-input",
+      "name": "libv8_initializers.a",
+      "sha256": "19c71c548e6c764b526cf0a87e501abebc66dea8c8622bf04523d2b92005ff5f",
+      "sizeBytes": 41579562,
+      "archiveMemberEntries": 295,
+      "memberLabelsWithMapSections": 295
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_libbase.a",
+      "role": "explicit-link-input",
+      "name": "libv8_libbase.a",
+      "sha256": "5366ac330a23c1508739ef76730d5e8ff90098952863257725ab19ebf38a09f4",
+      "sizeBytes": 517522,
+      "archiveMemberEntries": 40,
+      "memberLabelsWithMapSections": 40
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_libplatform.a",
+      "role": "explicit-link-input",
+      "name": "libv8_libplatform.a",
+      "sha256": "3e8cb540ab0b188c6fba098b3df733d198480ac3c548c9ddc589df98909d0752",
+      "sizeBytes": 264504,
+      "archiveMemberEntries": 13,
+      "memberLabelsWithMapSections": 13
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_snapshot.a",
+      "role": "explicit-link-input",
+      "name": "libv8_snapshot.a",
+      "sha256": "24b471bc793f126390ee0f91637a54e2885e6706ff39a7a0051975da3a749df6",
+      "sizeBytes": 2734534,
+      "archiveMemberEntries": 3,
+      "memberLabelsWithMapSections": 3
+    },
+    {
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_zlib.a",
+      "role": "explicit-link-input",
+      "name": "libv8_zlib.a",
+      "sha256": "d72b399abd8184f669ad4522c6c4271dd90e2a145122ceea443836876586ce0b",
+      "sizeBytes": 165184,
+      "archiveMemberEntries": 17,
+      "memberLabelsWithMapSections": 17
+    }
+  ],
+  "limits": [
+    "This reproduces the link stage from existing compiled archives and object files, not a clean source-to-binary build.",
+    "It does not produce a signed build attestation or prove the source-build toolchain/inputs were independently reproducible.",
+    "Archive-level source/license evidence, 15 platform dynamic library versions, JNI bridge closure, full NOTICE mapping, legal review, V8 trap-handler security review, product integration, formal signing, and 16 KB physical-device execution remain open."
+  ]
+}
