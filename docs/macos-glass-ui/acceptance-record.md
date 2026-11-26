@@ -2540,3 +2540,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 结论边界：本轮通过设置页开关的名义轨道宽度拟合、窄/宽窗口几何和双向实时端点拖动；网页当前参考与轨道设计尺寸按 CSS/设计单位比较。粒子局部状态、边缘光、背景折射仍有可见差异；原 MP4 已删除，因此不能据此签收逐帧 `1:1`、原视频复原、UI-6.8 或阶段 0–6 总体验收。
 - 后续同步补录：尝试启动第二次同步录制时，采集开始前全局窗口清单因另一个 Release 路径的 Aggregate 进程而持续超时；本轮未开始录制或注入输入，没有新增同步帧数据。只退出本次唯一 bundle `io.github.guog962464.aggregate.ui68v84`，未操作 Release 进程；以 `lsappinfo front` 确认 Google Chrome/GitLab 恢复前台。该未启动的补录不改变上述尺寸和端点证据，也不增加同步时序结论。
 - 清理：隔离 Profile 已退出，Host 保持停止；没有更改用户系统外观偏好。
+
+<a id="ui-68-v84-synchronized-live-drag-2026-11-27"></a>
+### 2026-11-27 UI-6.8 v8.4 同步双向实时帧复核
+
+- 环境：隔离 macOS Flutter Profile fixture，设置页窗口 1360×900 pt，Host fixture 保持停止，开关 AX bounds 467×224 pt。本轮获准让该 App 临时占用前台；实际 CGEvent 输入因此命中 App。Chrome 使用独立 profile 和网页窗口，通过 CDP 注入网页侧输入；ScreenCaptureKit 只录入这两个测试窗口。用户原 GitLab 窗口未参与采集。网页 iframe 用 LCG seed 1831565813 重新加载，初始端点为深色，main.js?v=3 SHA-256 为 7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee。
+- 输入：正反向均为 48 个等距移动点、约 780 ms 拖动。CGEventTap 观察到 App 两向 2 down / 96 dragged / 2 up；网页 CDP 共 103 次派发、无错误。App 相对网页的 down/up 时差分别为深→浅 −0.789/+0.071 ms、浅→深 +0.704/−0.080 ms。两端 AX 最终都为深色。
+- 帧配对：将带 status=0 的 displayTimeMach 除以 24,000,000 换成主机 uptime，并根据每侧 down/move/up 光标轨迹归一进度、按事件时间插值；按序一对一配对，时间间隔上限一刷新 16.667 ms，进度差上限 0.035。深→浅 App/web 各 45 帧，配成 45 对，|Δt| p50/p95/max=3.302/5.978/7.229 ms，|Δprogress|=0.00548/0.01084/0.01314。浅→深各 39 帧，配成 38 对，|Δt|=1.287/14.958/15.650 ms，|Δprogress|=0.00385/0.02107/0.02456；App seq 364 和网页 seq 321 未配对。App/Web 共记录 385/381 个有效窗口帧，状态均为 0；MOV 解码帧数分别 388/381。
+- 目视结论：接触表在两向 0%/50%/100% 进度展示太阳/月亮主体、拖动方向和主要光效过渡，整体接近；粒子局部位置/亮度、边缘光轮廓/强度及背景梯度仍有可见差异。因此此项补强同步动态对照，不签收逐帧 1:1。两窗口使用独立渲染器与动画时钟，WindowServer 帧时间不是物理面板 scan-out；原 MP4 已删除，当前网页只是用户指定的可访问参照。
+- 证据：[完整复核报告](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/report.md>)；[双向关键进度接触表](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/visuals/cursor-progress-contact.png>) SHA-256 07b80d0d2bc100999a0fb3bc8a1d206669ef819a0531ed2ac32d99585460c3d0；[逐帧配对 JSON](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-synchronized-drag/capture/full-frame-cursor-progress-pairs.json>) SHA-256 1c54f891fca69d1b87fde7c7ad6c5f2fb71aa0fb66abeac38984d1c31fcc03ef；原始 MOV 与输入/帧时间日志均在同一证据目录。此前因 Chrome 遮挡 App 或网页初始端点/录制窗口不合格的尝试已单独归档，未纳入以上结果。
+- 本轮只更新验收证据，没有改产品源码、原开关逻辑或系统外观。UI-6.8、UI-6 与阶段 0–6 仍部分完成。
