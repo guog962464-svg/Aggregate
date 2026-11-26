@@ -671,3 +671,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 启动：**通过本机已有的 Release `Aggregate.app`（本轮未重建）的设置页启动 Mac Host，界面持续显示“正在启动”。系统启动 `SecurityAgent` 并出现 Keychain 访问请求；日志只确认 Aggregate 调用了 `SecItemCopyMatching`。桌面控制工具拒绝访问 `com.apple.SecurityAgent`（安全限制），没有输入密码、选择“始终允许”或修改 Keychain ACL。
 - **清理：**只终止本轮由 CUA 启动的 Release Aggregate 进程。复查 Mac `47321/47322/47323` 无监听、ADB reverse 为空；手机仍在原新闻 App。没有生成邀请、提交配对、改动任何 grant、执行 `host.hello`/`connection.list` 或其他 RPC。
 - **结论：**本轮读数确认两端同网段，但 Host 没有启动监听，故没有当前 direct TCP/WSS/Bonjour/NSD 或配对/RPC 证据。旧的 USB reverse 只读 RPC 仍按其范围有效；当前 LAN 验收受系统 Keychain 授权界面阻塞。
+
+## 2026-11-26 Keychain Touch ID 可行性核对
+
+- **当前实现：**[`HostTlsIdentityChannel`](../app/macos/Runner/HostTlsIdentityChannel.swift) 以普通 generic-password 项读取 Host identity，并在缺项时通过 `SecItemAdd` 写入；P-256 私钥以 permanent/application-tag 属性创建。读取查询没有 `kSecUseAuthenticationContext`，创建项没有配置 `kSecAttrAccessControl`。配对 grant 存储也使用普通 Keychain 项。源码没有接入 `LocalAuthentication`。
+- **可行方式：**Apple 的 Keychain 生物识别流程要求项目具备相应 access control，并可通过 `LAContext`/`kSecUseAuthenticationContext` 提供本地认证上下文；`biometryCurrentSet` 会在当前已登记指纹集合改变时使项目失效。参见 [Accessing Keychain Items with Face ID or Touch ID](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id)、[`kSecUseAuthenticationContext`](https://developer.apple.com/documentation/security/ksecuseauthenticationcontext) 与 [`biometryCurrentSet`](https://developer.apple.com/documentation/security/secaccesscontrolcreateflags/biometrycurrentset)。
+- **结论与边界：**当前弹出的“登录”钥匙串密码/ACL 对话框不能现场切换为 Touch ID；应用需要设计并实现受生物识别保护的项目及迁移流程。迁移必须保留现有 Host ID、证书 pin 与配对授权的语义，不能通过删除旧项目或自动轮换身份来规避授权。本轮仅做源码与官方 API 文档核对，没有更改代码、Keychain、Host 身份或用户配对数据。
