@@ -433,3 +433,7 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B020 实鼠标导出打开原生保存面板（2026-11-24）
 
 深色隔离 Profile 中，B020 导出按钮经真实 CGEvent down/up（84.013 ms，释放后指针留在目标）打开 macOS Save sheet；AX 读到 `Documents` 与默认文件名，Cancel 后 surface 消失，未写文件。此前释放后移开指针的采样没有观察到 sheet；本轮确认物理回调可用，但不能由两次不同采样方式单独归因先前漏观察的原因。完整环境、离散帧、AX 观察及 SHA-256 见[验收记录](acceptance-record.md#2026-11-24-ui-67-b020-cgevent-实鼠标导出保存取消复验)。未单独签收 hover/pressed 视觉、连续动画、Flutter `FrameTiming` 或物理面板 FPS；UI-6.7 与阶段 0–6 仍部分完成。
+
+### UI-6.7 补证：B020 暗色 Profile 按下态选定帧（2026-11-26）
+
+同一暗色隔离 Profile 先做 hover-only，再以指针留在按钮上的首帧作 press baseline；真实 CGEvent down/up 按住 `83.482 ms`。按钮中心来自 fresh AX bounds `(654,343,89,40)`；WindowServer 目标帧中 13/15 有效，缺 `+83.3 ms`、`+250 ms`，结束时隔离 Profile 仍在前台。按住 `+55.794 ms` 的按钮面暖光收敛并变暗；按钮 178×80 px 区域平均绝对 RGB 差异 `0.11732`，整窗 `0.00118`、邻区 `0.00000`，只作为局部变化佐证，不是视觉阈值。物理导出打开原生 Save 面板后取消，默认文件未写入。证据及 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b020-暗色-profile-按下视觉实窗补验)。这只签收 B020 暗色按住期选定帧；释放后面板遮暗窗口，release 曲线、连续动画、Flutter `FrameTiming` 与物理面板 FPS 仍未验，UI-6.7 和阶段 0–6 继续部分完成。
