@@ -2521,3 +2521,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 证据：[完整报告](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v83-size-calibration/report.md>)；[双向关键进度并排图](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v83-size-calibration/visuals/cursor-progress-contact.png>) SHA-256 `20e2cc231ec441b906d53c91ad00c523fd123b0b16d1c8de069868149dd5ab3c`；原始 MOV、逐帧和输入日志、配对 JSON、独立裁图与 SHA-256 清单均在该目录。
 - 结论边界：本轮签收 macOS 设置开关的尺寸拟合和同步实时拖动端点，不签收逐帧 `1:1`、原 MP4 复原、物理面板呈现时钟或真实显示 FPS。当前网页是 MP4 已删除后的参照；独立渲染器、时钟与粒子随机状态仍不同，光效和背景仍有可见细差。UI-6.8、UI-6 及阶段 0–6 总体验收继续部分完成。
 - 清理：隔离 Profile 与 Chrome 已关闭，前台已恢复原 Google Chrome/GitLab 窗口；没有更改用户系统外观偏好。
+
+### 2026-11-27 UI-5.4/UI-5.7 VoiceOver 键盘送达诊断
+
+- 环境：Flutter 3.47.8 macOS Profile fixture，隔离 bundle `io.github.guog962464.aggregate.ui57voiceover`；Settings 页使用进程内 `Ui6InspectionRuntime` 和 Host stub，Host AX 为“已停止”。VoiceOver 初始关闭，本轮临时打开后再关回（`voiceOverOnOffKey=0`）；字幕面板选项原本已勾选，系统输出音量原本为静音且未更改。
+- AX 与键盘：完整 AX 树列出“外观主题”为 button、名称“外观主题”、value“深色”，并提供 Click、ScrollTo、SetFocus。经全局 CGEvent 发送普通 Tab 后，Flutter 搜索控件出现焦点环，证明普通键盘输入到达 App；截图见[Tab 焦点](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui57-voiceover-focus/visuals/tab-focus.png>)，SHA-256 `6015a90d055990c63e12c914fc62ed62c1b7771878855814ca8ef519e1022089`。
+- VoiceOver：通过系统 VoiceOver 开关启用，确认字幕面板选项处于开启；先后用应用定向快捷键与全局 Control-Option-Right 事件尝试移动旁白光标。系统没有提供可见字幕面板或可确认的控件朗读回执。此结果不能区分 VoiceOver 是否接收了快捷键，也不能归因于 App AX 语义；UI-5.4/UI-5.7 保持部分验收。
+- 清理：VoiceOver 已恢复关闭；隔离 Profile、VoiceOver Utility 和系统设置均正常退出，原 Google Chrome/GitLab 窗口重新处于前台。未修改产品代码、真实服务或系统外观偏好。
