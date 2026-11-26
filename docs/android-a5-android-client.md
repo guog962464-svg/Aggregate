@@ -789,3 +789,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **签名配置：**当前 Runner 的 Debug/Release 使用 ad-hoc `CODE_SIGN_IDENTITY = "-"`，未配置 `DEVELOPMENT_TEAM`；本机没有已安装 provisioning profile。向隔离探针手工注入应用标识/team entitlement 后，Launch Services 拒绝启动该探针，不能替代经过授权的产品签名配置。该失败只说明本机当前配置没有提供可验证的 Data Protection Keychain app identity，不代表 Touch ID API 本身不可用。
 - **实施决定：**此时不能安全地把 Host 身份迁入 Data Protection Keychain，也不能声称已实现 Touch ID。迁移还受旧 `active-identity` 条目数据读取/解密挂起影响；必须先有合法且稳定的产品签名/Keychain access group，并在隔离身份上通过“创建受保护项—Touch ID 读取—重启后读取”的实验，再实现不改变 Host ID、证书 pin 和 grants 的双写/回滚迁移。现有旧身份和钥匙串项目均未读取、迁移、删除或轮换。
 - **结论：**Touch ID 可以用于未来受保护的 Keychain 项，但当前登录钥匙串密码/ACL 对话框仍不能直接改成指纹。首次迁移到新存储仍须成功读取旧身份一次；在现有签名与数据读取门槛关闭前，继续使用当前钥匙串授权流程。Apple 说明见 [TN3137](https://developer.apple.com/documentation/technotes/tn3137-on-mac-keychains)、[Touch ID Keychain item](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id) 与 [Keychain access groups](https://developer.apple.com/documentation/security/sharing-access-to-keychain-items-among-a-collection-of-apps/)。
+
+## 2026-11-27 A5 same-subnet current-worktree Debug Host retry (06:17 Asia/Shanghai)
+
+- **构建与入口：**在当前 checkout 执行 flutter run --no-pub -d macos，正式 lib/main.dart Debug app 构建并启动。使用已有 package configuration 和当前工作树；不是 exact-lock 或 Release 构建，也未执行 pub get。工作树中的无关用户修改没有被本任务改动。
+- **网络：**Mac en0 为 192.168.8.4/24；LGE AN10 的 wlan0 为 192.168.8.7/24，Android 15 / API 35 / arm64，PAGE_SIZE=4096。手机到 192.168.8.4 的路由查询选择 wlan0 直连；本次没有再次 ping，较早的同日记录中有双向 ping 结果。
+- **Host 与钥匙串：**点击“启动 Host”后，SecurityAgent 请求访问现有登录钥匙串项 io.github.guog962464.aggregate.host.tls.v1。已将用户提供的凭据通过安全字段提交两次，并分别尝试一次性“允许”和“始终允许”。该 TLS 服务的提示仍可见，因此不能推断认证成功或持久 ACL 已生效。随后对残留请求点“拒绝”以关闭提示；没有回读 ACL。应用发起的 Keychain 访问结果不可见，因此本次不能确定身份字节是否已返回。本任务未检查身份值，也未请求轮换或修改身份、证书 pin、配对 grant 或配对记录。
+- **结果与清理：**Host 按钮回到“启动 Host”，Mac 47321-47323 均无 listener；没有 WSS、Bonjour、邀请、配对、host.hello 或 connection.list 新结果。SecurityAgent 提示已隐藏，当前 Debug Aggregate 进程已优雅退出，隔离 NodeProbe 包已卸载，ADB reverse 为空；手机仍在 HONOR Launcher，没有 testnode 或 NodeProbe 进程。
+- **supersedes 与阶段状态：**本节只更新本次当前工作树的重试结果，替代此前“本次未选择始终允许”的表述：本次确实尝试了该选项，但 ACL 是否持久生效仍未知。当前同网段路由前置条件满足；既有 Host 身份钥匙串访问结果仍未确认，生产 Host 未启动。A5.4/A5.5 保持开放；未实现 Touch ID 或钥匙串迁移。

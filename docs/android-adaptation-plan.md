@@ -620,5 +620,15 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 ## 2026-11-27 A3.6 JNI bridge 构建来源子项复验
 
 - 使用当前仓库的 `node_probe.cpp` 与同一 CMakeLists，在 NDK 30.0.16248370 / API 24 / arm64-v8a 下清理并重建临时 JNI bridge；unstripped SHA-256 `df728da0d14de2c72b8227784db66e595b69304701d6a54a168b91c25a6684e9`。`llvm-strip --strip-unneeded` 得到 SHA-256 `20c28530ee1952e96a16bf49e85d975a24cf1742ec30d9f64a9064d42fcc4f0e`，与精确 Node 26.13.1 候选 APK 中的 bridge 字节一致。
-+- 仅关闭该 APK 的 JNI bridge 源码/编译链接/strip 对应关系缺口；项目授权许可、NDK 静态运行库成员/许可、完整 Node/SBOM/法律闭包、V8 trap-handler 安全复核、正式签名、产品集成与 16 KB 真机仍开放，A3.6/A4.7 不关闭。详见 [JNI bridge 精确构建复现](android-a3-runtime-research.md#2026-11-27-node-26-jni-bridge-source-link-strip-byte-reproduction)。
+- 仅关闭该 APK 的 JNI bridge 源码/编译链接/strip 对应关系缺口；项目授权许可、NDK 静态运行库成员/许可、完整 Node/SBOM/法律闭包、V8 trap-handler 安全复核、正式签名、产品集成与 16 KB 真机仍开放，A3.6/A4.7 不关闭。详见 [JNI bridge 精确构建复现](android-a3-runtime-research.md#2026-11-27-node-26-jni-bridge-source-link-strip-byte-reproduction)。
 - 从同一 APK 及两份候选清单重新生成 CycloneDX：376 个组件、192 个依赖节点、443 条边；358 个必需 npm 边均解析，3 个 native license 状态仍 unresolved、composition 仍 incomplete。CycloneDX 1.6 schema/FormatChecker 0 errors、依赖引用闭合，SBOM 19 项定向测试通过。
+
+## 2026-11-27 A3.6 V8 WebAssembly bounds-check smoke
+
+- 源码复核确认 Node 26.13.1 候选在关闭 trap-handler 后回退到 V8 显式 Wasm 边界检查；一台 Android 15 / 4 KB 真机上的隔离运行确认越界访问抛出 WebAssembly.RuntimeError。Node 在 Android 上的 POSIX 信号包装路径仍只有静态分析，尚未实机验证。
+- 这只关闭本次限定的 Wasm bounds-check 问题。Android signal chain、Node 全量干净构建与 attestation、NDK implicit archive 和许可闭包、法律审查、正式签名、产品集成及 16 KB runtime 仍未完成；A3.6/A4.7 不关闭。证据见 [A3.6 V8 review and 4 KB smoke](android-a3-runtime-research.md#2026-11-27-node-26131-v8-webassembly-bounds-check-review-and-4-kb-smoke-0617-asiashanghai)。
+
+## 2026-11-27 A5 same-subnet Host retry remains blocked
+
+- 复核 Mac 192.168.8.4/24 与手机 192.168.8.7/24 及 wlan0 直连路由后，构建并启动当前工作树的 Debug Host UI。安全字段凭据提交后，现有 TLS 登录钥匙串提示在尝试“允许”和“始终允许”后仍未消失。没有观察到 Host listener、WSS、NSD、配对或只读 RPC；提示随后关闭，持久 ACL 状态未知。
+- 当前同网段路径已满足前置条件；现有 Host 身份钥匙串访问结果未能确认，生产 Host 未启动。A5.4/A5.5 保持开放。详情见 [A5 same-subnet Debug Host retry](android-a5-android-client.md#2026-11-27-a5-same-subnet-current-worktree-debug-host-retry-0617-asiashanghai)。
