@@ -2424,5 +2424,5 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 
 - 复验按当前连续 macOS 设置页运行。原矩阵仍查找旧设置副标题和“Mac Host”标签页，导致没有采到现有设置文字/测试按钮；现改用 `macos-settings-host-section`、`macos-settings-shortcuts-section` 语义 key 及当前外观说明和快捷键文案，并逐按钮滚入可见范围后取样。
 - 真实生产 Shader 的离屏 Widget 相位矩阵在深色初始、800×600、DPR 1、daylight `0.545` 发现正文/背景最低 `4.4288:1`，低于项目 `4.5:1` 目标。将 `GlassSceneFrame` 的纯展示文字对比描边终点从 `0.54` 延至 `0.55`；太阳/月亮状态映射、拖动/点击、动画模拟和回调均未修改。
-- 完整 `flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart` 三项通过：浅/深初始偏好各覆盖 800×600、1024×768、1440×900 的 1×/2× 共 12 组，以及 `0.46–0.55` 的 17 个临界相位。六类按钮标签在每组/相位各取 3 个同按钮面未覆盖像素，共 3,672 个直接文字/按钮面样本；正文矩阵同时覆盖音乐、工作台、连接、活动、设置标题及设置说明/快捷键等区域。`flutter analyze --no-pub`、v8 工作台几何定向回归、Dart format 检查和 `git diff --check` 均通过。
+- 完整 `flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart` 三项通过：浅/深初始偏好各覆盖 800×600、1024×768、1440×900 的 1×/2× 共 12 组，以及 `0.46–0.56` 的 20 个临界相位（含描边关闭后的 `0.551`、`0.555`、`0.56`）。六类按钮标签在每组/相位各取 3 个同按钮面未覆盖像素，共 4,320 个直接文字/按钮面样本；正文矩阵同时覆盖音乐、工作台、连接、活动、设置标题及设置说明/快捷键等区域。`flutter analyze --no-pub`、v8 工作台几何定向回归、Dart format 检查和 `git diff --check` 均通过。
 - 边界：结果来自 Flutter Widget 离屏合成，不是原生 Profile/display-present 或物理面板帧；仍未覆盖全部生产按钮调用点和全部页面/状态。UI-5.5 因这些范围未验继续部分验收，UI-5 及阶段 0–6 未完成。
