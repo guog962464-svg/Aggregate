@@ -2662,3 +2662,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 使用普通测试执行六组 2×（800×600、1024×768、1440×900 × 浅/深主题），路由与点击流程 6 项通过。另以临时诊断副本跳过截图比较，六组 1× 路由/点击流程 6 项通过；临时副本已删除。两组共证明 12 个组合的 Flutter 离屏流程和布局没有抛错。
 - 当前正式金样比较仍失败。首次检查的 800×600 浅色音乐首页图与现有 `work/ui-review/` 金样差异 77.47%；该差异出现于交互之前的首页截图，旧定位器修复不能解释它。没有运行 `--update-goldens`，也没有批量覆盖金样。测试输出位于忽略目录 `app/tool/failures/`，用于后续逐图审阅。
 - 结论：按当前页面与设计稿逐张确认并决定哪些金样应更新前，UI-5.2 保持部分验收。此轮没有启动 Aggregate、打开桌面窗口或截图；前台保护要求继续有效。
+
+### 2026-11-27 UI-5.2 Profile 原生音乐样例态复核
+
+- 构建并启动隔离的 macOS Profile 预览入口 `preview_main.dart`，使用 `createPreviewRuntime()` 与 `PREVIEW_MUSIC=true` 的内存样例；无真实 Host、账号、音频、网络或外部 Runtime 调用。首次未启用样例开关时页面为空态，确认不能拿它与画板样例态对比。
+- 原生 AX 树确认音乐页显示「播放中 / 示例歌曲 / 示例歌手 / 0:12 / 3:20」和两条搜索结果（第一首可播放，第二首不可播放）。1360×900pt Retina 预览截图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/1360x900-light-player-preview-sample.png`；去除窗口阴影后的对照图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/player-preview-sample-window.png`。目视确认主卡片、两栏起点和结果区与 02 音乐页版式一致。
+- 这只覆盖一个浅色、1360×900pt、DPR 2 的原生样例态。`PreviewRuntime` 不含账号管理端口；现存 02 SVG 仍绘有音乐账号按钮，不能作为此预览入口的同态视觉 oracle。没有用 SVG 判定材质，也没有重录或替代旧金样。
+- 结论：本次补足一个原生 Profile 状态截图并确认样例数据与交互入口可见；54 张金样仍未逐张设计审阅，DPR 1 现有金样仍有失败，所以 UI-5.2 继续部分验收。测试后仅退出本轮 Profile PID 92134，并恢复原 Google Chrome GitLab 窗口为前台。
