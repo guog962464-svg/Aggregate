@@ -560,3 +560,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 当前提交在隔离 worktree 通过 exact-lock Pub、`flutter analyze`、WSS/配对/RPC 定向测试 49/49、arm64 Release APK/AAB 构建、16 KB ELF/ZIP 与 Bundletool 静态检查；产品包未签名且不含 Node/npm 运行时。
 - LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机的隔离 `.integration` Release 冷启动通过，验后卸载并恢复 Launcher。该证据不等于 16 KB 系统运行；16 KB 真机与正式签名门槛继续开放。
 - 详见 [A8 当前 HEAD `7b0ea25` 复验记录](android-a8-acceptance.md#2026-11-27-当前-head-7b0ea25-a8-release-静态与-4-kb-真机复验)。
+
+## 2026-11-27 A3.6 Node 26.13.1 源码归档签名核验
+
+- 使用 Node 官方发布签名和固定提交的 `nodejs/release-keys` keyring，验证 `SHASUMS256.txt.asc` 的 EdDSA 签名；签名指纹与官方 release-key README 相符。Node `v26.13.1` 源码归档实际 SHA-256 与签名清单条目一致。
+- 该结果只关闭该源码归档的签名/哈希核验缺口，不为本机构建的 Android `libnode.so` 提供构建证明。手工构建复现、二进制来源、许可/SBOM、正式签名和 16 KB 真机门槛仍未关闭，A3.6/A4 产品门槛不变。详见 [源码归档 PGP 核验](android-a3-runtime-research.md#2026-11-27-node-26131-source-archive-pgp-verification)。
