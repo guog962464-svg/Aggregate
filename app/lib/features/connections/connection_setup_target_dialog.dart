@@ -119,6 +119,27 @@ class _ConnectionSetupTargetDialogState
             ),
           ),
           body: SafeArea(child: list),
+          bottomNavigationBar: macDesign
+              ? SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: AggregateActionButton(
+                      key: const Key('connection-target-continue-compact'),
+                      label: '继续',
+                      semanticsLabel: '继续到连接配置',
+                      icon: Icons.arrow_forward_rounded,
+                      style: AggregateActionStyle.primary,
+                      onPressed: selectedTarget == null
+                          ? null
+                          : () => Navigator.pop(context, selectedTarget),
+                      enabled: selectedTarget != null,
+                      size: GlassButtonSize.primary,
+                      expand: true,
+                    ),
+                  ),
+                )
+              : null,
         ),
       );
     }

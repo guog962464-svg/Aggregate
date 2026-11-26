@@ -1,6 +1,6 @@
 # UI-6.7 生产按钮实例核对表
 
-> 源码基准：`d6968a8bc388ec6e45f7acfb46ccedefd31cc680`。扫描 `app/lib` 得到 109 个生产按钮调用点，分布于 20 个文件。此表是源码定位清单；动态列表会由一个调用点生成多个运行时实例，因此 109 个调用点不等于 109 个最终实例。
+> 初始源码基准：`d6968a8bc388ec6e45f7acfb46ccedefd31cc680`。初次扫描得到 109 个生产按钮调用点，分布于 20 个文件；2026-11-26 紧凑目标选择继续按钮新增 1 个调用点，目前共 110 个。此表是源码定位清单；动态列表会由一个调用点生成多个运行时实例，因此调用点数不等于最终实例数。
 
 ## 核验规则
 
@@ -42,9 +42,9 @@
 | B027 | `app/lib/features/connections/connection_setup_dialog.dart:765` | 连接管理：创建/编辑连接对话框 | 浅色/深色 Profile 的安全检查通过后按钮启用。2026-11-26 浅色按住 85.042 ms，press 4/5、hover 4/5（两者缺 +0 ms），状态码均为 0；保存后仅在预览进程内 AX 出现“Git CLI，已连接”，重启后恢复三条原始样例。未写真实连接配置。释放回弹、完整动画、FrameTiming、面板 FPS 未验；证据见[B026/B027 动效与内存回读](acceptance-record.md#b026b027-测试连接与保存按钮-hover-与-按下帧补验) |
 | B028 | `app/lib/features/connections/connection_setup_dialog.dart:785` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 540×700pt 与深色 Profile 请求紧凑尺寸后均显示“关闭添加连接”全屏布局；点击后表单收起且草稿未保存。深色截图见验收记录；小屏 Widget 回归也覆盖关闭与丢弃草稿 |
 | B029 | `app/lib/features/connections/connection_setup_dialog.dart:818` | 连接管理：创建/编辑连接对话框 | 浅色 Profile 表单取消退出，没有保存连接；深色本机 CLI、stdio MCP 和 HTTP MCP 表单也均取消返回，证据见 B013–B015 深色记录 |
-| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:50` | 连接管理：新增连接目标选择对话框 | 浅色与深色 Profile 都显示本机 Mac 与虚构配对 Mac 两个选项；深色目标选择器截图与 SHA 见验收记录。选择本机 Mac 后进入隔离配置表单 |
-| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:72` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 选择虚构配对 Mac（样例）进入内存 stub 配置表单；深色 Profile 同样读回目标“配对 Mac（样例）”，再完成 Host 查找未命中。没有连接设备；截图见验收记录 |
-| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:87` | 连接管理：新增连接目标选择对话框 | 浅色 Profile 目标选择器取消后关闭；深色 Profile Escape 取消后 AX 确认 picker 消失，管理连接页仍只有 3 个预置样例，没有新增连接。深色返回截图与 SHA 见验收记录 |
+| B030 | `app/lib/features/connections/connection_setup_target_dialog.dart:83` | 连接管理：新增连接目标选择对话框的执行设备选项 | 浅色与深色 Profile 都显示本机 Mac 与虚构配对 Mac 两个选项；深色目标选择器截图与 SHA 见验收记录。选择本机 Mac 后进入隔离配置表单 |
+| B031 | `app/lib/features/connections/connection_setup_target_dialog.dart:83` | 连接管理：新增连接目标选择对话框的执行设备选项 | 浅色 Profile 选择虚构配对 Mac（样例）进入内存 stub 配置表单；深色 Profile 同样读回目标“配对 Mac（样例）”，再完成 Host 查找未命中。没有连接设备；截图见验收记录 |
+| B032 | `app/lib/features/connections/connection_setup_target_dialog.dart:216` | 连接管理：宽屏目标选择器取消按钮 | 浅色 Profile 目标选择器取消后关闭；深色 Profile Escape 取消后 AX 确认 picker 消失，管理连接页仍只有 3 个预置样例，没有新增连接。深色返回截图与 SHA 见验收记录 |
 | B033 | `app/lib/features/connections/connections_page.dart:173` | 连接管理：连接行、筛选与操作 | 浅色紧凑删除确认见 `105-delete-confirm-light-compact.png`；暗色紧凑 Git CLI 删除确认见 `aggregate-ui6-7-connection-rows-dark-profile/git-delete-confirm.png`，点击取消后详情恢复，连接仍在 `git-delete-after-cancel.png`。删除未确认 |
 | B034 | `app/lib/features/connections/connections_page.dart:179` | 连接管理：连接行、筛选与操作 | 浅色及暗色确认框均能看到危险删除按钮；暗色按钮未点击，取消后 3 个内存样例仍保留。暗色图 `git-delete-confirm.png` 与 `git-delete-after-cancel.png` 见验收记录 |
 | B035 | `app/lib/features/connections/connections_page.dart:236` | 连接管理：连接行、筛选与操作 | 浅色紧凑连接页见 `101-connection-target-compact-light.png`；暗色紧凑添加入口打开目标选择器见 `aggregate-ui6-7-connection-setup-dark-profile/target-picker.png`。只进入内存预览表单，没有创建连接 |
@@ -122,6 +122,8 @@
 | B107 | `app/lib/widgets/result_panel.dart:398` | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色隔离 Profile 恢复内存中的 `outcomeUnknown` 活动；点“检查活动状态”后 AX 状态仍“结果待确认”，提示先在执行端确认且不要直接重跑。图 `unknown-outcome-recovery-dark.png`；fake 查询只读进程内状态。2026-11-23 浅色隔离 Profile 对具有有效进程内 `RunHandle` 的待确认结果实鼠标点击查询；fresh AX 状态仍“结果待确认”，提示不要直接重跑。浅色截图 SHA、构建入口与限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b107-浅色结果待确认恢复查询)。无真实执行端、按下帧或 FrameTiming |
 | B108 | app/lib/widgets/result_panel.dart:474 | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色 Profile 呈现生产文件结果；2026-11-23 浅色先以 stub 确认按钮路径，再用生产 MacRuntime.previewLocalFile() 读取隔离临时文件的真实两行内容。截图 SHA、源码恢复校验与覆盖边界见[验收记录](acceptance-record.md#2026-11-23-ui-67-b108b109-浅色生产本地文件路径复验)。未覆盖其他文件边界及按钮按下帧/FrameTiming |
 | B109 | app/lib/widgets/result_panel.dart:486 | 调用结果：复制、展开与结果操作 | 2026-11-18 暗色 stub 验收仅证明控件触发；2026-11-23 浅色 Profile 使用生产 MacRuntime.revealLocalFile()，Finder fresh AX 将隔离临时普通文件标为 selected。截图 SHA、源码恢复校验与限制见[验收记录](acceptance-record.md#2026-11-23-ui-67-b108b109-浅色生产本地文件路径复验)。未覆盖其他文件边界、按钮按下帧或 FrameTiming |
+| B110 | `app/lib/features/connections/connection_setup_target_dialog.dart:229` | 连接管理：宽屏目标选择器“选择”按钮 | 浅色 Profile hover 4/5、按下 5/5 个选定窗口帧，按住 85.038 ms；选择虚构 Mac Host 后进入进程内配置表单。没有连接设备、测试或保存；证据见验收记录 |
+| B111 | `app/lib/features/connections/connection_setup_target_dialog.dart:127` | 连接管理：紧凑目标选择器底部“继续”按钮 | 新增于 2026-11-26：浅色 540×700pt Profile 中选择虚构 Mac Host 后实点“继续”，AX 读回 Host 配置表单；取消草稿后列表保持 3 条样例。Widget 回归验证返回目标；hover 4/5、按下 4/5（漏 0 ms），按住 85.061 ms；证据见验收记录 |
 
 ## 当前结论
 

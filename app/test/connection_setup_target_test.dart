@@ -89,6 +89,80 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
+  testWidgets(
+    'compact macOS target picker continues with the selected device',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      tester.view.physicalSize = const Size(540, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+
+      final options = [
+        const ConnectionSetupTargetOption(
+          target: ExecutionTarget.device,
+          label: '本机 Mac',
+          detail: '默认目标 · 在此设备运行',
+        ),
+        ConnectionSetupTargetOption(
+          target: ExecutionTarget.host('ui6-preview-host'),
+          label: '示例 Mac Host',
+          detail: '已配对 · 连接管理',
+        ),
+      ];
+      ExecutionTarget? result;
+      await tester.pumpWidget(
+        GlassMotionScope(
+          child: MaterialApp(
+            theme: AggregateTheme.forPlatform(
+              AggregateTheme.light,
+              TargetPlatform.macOS,
+            ),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () async {
+                    result = await showConnectionSetupTargetDialog(
+                      context,
+                      options,
+                    );
+                  },
+                  child: const Text('打开目标选择'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('打开目标选择'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('第 1 步 · 选择执行设备'), findsOneWidget);
+      expect(
+        find.byKey(const Key('connection-target-continue-compact')),
+        findsOneWidget,
+      );
+      expect(result, isNull);
+      await tester.tap(find.text('示例 Mac Host'));
+      await tester.pumpAndSettle();
+      expect(result, isNull);
+
+      await tester.tap(
+        find.byKey(const Key('connection-target-continue-compact')),
+      );
+      await tester.pumpAndSettle();
+      expect(result, ExecutionTarget.host('ui6-preview-host'));
+      expect(tester.takeException(), isNull);
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
   testWidgets('target loading disables duplicate connection setup requests', (
     tester,
   ) async {
