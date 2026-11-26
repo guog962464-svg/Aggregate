@@ -160,6 +160,12 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 
 离线回归发现浅色 `muted` 文字对 `surface` / `glassBottom` 的静态对比度分别为 3.98:1 / 4.42:1，浅色 `danger` 对 `surface` 为 4.23:1。将浅色 `muted` 调整为 `#5F5E58`、`danger` 调整为 `#9D3E38` 后，四种静态玻璃材质上的最低对比度分别为 4.56:1 / 4.63:1；对比度断言现在会报告具体语义色和背景。相关按钮/主题/动效/动态背景 Widget 回归 71 项通过，`flutter analyze --no-pub`、Dart 格式检查与 `git diff --check` 通过。验证使用静态令牌与 Widget 离屏渲染，没有启动 macOS App 或采集新的原生截图；因此不能替代 display-present 像素、全部生产控件实例或 VoiceOver 验收，UI-5.5 仍部分验收。
 
+### 2026-11-26 后台 Profile 设置页窗口采集
+
+使用当前 `lib/preview/ui6_inspection_main.dart` 构建 Profile（`flutter build macos --profile --no-pub -t lib/preview/ui6_inspection_main.dart`），Runtime 为仅进程内的 `Ui6InspectionRuntime`。通过 `open -g -n` 后台启动，窗口为 800×632 logical px；`agent-desktop list-windows` 连续读到 `is_focused=false`，系统前台进程前、中、后均为 Google Chrome。先采深色设置页，再通过无焦点 AXPress 将预览主题改为浅色并采集；没有发送物理键盘/指针事件，也没有改 macOS 系统外观偏好。窗口截图为 1692×1356 px、2× scale factor：[深色](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui-background-profile-settings/settings-dark.png>) SHA-256 `4817aecbecdbdb0086f3be6f7384a642f3c3e3a94223564490dff01f6da3c46c`；[浅色](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui-background-profile-settings/settings-light.png>) SHA-256 `32e071570fb6f74c1c6716710a96b3746c3c2394ee9a9d41759b11cbbaa10c35`。截图后已优雅关闭隔离 App，进程列表确认为空，前台仍是 Chrome。
+
+该次只补充浅/深静态 Profile 窗口视觉与后台采集路径证据；不能据此签收物理拖动、完整动效、display-present、FPS、全部生产按钮或 VoiceOver，UI-6.6/UI-6.7 与阶段 0–6 仍未全部完成。
+
 ### 2026-11-19 系统 VoiceOver 开启态 Profile 复核
 
 使用 `flutter run -d macos --profile --no-pub -t lib/preview_main.dart` 启动 `preview_main.dart` 的内存 PreviewRuntime；没有连接真实服务。通过系统设置将 VoiceOver switch 从 0 打开并读回 `checked=1`。在 macOS 27.2.1 / Flutter 3.47.8 stable 的 Aggregate 800×632 logical px 窗口中，完整 AX 树仍包含四个设置标签、导航按钮、“外观主题”值“深色”和“跟随 macOS 系统”。键盘发送 VO+Right 后，字幕面板仅显示 VoiceOver Utility 的启动提示，没有得到可验证的应用控件朗读或焦点目标；因此只确认系统开启态下 AX 树可读，未完成 VoiceOver 主流程，也没有新增禁用控件 AXEnabled 结果。测试结束将 System Settings 的 VoiceOver switch 读回 `0`；`launchctl` 中 VoiceOver 服务无运行进程，已退出本轮启动的 Profile、System Settings 和 VoiceOver Utility。屏幕捕获只作临时局部检查并已删除，未归档完整桌面图像。
