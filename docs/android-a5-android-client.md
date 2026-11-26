@@ -774,3 +774,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络与服务：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`；Mac→手机与手机→Mac ping 各 2/2、0% 丢包，Android 路由为经 `wlan0` 直连。`47321/47322/47323` 无 listener，ADB reverse 为空；手机仍在 HONOR Launcher。没有 WSS、Bonjour/NSD、邀请、配对、`host.hello` 或 `connection.list` 新结果。
 - **清理与结论：**已退出本轮 Debug Runner，确认无该临时 worktree 的 Aggregate 进程、Host listener 或可见 SecurityAgent 对话框。此诊断只覆盖使用临时依赖解析的 Debug app；Host 仍未启动，不能判定 Keychain 密码或 SecurityServer 挂起的具体原因。A5.4/A5.5 继续开放；Touch ID 仍不是当前旧式登录钥匙串项可直接选择的认证方式。
 - **verified_scope：**提交 `55b2f2a` 的临时 macOS Debug app、普通 pub get 后的隔离 workspace、SecurityAgent secure field 与按钮状态、双向 ICMP、手机 foreground activity、Host 端口及 ADB reverse。未安装/启动 Android app、未配对或 RPC、未修改 Host identity/grants，也没有 exact-lock/Release、产品端到端或 16 KB 运行证据。
+
+## 2026-11-27 A5 Touch ID 可用性与 Debug Host 再验（05:21–05:38 Asia/Shanghai）
+
+- **设备与网络：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 真机 `wlan0=192.168.8.7/24`。双向 ping 各 2/2；手机经 `wlan0` 直连 Mac。手机没有切换到 testnode，本轮未启动或退出手机应用。
+- **授权界面与结果：**再次启动隔离 Debug app 的 Host 后，SecurityAgent 为现有登录 Keychain 中的 Host 身份数据和私钥操作分别显示多个授权请求。按用户已给的凭据逐项提交并只选择一次性“允许”，没有选“始终允许”，也没有轮换身份或改配对授权。弹窗结束后 Host 仍未启动；设置页显示通用启动失败提示。第二次观测时该隔离 app 进程已退出，Mac `47321/47322/47323` 无 listener，ADB reverse 为空；没有 WSS、Bonjour/NSD、邀请、配对、`host.hello` 或 `connection.list` 新结果。
+- **超时线索：**当前 `HostWssTransport` 的 service preparation timeout 为 30 秒；本轮需要逐项处理多个 Keychain 提示，整个授权过程超过该窗口。系统日志确认发生 `SecItemCopyMatching` 调用，但没有捕获到应用层精确异常。因此“service preparation 先超时、原生 Keychain 调用稍后完成”与观察相符，仍是待验证假设，不能写成已确认根因。
+- **Touch ID 可行性：**本机为 MacBook Pro `Mac17,9`；`LAContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics)` 返回可用，当前设备支持 Touch ID。现有身份读取仍是普通登录 Keychain 项，没有 `kSecAttrAccessControl`、Data Protection Keychain 或 `kSecUseAuthenticationContext`；当前弹窗无法直接切换为指纹。可行方向是将完整身份记录迁移到受访问控制的 Data Protection Keychain 项，并用一个可复用的 `LAContext` 读取；首次迁移仍须授权读取旧条目，还需核对签名 entitlement、启动超时和无 Touch ID 设备的回退，同时保持 Host ID、证书 pin 和 grants 不变。参考 [Apple Keychain Touch ID 文档](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id) 与 [TN3137](https://developer.apple.com/documentation/technotes/tn3137-on-mac-keychains)。本轮没有实现或运行迁移。
+- **阶段判定：**网络前置条件通过，但 A5.4/A5.5 未通过。需要先实现并测试生物识别 Keychain 迁移和超时行为，再用隔离 Host 重做 WSS/NSD 与只读 RPC 验收；本轮没有触碰 Release Host 或日常 App 数据。
