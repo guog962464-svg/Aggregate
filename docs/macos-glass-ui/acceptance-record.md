@@ -2419,3 +2419,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 系统状态：测试前 System Settings「无障碍 → 键盘 → 全键盘控制」为关闭。为避免 Tab 被系统设置过滤，短暂打开后复测，再恢复关闭；AX 值和 `AppleKeyboardUIMode` 最终均读回 `0`。隔离 Profile 与 System Settings 均已正常退出。
 - 输入结果：agent-desktop 的普通 Tab 到达 Flutter，但当前探针窗口 AX 仍把焦点报告在根 group；agent-desktop 的 Shift-Tab 调用没有产生 Flutter Shift 键事件。CUA `pressKey("shift+Tab")` 与 `pressKey("Shift_L+Tab")` 后日志都只出现 `Tab` 且 `HardwareKeyboard.isShiftPressed=false`，AX 焦点仍在根 group；`ISO_Left_Tab` 键名则被工具在发送前拒绝。故本轮没有实际验证 Shift-Tab 路径，既不判应用通过，也不判应用失败；UI-5.3 继续只保留既有的原生前向 Tab 证据和 Widget 双向测试。
 - 证据：[Flutter 键盘日志](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui5-shifttab/keyboard-events.log>) SHA-256 `0a701f9abe5a78ae4191d195b32e5a5df24164371b8a178efcf0337528269bc8`。当前工具输入仍无法稳定提供带 Shift 修饰符的原生事件，后续需要可信物理输入或可验证的系统键盘事件通道。
+
+### 2026-11-26 UI-5.5 动态背景文字对比边界与连续设置页矩阵复验
+
+- 复验按当前连续 macOS 设置页运行。原矩阵仍查找旧设置副标题和“Mac Host”标签页，导致没有采到现有设置文字/测试按钮；现改用 `macos-settings-host-section`、`macos-settings-shortcuts-section` 语义 key 及当前外观说明和快捷键文案，并逐按钮滚入可见范围后取样。
+- 真实生产 Shader 的离屏 Widget 相位矩阵在深色初始、800×600、DPR 1、daylight `0.545` 发现正文/背景最低 `4.4288:1`，低于项目 `4.5:1` 目标。将 `GlassSceneFrame` 的纯展示文字对比描边终点从 `0.54` 延至 `0.55`；太阳/月亮状态映射、拖动/点击、动画模拟和回调均未修改。
+- 完整 `flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart` 三项通过：浅/深初始偏好各覆盖 800×600、1024×768、1440×900 的 1×/2× 共 12 组，以及 `0.46–0.55` 的 17 个临界相位。六类按钮标签在每组/相位各取 3 个同按钮面未覆盖像素，共 3,672 个直接文字/按钮面样本；正文矩阵同时覆盖音乐、工作台、连接、活动、设置标题及设置说明/快捷键等区域。`flutter analyze --no-pub`、v8 工作台几何定向回归、Dart format 检查和 `git diff --check` 均通过。
+- 边界：结果来自 Flutter Widget 离屏合成，不是原生 Profile/display-present 或物理面板帧；仍未覆盖全部生产按钮调用点和全部页面/状态。UI-5.5 因这些范围未验继续部分验收，UI-5 及阶段 0–6 未完成。

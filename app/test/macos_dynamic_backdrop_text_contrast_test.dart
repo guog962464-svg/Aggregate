@@ -356,24 +356,16 @@ Future<void> _verifyGlassButtonContrast(
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mac Host'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text(disabledLabel));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text(busyLabel));
-    await tester.pumpAndSettle();
-
-    final labels = [
-      enabledLabel,
-      disabledLabel,
-      disabledDescription,
-      disabledSource,
-      busyLabel,
-      dangerLabel,
+    expect(
+      find.byKey(const Key('macos-settings-host-section')),
+      findsOneWidget,
+    );
+    final labelGroups = <List<String>>[
+      [enabledLabel],
+      [disabledLabel, disabledDescription, disabledSource],
+      [busyLabel],
+      [dangerLabel],
     ];
-    final labelRects = {
-      for (final label in labels) label: tester.getRect(find.text(label)),
-    };
     final frame = tester
         .widget<GlassSceneScope>(find.byType(GlassSceneScope))
         .frame;
@@ -383,71 +375,84 @@ Future<void> _verifyGlassButtonContrast(
     );
 
     final imageWidth = (size.width * pixelRatio).round();
-    for (final daylight in _samples) {
-      frame.publishThemeSwitch(sceneSeconds, daylight);
-      await tester.pump();
-      final boundary = tester.renderObject<RenderRepaintBoundary>(
-        find.byKey(boundaryKey),
+    for (final labels in labelGroups) {
+      final representativeFinder = find.text(labels.first);
+      final buttonFinder = find.ancestor(
+        of: representativeFinder,
+        matching: find.byType(GlassActionButton),
       );
-      final pixelData = await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: pixelRatio);
-        try {
-          return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-        } finally {
-          image.dispose();
-        }
-      });
-      final pixels = pixelData!.buffer.asUint8List(
-        pixelData.offsetInBytes,
-        pixelData.lengthInBytes,
-      );
+      expect(buttonFinder, findsOneWidget);
+      await tester.ensureVisible(buttonFinder);
+      await tester.pumpAndSettle();
+      final buttonRect = tester.getRect(buttonFinder);
+      expect(buttonRect.top, greaterThanOrEqualTo(0));
+      expect(buttonRect.bottom, lessThanOrEqualTo(size.height));
+      final labelRects = {
+        for (final label in labels) label: tester.getRect(find.text(label)),
+      };
 
-      for (final label in labels) {
-        final labelFinder = find.text(label);
-        final labelContext = tester.element(labelFinder);
-        final tokens = Theme.of(labelContext).extension<GlassDesignTokens>()!;
-        final textStyle = tester.widget<Text>(labelFinder).style!;
-        final foreground = textStyle.color!;
-        expect(textStyle.shadows, isNull);
-        final rect = labelRects[label]!;
-        final buttonFinder = find.ancestor(
-          of: labelFinder,
-          matching: find.byType(GlassActionButton),
+      for (final daylight in _samples) {
+        frame.publishThemeSwitch(sceneSeconds, daylight);
+        await tester.pump();
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(boundaryKey),
         );
-        expect(buttonFinder, findsOneWidget);
-        final buttonRect = tester.getRect(buttonFinder);
-        final rightGap = buttonRect.right - rect.right;
-        expect(rightGap, greaterThanOrEqualTo(6));
-        var minimumTextContrast = double.infinity;
-        Color? minimumBackground;
-        Offset? minimumPoint;
-        final y = rect.center.dy;
-        for (var xIndex = 0; xIndex < 3; xIndex++) {
-          final x = ((rect.right + rightGap * (xIndex + 1) / 4) * pixelRatio)
-              .floor();
-          final background = _pixel(
-            pixels,
-            x,
-            (y * pixelRatio).floor(),
-            imageWidth,
-          );
-          final contrast = _contrast(foreground, background);
-          if (contrast < minimumTextContrast) {
-            minimumTextContrast = contrast;
-            minimumBackground = background;
-            minimumPoint = Offset(x.toDouble(), y.toDouble());
+        final pixelData = await tester.runAsync(() async {
+          final image = await boundary.toImage(pixelRatio: pixelRatio);
+          try {
+            return await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+          } finally {
+            image.dispose();
           }
-        }
-        expect(
-          minimumTextContrast,
-          greaterThanOrEqualTo(4.5),
-          reason:
-              '${initialAppearance.name} start, $label, daylight $daylight, '
-              'foreground $foreground, background $minimumBackground '
-              'at $minimumPoint, token surface ${tokens.surface}, '
-              'top ${tokens.glassTop}, bottom ${tokens.glassBottom}, '
-              'button $buttonRect, label $rect',
+        });
+        final pixels = pixelData!.buffer.asUint8List(
+          pixelData.offsetInBytes,
+          pixelData.lengthInBytes,
         );
+
+        for (final label in labels) {
+          final labelFinder = find.text(label);
+          final labelContext = tester.element(labelFinder);
+          final tokens = Theme.of(labelContext).extension<GlassDesignTokens>()!;
+          final textStyle = tester.widget<Text>(labelFinder).style!;
+          final foreground = textStyle.color!;
+          expect(textStyle.shadows, isNull);
+          final rect = labelRects[label]!;
+          expect(rect.top, greaterThanOrEqualTo(0));
+          expect(rect.bottom, lessThanOrEqualTo(size.height));
+          final rightGap = buttonRect.right - rect.right;
+          expect(rightGap, greaterThanOrEqualTo(6));
+          var minimumTextContrast = double.infinity;
+          Color? minimumBackground;
+          Offset? minimumPoint;
+          final y = rect.center.dy;
+          for (var xIndex = 0; xIndex < 3; xIndex++) {
+            final x = ((rect.right + rightGap * (xIndex + 1) / 4) * pixelRatio)
+                .floor();
+            final background = _pixel(
+              pixels,
+              x,
+              (y * pixelRatio).floor(),
+              imageWidth,
+            );
+            final contrast = _contrast(foreground, background);
+            if (contrast < minimumTextContrast) {
+              minimumTextContrast = contrast;
+              minimumBackground = background;
+              minimumPoint = Offset(x.toDouble(), y.toDouble());
+            }
+          }
+          expect(
+            minimumTextContrast,
+            greaterThanOrEqualTo(4.5),
+            reason:
+                '${initialAppearance.name} start, $label, daylight $daylight, '
+                'foreground $foreground, background $minimumBackground '
+                'at $minimumPoint, token surface ${tokens.surface}, '
+                'top ${tokens.glassTop}, bottom ${tokens.glassBottom}, '
+                'button $buttonRect, label $rect',
+          );
+        }
       }
     }
   } finally {
@@ -494,7 +499,7 @@ Future<void> _verifyScenario(
 
     await tester.tap(find.text('管理连接').first);
     await tester.pumpAndSettle();
-    textRegions['connections title'] = tester.getRect(find.text('连接').last);
+    textRegions['connections title'] = tester.getRect(find.text('管理连接').last);
 
     await tester.tap(find.text('活动').first);
     await tester.pumpAndSettle();
@@ -506,14 +511,24 @@ Future<void> _verifyScenario(
     textRegions.addAll({
       'settings title': tester.getRect(find.text('设置').last),
       'section title': tester.getRect(find.text('外观').last),
-      'appearance description': tester.getRect(find.text('拖动玻璃控件，在浅色和深色之间切换。')),
+      'appearance description': tester.getRect(
+        find.text('切换控件保持原始实时拖动、方向反转与太阳/月亮内部变化。'),
+      ),
     });
-    await tester.tap(find.text('快捷键').first);
+    final shortcutsSection = find.byKey(
+      const Key('macos-settings-shortcuts-section'),
+    );
+    await tester.ensureVisible(shortcutsSection);
     await tester.pumpAndSettle();
-    for (final label in ['搜索所有功能', '运行当前功能']) {
-      await tester.ensureVisible(find.text(label));
+    for (final label in ['所有功能', '运行当前功能']) {
+      final labelFinder = find.descendant(
+        of: shortcutsSection,
+        matching: find.text(label),
+      );
+      expect(labelFinder, findsOneWidget);
+      await tester.ensureVisible(labelFinder);
       await tester.pumpAndSettle();
-      textRegions['ListTile: $label'] = tester.getRect(find.text(label));
+      textRegions['Shortcut: $label'] = tester.getRect(labelFinder);
     }
     final shaderSeconds = tester
         .widget<GlassSceneScope>(find.byType(GlassSceneScope))
@@ -576,7 +591,7 @@ Future<void> _verifyScenario(
       frame.publishThemeSwitch(shaderSeconds, daylight);
       await tester.pump();
       final useDarkForeground = daylight >= 0.5;
-      final needsHalo = daylight >= 0.46 && daylight <= 0.54;
+      final needsHalo = daylight >= 0.46 && daylight <= 0.55;
       final foreground = useDarkForeground ? Colors.black : Colors.white;
       final halo = useDarkForeground ? Colors.white : Colors.black;
       final textTheme = AggregateTheme.withMacOSBackdropTextContrast(
