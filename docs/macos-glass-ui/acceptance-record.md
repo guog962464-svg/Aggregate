@@ -2367,5 +2367,14 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - B024 discrepancy 与修正：首次复验发现原 `Ui6InspectionRuntime.detectExecutableSelection` 会把所有非空 Host 命令名都映射成占位成功，与矩阵的 `git` 未命中预期不一致；没有据当前行为改写验收预期。仅在隔离 Runtime 把 `git` 映射到 `null`，保留其他样例命名的占位引用，并新增定向回归。当前构建中选择“示例 Mac Host”，输入虚构 `git` 后点击“在 Mac Host 查找程序”，实窗显示“Mac Host 未找到该程序，请检查名称或授权”。回归测试覆盖该映射；这只证明内存预览和错误提示，不证明任何真实 Host 是否安装 Git。
 - B025：浅色本机配置表单中的“选择程序绝对路径”打开原生 Open 面板后取消；未选中或打开文件，随后取消连接草稿。取消后 AX 仍显示 Git CLI、MCP、音乐三条样例，没有新增连接。本轮没有对 Host 执行测试连接或保存。
 - 验证：`flutter test --no-pub test/ui6_inspection_runtime_test.dart` 10/10 通过；`flutter analyze --no-pub` 无问题；目标文件格式检查和 `git diff --check` 通过；浅色 Profile 构建成功。未运行生产入口、真实 Host、CLI、网络、凭据或文件读取。
-- 范围与限制：B024 未命中静态反馈和 B025 Open/Cancel 路径通过；B024 搜索按钮的按下/释放帧、完整连续动效、Flutter `FrameTiming`、物理面板 FPS 未采样，UI-6.7 与阶段 0–6 仍未整体验收。
+- 范围与限制：B024 未命中静态反馈、hover 与按下期选定帧，以及 B025 Open/Cancel 路径已有证据；释放回弹、完整连续动效、Flutter `FrameTiming`、物理面板 FPS 未采样，UI-6.7 与阶段 0–6 仍未整体验收。帧详情见下方 B024 按钮帧补验。
 - 证据：[B024 浅色未命中窗口](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light/host-lookup-not-found.html>) SHA-256 `2c078d92cdfb851623232e52633728b856cd833b3b62311684528ad624084f35`；Profile 实窗 AX 完整读取并确认输入值 `git`、查找按钮和未保存的内存提示。B025 本轮仅在会话内观察，没有另存系统文件面板截图。
+
+#### B024 查找按钮 hover 与按下帧补验
+
+- 环境：浅色隔离 Profile `io.github.guog962464.aggregate.ui6b024light`，窗口 `800×632pt`、DPR 2；按钮 fresh AX bounds `(970,519,46,46)`，鼠标中心 `(993,542)`。采样进程 PID `19978`，运行的只有 `Ui6InspectionRuntime` 内存夹具；真实生产 App 未操作。
+- 按下：CGEvent down/up 实按 `85.035 ms`，WindowServer 输出 84 帧；预设 `0/16.7/33.3/50/66.7 ms` 五个目标全部采到，状态码均为 0。选定帧呈现查找按钮暖色玻璃反馈，Host 未命中提示保留；没有测试连接或保存。
+- hover：先将指针移出窗口，再只投递 `mouseMoved` 到按钮；54 帧回调中目标 `33.3 ms` 缺采，其余 4 个目标帧状态码均为 0。约 `+67 ms` 帧相较无 hover 基线可见暖色高光；这确认的是离散 hover 样本，不代表连续进入或离场曲线。
+- 清理：AX 点击“取消”后草稿窗口关闭。重启同一隔离 Profile 后，主窗口 AX 确认“示例 Git CLI”“示例 MCP”“示例网易云音乐”三条连接仍在；新进程 PID `20876`。没有选取文件、写入连接、运行 CLI、网络访问或读取凭据。
+- 限制：按下五个选定帧及 hover 四个选定帧可复核；鼠标释放回弹、完整连续插值、Flutter `FrameTiming` 与物理面板 FPS 仍未采样。该结果只覆盖 B024 的浅色查找按钮，不代表 B025 导入按钮或其他生产按钮实例。
+- 证据：[按下 timing](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light-press/b024_lookup-timing.json>) SHA-256 `89e162da171e1044373b6d135e063fa287f388eb5f2cb71aa2edb62f45868492`；[按下 +0 ms](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light-press/b024_lookup-0000ms.png>) `dde7bfcd269d0bd51dc5a8b6f83359bd633441be4cc99887352fa493e222fd14`；[按下 +67 ms](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light-press/b024_lookup-0067ms.png>) `5296d732a269d9b921daf349146693c68d675818ad61e581b7063dbc2497a5d9`；[hover timing](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light-press/b024_lookup_hover-timing.json>) `b67f87d3bd6f62a88980cd939dc821785a5e5f0abc443bf869546c9fc2655f3d`；[hover 基线](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light-press/b024_lookup_hover-baseline.png>) `56c046f98ed60821e265d788372695ba79818e0c58c80ea9b74c5274e0a1eb89`；[hover +67 ms](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui6-b024-light-press/b024_lookup_hover-0067ms.png>) `d18713f1d50b72e9d028d56f92ed88990f73eb2fedbafd1eb223cfb6daa3ceba`。
