@@ -2538,4 +2538,5 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 回归与构建：`glass_theme_switch_test.dart` 11 项、`theme_switch_realtime_test.dart` 5 项、`theme_switch_calibration_test.dart` 5 项通过；`flutter analyze --no-pub lib/features/settings/settings_page.dart`、Dart 格式检查、`git diff --check` 与 macOS Profile 构建均通过。
 - 证据：[1360×900 深色](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-width-fit/wide-1360x900-dark.png>) SHA-256 `3b1b06bb1e467b4b27584a98deb3c226a373fb450b4aeb44081bef255ad8eb37`；[800×632 窄窗口](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-width-fit/narrow-800x632.png>) SHA-256 `95dde69b2f5da9db709ab4750bb9abf7dae11f810562545a29b34f8696a5c835`；[拖到浅色后的截图](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-width-fit/light-after-drag.png>) SHA-256 `9cdc552c8e8e3e87ac7d5dddd48bf51c301b791ffd2683c57bdac8216aa71f3d`。
 - 结论边界：本轮通过设置页开关的名义轨道宽度拟合、窄/宽窗口几何和双向实时端点拖动；网页当前参考与轨道设计尺寸按 CSS/设计单位比较。粒子局部状态、边缘光、背景折射仍有可见差异；原 MP4 已删除，因此不能据此签收逐帧 `1:1`、原视频复原、UI-6.8 或阶段 0–6 总体验收。
-- 清理：隔离 Profile 已优雅退出，原 Google Chrome/GitLab 窗口已重新获得前台；Host 保持停止。没有更改用户系统外观偏好。
+- 后续同步补录：尝试启动第二次同步录制时，采集开始前全局窗口清单因另一个 Release 路径的 Aggregate 进程而持续超时；本轮未开始录制或注入输入，没有新增同步帧数据。只退出本次唯一 bundle `io.github.guog962464.aggregate.ui68v84`，未操作 Release 进程；以 `lsappinfo front` 确认 Google Chrome/GitLab 恢复前台。该未启动的补录不改变上述尺寸和端点证据，也不增加同步时序结论。
+- 清理：隔离 Profile 已退出，Host 保持停止；没有更改用户系统外观偏好。
