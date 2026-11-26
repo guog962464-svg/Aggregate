@@ -5,7 +5,7 @@ import 'package:aggregate_contracts/aggregate_contracts.dart';
 
 import '../../host/host_wss_protocol.dart';
 
-const hostRpcMaxFrameBytes = 1024 * 1024;
+const hostRpcMaxFrameBytes = hostWssMaxFrameBytes;
 const maxHostEventSequence = 9007199254740991;
 const _maxJsonDepth = 64;
 const _maxRpcIdLength = 128;

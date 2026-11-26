@@ -289,6 +289,7 @@ final class PinnedAndroidHostSocketConnector
         protocols: const [hostWssSubprotocol],
         compression: CompressionOptions.compressionOff,
         customClient: client,
+        maxPayloadLength: hostWssMaxFrameBytes,
       ).timeout(timeout);
       if (socket.protocol != hostWssSubprotocol) {
         await socket.close(

@@ -1,6 +1,6 @@
 # Android A8 发布前检查与文档验收
 
-> 检查日期：2026-11-26（安全复扫；最近 Release 复验见下文 9b7c310）。此前 A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；当前提交的只读复扫新增 1 项低严重度 Android Host WSS 入站帧上限发现，尚待修复与回归验证。Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
+> 检查日期：2026-11-26（安全复扫与单帧上限复验；最近 Release 复验见下文 9b7c310）。此前 A8.4 安全修复、Release 构建检查及 A8.5 内部指南已完成；本轮复扫发现的 Android Host WSS 单帧无上限问题已按协议设置 1 MiB 上限，并通过超限文本/二进制回归验证。Dart SDK 的上限按单帧应用，尚不能限制多帧拼接后的消息总长度，该资源边界仍待处理。Android 仍未达到分发验收：缺少正式签名身份、16 KB 页真机及生产 Host/音乐闭环。Android 仍是实验目标，仓库当前产品发布目标为 macOS。
 
 ## A8.4 安全、依赖与分发检查
 
@@ -411,8 +411,11 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **4 KB 冷启动：**从同一源码构建 `.integration` test-signed Release APK，APK SHA-256 `809389cdf0e953358b12829afa259a4c50c6b79aaa05ba1eaee51fe1d13bde5b`，测试签名证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`。LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096`；`run_android_release_cold_start.py` 报 `Status: ok`、`LaunchState: COLD`，`MainActivity` 为 resumed，PID `16333` 存活，`WaitTime=1636 ms`。验收脚本已 force-stop 并卸载仅供本轮使用的 `.integration` 包；普通 Aggregate 包安装状态未改变。完成后设备回到系统 Launcher，ADB reverse 为空；未启动 NodeProbe/testnode。
 - **代码检查与边界：**`flutter test --no-pub test/connection_setup_target_test.dart` 6/6 通过，`flutter analyze --no-pub` 无问题。无障碍/TalkBack 测试按用户要求排除。没有 16 KB 真机，不能由静态布局推断 16 KB 系统运行通过；产品正式签名、A3.6/A4 运行时发布资格、A5 production Host 和 A6 真实账号/播放闭环仍是发布门槛。
 
-## 2026-11-26 当前 Android Host WSS 安全复扫
+## 2026-11-26 当前 Android Host WSS 安全复扫与单帧修复
 
 - **范围：**Codex Security Standard 只读扫描 `app/`，基线提交 `dcdb1968c043fab9b784cf68bb6aee2189bc792e`，扫描 ID `825e1492-7867-4870-be4e-8052a43d22a5`。当前主线 `4449092994ecd3a3441efa3481472a3fd5e9918f` 相对该基线只修改了 `docs/macos-glass-ui/` 文件，`app/` 输入未改变，因此该发现仍适用于当前 App 源码。扫描没有执行 App、设备、攻击流量或外部服务。
 - **发现：低严重度 / 高置信度 CWE-400。**`app/lib/platform/android/android_host_pairing_client.dart:287-292` 的 Android `WebSocket.connect` 没设置 `maxPayloadLength`；当前 Dart 默认上限接近 `int` 最大值。用户扫描攻击者控制的邀请并开始配对后，固定私有 IPv4 WSS 端点可发送超大帧，在 JSON 解码前消耗 App 进程内存并导致崩溃。Mac Host 的 1 MiB 入站上限约束服务端收到的数据，不会限制恶意服务端发给 Android 客户端的出站帧。
-- **处置与限制：**本轮只记录发现，未修改产品代码或运行回归测试；A8.4 不能依据此前扫描将当前源码标为无此问题。需在安全修复任务中为 Android 客户端设置与协议一致的帧上限并验证超限行为。尚无 16 KB 实机，正式签名、生产 Host 与真实音乐链路仍开放。完整报告：`/Users/guo/.codex/state/plugins/codex-security/scans/aggregate-security-dcdb1968/unversioned_20261126T142508Z_tqynfyj3/report.md`。
+- **修复：**共享 WSS 协议新增 `hostWssMaxFrameBytes=1 MiB`；Mac Host 继续使用该同一值限制入站帧，Android `WebSocket.connect` 也设置 `maxPayloadLength`。超限时不把消息交付给上层，既有 TLS pin、子协议、超时及合法 RPC 路径保持不变。
+- **验证：**先在未修代码上运行回归用例，合法小帧通过，1 MiB+1 的文本和二进制帧均被交付，测试按预期失败；修复后 `flutter test --no-pub test/android_host_socket_connector_test.dart test/android_host_pairing_client_test.dart` 15/15、`flutter test --no-pub test/host_wss_transport_test.dart test/host_rpc_protocol_test.dart test/android_host_setup_wss_e2e_test.dart` 28/28 通过。覆盖小帧、恰好 1 MiB、超限文本及超限二进制。四个修改/新增 Dart 文件的 `dart analyze` 通过。全量 `flutter analyze --no-pub` 报两个 `avoid_print` info，均位于用户未跟踪文件 `app/lib/preview/ui53_keyboard_probe_main.dart`，没有修改该文件。
+- **剩余边界：**本机 Dart 3.13.7 `dart:io` decoder 的长度检查针对每个 WebSocket frame；分片消息片段会累积进 `BytesBuilder`，当前实现没有跨片段总长度上限。此项是按 SDK 源码发现的额外资源边界，未用运行时分片攻击验证，也未由本次单帧修复解决；A8 安全验收不能宣称所有 WSS 消息都已有总长度上限。尚无 16 KB 实机，正式签名、生产 Host 与真实音乐链路仍开放。
+- **报告：**原始只读扫描报告保留于 `/Users/guo/.codex/state/plugins/codex-security/scans/aggregate-security-dcdb1968/unversioned_20261126T142508Z_tqynfyj3/report.md`。该扫描没有运行 App、设备、攻击流量或外部服务。
