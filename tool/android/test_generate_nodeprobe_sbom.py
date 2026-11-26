@@ -233,5 +233,175 @@ class BinaryLicenseInventoryTest(unittest.TestCase):
             self.validate(inventory)
 
 
+class Node26StaticLinkInventoryTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+        self.inventory_path = self.root / "inventory.json"
+        self.rows = [
+            self.object_row("libnode_base.a", 1, "node"),
+            self.object_row("libzlib.a", 1, "zlib"),
+            self.object_row("libzlib.a", 2, "ndk_cpufeatures"),
+        ]
+        sidecar_bytes = "".join(json.dumps(row) + "\n" for row in self.rows).encode()
+        (self.root / "objects.jsonl").write_bytes(sidecar_bytes)
+        evidence = [{"path": "LICENSE", "sha256": "b" * 64, "note": "license text hash"}]
+        self.inventory = {
+            "format": "aggregate-node26.13.1-static-link-inventory-v1",
+            "candidate": {
+                "nodeVersion": "26.13.1",
+                "androidAbi": "arm64-v8a",
+                "androidApi": 24,
+                "ndkRevision": "30.0.16248370",
+                "sourceArchiveSha256": "a" * 64,
+                "packagedLibnodeSha256": "c" * 64,
+                "unstrippedLibnodeSha256": "2" * 64,
+                "apkSha256": "d" * 64,
+                "linkMapSha256": "3" * 64,
+                "linkMapSizeBytes": 987,
+                "buildScriptSha256": "4" * 64,
+                "buildPatchScriptSha256": "5" * 64,
+            },
+            "coverage": {
+                "explicitArchiveCount": 2,
+                "explicitArchiveMemberEntries": 3,
+                "explicitObjectEntryCount": 3,
+                "sourceComponentCount": 4,
+            },
+            "archiveObjectEntriesFile": {
+                "path": "objects.jsonl",
+                "format": "JSON Lines; one self-describing object-source record per line",
+                "entryCount": 3,
+                "sizeBytes": len(sidecar_bytes),
+                "sha256": GENERATOR.sha256(sidecar_bytes),
+            },
+            "sourceComponents": [
+                {"id": "node", "name": "Node.js", "sourceRoot": ".", "licenseEvidence": evidence},
+                {"id": "zlib", "name": "Node.js zlib fork", "sourceRoot": "deps/zlib", "licenseEvidence": evidence},
+                {
+                    "id": "ndk_cpufeatures",
+                    "name": "Android NDK cpufeatures",
+                    "sourceRoot": "NDK 30.0.16248370/sources/android/cpufeatures",
+                    "licenseEvidence": evidence,
+                },
+                {
+                    "id": "ndk_libunwind",
+                    "name": "Android NDK libunwind",
+                    "sourceRoot": "NDK 30.0.16248370/toolchains/llvm/lib/linux/aarch64",
+                    "licenseEvidence": evidence,
+                },
+            ],
+            "explicitWholeArchiveInputs": [
+                self.archive_row("libnode_base.a", {"node": 1}, 1),
+                self.archive_row("libzlib.a", {"zlib": 1, "ndk_cpufeatures": 1}, 2),
+            ],
+            "implicitNdkArchives": [
+                {
+                    "name": "libunwind.a",
+                    "path": "toolchains/llvm/lib/linux/aarch64/libunwind.a",
+                    "sha256": "e" * 64,
+                    "sizeBytes": 123,
+                    "archiveMemberEntries": 1,
+                    "memberNamesWithLinkerMapOutputSections": ["unwind.o"],
+                    "memberNamesWithLinkerMapOutputSectionCount": 1,
+                    "linkerMapOutputSectionRowsForMappedNames": 2,
+                    "sourceObjectMapping": "NDK archive only; member source list unavailable",
+                }
+            ],
+            "directObjectInputs": [
+                {
+                    "objectPath": "out/Release/node_snapshot_stub.o",
+                    "objectSha256": "f" * 64,
+                    "sourcePaths": ["src/node_snapshot_stub.cc"],
+                    "sourceSha256": "1" * 64,
+                    "sourceComponentId": "node",
+                    "linkerMapSectionRows": 1,
+                }
+            ],
+        }
+        self.inventory_path.write_text(json.dumps(self.inventory), encoding="utf-8")
+
+    @staticmethod
+    def object_row(archive: str, ordinal: int, source_id: str) -> dict[str, object]:
+        member = f"member-{ordinal}.o"
+        return {
+            "archive": archive,
+            "archiveOrdinal": ordinal,
+            "memberName": member,
+            "mapMemberLabel": f"{archive}({member})",
+            "mapOutputSectionRowsForLabel": 1,
+            "mapLabelSharedBySameNameEntries": False,
+            "objectPath": f"out/{archive}/{member}",
+            "objectSha256": str(ordinal) * 64,
+            "archiveMemberPayloadEqualsObjectBytes": True,
+            "sourcePaths": [f"src/{source_id}.cc"],
+            "sourceSha256": str(ordinal + 1) * 64,
+            "sourceComponentId": source_id,
+        }
+
+    @staticmethod
+    def archive_row(name: str, source_counts: dict[str, int], members: int) -> dict[str, object]:
+        return {
+            "name": name,
+            "path": f"out/{name}",
+            "sha256": "2" * 64,
+            "sizeBytes": 300,
+            "archiveMemberEntries": members,
+            "archiveMemberNamesInOrderMatchObjectFileList": True,
+            "allArchiveMemberPayloadsByteMatchListedObjectFiles": True,
+            "sourceComponentEntryCounts": source_counts,
+            "uniqueArchiveMemberNames": members,
+            "uniqueMemberNamesWithLinkerMapOutputSections": members,
+            "linkerMapOutputSectionRows": members,
+        }
+
+    def test_builds_source_archive_and_direct_object_edges_with_unresolved_licenses(self) -> None:
+        inventory = GENERATOR.load_static_link_inventory(self.inventory_path)
+        components, dependency_nodes, archive_refs, direct_refs, stats = (
+            GENERATOR.node26_static_link_components(inventory, self.inventory_path)
+        )
+
+        self.assertEqual(len(archive_refs), 3)
+        self.assertEqual(len(direct_refs), 1)
+        self.assertEqual(stats["sourceComponents"], 4)
+        self.assertEqual(stats["explicitArchiveMembers"], 3)
+        self.assertEqual(stats["retainedArchiveEdges"], 3)
+        by_ref = {component["bom-ref"]: component for component in components}
+        node_source_ref = next(
+            ref for ref, component in by_ref.items()
+            if component["name"] == "Node.js" and "node26-source" in ref
+        )
+        self.assertNotIn("licenses", by_ref[node_source_ref])
+        self.assertIn(
+            {"name": "aggregate:license-candidate-status", "value": "unresolved"},
+            by_ref[node_source_ref]["properties"],
+        )
+        dependencies = {entry["ref"]: entry["dependsOn"] for entry in dependency_nodes}
+        self.assertEqual(dependencies[archive_refs[0]], [node_source_ref])
+        self.assertEqual(
+            set(dependencies[archive_refs[1]]),
+            {
+                ref for ref, component in by_ref.items()
+                if component["name"] in {"Node.js zlib fork", "Android NDK cpufeatures"}
+            },
+        )
+        self.assertEqual(dependencies[direct_refs[0]], [node_source_ref])
+
+    def test_rejects_a_sidecar_hash_mismatch(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["archiveObjectEntriesFile"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "sidecar SHA-256"):
+            GENERATOR.node26_static_link_components(inventory, self.inventory_path)
+
+    def test_rejects_sidecar_source_counts_that_do_not_match_the_archive(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["explicitWholeArchiveInputs"][1]["sourceComponentEntryCounts"] = {
+            "zlib": 2
+        }
+        with self.assertRaisesRegex(ValueError, "source component counts"):
+            GENERATOR.node26_static_link_components(inventory, self.inventory_path)
+
+
 if __name__ == "__main__":
     unittest.main()

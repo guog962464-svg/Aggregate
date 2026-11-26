@@ -426,8 +426,59 @@ def load_static_link_inventory(path: Path) -> dict[str, object]:
     inventory = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(inventory, dict):
         raise ValueError("static-link inventory must be a JSON object")
-    if inventory.get("format") != "aggregate-node-static-link-inventory-v1":
+    inventory_format = inventory.get("format")
+    if inventory_format not in {
+        "aggregate-node-static-link-inventory-v1",
+        "aggregate-node26.13.1-static-link-inventory-v1",
+    }:
         raise ValueError("unsupported static-link inventory format")
+    if inventory_format == "aggregate-node26.13.1-static-link-inventory-v1":
+        candidate = inventory.get("candidate")
+        if not isinstance(candidate, dict):
+            raise ValueError("Node 26.13.1 static-link inventory is missing candidate data")
+        for field in (
+            "nodeVersion",
+            "androidAbi",
+            "ndkRevision",
+            "sourceArchiveSha256",
+            "packagedLibnodeSha256",
+            "unstrippedLibnodeSha256",
+            "apkSha256",
+            "linkMapSha256",
+            "buildScriptSha256",
+            "buildPatchScriptSha256",
+        ):
+            if not isinstance(candidate.get(field), str) or not candidate[field]:
+                raise ValueError(f"Node 26.13.1 static-link inventory has no {field}")
+        for field in (
+            "sourceArchiveSha256",
+            "packagedLibnodeSha256",
+            "unstrippedLibnodeSha256",
+            "apkSha256",
+            "linkMapSha256",
+            "buildScriptSha256",
+            "buildPatchScriptSha256",
+        ):
+            validate_inventory_digest(candidate[field], field)
+        if not isinstance(candidate.get("androidApi"), int) or isinstance(candidate.get("androidApi"), bool):
+            raise ValueError("Node 26.13.1 Android API level must be an integer")
+        if not isinstance(candidate.get("linkMapSizeBytes"), int) or candidate["linkMapSizeBytes"] < 0:
+            raise ValueError("Node 26.13.1 link-map size must be a non-negative integer")
+        if not isinstance(inventory.get("sourceComponents"), list):
+            raise ValueError("Node 26.13.1 sourceComponents must be a list")
+        if not isinstance(inventory.get("explicitWholeArchiveInputs"), list):
+            raise ValueError("Node 26.13.1 explicitWholeArchiveInputs must be a list")
+        if not isinstance(inventory.get("implicitNdkArchives"), list):
+            raise ValueError("Node 26.13.1 implicitNdkArchives must be a list")
+        if not isinstance(inventory.get("archiveObjectEntriesFile"), dict):
+            raise ValueError("Node 26.13.1 inventory is missing its object-entry sidecar")
+        sidecar = inventory["archiveObjectEntriesFile"]
+        assert isinstance(sidecar, dict)
+        if sidecar.get("format") != "JSON Lines; one self-describing object-source record per line":
+            raise ValueError("Node 26.13.1 object-entry sidecar has an unsupported format")
+        if not isinstance(inventory.get("directObjectInputs"), list):
+            raise ValueError("Node 26.13.1 directObjectInputs must be a list")
+        return inventory
     candidate = inventory.get("candidate")
     link_map = inventory.get("linkMap")
     if not isinstance(candidate, dict) or not isinstance(link_map, dict):
@@ -927,6 +978,425 @@ def static_link_components(
     }
 
 
+def node26_static_link_components(
+    inventory: dict[str, object], inventory_path: Path
+) -> tuple[
+    list[dict[str, object]],
+    list[dict[str, object]],
+    list[str],
+    list[str],
+    dict[str, int],
+]:
+    """Build hash-bound Node 26 source/archive graph from the v2 inventory."""
+    if inventory.get("format") != "aggregate-node26.13.1-static-link-inventory-v1":
+        raise ValueError("Node 26 static-link inventory has an unsupported format")
+    candidate = inventory["candidate"]
+    assert isinstance(candidate, dict)
+    source_rows = inventory["sourceComponents"]
+    explicit_archives = inventory["explicitWholeArchiveInputs"]
+    implicit_archives = inventory["implicitNdkArchives"]
+    sidecar = inventory["archiveObjectEntriesFile"]
+    assert isinstance(source_rows, list)
+    assert isinstance(explicit_archives, list)
+    assert isinstance(implicit_archives, list)
+    assert isinstance(sidecar, dict)
+
+    relative_sidecar = sidecar.get("path")
+    if not isinstance(relative_sidecar, str):
+        raise ValueError("Node 26 object-entry sidecar requires a relative path")
+    sidecar_relpath = PurePosixPath(relative_sidecar)
+    if sidecar_relpath.is_absolute() or ".." in sidecar_relpath.parts:
+        raise ValueError("Node 26 object-entry sidecar path must stay beside the inventory")
+    sidecar_path = inventory_path.parent.joinpath(*sidecar_relpath.parts)
+    sidecar_bytes = sidecar_path.read_bytes()
+    if sha256(sidecar_bytes) != validate_inventory_digest(
+        sidecar.get("sha256"), "Node 26 object-entry sidecar sha256"
+    ):
+        raise ValueError("Node 26 object-entry sidecar SHA-256 does not match the inventory")
+    if sidecar.get("sizeBytes") != len(sidecar_bytes):
+        raise ValueError("Node 26 object-entry sidecar size does not match the inventory")
+    expected_entry_count = sidecar.get("entryCount")
+    if not isinstance(expected_entry_count, int) or expected_entry_count < 0:
+        raise ValueError("Node 26 object-entry sidecar entryCount is invalid")
+
+    source_by_id: dict[str, dict[str, object]] = {}
+    source_refs: dict[str, str] = {}
+    source_archive_digest = validate_inventory_digest(
+        candidate["sourceArchiveSha256"], "Node 26 source archive sha256"
+    )
+    components: list[dict[str, object]] = []
+    for raw in source_rows:
+        if not isinstance(raw, dict):
+            raise ValueError("Node 26 source component must be an object")
+        component_id = raw.get("id")
+        name = raw.get("name")
+        source_root = raw.get("sourceRoot")
+        evidence_rows = raw.get("licenseEvidence")
+        if not isinstance(component_id, str) or not component_id:
+            raise ValueError("Node 26 source component requires an id")
+        if component_id in source_by_id:
+            raise ValueError(f"duplicate Node 26 source component id: {component_id}")
+        if not isinstance(name, str) or not name:
+            raise ValueError(f"Node 26 source component {component_id} requires a name")
+        if not isinstance(source_root, str):
+            raise ValueError(f"Node 26 source component {component_id} requires sourceRoot")
+        if not isinstance(evidence_rows, list):
+            raise ValueError(f"Node 26 source component {component_id} requires licenseEvidence")
+        for evidence in evidence_rows:
+            if not isinstance(evidence, dict) or not isinstance(evidence.get("path"), str):
+                raise ValueError(f"invalid Node 26 license evidence for {component_id}")
+            validate_inventory_digest(evidence.get("sha256"), f"{component_id} license evidence sha256")
+        source_ref = f"urn:aggregate:node26-source:{component_id}:{source_archive_digest}"
+        source_by_id[component_id] = raw
+        source_refs[component_id] = source_ref
+        license_entries, license_properties = license_candidate_fields(
+            {
+                "status": "unresolved",
+                "reason": "Source and license evidence is hash-bound, but component attribution and legal review are incomplete.",
+            },
+            f"Node 26 source component {component_id}",
+            evidence_rows,
+        )
+        properties = [
+            property_item("aggregate:static-link-source-component-id", component_id),
+            property_item("aggregate:source-root", source_root),
+            property_item("aggregate:containing-source-archive-sha256", source_archive_digest),
+            property_item("aggregate:source-license-evidence", json.dumps(evidence_rows, sort_keys=True)),
+            *license_properties,
+        ]
+        if isinstance(raw.get("linkedObjectEntryCount"), int):
+            properties.append(property_item("aggregate:linked-object-entry-count", raw["linkedObjectEntryCount"]))
+        if isinstance(raw.get("linkedImplicitArchiveMemberLabelCount"), int):
+            properties.append(property_item("aggregate:implicit-archive-map-label-count", raw["linkedImplicitArchiveMemberLabelCount"]))
+        if raw.get("spdxExpression") is None:
+            properties.append(property_item("aggregate:spdx-expression", "not asserted"))
+        component: dict[str, object] = {
+            "type": "library",
+            "bom-ref": source_ref,
+            "name": name,
+            "properties": properties,
+        }
+        if component_id == "node":
+            component["version"] = candidate["nodeVersion"]
+        elif component_id.startswith("ndk_"):
+            component["version"] = candidate["ndkRevision"]
+        if license_entries is not None:
+            component["licenses"] = license_entries
+        components.append(component)
+
+    explicit_names: set[str] = set()
+    archive_refs: list[str] = []
+    archive_dependency_nodes: list[dict[str, object]] = []
+    explicit_member_total = 0
+    sidecar_rows_by_archive: dict[str, list[dict[str, object]]] = {}
+    ordinals_by_archive: dict[str, set[int]] = {}
+    try:
+        sidecar_text = sidecar_bytes.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("Node 26 object-entry sidecar is not UTF-8") from error
+    for line_number, line in enumerate(sidecar_text.splitlines(), start=1):
+        if not line.strip():
+            raise ValueError(f"Node 26 object-entry sidecar has a blank line at {line_number}")
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"invalid JSON on Node 26 object-entry line {line_number}") from error
+        if not isinstance(row, dict):
+            raise ValueError(f"Node 26 object-entry line {line_number} is not an object")
+        archive_name = row.get("archive")
+        ordinal = row.get("archiveOrdinal")
+        member_name = row.get("memberName")
+        object_path = row.get("objectPath")
+        source_paths = row.get("sourcePaths")
+        source_id = row.get("sourceComponentId")
+        if not isinstance(archive_name, str) or not isinstance(ordinal, int) or ordinal < 1:
+            raise ValueError(f"invalid Node 26 archive identity on object-entry line {line_number}")
+        if not isinstance(member_name, str) or not isinstance(object_path, str):
+            raise ValueError(f"invalid Node 26 object/member path on object-entry line {line_number}")
+        if not isinstance(source_paths, list) or not source_paths or any(not isinstance(value, str) for value in source_paths):
+            raise ValueError(f"Node 26 object-entry line {line_number} has no source path list")
+        if not isinstance(source_id, str) or source_id not in source_refs:
+            raise ValueError(f"Node 26 object-entry line {line_number} references an unknown source component")
+        validate_inventory_digest(row.get("objectSha256"), f"Node 26 object hash on line {line_number}")
+        validate_inventory_digest(row.get("sourceSha256"), f"Node 26 source hash on line {line_number}")
+        if row.get("archiveMemberPayloadEqualsObjectBytes") is not True:
+            raise ValueError(f"Node 26 archive member bytes are not verified on object-entry line {line_number}")
+        member_label_rows = row.get("mapOutputSectionRowsForLabel")
+        if not isinstance(member_label_rows, int) or member_label_rows < 0:
+            raise ValueError(f"invalid Node 26 link-map section count on line {line_number}")
+        if archive_name not in sidecar_rows_by_archive:
+            sidecar_rows_by_archive[archive_name] = []
+            ordinals_by_archive[archive_name] = set()
+        if ordinal in ordinals_by_archive[archive_name]:
+            raise ValueError(f"duplicate archive ordinal {archive_name}#{ordinal} in Node 26 sidecar")
+        ordinals_by_archive[archive_name].add(ordinal)
+        sidecar_rows_by_archive[archive_name].append(row)
+    if len(sidecar_text.splitlines()) != expected_entry_count:
+        raise ValueError("Node 26 object-entry sidecar count does not match the inventory")
+
+    def make_archive_component(
+        raw: dict[str, object],
+        *,
+        source_ids: list[str],
+        role: str,
+        member_count: int,
+        mapped_label_count: int,
+        map_rows: int,
+        source_mapping: str,
+    ) -> str:
+        name = raw.get("name")
+        path = raw.get("path")
+        if not isinstance(name, str) or not name.endswith(".a"):
+            raise ValueError("Node 26 static archive requires a .a filename")
+        if name in explicit_names:
+            raise ValueError(f"duplicate Node 26 static archive: {name}")
+        explicit_names.add(name)
+        if not isinstance(path, str) or PurePosixPath(path).is_absolute() or ".." in PurePosixPath(path).parts:
+            raise ValueError(f"unsafe Node 26 archive path for {name}")
+        digest = validate_inventory_digest(raw.get("sha256"), f"{name} sha256")
+        if not isinstance(raw.get("sizeBytes"), int) or raw["sizeBytes"] < 0:
+            raise ValueError(f"invalid Node 26 archive size for {name}")
+        if not isinstance(member_count, int) or member_count < 0:
+            raise ValueError(f"invalid Node 26 member count for {name}")
+        if not isinstance(mapped_label_count, int) or mapped_label_count < 0 or mapped_label_count > member_count:
+            raise ValueError(f"invalid Node 26 mapped member count for {name}")
+        if not isinstance(map_rows, int) or map_rows < 0:
+            raise ValueError(f"invalid Node 26 map row count for {name}")
+        unique_source_ids = sorted(set(source_ids))
+        if not unique_source_ids or any(source_id not in source_refs for source_id in unique_source_ids):
+            raise ValueError(f"Node 26 archive {name} has missing or unknown source components")
+        archive_ref = f"urn:aggregate:node26-static-archive:{name}:sha256:{digest}"
+        license_entries, license_properties = license_candidate_fields(
+            {
+                "status": "unresolved",
+                "reason": "Archive source licenses are not fully classified or legally reviewed.",
+            },
+            f"Node 26 static archive {name}",
+            [source_by_id[source_id].get("licenseEvidence", []) for source_id in unique_source_ids],
+        )
+        properties = [
+            property_item("aggregate:component-role", role),
+            property_item("aggregate:archive-input-path", path),
+            property_item("aggregate:archive-size-bytes", raw["sizeBytes"]),
+            property_item("aggregate:archive-member-entry-count", member_count),
+            property_item("aggregate:member-labels-with-linker-map-output", mapped_label_count),
+            property_item("aggregate:linker-map-output-section-rows", map_rows),
+            property_item("aggregate:archive-source-component-refs", json.dumps([source_refs[value] for value in unique_source_ids])),
+            property_item("aggregate:archive-source-mapping", source_mapping),
+            *license_properties,
+        ]
+        component: dict[str, object] = {
+            "type": "library",
+            "bom-ref": archive_ref,
+            "name": name,
+            "hashes": [{"alg": "SHA-256", "content": digest}],
+            "properties": properties,
+        }
+        if license_entries is not None:
+            component["licenses"] = license_entries
+        components.append(component)
+        archive_dependency_nodes.append(
+            {"ref": archive_ref, "dependsOn": [source_refs[value] for value in unique_source_ids]}
+        )
+        archive_refs.append(archive_ref)
+        return archive_ref
+
+    mapped_label_count_total = 0
+    for raw in explicit_archives:
+        if not isinstance(raw, dict):
+            raise ValueError("Node 26 explicit archive row must be an object")
+        name = raw.get("name")
+        member_count = raw.get("archiveMemberEntries")
+        source_counts = raw.get("sourceComponentEntryCounts")
+        if not isinstance(name, str) or not isinstance(member_count, int) or member_count < 0:
+            raise ValueError("Node 26 explicit archive is missing its member count")
+        if not isinstance(source_counts, dict) or not source_counts:
+            raise ValueError(f"Node 26 explicit archive {name} has no source component counts")
+        if any(
+            not isinstance(source_id, str)
+            or not isinstance(count, int)
+            or isinstance(count, bool)
+            or count < 0
+            for source_id, count in source_counts.items()
+        ):
+            raise ValueError(f"Node 26 explicit archive {name} has invalid source component counts")
+        rows = sidecar_rows_by_archive.get(name, [])
+        if len(rows) != member_count:
+            raise ValueError(f"Node 26 sidecar object count does not match archive {name}")
+        if ordinals_by_archive.get(name) != set(range(1, member_count + 1)):
+            raise ValueError(f"Node 26 sidecar ordinals do not match archive {name}")
+        actual_source_counts: dict[str, int] = {}
+        for row in rows:
+            source_id = row["sourceComponentId"]
+            actual_source_counts[source_id] = actual_source_counts.get(source_id, 0) + 1
+        if actual_source_counts != source_counts:
+            raise ValueError(f"Node 26 source component counts do not match archive {name}")
+        if any(not isinstance(row.get("mapLabelSharedBySameNameEntries"), bool) for row in rows):
+            raise ValueError(f"Node 26 map-label duplicate status is invalid in archive {name}")
+        if (
+            raw.get("archiveMemberNamesInOrderMatchObjectFileList") is not True
+            or raw.get("allArchiveMemberPayloadsByteMatchListedObjectFiles") is not True
+        ):
+            raise ValueError(f"Node 26 archive member/object sequence or payload is unverified for {name}")
+        unique_map_labels = {
+            str(row["mapMemberLabel"])
+            for row in rows
+            if isinstance(row.get("mapMemberLabel"), str)
+        }
+        mapped_labels = {
+            str(row["mapMemberLabel"])
+            for row in rows
+            if isinstance(row.get("mapMemberLabel"), str)
+            and row.get("mapOutputSectionRowsForLabel", 0) > 0
+        }
+        map_rows = raw.get("linkerMapOutputSectionRows")
+        if not isinstance(map_rows, int) or map_rows < 0:
+            raise ValueError(f"Node 26 explicit archive {name} has invalid map row count")
+        label_rows: dict[str, int] = {}
+        member_names: set[str] = set()
+        for row in rows:
+            label = row.get("mapMemberLabel")
+            member_name = row.get("memberName")
+            section_count = row.get("mapOutputSectionRowsForLabel")
+            assert isinstance(label, str) and isinstance(member_name, str)
+            assert isinstance(section_count, int)
+            member_names.add(member_name)
+            previous_count = label_rows.setdefault(label, section_count)
+            if previous_count != section_count:
+                raise ValueError(f"Node 26 duplicate map label has inconsistent section counts in {name}")
+        if raw.get("uniqueArchiveMemberNames") != len(member_names):
+            raise ValueError(f"Node 26 distinct member-name count does not match archive {name}")
+        if raw.get("uniqueMemberNamesWithLinkerMapOutputSections") != len(mapped_labels):
+            raise ValueError(f"Node 26 mapped member-label count does not match archive {name}")
+        if map_rows != sum(label_rows.values()):
+            raise ValueError(f"Node 26 linker-map section rows do not match archive {name}")
+        explicit_member_total += member_count
+        mapped_label_count_total += len(mapped_labels)
+        make_archive_component(
+            raw,
+            source_ids=[str(value) for value in source_counts],
+            role="explicit --whole-archive input to the Node.js mobile runtime linker",
+            member_count=member_count,
+            mapped_label_count=len(mapped_labels),
+            map_rows=map_rows,
+            source_mapping=f"{len(unique_map_labels)} distinct archive-member labels; duplicate labels remain ambiguous in the map",
+        )
+    if set(sidecar_rows_by_archive) != {str(row["name"]) for row in explicit_archives if isinstance(row, dict)}:
+        raise ValueError("Node 26 object-entry sidecar contains unknown or missing archives")
+    if expected_entry_count != explicit_member_total:
+        raise ValueError("Node 26 sidecar entry count does not equal explicit archive member count")
+
+    ndk_revision = candidate["ndkRevision"]
+    implicit_member_total = 0
+    implicit_mapped_member_count = 0
+    for raw in implicit_archives:
+        if not isinstance(raw, dict):
+            raise ValueError("Node 26 implicit NDK archive row must be an object")
+        archive_path = raw.get("path")
+        if not isinstance(archive_path, str):
+            raise ValueError("Node 26 implicit NDK archive requires its path")
+        matching_sources: list[str] = []
+        for source_id, source_row in source_by_id.items():
+            source_root = source_row.get("sourceRoot")
+            if not isinstance(source_root, str):
+                continue
+            prefix = f"NDK {ndk_revision}/"
+            relative_root = source_root[len(prefix):] if source_root.startswith(prefix) else source_root
+            if archive_path == relative_root or archive_path.startswith(relative_root.rstrip("/") + "/"):
+                matching_sources.append(source_id)
+        longest_root_matches = [
+            source_id for source_id in matching_sources
+            if len(str(source_by_id[source_id].get("sourceRoot", "")))
+            == max(len(str(source_by_id[item].get("sourceRoot", ""))) for item in matching_sources)
+        ] if matching_sources else []
+        if len(longest_root_matches) != 1:
+            raise ValueError(f"Node 26 implicit archive {raw.get('name')} has no unique NDK source root")
+        source_id = longest_root_matches[0]
+        member_count = raw.get("archiveMemberEntries")
+        mapped_count = raw.get("memberNamesWithLinkerMapOutputSectionCount")
+        map_rows = raw.get("linkerMapOutputSectionRowsForMappedNames")
+        if not all(isinstance(value, int) and value >= 0 for value in (member_count, mapped_count, map_rows)):
+            raise ValueError(f"Node 26 implicit archive {raw.get('name')} has invalid map counts")
+        labels = raw.get("memberNamesWithLinkerMapOutputSections")
+        if not isinstance(labels, list) or len(labels) != mapped_count:
+            raise ValueError(f"Node 26 implicit archive {raw.get('name')} map-label count mismatch")
+        if any(not isinstance(label, str) for label in labels) or len(set(labels)) != len(labels):
+            raise ValueError(f"Node 26 implicit archive {raw.get('name')} map labels are invalid")
+        implicit_member_total += member_count
+        implicit_mapped_member_count += mapped_count
+        make_archive_component(
+            raw,
+            source_ids=[source_id],
+            role="implicit Android NDK static archive linked into libnode.so",
+            member_count=member_count,
+            mapped_label_count=mapped_count,
+            map_rows=map_rows,
+            source_mapping=str(raw.get("sourceObjectMapping", "NDK source-object mapping unavailable")),
+        )
+
+    direct_objects = inventory["directObjectInputs"]
+    assert isinstance(direct_objects, list)
+    if len(direct_objects) != 1:
+        raise ValueError("Node 26 inventory must identify its direct Node snapshot object")
+    direct_object = direct_objects[0]
+    if not isinstance(direct_object, dict):
+        raise ValueError("Node 26 direct object row must be an object")
+    object_path = direct_object.get("objectPath")
+    source_paths = direct_object.get("sourcePaths")
+    source_id = direct_object.get("sourceComponentId")
+    section_rows = direct_object.get("linkerMapSectionRows")
+    if not isinstance(object_path, str) or not isinstance(source_paths, list) or any(not isinstance(value, str) for value in source_paths):
+        raise ValueError("Node 26 direct object row has invalid source paths")
+    if not isinstance(source_id, str) or source_id not in source_refs:
+        raise ValueError("Node 26 direct object references an unknown source component")
+    object_digest = validate_inventory_digest(direct_object.get("objectSha256"), "Node 26 direct object sha256")
+    source_digest = validate_inventory_digest(direct_object.get("sourceSha256"), "Node 26 direct source sha256")
+    if not isinstance(section_rows, int) or section_rows < 0:
+        raise ValueError("Node 26 direct object linker-map count is invalid")
+    direct_ref = f"urn:aggregate:node26-direct-object:node_snapshot_stub.o:sha256:{object_digest}"
+    components.append({
+        "type": "file",
+        "bom-ref": direct_ref,
+        "name": PurePosixPath(object_path).name,
+        "hashes": [{"alg": "SHA-256", "content": object_digest}],
+        "properties": [
+            property_item("aggregate:component-role", "direct object input linked into libnode.so"),
+            property_item("aggregate:object-input-path", object_path),
+            property_item("aggregate:source-paths", json.dumps(source_paths)),
+            property_item("aggregate:source-sha256", source_digest),
+            property_item("aggregate:linker-map-section-rows", section_rows),
+            property_item("aggregate:source-component-ref", source_refs[source_id]),
+            property_item("aggregate:license-candidate-status", "unresolved"),
+            property_item("aggregate:license-candidate-reason", "The object is attributed to Node source; full source and license closure remains incomplete."),
+        ],
+    })
+    archive_dependency_nodes.append({"ref": direct_ref, "dependsOn": [source_refs[source_id]]})
+
+    coverage = inventory.get("coverage")
+    if not isinstance(coverage, dict):
+        raise ValueError("Node 26 inventory is missing coverage totals")
+    if coverage.get("explicitArchiveCount") != len(explicit_archives):
+        raise ValueError("Node 26 explicit archive count does not match coverage")
+    if coverage.get("explicitArchiveMemberEntries") != explicit_member_total:
+        raise ValueError("Node 26 explicit archive member count does not match coverage")
+    if coverage.get("explicitObjectEntryCount") != expected_entry_count:
+        raise ValueError("Node 26 object-entry count does not match coverage")
+    if coverage.get("sourceComponentCount") != len(source_rows):
+        raise ValueError("Node 26 source component count does not match coverage")
+
+    return components, archive_dependency_nodes, archive_refs, [direct_ref], {
+        "sourceComponents": len(source_rows),
+        "explicitArchives": len(explicit_archives),
+        "explicitArchiveMembers": explicit_member_total,
+        "explicitMappedMemberLabels": mapped_label_count_total,
+        "implicitNdkArchives": len(implicit_archives),
+        "implicitArchiveMembers": implicit_member_total,
+        "implicitMappedMemberLabels": implicit_mapped_member_count,
+        "retainedArchiveEdges": len(archive_refs),
+        "directObjectInputs": len(direct_objects),
+    }
+
+
 def archive_member_by_suffix(names: list[str], suffix: str) -> str:
     matches = [name for name in names if name == suffix or name.endswith("/" + suffix)]
     if len(matches) != 1:
@@ -988,7 +1458,9 @@ def main() -> int:
     static_components: list[dict[str, object]] = []
     static_archive_dependency_nodes: list[dict[str, object]] = []
     static_archive_refs: list[str] = []
+    static_additional_link_refs: list[str] = []
     static_inventory_stats: dict[str, int] = {}
+    static_inventory_hash: str | None = None
     binary_license_inventory: dict[str, object] | None = None
     binary_license_inventory_hash: str | None = None
     binary_license_inventory_stats: dict[str, object] = {}
@@ -996,35 +1468,58 @@ def main() -> int:
         static_inventory = load_static_link_inventory(args.static_link_inventory)
         candidate = static_inventory["candidate"]
         assert isinstance(candidate, dict)
-        release_artifacts = candidate["releaseArtifacts"]
-        assert isinstance(release_artifacts, dict)
-        artifact_record = release_artifacts.get(artifact_kind)
-        if not isinstance(artifact_record, dict):
-            parser.error(f"static-link inventory has no {artifact_kind.upper()} artifact record")
-        if artifact_record.get("sha256") != archive_hash:
-            parser.error("archive SHA-256 does not match the static-link inventory candidate")
-        if artifact_record.get("sizeBytes") != args.archive.stat().st_size:
-            parser.error("archive size does not match the static-link inventory candidate")
+        static_inventory_hash = sha256_file(args.static_link_inventory)
+        if static_inventory.get("format") == "aggregate-node26.13.1-static-link-inventory-v1":
+            if artifact_kind != "apk":
+                parser.error("Node 26.13.1 static-link evidence is bound to an APK, not an AAB")
+            inventory_values = {
+                "node_version": candidate.get("nodeVersion"),
+                "ndk_version": candidate.get("ndkRevision"),
+            }
+            for argument_name, inventory_value in inventory_values.items():
+                if not isinstance(inventory_value, str) or not inventory_value:
+                    parser.error(f"static-link inventory has no candidate value for {argument_name}")
+                supplied_value = getattr(args, argument_name)
+                if supplied_value != "unknown" and supplied_value != inventory_value:
+                    parser.error(f"--{argument_name.replace('_', '-')} does not match the static-link inventory")
+                setattr(args, argument_name, inventory_value)
+            (
+                static_components,
+                static_archive_dependency_nodes,
+                static_archive_refs,
+                static_additional_link_refs,
+                static_inventory_stats,
+            ) = node26_static_link_components(static_inventory, args.static_link_inventory)
+        else:
+            release_artifacts = candidate["releaseArtifacts"]
+            assert isinstance(release_artifacts, dict)
+            artifact_record = release_artifacts.get(artifact_kind)
+            if not isinstance(artifact_record, dict):
+                parser.error(f"static-link inventory has no {artifact_kind.upper()} artifact record")
+            if artifact_record.get("sha256") != archive_hash:
+                parser.error("archive SHA-256 does not match the static-link inventory candidate")
+            if artifact_record.get("sizeBytes") != args.archive.stat().st_size:
+                parser.error("archive size does not match the static-link inventory candidate")
 
-        inventory_values = {
-            "node_version": candidate.get("nodeVersion"),
-            "node_mobile_version": candidate.get("nodeMobileVersion"),
-            "ndk_version": candidate.get("ndkRevision"),
-            "source_git_tree": candidate.get("nodeSourceGitTreeObjectId"),
-            "upstream_commit": candidate.get("upstreamNodeCommit"),
-            "recipe_commit": candidate.get("mobileRecipeCommit"),
-        }
-        for argument_name, inventory_value in inventory_values.items():
-            if not isinstance(inventory_value, str) or not inventory_value:
-                parser.error(f"static-link inventory has no candidate value for {argument_name}")
-            supplied_value = getattr(args, argument_name)
-            if supplied_value != "unknown" and supplied_value != inventory_value:
-                parser.error(f"--{argument_name.replace('_', '-')} does not match the static-link inventory")
-            setattr(args, argument_name, inventory_value)
+            inventory_values = {
+                "node_version": candidate.get("nodeVersion"),
+                "node_mobile_version": candidate.get("nodeMobileVersion"),
+                "ndk_version": candidate.get("ndkRevision"),
+                "source_git_tree": candidate.get("nodeSourceGitTreeObjectId"),
+                "upstream_commit": candidate.get("upstreamNodeCommit"),
+                "recipe_commit": candidate.get("mobileRecipeCommit"),
+            }
+            for argument_name, inventory_value in inventory_values.items():
+                if not isinstance(inventory_value, str) or not inventory_value:
+                    parser.error(f"static-link inventory has no candidate value for {argument_name}")
+                supplied_value = getattr(args, argument_name)
+                if supplied_value != "unknown" and supplied_value != inventory_value:
+                    parser.error(f"--{argument_name.replace('_', '-')} does not match the static-link inventory")
+                setattr(args, argument_name, inventory_value)
 
-        static_components, static_archive_dependency_nodes, static_archive_refs, static_inventory_stats = (
-            static_link_components(static_inventory)
-        )
+            static_components, static_archive_dependency_nodes, static_archive_refs, static_inventory_stats = (
+                static_link_components(static_inventory)
+            )
     if args.binary_license_inventory is not None:
         binary_license_inventory = load_binary_license_inventory(
             args.binary_license_inventory
@@ -1073,7 +1568,10 @@ def main() -> int:
             )
             components.extend(gradle_components)
 
-        if static_inventory is not None:
+        if (
+            static_inventory is not None
+            and static_inventory.get("format") == "aggregate-node-static-link-inventory-v1"
+        ):
             candidate = static_inventory["candidate"]
             assert isinstance(candidate, dict)
             abi = candidate.get("abi")
@@ -1235,6 +1733,33 @@ def main() -> int:
                     "packaged native library paths do not match the binary license inventory"
                 )
 
+        if (
+            static_inventory is not None
+            and static_inventory.get("format") == "aggregate-node26.13.1-static-link-inventory-v1"
+        ):
+            candidate = static_inventory["candidate"]
+            assert isinstance(candidate, dict)
+            expected_apk_hash = validate_inventory_digest(candidate.get("apkSha256"), "Node 26 APK sha256")
+            if expected_apk_hash != archive_hash:
+                raise ValueError("APK SHA-256 does not match the Node 26 static-link inventory")
+            abi = candidate.get("androidAbi")
+            if not isinstance(abi, str) or not abi:
+                raise ValueError("Node 26 static-link inventory candidate ABI is missing")
+            packaged_node_paths = [
+                path for path in names if PurePosixPath(path).name == "libnode.so"
+            ]
+            if len(packaged_node_paths) != 1:
+                raise ValueError(
+                    f"expected one packaged libnode.so for Node 26 candidate; found {len(packaged_node_paths)}"
+                )
+            node_path = archive_member_by_suffix(names, f"{abi}/libnode.so")
+            if packaged_node_paths[0] != node_path:
+                raise ValueError("packaged Node 26 libnode.so ABI does not match the inventory")
+            if sha256(archive.read(node_path)) != validate_inventory_digest(
+                candidate.get("packagedLibnodeSha256"), "Node 26 packaged libnode sha256"
+            ):
+                raise ValueError("packaged Node 26 libnode.so SHA-256 does not match the inventory")
+
         if binary_license_inventory is not None:
             external_binary_mappings = validate_binary_license_inventory(
                 binary_license_inventory,
@@ -1351,7 +1876,9 @@ def main() -> int:
     if static_inventory is not None:
         candidate = static_inventory["candidate"]
         assert isinstance(candidate, dict)
-        abi = candidate["abi"]
+        abi = candidate.get("abi", candidate.get("androidAbi"))
+        if not isinstance(abi, str) or not abi:
+            raise ValueError("static-link inventory candidate ABI is missing")
         node_paths = [
             path for path in native_library_refs
             if path.endswith(f"/{abi}/libnode.so")
@@ -1436,7 +1963,9 @@ def main() -> int:
         for dependency in native_dependencies:
             if dependency["ref"] == static_node_ref:
                 dependency["dependsOn"] = sorted(
-                    set(dependency["dependsOn"]) | set(static_archive_refs)
+                    set(dependency["dependsOn"])
+                    | set(static_archive_refs)
+                    | set(static_additional_link_refs)
                 )
                 break
         else:
@@ -1525,19 +2054,50 @@ def main() -> int:
         ),
     ]
     if static_inventory is not None:
-        metadata_properties.extend(
-            [
-                property_item("aggregate:static-link-inventory-format", static_inventory["format"]),
-                property_item("aggregate:static-link-source-components", static_inventory_stats["sourceComponents"]),
-                property_item("aggregate:static-link-explicit-archives", static_inventory_stats["explicitArchives"]),
-                property_item("aggregate:static-link-explicit-archive-members", static_inventory_stats["explicitArchiveMembers"]),
-                property_item("aggregate:static-link-retained-archives", static_inventory_stats["explicitRetainedArchives"]),
-                property_item("aggregate:static-link-retained-archive-object-pairs", static_inventory_stats["retainedArchiveObjectPairs"]),
-                property_item("aggregate:static-link-zero-retained-archives", static_inventory_stats["zeroRetainedArchives"]),
-                property_item("aggregate:static-link-implicit-ndk-archives", static_inventory_stats["implicitNdkArchives"]),
-                property_item("aggregate:static-link-libnode-archive-edges", static_inventory_stats["retainedArchiveEdges"]),
-            ]
-        )
+        if static_inventory.get("format") == "aggregate-node26.13.1-static-link-inventory-v1":
+            sidecar = static_inventory["archiveObjectEntriesFile"]
+            assert isinstance(sidecar, dict)
+            candidate = static_inventory["candidate"]
+            assert isinstance(candidate, dict)
+            metadata_properties.extend(
+                [
+                    property_item("aggregate:static-link-inventory-format", static_inventory["format"]),
+                    property_item("aggregate:static-link-inventory-sha256", static_inventory_hash or "unknown"),
+                    property_item("aggregate:static-link-object-entries-sha256", sidecar.get("sha256", "unknown")),
+                    property_item("aggregate:static-link-source-archive-sha256", candidate.get("sourceArchiveSha256", "unknown")),
+                    property_item("aggregate:static-link-unstripped-libnode-sha256", candidate.get("unstrippedLibnodeSha256", "unknown")),
+                    property_item("aggregate:static-link-map-sha256", candidate.get("linkMapSha256", "unknown")),
+                    property_item("aggregate:static-link-map-size-bytes", candidate.get("linkMapSizeBytes", "unknown")),
+                    property_item("aggregate:static-link-build-script-sha256", candidate.get("buildScriptSha256", "unknown")),
+                    property_item("aggregate:static-link-build-patch-script-sha256", candidate.get("buildPatchScriptSha256", "unknown")),
+                    property_item("aggregate:static-link-android-abi", candidate.get("androidAbi", "unknown")),
+                    property_item("aggregate:static-link-android-api", candidate.get("androidApi", "unknown")),
+                    property_item("aggregate:static-link-source-components", static_inventory_stats["sourceComponents"]),
+                    property_item("aggregate:static-link-explicit-archives", static_inventory_stats["explicitArchives"]),
+                    property_item("aggregate:static-link-explicit-archive-members", static_inventory_stats["explicitArchiveMembers"]),
+                    property_item("aggregate:static-link-explicit-mapped-member-labels", static_inventory_stats["explicitMappedMemberLabels"]),
+                    property_item("aggregate:static-link-implicit-ndk-archives", static_inventory_stats["implicitNdkArchives"]),
+                    property_item("aggregate:static-link-implicit-archive-members", static_inventory_stats["implicitArchiveMembers"]),
+                    property_item("aggregate:static-link-implicit-mapped-member-labels", static_inventory_stats["implicitMappedMemberLabels"]),
+                    property_item("aggregate:static-link-libnode-archive-edges", static_inventory_stats["retainedArchiveEdges"]),
+                    property_item("aggregate:static-link-direct-object-inputs", static_inventory_stats["directObjectInputs"]),
+                    property_item("aggregate:static-link-license-status", "unresolved; no legal review performed"),
+                ]
+            )
+        else:
+            metadata_properties.extend(
+                [
+                    property_item("aggregate:static-link-inventory-format", static_inventory["format"]),
+                    property_item("aggregate:static-link-source-components", static_inventory_stats["sourceComponents"]),
+                    property_item("aggregate:static-link-explicit-archives", static_inventory_stats["explicitArchives"]),
+                    property_item("aggregate:static-link-explicit-archive-members", static_inventory_stats["explicitArchiveMembers"]),
+                    property_item("aggregate:static-link-retained-archives", static_inventory_stats["explicitRetainedArchives"]),
+                    property_item("aggregate:static-link-retained-archive-object-pairs", static_inventory_stats["retainedArchiveObjectPairs"]),
+                    property_item("aggregate:static-link-zero-retained-archives", static_inventory_stats["zeroRetainedArchives"]),
+                    property_item("aggregate:static-link-implicit-ndk-archives", static_inventory_stats["implicitNdkArchives"]),
+                    property_item("aggregate:static-link-libnode-archive-edges", static_inventory_stats["retainedArchiveEdges"]),
+                ]
+            )
     if binary_license_inventory is not None:
         metadata_properties.extend(
             [
