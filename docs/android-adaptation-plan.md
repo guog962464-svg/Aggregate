@@ -528,3 +528,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - **A8 分片消息边界（2026-11-26）：**已通过共享帧前置检查器在 Android 客户端与 Mac Host 服务端拒绝 WSS 分片/压缩帧，并按 Host WSS 约定限制为单一数据帧、不超过 1 MiB。SDK 解码器收到内容前即拒绝，Android 配对/RPC 与 Mac Host WSS 回归通过。详见 [A8 WSS 分片边界闭合](android-a8-acceptance.md#2026-11-26-wss-分片边界闭合)。该帧策略的第三方分片兼容性仍是明确协议约束，若将来需要支持分片，需先加入有界重组器。
 - **A8 当前提交 Release 复验（2026-11-26，`d8c82b0`）：**exact-lock detached worktree 下产品 arm64 APK/AAB Release 构建、16 KB zipalign/ELF 同余/Bundletool `PAGE_ALIGNMENT_16K` 静态检查通过；同一锁的 WSS/配对/RPC 定向测试 49/49、`flutter analyze` 通过。test-signed `.integration` APK 在 LGE AN10 / Android 15 / 4 KB 页真机冷启动通过并自动卸载。产品 APK/AAB 保持 unsigned；本机没有 16 KB 真机，16 KB 运行仍未验收。工件和验证边界见 [A8 当前提交 Release 与 4 KB 真机复验](android-a8-acceptance.md#2026-11-26-当前-head-d8c82b0-release-静态与-4-kb-真机复验)。
 - **仍开放：**A3.6 来源/安全版本/许可与 SBOM 闭包、A4 产品端 npm/CLI 选型与集成决策、A5 当前生产 Host 读取/直连 LAN/NSD/配对/RPC、A6 真实音乐账号与播放、正式签名和 16 KB 真机。TalkBack/accessibility 按用户决定不纳入验收。
+
+## 2026-11-26 A5 当前 LAN TCP 前置条件复核
+
+Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 Android ADB shell 到绑定 Mac Wi‑Fi 地址的一次性 TCP listener 完成请求/响应，证明当前直连 TCP 可达。该探针不经过 Aggregate App，也不代表 Host/WSS、NSD、配对或 RPC 验收。当前没有 Host listener；`active-identity` Keychain 数据读取/解密挂起仍是 A5 的实际阻塞。详见 [A5 同网段 TCP 直连预检复核](android-a5-android-client.md#2026-11-26-a5-同网段-tcp-直连预检复核)。

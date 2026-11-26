@@ -753,3 +753,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **探测方法：**只读查询登录 Keychain 中服务 `io.github.guog962464.aggregate.host.tls.v1`、账号 `active-identity`。属性查询仅请求 `kSecReturnAttributes`，在 3 ms 返回 `OSStatus=0`；没有读取或输出机密值。随后用 `kSecReturnData` 和 `LAContext.interactionNotAllowed=true` 执行同一服务/账号的非交互数据读取；进程分别在 25 秒和 2 秒超时被终止，没有弹出认证 UI，也没有输出或落盘条目内容。
 - **诊断范围：**这将现象收窄到 Keychain 条目数据读取/解密路径；通用条目定位及属性查询可快速返回，而取值路径即使禁止交互 UI 仍不返回。结合既有 Release 栈停在 `SecItemCopyMatching → CSSM_DecryptDataFinal → SecurityServer decrypt → mach_msg`，支持“阻塞发生在数据读取/解密路径”，但尚不能区分条目 ACL/数据状态、SecurityServer 内部等待或调用方代码签名访问策略。临时 Swift 探针不是 Aggregate 签名进程，因此不能单独证明产品进程的访问结果。
 - **状态与安全边界：**探针只读，没有修改 Keychain、ACL、Host identity 或配对数据；没有输入密码或触发 Touch ID。当前没有 Aggregate/Runner 进程、Host listener、ADB reverse、配对或 RPC 新证据；手机未操作。Touch ID 不能把本次数据读取挂起自动变成成功，不能据此认为迁移即可修复。A5.4/A5.5 仍开放。
+
+## 2026-11-26 A5 同网段 TCP 直连预检复核
+
+- **网络状态：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`，手机 `PAGE_SIZE=4096`。两端互 ping 均为 2/2、0% 丢包。
+- **TCP 证据：**Mac 临时 listener 仅绑定 `192.168.8.4:56260`，Android 通过 ADB shell 的 `toybox nc` 连接，Mac 实际收到来源 `192.168.8.7` 的 `AGGREGATE_A5_TCP_PREFLIGHT_V1`，并返回 `AGGREGATE_A5_TCP_ACK_V1`；客户端退出码 0。一次性 listener 随后退出，端口不再监听；ADB reverse 为空，没有 Aggregate、NodeProbe 或 testnode 进程。
+- **范围与结论：**这确认当前手机到 Mac 的局域网 TCP 路径可达，且不依赖 USB reverse。连接由 Android shell 发起，不是 Aggregate App；本轮没有启动生产 Host，因此不证明 WSS/TLS pin、Bonjour/NSD、配对或 RPC 通过，也没有读取/修改 Keychain。A5.4/A5.5 继续开放，当前生产 Host 身份读取仍需解决。
