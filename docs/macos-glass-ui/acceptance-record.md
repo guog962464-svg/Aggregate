@@ -1632,7 +1632,7 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 ### 2026-11-21 UI-9.1 场景背景与公共点阵按钮
 
 - 基准：v9.0 主题开关场景和按钮规范；按 1360×900pt 浅/深色窗口检查。为避免影响用户当前打开的应用，使用源码临时副本、合成 Runtime、独立 Bundle ID 的 macOS Profile 预览，未切换主应用窗口。
-- 实施：窗口雾银背景的渐变与颗粒参数对齐主题开关场景；运行、刷新、搜索剪影调整为可辨认的统一圆角点阵，普通导航静置层次降低，按钮光弧相位按图案错开。未修改 `glass_theme_switch.dart`、`glass_theme_switch.frag` 或主题切换的模拟、手势和回调代码。
+- 实施：窗口雾银背景的渐变与颗粒参数对齐主题开关场景；运行、刷新、搜索剪影调整为可辨认的统一圆角点阵，普通导航静置层次降低，按钮光弧相位按图案错开。当前三枚点阵核心分别为 17/17/22 点（运行/刷新/搜索）；这是 v9.0 UI-9.1 对 2026-11-19 旧目标 25/25/21 的后续修订，源码几何与 `glass_action_button_test.dart` 的断言相符。未修改 `glass_theme_switch.dart`、`glass_theme_switch.frag` 或主题切换的模拟、手势和回调代码。
 - 自验：`flutter analyze --no-pub` 通过；点阵按钮、glyph golden、主题模拟、光学、实时拖动和主题开关定向套件共 45 项通过；macOS Profile 构建成功；主题按钮在隔离预览中浅/深切换后可返回浅色。`git diff --check` 通过。截图来自独立 Profile 进程，1360×900pt 窗口；主应用没有被操作。
 - 视觉证据：[浅色 Profile](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui91/light-1360x900.png>) SHA-256 `3843812fcfa4ea5316cb47599d0a9fd98765760b16dfa1efb2b2b0d733fcf49e`；[深色 Profile](</Users/guo/.codex/visualizations/2026/11/21/aggregate-ui9-implementation-ui91/dark-1360x900.png>) SHA-256 `e73bec25afad153ae768da1ce6913f03ebb1a6eed3ac1aed70f38c0f0243b8e9`。
 - 结果/边界：背景接缝与点阵剪影在该窗口样本中通过阶段检查。设置页目前仍有分类侧栏，与 v9.0 单一纵向页面不一致；留在 UI-9.5 按 05/06/15/22 修正。本阶段不代表其他功能页面已对齐，也不构成用户最终视觉签收。
