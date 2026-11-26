@@ -638,3 +638,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 对现存候选的 3,654 个 Node target object 编译命令逐一运行依赖模式 -M，补足原始 -MMD 未包含的系统头文件。8,760 个唯一输入全部存在并有 SHA-256；覆盖 Node 源码、生成构建输入和 NDK 30 sysroot/toolchain。
 - 这只关闭已链接对象的编译器 include-dependency inventory 缺口，不是干净源码构建或 attestation。完整 code-generator 输入和 NDK implicit archive member source map 仍未闭合；法务/许可、正式签名、产品集成和 16 KB 真机也仍开放。A3.6/A4.7 不关闭。详见 [Node 26.13.1 compile-input inventory](android-a3-runtime-research.md#2026-11-27-node-26131-target-object-compile-input-inventory-0646-asiashanghai) 与 [完整清单](android-a3-node26.13.1-compile-input-inventory.json)。
+
+## 2026-11-27 A3.6 generated-source action-input map
+
+- 当前 Node 26.13.1 候选的 517 个生成源码对象、518 个源码路径均已关联到 11 个配置中的 GYP 生成动作；829 条动作输入关系覆盖 820 个唯一声明输入，全部有哈希且没有未解析路径。详见 [生成源码 action/input map](android-a3-node26.13.1-generated-source-map.json) 与 [研究记录](android-a3-runtime-research.md#2026-11-27-node-26131-generated-source-action-and-input-map)。
+- 这补齐生成规则和已声明输入的文件级映射；生成器可执行文件自身的源码/编译链接闭包、Python 运行时和动态导入仍未闭合，也没有干净全量构建或构建 attestation。A3.6/A4.7 及许可/法律、正式签名、产品集成与 16 KB 真机门槛继续开放。
