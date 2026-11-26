@@ -168,6 +168,13 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 
 同批截图离线补测三处静态正文区域：以 Vision 定位文字框，在字芯与同一行邻近背景上取保守亮度百分位，深/浅主题的采样比值分别为说明文字 17.21:1 / 12.38:1、“当前模式”19.27:1 / 13.61:1、切换说明 18.14:1 / 13.53:1（项目目标 ≥4.5:1）。重算脚本与方法、截图哈希见 `/Users/guo/.codex/visualizations/2026/11/26/aggregate-ui-background-profile-settings/contrast-sample.swift` 和 `contrast-report.md`。结果仅代表这三处静态文字框及其邻近背景；不覆盖按钮文字、其他页面/状态、动态帧或 display-present，也不改变上一段关于可见窗口不能证明前台无干扰的限制。
 
+### 2026-11-26 离屏主题与玻璃回归复验
+
+- 版本与环境：Flutter 3.47.8 / Dart 3.13.7；应用源码基于 `ae4297f8d5eea83983ec11f06b6a38c20d03fb67`。测试入口为 Flutter Widget Test / software renderer，使用现有 PreviewRuntime 与手动动画时钟；没有启动 macOS App、访问真实服务或采集原生帧。
+- 命令（工作目录 `app/`）：`flutter test --no-pub --reporter compact test/macos_dynamic_backdrop_text_contrast_test.dart test/glass_action_button_test.dart test/glass_motion_test.dart test/glass_theme_switch_test.dart test/macos_reduce_motion_test.dart`
+- 结果：48 项通过。覆盖生产玻璃按钮状态与回调、设置页背景/按钮逐相位对比、主题开关拖动提交/取消、协调动效与系统减少动态效果路径。
+- 限制：这是当前源码的离屏自动化复验；不能签收原生禁用态 AX、VoiceOver 朗读、实窗动态外观、Flutter `FrameTiming` 或物理屏幕呈现。UI-5.4/UI-5.5/UI-5.7 和 UI-6 仍有未完成项。
+
 ### 2026-11-19 系统 VoiceOver 开启态 Profile 复核
 
 使用 `flutter run -d macos --profile --no-pub -t lib/preview_main.dart` 启动 `preview_main.dart` 的内存 PreviewRuntime；没有连接真实服务。通过系统设置将 VoiceOver switch 从 0 打开并读回 `checked=1`。在 macOS 27.2.1 / Flutter 3.47.8 stable 的 Aggregate 800×632 logical px 窗口中，完整 AX 树仍包含四个设置标签、导航按钮、“外观主题”值“深色”和“跟随 macOS 系统”。键盘发送 VO+Right 后，字幕面板仅显示 VoiceOver Utility 的启动提示，没有得到可验证的应用控件朗读或焦点目标；因此只确认系统开启态下 AX 树可读，未完成 VoiceOver 主流程，也没有新增禁用控件 AXEnabled 结果。测试结束将 System Settings 的 VoiceOver switch 读回 `0`；`launchctl` 中 VoiceOver 服务无运行进程，已退出本轮启动的 Profile、System Settings 和 VoiceOver Utility。屏幕捕获只作临时局部检查并已删除，未归档完整桌面图像。
