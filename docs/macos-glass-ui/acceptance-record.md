@@ -156,6 +156,10 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 | 真实服务 | 未连接真实连接、Host、账号或外部服务；所有状态/错误回归均由 Preview Runtime 或 mock Runtime 覆盖。 |
 | 提交 | `f453980dc5a8dcf6d7b589ff4e7ecdc432013553`，`完成 macOS 玻璃 UI 功能验收`。 |
 
+### 2026-11-26 静态材质文字对比复核
+
+离线回归发现浅色 `muted` 文字对 `surface` / `glassBottom` 的静态对比度分别为 3.98:1 / 4.42:1，浅色 `danger` 对 `surface` 为 4.23:1。将浅色 `muted` 调整为 `#5F5E58`、`danger` 调整为 `#9D3E38` 后，四种静态玻璃材质上的最低对比度分别为 4.56:1 / 4.63:1；对比度断言现在会报告具体语义色和背景。相关按钮/主题/动效/动态背景 Widget 回归 71 项通过，`flutter analyze --no-pub`、Dart 格式检查与 `git diff --check` 通过。验证使用静态令牌与 Widget 离屏渲染，没有启动 macOS App 或采集新的原生截图；因此不能替代 display-present 像素、全部生产控件实例或 VoiceOver 验收，UI-5.5 仍部分验收。
+
 ### 2026-11-19 系统 VoiceOver 开启态 Profile 复核
 
 使用 `flutter run -d macos --profile --no-pub -t lib/preview_main.dart` 启动 `preview_main.dart` 的内存 PreviewRuntime；没有连接真实服务。通过系统设置将 VoiceOver switch 从 0 打开并读回 `checked=1`。在 macOS 27.2.1 / Flutter 3.47.8 stable 的 Aggregate 800×632 logical px 窗口中，完整 AX 树仍包含四个设置标签、导航按钮、“外观主题”值“深色”和“跟随 macOS 系统”。键盘发送 VO+Right 后，字幕面板仅显示 VoiceOver Utility 的启动提示，没有得到可验证的应用控件朗读或焦点目标；因此只确认系统开启态下 AX 树可读，未完成 VoiceOver 主流程，也没有新增禁用控件 AXEnabled 结果。测试结束将 System Settings 的 VoiceOver switch 读回 `0`；`launchctl` 中 VoiceOver 服务无运行进程，已退出本轮启动的 Profile、System Settings 和 VoiceOver Utility。屏幕捕获只作临时局部检查并已删除，未归档完整桌面图像。

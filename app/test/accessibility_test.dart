@@ -33,9 +33,21 @@ void main() {
         tokens.glassTop,
         tokens.glassBottom,
       ]) {
-        expect(_contrast(tokens.text, background), greaterThanOrEqualTo(4.5));
-        expect(_contrast(tokens.muted, background), greaterThanOrEqualTo(4.5));
-        expect(_contrast(tokens.danger, background), greaterThanOrEqualTo(4.5));
+        expect(
+          _contrast(tokens.text, background),
+          greaterThanOrEqualTo(4.5),
+          reason: 'text on $background',
+        );
+        expect(
+          _contrast(tokens.muted, background),
+          greaterThanOrEqualTo(4.5),
+          reason: 'muted on $background',
+        );
+        expect(
+          _contrast(tokens.danger, background),
+          greaterThanOrEqualTo(4.5),
+          reason: 'danger on $background',
+        );
         for (final mark in [tokens.ink, tokens.glow, tokens.status]) {
           expect(_contrast(mark, background), greaterThanOrEqualTo(3));
         }

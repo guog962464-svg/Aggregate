@@ -69,7 +69,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     surface: Color(0xFFD9D8D5),
     raised: Color(0xFFF8F7F3),
     text: Color(0xFF2B2A27),
-    muted: Color(0xFF686761),
+    muted: Color(0xFF5F5E58),
     line: Color(0xFFC1BFBA),
     inset: Color(0xFFD0CEC8),
     glassTop: Color(0xFFF8F7F3),
@@ -80,7 +80,7 @@ class GlassDesignTokens extends ThemeExtension<GlassDesignTokens> {
     ink: Color(0xFF5D574B),
     warm: Color(0xFFFFC66B),
     status: Color(0xFF35735B),
-    danger: Color(0xFFA24640),
+    danger: Color(0xFF9D3E38),
     shadow: Color(0x2B4C4942),
   );
 
