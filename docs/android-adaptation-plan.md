@@ -611,3 +611,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 当前 MacBook Pro `Mac17,9` 的 LocalAuthentication 生物识别策略可用；Touch ID 在设备上可采用，但现有 login Keychain 密码弹窗不能现场切换为指纹。需要迁移到受访问控制的 Data Protection Keychain，并保留 Host ID、证书 pin 与 grants；首次从旧条目迁移仍要完成旧钥匙串授权。参考 [A5 Touch ID 与 Debug Host 再验](android-a5-android-client.md)。
 - 隔离 Debug Host 逐项授权后仍未监听。`HostWssTransport` 对身份/服务准备设置 30 秒 timeout，而本轮多个旧 Keychain 提示的授权耗时超过 30 秒；与 UI 的通用启动失败相符，但没有捕获到应用层异常，故仍是待验证线索。A5.4/A5.5 保持开放；当前没有新 WSS/NSD、配对或 RPC 验收证据。
+
+## 2026-11-27 Touch ID 实施前置条件复核
+
+- 用随机 Keychain 测试条目验证时，缺少 app identity entitlement 的已签名最小程序访问 Data Protection Keychain 得到 `errSecMissingEntitlement (-34018)`；手工注入身份 entitlement 的隔离探针未能被 Launch Services 启动。本机当前无 provisioning profile，Runner 配置为 ad-hoc 签名且没有 `DEVELOPMENT_TEAM`。因此还未证明产品可访问受 Touch ID 保护的 Data Protection Keychain 项。
+- 暂不把 Touch ID 迁移写进产品身份存储：旧 `active-identity` 读取已在 `SecItemCopyMatching`/SecurityServer 解密阶段等待，不能保证迁移能取回原私钥；存储 entitlement 也未闭合。先补齐有效产品签名与隔离 DPK+Touch ID 往返，再实现并回归身份保持/回滚。没有更改用户 Keychain 或 Host identity。A5.4/A5.5 继续开放。
