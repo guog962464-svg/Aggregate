@@ -75,6 +75,14 @@
 
 当前 JNI argv 修正版与 Node 24.22.3 候选构建的一次本地 `script-ignored` 安装返回 npm 0、marker 不存在，且收到 Messenger `kind=3` 与 `kind=5`；本轮没有复现历史 pointer-tag fatal。原 2026-11-17 Release APK 已不可用，故不能对旧故障根因定论；该单动作结果也不代表完整 npm suite 或长期稳定性。详见 [当前 JNI 代码下的 Release 复验](android-a4-npm-install-research.md#2026-11-24-当前-jni-代码下的-node-24223-release-script-ignored-复验)。
 
+<a id="2026-11-26-termux-npm-cli-follow-up"></a>
+### 2026-11-26 Termux Node/npm app-process npm install 与 CLI 补验
+
+- **APK 资源过滤诊断：** 首次隔离 `npm install cowsay@1.6.0` 在发起网络请求前失败：`@sigstore/protobuf-specs/dist/index.js` 找不到 `./__generated__/envelope`。源 npm 资产中存在该目录，但 APK 漏掉其下 16 个 JS 文件。临时 Gradle probe 保留 Android Gradle 默认 asset ignore 列表中的其余模式，仅去掉 `<dir>_*`，重建后确认 16 个文件进入 APK；三个非运行时 dotfile 仍被过滤。AGP 文档列出默认过滤模式，AAPT 实现确认 `!` 只抑制忽略警告，不会把文件加入白名单：[AGP `ignoreAssetsPatterns`](https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/dsl/AndroidResources#ignoreAssetsPatterns)、[AAPT `DataSet.java`](https://android.googlesource.com/platform/tools/base/+/90d7f32/sdk-common/src/main/java/com/android/ide/common/res2/DataSet.java)。这是临时 probe 配置，不是产品构建规则。
+- **TLS 信任：** 修复资源后首次联网安装遇到 `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`。从 Termux stable APT 下载 `ca-certificates` `1:2026.11.05-1`（Architecture `all`，110,148 bytes），`.deb` SHA-256 `12fc350fc5ad638338b06b04835bce897615f8c93f96d30ac396cdb39b850c6b` 与当次 HTTPS 获取的 APT `Packages` 索引记录一致；未验证 APT 仓库签名。包内 `etc/tls/cert.pem` SHA-256 为 `427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285`。probe 将 PEM 放入 app-private 文件并设 `NODE_EXTRA_CA_CERTS`，保持 TLS 校验开启；该环境变量行为见 [Node.js v26.13.1 CLI 文档](https://nodejs.org/api/cli.html#node_extra_ca_certsfile)。
+- **4 KB 真机结果：** 临时 arm64 debug APK `io.github.aggregate.nodeaptprobe`（min SDK 24、target SDK 36，43,361,941 bytes）通过 `zipalign -c -P 16 4`。APK 内 11 个 runtime ELF 的 16 KB `PT_LOAD` 对齐静态结果沿用前次检查，均为 `p_align=0x4000` 且文件偏移/虚拟地址模 16 KB 相同；这不是 16 KB 页设备运行证据。LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096` 上单次前台冷启动运行 Node `v26.13.1 / android / arm64`、npm `12.2.3`，两者退出码均为 0。`npm install --ignore-scripts --no-audit --no-fund --no-progress cowsay@1.6.0` 向 app-private 项目目录安装 41 个包，耗时 13 秒；随后通过 Node 执行包的 `cli.js`，得到预期 cowsay 文本并退出 0。
+- **范围与清理：** 没有运行 lifecycle script、原生 addon、`ncm-cli`、TUI 或 Aggregate 产品 adapter。该 APK 使用 Termux standalone Node 子进程、动态库别名及重写后的 `DT_NEEDED`/`DT_SONAME`，不是 `libnode.so`/JNI 产品集成或可发行的打包方案。APT 包仓库签名、完整 license/SBOM 与发行审查、其他 ABI、重复安装稳定性及 16 KB 真机仍未完成。probe 已 force-stop 并卸载，确认没有 probe PID、安装包或 ADB reverse，手机回到 launcher。A3.6/A4 产品 npm/CLI gate 保持开放，不改变任意 npm/CLI 不向产品用户开放的决策。
+
 ## A4.5 nodejs-mobile API 文档与真机边界（2026-11-12）
 
 - LGE AN10、Android 15/API 35、arm64、4 KB 页上的 8 个固定 Debug 样本全部完成，Node v24.22.1 / `process.versions.mobile=24.22.1-0`；每项均写出结果并收到 Messenger `kind=3` 终态。探针结束后卸载。该结果不覆盖其他设备、ABI、Node 构建或 16 KB 页。
