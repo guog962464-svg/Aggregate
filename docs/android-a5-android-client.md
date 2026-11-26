@@ -706,3 +706,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 与设备结果：**Host `47321/47322/47323` 均无监听，ADB reverse 为空；本轮没有邀请、配对或 RPC，也没有启动 NodeProbe/testnode、改网络或切换手机前台。应用日志查询未返回本进程 `HostTLSIdentity` 记录，Host identity/Keychain 项是否有读写不作推断。
 - **清理：**仅向本轮启动的 Release PID `18681` 发 `SIGTERM`。随后 `agent-desktop snapshot --app SecurityAgent` 返回 `APP_NOT_FOUND`，确认授权弹窗已关闭；没有终止既有 Profile 预览进程。
 - **结论：**本轮没有得到 Host 启动或授权完成的证据，A5.4/A5.5 保持开放。早先双向 ping 和一次性直连 TCP 只证明局域网 TCP 可达，不外推为 WSS/Bonjour/NSD/配对/RPC 通过。没有记录任何凭据；一次性“允许”操作的底层 Keychain 访问结果未知。
+
+## 2026-11-26 A5 exact-lock Release Host 前台重试（20:04 后）
+
+- **构建输入：**在 detached worktree `/tmp/aggregate-a5-host-20d1b7e`、提交 `20d1b7e171e8c2f9deb427b1b75188613b376806` 上，按已提交的 `pubspec.lock` 执行 `PUB_HOSTED_URL=https://pub.dev flutter pub get --enforce-lockfile` 与 `flutter build macos --release --no-pub`，均成功。锁 SHA-256 为 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`。本次 app bundle ID 为 `io.github.guog962464.aggregate`，签名为 ad-hoc、无 Team ID；`codesign --verify --deep --strict` 通过。
+- **网络与启动：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`；Mac→手机和手机→Mac ping 各 2/2。把本轮 Release app 窗口明确聚焦后，从“设置 → Mac Host”再次启动；约 25 秒后 UI 显示通用“Host 启动失败”。`SecurityAgent` 无可见窗口，Host TLS identity 日志查询无记录。现有通用错误无法区分 Keychain、接口或本地网络等失败来源，因此不把根因归到某一项。
+- **服务与清理：**Host TCP `47321/47322/47323` 无 listener，ADB reverse 为空；无本轮 WSS、Bonjour/NSD、邀请、配对或 RPC。仅终止本轮 PID `24664`；另一个 Profile Aggregate 进程未触碰。手机保持启动器前台，未启动 NodeProbe/testnode。没有输入钥匙串密码、操作 Keychain/ACL 或改变 Host identity。
+- **验收结论：**本次 exact-lock Release 构建和签名完整性检查通过，Host 运行验收失败；没有观察到安全提示或服务 listener。A5.4/A5.5 仍开放。临时 worktree 与其构建产物在结果归档后清理。
