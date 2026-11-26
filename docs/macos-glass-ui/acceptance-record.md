@@ -175,6 +175,13 @@ flutter test --no-pub test/glass_theme_switch_test.dart test/theme_switch_simula
 - 结果：48 项通过。覆盖生产玻璃按钮状态与回调、设置页背景/按钮逐相位对比、主题开关拖动提交/取消、协调动效与系统减少动态效果路径。
 - 限制：这是当前源码的离屏自动化复验；不能签收原生禁用态 AX、VoiceOver 朗读、实窗动态外观、Flutter `FrameTiming` 或物理屏幕呈现。UI-5.4/UI-5.5/UI-5.7 和 UI-6 仍有未完成项。
 
+### 2026-11-26 当前网页与 Flutter shader 同状态逐帧复跑
+
+- 参考源：用户指定的 [Glass Light Toggle](https://experiments.thisiswhitespace.com/glass-light-toggle) 当前部署 `dpl_HTAd9EyjDwpmH9jaAFGH52jqjsbf`；iframe 中 `main.js?v=3` 的 SHA-256 为 `7f7b5d15bd974a2023bd7c044333f90b9962764c9b18aef0d3bdad6c3bf2e3ee`，与仓库模型 oracle 相同。
+- 方法：`capture_theme_switch_source_frames.cjs` 使用 Chrome headless / ANGLE SwiftShader 捕获 720×540、DPR 1、scale 0.76 的 0–150 帧，并核对 151×113 粒子状态对照 fixture，容差 `1e-9`；`theme_switch_reference_frames_test.dart` 以相同模型输入导出 151 个 Flutter shader 帧；`compare_theme_switch_frames.py` 不注册、不校色、不遮罩地逐帧比较。
+- 结果：源状态校验与 Flutter 测试均通过（1 项）；151 帧平均 RGB MAE `0.0631749584/255`，最大 `0.0747110768/255`（frame 51 / 0.85s），逐帧完全相同像素比例为 98.732%–99.422%。重算报告 [report.md](</Users/guo/.codex/visualizations/2026/11/26/aggregate-theme-source-rerun/report.md>) SHA-256 `51e62748e11d8b6bc1fde3583c31c2391f791b974f3bd760969efd9dcf906496`，逐帧指标 [metrics-rerun.json](</Users/guo/.codex/visualizations/2026/11/26/aggregate-theme-source-rerun/metrics-rerun.json>) SHA-256 `22283abfcbfeb94e4b36731dbb6757a33adf5209b580d73ccb33310f7e432dcf`。
+- 限制：这证明注入完全相同状态时两种 shader 的输出接近；不证明已删除 MP4 的轨迹、随机种子、实时输入相位或原生 Metal/display-present 一致。因此 UI-6.8 和 UI-6.10 仍未通过，阶段 0–6 未完成。
+
 ### 2026-11-19 系统 VoiceOver 开启态 Profile 复核
 
 使用 `flutter run -d macos --profile --no-pub -t lib/preview_main.dart` 启动 `preview_main.dart` 的内存 PreviewRuntime；没有连接真实服务。通过系统设置将 VoiceOver switch 从 0 打开并读回 `checked=1`。在 macOS 27.2.1 / Flutter 3.47.8 stable 的 Aggregate 800×632 logical px 窗口中，完整 AX 树仍包含四个设置标签、导航按钮、“外观主题”值“深色”和“跟随 macOS 系统”。键盘发送 VO+Right 后，字幕面板仅显示 VoiceOver Utility 的启动提示，没有得到可验证的应用控件朗读或焦点目标；因此只确认系统开启态下 AX 树可读，未完成 VoiceOver 主流程，也没有新增禁用控件 AXEnabled 结果。测试结束将 System Settings 的 VoiceOver switch 读回 `0`；`launchctl` 中 VoiceOver 服务无运行进程，已退出本轮启动的 Profile、System Settings 和 VoiceOver Utility。屏幕捕获只作临时局部检查并已删除，未归档完整桌面图像。
