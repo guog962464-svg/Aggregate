@@ -62,6 +62,7 @@ void main() {
       find.byKey(const Key('action-manifest-json')),
     );
     expect(field.controller!.text, contains('action1'));
+    await tester.ensureVisible(find.text('检查并预览参数'));
     await tester.tap(find.text('检查并预览参数'));
     await tester.pumpAndSettle();
     expect(find.textContaining('--help'), findsWidgets);
@@ -267,6 +268,19 @@ void main() {
           .text,
       contains('action1'),
     );
+    await tester.ensureVisible(find.text('检查并预览参数'));
+    await tester.tap(find.text('检查并预览参数'));
+    await tester.pumpAndSettle();
+    final previewFeedback = find.byKey(
+      const Key('action-editor-preview-feedback'),
+    );
+    expect(previewFeedback, findsOneWidget);
+    final previewFeedbackRect = tester.getRect(previewFeedback);
+    expect(previewFeedbackRect.top, greaterThanOrEqualTo(0));
+    expect(previewFeedbackRect.bottom, lessThanOrEqualTo(632));
+    expect(find.textContaining('不会运行程序'), findsOneWidget);
+    expect(find.textContaining('--help'), findsWidgets);
+
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(runtime.saved?['actions'], hasLength(2));

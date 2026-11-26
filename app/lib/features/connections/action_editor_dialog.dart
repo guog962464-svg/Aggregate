@@ -34,6 +34,7 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
   String? notice;
   bool busy = false;
   bool loaded = false;
+  final GlobalKey _previewFeedbackKey = GlobalKey();
 
   static const jsonType = XTypeGroup(label: 'JSON', extensions: ['json']);
 
@@ -92,6 +93,23 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
   ConnectorManifest _parse() {
     final value = jsonDecode(manifestText.text);
     return ConnectorManifest.fromJson(value);
+  }
+
+  void _revealPreviewFeedback() {
+    if (defaultTargetPlatform != TargetPlatform.macOS) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final feedbackContext = _previewFeedbackKey.currentContext;
+      if (feedbackContext == null) return;
+      Scrollable.ensureVisible(
+        feedbackContext,
+        alignment: 0.5,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   List<ConnectorAction> _availableActions() {
@@ -160,6 +178,7 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
         preview = null;
       });
     }
+    _revealPreviewFeedback();
   }
 
   Future<void> _import() async {
@@ -350,26 +369,37 @@ class _ActionEditorDialogState extends State<ActionEditorDialog> {
                       icon: Icons.preview_outlined,
                       onPressed: busy ? null : _preview,
                     ),
-                    if (preview != null) ...[
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        preview!,
-                        style: const TextStyle(fontFamily: 'monospace'),
-                      ),
-                    ],
-                    if (notice != null) ...[
-                      const SizedBox(height: 8),
-                      Text(notice!),
-                    ],
-                    if (error != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                    if (preview != null || notice != null || error != null)
+                      KeyedSubtree(
+                        key: _previewFeedbackKey,
+                        child: Column(
+                          key: const Key('action-editor-preview-feedback'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (preview != null) ...[
+                              const SizedBox(height: 8),
+                              SelectableText(
+                                preview!,
+                                style: const TextStyle(fontFamily: 'monospace'),
+                              ),
+                            ],
+                            if (notice != null) ...[
+                              const SizedBox(height: 8),
+                              Text(notice!),
+                            ],
+                            if (error != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                error!,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ],
                   ],
                 ),
         ),
