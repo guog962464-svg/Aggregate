@@ -643,3 +643,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 当前 Node 26.13.1 候选的 517 个生成源码对象、518 个源码路径均已关联到 11 个配置中的 GYP 生成动作；829 条动作输入关系覆盖 820 个唯一声明输入，全部有哈希且没有未解析路径。详见 [生成源码 action/input map](android-a3-node26.13.1-generated-source-map.json) 与 [研究记录](android-a3-runtime-research.md#2026-11-27-node-26131-generated-source-action-and-input-map)。
 - 这补齐生成规则和已声明输入的文件级映射；生成器可执行文件自身的源码/编译链接闭包、Python 运行时和动态导入仍未闭合，也没有干净全量构建或构建 attestation。A3.6/A4.7 及许可/法律、正式签名、产品集成与 16 KB 真机门槛继续开放。
+
+## 2026-11-27 A3.6 host generator executable source/link closure
+
+- 为 5 个 Node/V8/ICU host 生成器补齐了当前构建树的链接输入与编译头文件映射：13 个静态库的 2,154 个归档成员全部按序与对象字节匹配；连同 19 个直接对象，共覆盖 2,173 个对象。完整 `-M` 图包含 3,016,847 个依赖关系与 6,457 个唯一哈希输入。详见 [host generator source/link map](android-a3-node26.13.1-generator-tool-source-map.json) 和 [A3.6 研究记录](android-a3-runtime-research.md#2026-11-27-node-26131-host-generator-executable-source-and-link-map)。
+- **supersedes：**前一生成源码 map 中“五个 native generator 可执行文件的 compile/link closure 未映射”这一未完成项。现在这些工具的现存二进制、GYP 链接输入、对象及编译器依赖均已哈希；没有 clean relink/rebuild，因而仍无二进制构建 attestation。Python 解释器动态导入、法务/许可、产品集成与签名以及 16 KB 真机门槛仍开放，A3.6/A4.7 不关闭。
