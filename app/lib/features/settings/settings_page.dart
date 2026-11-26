@@ -19,6 +19,9 @@ const _macSettingsThemeSwitchCalibration = ThemeSwitchCalibration(
   scene: ThemeSwitchScene(scale: 1.5),
 );
 
+// At scene scale 1.5, this width maps the 432pt reference track to 420pt.
+const _macSettingsThemeSwitchWidth = 466.667;
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({
     super.key,
@@ -117,7 +120,7 @@ class SettingsPage extends StatelessWidget {
     padding: const EdgeInsets.only(left: 36, right: 10),
     child: AppearanceSelector(
       macSettingsLayout: true,
-      switchWidth: 448,
+      switchWidth: _macSettingsThemeSwitchWidth,
       switchHeightFactor: .5,
       calibration: _macSettingsThemeSwitchCalibration,
       appearance: preferences.appearance,

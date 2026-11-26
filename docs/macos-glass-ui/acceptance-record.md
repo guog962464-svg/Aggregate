@@ -2528,3 +2528,14 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - AX 与键盘：完整 AX 树列出“外观主题”为 button、名称“外观主题”、value“深色”，并提供 Click、ScrollTo、SetFocus。经全局 CGEvent 发送普通 Tab 后，Flutter 搜索控件出现焦点环，证明普通键盘输入到达 App；截图见[Tab 焦点](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui57-voiceover-focus/visuals/tab-focus.png>)，SHA-256 `6015a90d055990c63e12c914fc62ed62c1b7771878855814ca8ef519e1022089`。
 - VoiceOver：通过系统 VoiceOver 开关启用，确认字幕面板选项处于开启；先后用应用定向快捷键与全局 Control-Option-Right 事件尝试移动旁白光标。系统没有提供可见字幕面板或可确认的控件朗读回执。此结果不能区分 VoiceOver 是否接收了快捷键，也不能归因于 App AX 语义；UI-5.4/UI-5.7 保持部分验收。
 - 清理：VoiceOver 已恢复关闭；隔离 Profile、VoiceOver Utility 和系统设置均正常退出，原 Google Chrome/GitLab 窗口重新处于前台。未修改产品代码、真实服务或系统外观偏好。
+
+<a id="ui-68-v84-settings-track-width-fit-2026-11-27"></a>
+### 2026-11-27 UI-6.8 v8.4 设置页轨道宽度拟合补验
+
+- 实现：仅将 macOS 设置页实例的开关宿主宽度从 `448` 调为 `466.667 pt`。场景缩放仍为 `1.5`，轨道设计宽 `432 pt`，公式 `466.667 × 1.5 / 720 × 432 = 420.0 pt`；共享控件默认值、模拟、点阵、太阳/月亮变化、motion、optics、状态映射、指针方向、释放提交和取消回滚均未改。
+- 几何与实窗：Flutter 3.47.8 macOS Profile 隔离副本 `io.github.guog962464.aggregate.ui68v84`，Host fixture 为“已停止”。`1360×900 pt` 设置页中 AX 控件边界为 `467×224 pt`；缩到 `800×632 pt` 后，设置布局改为纵向，AX 边界为 `422×211 pt`，截图未见控件横向溢出。窗口恢复 `1360×900 pt` 后再完成拖动，系统外观偏好未修改。
+- 实时端点：agent-desktop 物理合成拖动使 AX 值由“深色”变“浅色”；反向拖动后恢复“深色”。这证明新宽度仍使用现有实时拖动和端点提交路径，不是固定帧回放；未覆盖物理面板呈现时钟或真实显示 FPS。
+- 回归与构建：`glass_theme_switch_test.dart` 11 项、`theme_switch_realtime_test.dart` 5 项、`theme_switch_calibration_test.dart` 5 项通过；`flutter analyze --no-pub lib/features/settings/settings_page.dart`、Dart 格式检查、`git diff --check` 与 macOS Profile 构建均通过。
+- 证据：[1360×900 深色](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-width-fit/wide-1360x900-dark.png>) SHA-256 `3b1b06bb1e467b4b27584a98deb3c226a373fb450b4aeb44081bef255ad8eb37`；[800×632 窄窗口](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-width-fit/narrow-800x632.png>) SHA-256 `95dde69b2f5da9db709ab4750bb9abf7dae11f810562545a29b34f8696a5c835`；[拖到浅色后的截图](</Users/guo/.codex/visualizations/2026/11/27/aggregate-ui68-v84-width-fit/light-after-drag.png>) SHA-256 `9cdc552c8e8e3e87ac7d5dddd48bf51c301b791ffd2683c57bdac8216aa71f3d`。
+- 结论边界：本轮通过设置页开关的名义轨道宽度拟合、窄/宽窗口几何和双向实时端点拖动；网页当前参考与轨道设计尺寸按 CSS/设计单位比较。粒子局部状态、边缘光、背景折射仍有可见差异；原 MP4 已删除，因此不能据此签收逐帧 `1:1`、原视频复原、UI-6.8 或阶段 0–6 总体验收。
+- 清理：隔离 Profile 已优雅退出，原 Google Chrome/GitLab 窗口已重新获得前台；Host 保持停止。没有更改用户系统外观偏好。
