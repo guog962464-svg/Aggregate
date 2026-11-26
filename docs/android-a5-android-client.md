@@ -766,3 +766,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 状态：**Android ADB shell 访问 `192.168.8.4:47321` 返回 `Connection refused`；本机该端口无 listener、ADB reverse 为空。Aggregate 当前无运行进程/可见窗口，手机前台仍是系统 Launcher；本轮未启动应用或再次触发已复现的 `active-identity` Keychain 读取挂起。
 - **Touch ID 问题：**Apple 文档确认可以为 Keychain 项配置 Touch ID，但须在创建项时使用生物识别 `SecAccessControl`，并通过 LocalAuthentication/认证上下文读取。当前普通登录钥匙串项及现有查询没有此配置，现有密码/ACL 提示不能现场切成指纹。该改造不能据此视为当前 `SecItemCopyMatching` 挂起的修复；迁移还须保留 Host ID、证书 pin 和现有配对 grant，并解决无前台认证时 Host 的行为。参见[2026-11-26 Touch ID 可行性核对](#2026-11-26-keychain-touch-id-可行性核对)及 [Apple Keychain Touch ID 文档](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id)。
 - **结论：**网络前置条件本轮通过复核，但 Host 尚无 listener，未产生 WSS、Bonjour/NSD、邀请、配对或 RPC 新证据。A5.4/A5.5 仍开放；当前实际阻塞仍是 production Host 身份 Keychain 数据读取路径。
+
+## 2026-11-27 A5 同网段 Debug Host 与钥匙串授权复验（04:14 Asia/Shanghai）
+
+- **构建输入：**在 detached worktree `/private/tmp/aggregate-a5-current-2026-11-27`、提交 `55b2f2a0f2555cdee8a853e5456a345a35abc910` 上启动当前 `main.dart`。`flutter pub get --enforce-lockfile` 因 workspace 锁文件与 pubspec 约束不一致而失败，报告解析将改变 106 项依赖；随后只在此临时 worktree 用普通 `flutter pub get` 建立 Debug 诊断环境，未触碰主工作区的 `pubspec.lock`。macOS Debug 构建成功，Aggregate 设置页可见；此构建不是 exact-lock 验收或 Release 产物。
+- **Keychain 现场：**设置页启动 Host 后，SecurityAgent 显示请求读取 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串机密。依用户此前授权在 secure field 提交已提供的密码并选择一次性“允许”；共两次交付/允许尝试，系统提示仍保持显示，不能据此判断密码被接受/拒绝或认定为根因。未选择“始终允许”。退出本轮 Flutter Debug app 后，SecurityAgent 仍有隐藏请求；随后对已退出进程的残留请求执行一次语义“拒绝”以结束提示，后续快照显示该窗口隐藏。持久 ACL 状态未重新读取；没有轮换 Host identity 或改变配对 grant。
+- **网络与服务：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`；Mac→手机与手机→Mac ping 各 2/2、0% 丢包，Android 路由为经 `wlan0` 直连。`47321/47322/47323` 无 listener，ADB reverse 为空；手机仍在 HONOR Launcher。没有 WSS、Bonjour/NSD、邀请、配对、`host.hello` 或 `connection.list` 新结果。
+- **清理与结论：**已退出本轮 Debug Runner，确认无该临时 worktree 的 Aggregate 进程、Host listener 或可见 SecurityAgent 对话框。此诊断只覆盖使用临时依赖解析的 Debug app；Host 仍未启动，不能判定 Keychain 密码或 SecurityServer 挂起的具体原因。A5.4/A5.5 继续开放；Touch ID 仍不是当前旧式登录钥匙串项可直接选择的认证方式。
+- **verified_scope：**提交 `55b2f2a` 的临时 macOS Debug app、普通 pub get 后的隔离 workspace、SecurityAgent secure field 与按钮状态、双向 ICMP、手机 foreground activity、Host 端口及 ADB reverse。未安装/启动 Android app、未配对或 RPC、未修改 Host identity/grants，也没有 exact-lock/Release、产品端到端或 16 KB 运行证据。

@@ -586,3 +586,15 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 新增独立于完整静态链接清单的 `--binary-license-inventory` 输入，将隔离 APK 精确哈希、NDK 30 `libc++_shared.so` 的来源/strip 输出哈希及包内 `NOTICE-NDK-30-toolchain` 证据映射到 CycloneDX；候选表达式为 `NCSA OR MIT`，仍待法律复核。固定输入见 [Node 26.13.1 libc++ 候选清单](android-a3-libcxx-license-inventory-node-26.13.1.json)，BOM 和逐项验证见 [A3.6 运行时研究记录](android-a3-runtime-research.md#2026-11-27-exact-libc-license-candidate-mapping-in-cyclonedx)。
 - 此更新只替换“4 个 native DSO 均无许可证字段”的旧 BOM 状态：libc++ 现有待审候选字段，另外 3 个 DSO 仍未映射。BOM 仍 incomplete；Node 静态依赖、平台库版本、法律审查、构建 attestation、产品集成、签名及 16 KB 真机门槛均未关闭，A3.6/A4.7 不关闭。
+
+## 2026-11-27 A3.6 全部 packaged native DSO 状态清单
+
+- 将隔离 arm64 Debug APK 的四个原生库全部绑定到 inventory：`libc++_shared.so` 为 NDK 30 来源可复现、许可证候选 `NCSA OR MIT`；JNI bridge、`libnode.so` 与 `libnode_cli.so` 均保留 `unresolved` 许可状态，并分别记录可验证的源文件/Node 源归档与未复现的构建边界。没有把任一未闭合行升级为许可证结论。
+- 新清单见 [Node 26.13.1 native library inventory](android-a3-binary-license-inventory-node-26.13.1.json)。生成 BOM `8ec8adca246c27f57bfbd3dd1ce65b2fb1255ef4aa9d798063b87ee71a6e614d` 共 308 components、152 dependency nodes、362 edges；四个 DSO 行全覆盖、358 条 required npm edges 解析，CycloneDX schema 0 errors，composition 仍 incomplete；定向单测 16/16。
+- 这项更新完成了四个 packaged DSO 的状态记录，不等于静态 Node/Gradle/platform closure、构建 attestation、V8 trap-handler 复核、法律审查、正式签名、产品集成或 16 KB 真机通过。A3.6/A4.7 仍开放；实现提交 `55b2f2a` 已推送 GitHub/Gitee。
+
+## 2026-11-27 A5 同网段 Debug Host 与钥匙串复验
+
+- Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 当前双向 ping 各 2/2；手机路由为经 `wlan0` 直连。临时 worktree 中的 exact-lock Debug 启动前置 `flutter pub get --enforce-lockfile` 失败（将改变 106 项依赖）；随后仅在该隔离目录普通解析依赖并成功启动 Debug UI，主工作区 lock 未更改。
+- 用户提供的凭据经 SecurityAgent secure field 提交两次并尝试一次性“允许”后，提示仍未结束；退出 Debug app 后对残留请求做一次拒绝以清除，不曾选择“始终允许”。Host 按钮回到“启动 Host”，`47321/47322/47323` 无 listener，ADB reverse 为空，手机在 Launcher；没有 WSS、Bonjour/NSD、邀请、配对或 `host.hello`/只读 `connection.list` 新结果。此次无法判断密码是否被接受，也没有查出此前 `SecItemCopyMatching`/SecurityServer 等待的原因。
+- 该尝试不是 exact-lock 或 Release 通过证据；A5.4/A5.5 继续开放。完整状态见 [A5 当前 Debug Host 复验](android-a5-android-client.md)。
