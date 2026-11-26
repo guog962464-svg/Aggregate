@@ -570,3 +570,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 隔离 NodeProbe APK 的 151 个 npm `LICENSE`/`NOTICE`/`COPYING` 文件与输入树逐路径、逐字节匹配；原 APK 缺少 Node 26.13.1 聚合 `LICENSE` 和 NDK 30 聚合 `NOTICE`。已在临时 NodeProbe 工程中补入这两份原文并离线重打包，新 APK 为 36,681,081 字节，新增 NOTICE 的 SHA-256 与 Node 源码/NDK 30 源文件一致。4 个 arm64 DSO 的 `PT_LOAD` 对齐均为 16 KB，APK `zipalign -P 16` 通过。
 - 这是隔离 Debug APK 的 NOTICE 资产包装检查；没有修改 Aggregate 产品代码，也没有在手机安装或运行新 APK。候选 `libc++_shared.so` 的精确来源与许可覆盖仍无法确认，完整二进制 SBOM、可复现构建、法律审查、正式签名与 16 KB 真机执行均开放，A3.6/A4 不关闭，产品端 npm/CLI 边界保持不变。详见 [NOTICE 与二进制许可证边界](android-a3-runtime-research.md#2026-11-27-isolated-node-26131-probe-notice-payload-follow-up)。
+
+### 后续：NDK 30 stripped libc++ 来源核验
+
+- 上一条中“`libc++_shared.so` 来源与许可覆盖仍无法确认”是基于它与 NDK 原始文件的哈希不同；本次找到并复现构建脚本里的 `llvm-strip --strip-unneeded` 后，NDK `30.0.16248370` arm64 sysroot 文件经过相同转换与候选 SHA-256 `b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f` 完全相同。NDK 30 根 NOTICE 与含 libc++ 双许可证条款的 `NOTICE.toolchain` 已一起加入最新隔离候选包，来源哈希匹配。
+- **supersedes：**仅替换前一条“libc++ 来源未知”的判断；证据为临时构建脚本、`BUILD-METADATA.txt` 和用 NDK 30 `llvm-strip` 独立复现的字节级哈希。A3.6 的全量二进制 SBOM/法律审查、Node 构建可复现性与 attestation、V8 trap-handler 修改安全复核、产品集成、正式签名和 16 KB 真机仍未完成，A3.6/A4 不关闭。完整证据及最新 APK SHA-256 见 [NDK 30 libc++ 与 toolchain NOTICE](android-a3-runtime-research.md#2026-11-27-ndk-30-stripped-libcxx-provenance-and-toolchain-notice)。
