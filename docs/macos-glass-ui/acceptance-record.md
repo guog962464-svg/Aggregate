@@ -2493,3 +2493,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 结果：设置页、深色模式中的太阳/月亮控件、Mac Host 和快捷键区同屏可见。此截图作为设计尺寸的静态原生 Profile 记录，不单独判定材质拟合、逐帧动画、VoiceOver 或其它窗口尺寸。
 - 证据：[深色设置页 1360×900pt](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui68-eventtap-common-display-time/current-profile-settings-1360x900.png>) SHA-256 `403193d2d73f58732c71174e38ea49047a2e463b782cdc5819939674b8ab3606`。
 - 清理：Profile 进程已优雅退出；随后 `focus-window` 验证前台回到原 Google Chrome / GitLab 窗口。本次没有修改产品逻辑或系统外观偏好；UI-6.6 与阶段 0–6 仍为部分验收。
+
+### 2026-11-27 UI-6.8 等比例完整控件帧复核
+
+- 复核原因：前一轮接触表使用 App `200×200` 物理像素与网页 `400×400` 物理像素裁剪，再各自放大到 `250×250`。两路录屏均为 2×，录屏中 App 轨道约 `197 pt`、网页轨道约 `432 CSS px`；旧裁剪对应 `100 pt` / `200 CSS px`，按控件真实比例换算后，App 控件在归一化图上小约 9%。这不影响此前的时间/进度配对，但会轻微影响大小、边缘光和周边材质的目视判断。
+- 重裁方法：沿用 CGEventTap/CDP 光标轨迹复配的同一组双向 `45` 对帧；完整控件区按相同比例裁取，App `CGRect(816,619,480,262)`，网页 `CGRect(171,325,1060,580)`，统一归一到 `500×273`，无遮罩、模糊、颜色校正或帧插值。另逐张查看两向完整 45 帧接触表及约 `25%/50%/75%` 的关键进度表。
+- 目视结论修正：轨道、把手大小、太阳/月亮主体形态、运动方向与主要过渡总体接近。等比例帧中仍能看到点阵局部位置/亮度、把手下缘与侧缘光强分布，以及周围背景梯度的细微差别；差异程度小于旧裁剪下的直观印象。故不依据旧裁剪继续拟合渲染参数，也不签收逐帧 1:1。
+- 证据：[深→浅完整控件 45 帧](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui68-eventtap-common-display-time/ui68-forward-full-control-matched-scale-all-frames.png>) SHA-256 `ffebf94636a7cd57b0cebfd8bdc5e7d28873bc6d981fb1bf2ad586c62b65e8c0`；[浅→深完整控件 45 帧](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui68-eventtap-common-display-time/ui68-reverse-full-control-matched-scale-all-frames.png>) SHA-256 `b57e2f7b286ceb67feaf7af8eb5e20dbc988553fe8d2f6054826df04cb1c14c0`；[深→浅关键进度表](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui68-eventtap-common-display-time/ui68-forward-full-control-matched-scale-key-points.png>) SHA-256 `7267e4ad73b0bb42a3b1e20143998774a2ea0967d17ddcfa374fc3bcd3e93a87`；[浅→深关键进度表](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui68-eventtap-common-display-time/ui68-reverse-full-control-matched-scale-key-points.png>) SHA-256 `d52f98506e8de6ddfeaf7af8eb5e20dbc988553fe8d2f6054826df04cb1c14c0`。
+- 配对指标仍为上一记录：深→浅 `|Δprogress| p95=0.0116`、`|Δt| p95=10.591 ms`；浅→深分别 `0.0174`、`14.012 ms`。重裁没有改变时间戳、输入轨迹或配对。两窗口仍使用独立渲染时钟与渲染器，WindowServer `displayTime` 不是物理面板扫描时间；原 MP4 已删除。此项只纠正和补强当前网页参照的可视比较，不代表原视频复原、逐像素相同或 UI-6.8 完成。
