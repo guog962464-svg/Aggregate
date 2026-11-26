@@ -740,3 +740,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **旧授权提示边界：**启动前 `SecurityAgent` 中已有 Host TLS Keychain 提示；统一日志将其关联到已退出 PID `24664` 和旧路径 `/tmp/aggregate-a5-host-20d1b7e/.../Aggregate.app`，不是本轮 PID `41386` 的当前请求。按用户先前授权，在安全字段中投递已提供的密码并点过一次性“允许”，但投递未验证、等待未返回，不能确认密码被接受或旧请求获准。未选择“始终允许”，没有更改 Keychain 条目或持久 ACL。后续尝试关闭残留提示后，SecurityAgent 仍在无可见窗口的快照中保留一个隐藏可操作请求和一个禁用请求；没有对该隐藏请求继续输入或重复授权。
 - **服务、设备和清理：**本轮没有观察到新的 SecurityAgent 请求；Host `47321/47322/47323` 无 listener，无 WSS、Bonjour/NSD、邀请、配对或 RPC。手机前台仍是 Launcher，ADB reverse 为空；未启动 NodeProbe/testnode、未改网络。只通过 `agent-desktop close-app` 正常关闭本轮 PID `41386`；其余 Profile app 未触碰。临时 Release worktree 在记录后移除。
 - **结论：**当前提交的 exact-lock Release 再次复现钥匙串身份读取挂起。旧 PID 的残留授权 UI 和本轮查询挂起同时存在，但现有证据不能证明两者因果。Touch ID 不在当前旧式登录钥匙串提示中可选；迁移到 Data Protection Keychain/生物识别保护也未实现，且不保证解决这次 SecurityServer 挂起。A5.4/A5.5、生产 LAN/WSS/配对/RPC 继续开放。
+
+## 2026-11-26 A5 同网段现场回读与隐藏钥匙串请求
+
+- **网络：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`。Mac 到手机、手机到 Mac 的 ping 各 2/2、无丢包，确认本轮仍处于同网段并可双向 ICMP 到达。
+- **Host 与 Android 通道：**现场没有 Aggregate Host 进程；`47321/47322/47323` 无监听，ADB reverse 列表为空。没有创建邀请或执行 WSS、Bonjour/NSD、配对和 RPC；手机未启动 NodeProbe/testnode。
+- **钥匙串请求：**SecurityAgent 的窗口清单为空，但完整 UI 自动化树仍包含一个隐藏且可操作的请求，提示 Aggregate 需要读取服务 `io.github.guog962464.aggregate.host.tls.v1` 的“登录”钥匙串机密；另有一个禁用副本。先前关联的请求者 PID `24664` 当前不存在，本轮也没有存活的 Aggregate 请求进程，因此不能确认该提示对应一个仍有效的 Host 请求。未输入密码、未选“允许”或“始终允许”，没有更改 Keychain 条目或 ACL。
+- **清理尝试与结论：**对该隐藏请求执行一次语义“拒绝”后，工具返回 `delivered_unverified`；随后快照仍显示隐藏请求，故不认定其已关闭，也未重复操作。当前网络可达性已复核，但 Host 身份读取/授权、listener、生产 LAN WSS、配对与只读 RPC 均无新通过证据；A5.4/A5.5 保持开放。

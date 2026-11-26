@@ -517,3 +517,4 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 - 在 `e619f5e` detached worktree 上按提交锁重建 macOS Release 并验签后，从设置页启动 Host。现场采样再次定位在 `active-identity` generic-password 的 `SecItemCopyMatching`/SecurityServer 解密等待；没有 Host listener、WSS、Bonjour/NSD、配对或 RPC。
 - 安全弹窗对应已经退出的旧 worktree PID `24664`；按用户先前授权输入凭据并尝试一次性允许，但结果未知，未设“始终允许”或更改 ACL。手机仍在 Launcher，ADB reverse 为空，本轮 Host PID 已关闭。A5.4/A5.5 继续开放；详见 [A5 当前 HEAD Release Host 复验](android-a5-android-client.md#a5-current-head-e619f5e-release-host)。
+- **A5 同网段现场回读（2026-11-26）：**Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；当前没有 Aggregate Host 进程、`47321/47322/47323` listener 或 ADB reverse。SecurityAgent 无可见窗口，但保留一个隐藏的旧 Host TLS Keychain 请求；请求者 PID 已退出，未输入密码或授权，尝试语义关闭后仍无法验证请求消失。未产生 WSS/Bonjour/NSD/配对/RPC 新证据，A5.4/A5.5 继续开放。详见 [A5 同网段现场回读与隐藏钥匙串请求](android-a5-android-client.md#2026-11-26-a5-同网段现场回读与隐藏钥匙串请求)。
