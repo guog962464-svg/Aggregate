@@ -575,3 +575,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 上一条中“`libc++_shared.so` 来源与许可覆盖仍无法确认”是基于它与 NDK 原始文件的哈希不同；本次找到并复现构建脚本里的 `llvm-strip --strip-unneeded` 后，NDK `30.0.16248370` arm64 sysroot 文件经过相同转换与候选 SHA-256 `b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f` 完全相同。NDK 30 根 NOTICE 与含 libc++ 双许可证条款的 `NOTICE.toolchain` 已一起加入最新隔离候选包，来源哈希匹配。
 - **supersedes：**仅替换前一条“libc++ 来源未知”的判断；证据为临时构建脚本、`BUILD-METADATA.txt` 和用 NDK 30 `llvm-strip` 独立复现的字节级哈希。A3.6 的全量二进制 SBOM/法律审查、Node 构建可复现性与 attestation、V8 trap-handler 修改安全复核、产品集成、正式签名和 16 KB 真机仍未完成，A3.6/A4 不关闭。完整证据及最新 APK SHA-256 见 [NDK 30 libc++ 与 toolchain NOTICE](android-a3-runtime-research.md#2026-11-27-ndk-30-stripped-libcxx-provenance-and-toolchain-notice)。
+
+## 2026-11-27 A3.6 NOTICE APK 与 CycloneDX 刷新
+
+- 最终隔离 APK SHA-256 为 `ebbc373ce6690e6aa646872c12dd56fb81804350d17c82d17f14b304855a77e1`。Node 26.13.1 LICENSE、NDK 30 NOTICE/NOTICE.toolchain 和 npm 151 个许可证/notice 文件全部包含；按生成器的命名规则重命名 NDK notice 后，CycloneDX BOM 含 154 个 notice 文件组件。
+- BOM SHA-256 `236398befe82f07b392a1afb56fd81ad6622c547bc375798c983bb2d38af5fc2`，308 个组件、152 个依赖节点、362 条边，全部引用闭合；358 个 npm 必需依赖边解析，CycloneDX 1.6 Draft 7 schema 校验 0 errors。zipalign 与四个 arm64 DSO 的 16 KB 静态 `PT_LOAD` 检查通过。
+- BOM 仍标记 `composition=incomplete`：四个 native DSO 没有许可证字段，Node `libnode` 静态链接清单、Gradle runtime graph、15 个 Android/platform 动态库版本均未闭合，也未完成法律审查。最新 APK 未在设备运行；正式签名与 16 KB 真机门槛仍开放，A3.6/A4 不关闭。详见 [最终 NOTICE APK 与 CycloneDX 证据](android-a3-runtime-research.md#2026-11-27-node-26131-notice-package-cyclonedx-refresh)。
