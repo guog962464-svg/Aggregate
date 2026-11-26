@@ -747,3 +747,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 与 Android 通道：**现场没有 Aggregate Host 进程；`47321/47322/47323` 无监听，ADB reverse 列表为空。没有创建邀请或执行 WSS、Bonjour/NSD、配对和 RPC；手机未启动 NodeProbe/testnode。
 - **钥匙串请求：**SecurityAgent 的窗口清单为空，但完整 UI 自动化树仍包含一个隐藏且可操作的请求，提示 Aggregate 需要读取服务 `io.github.guog962464.aggregate.host.tls.v1` 的“登录”钥匙串机密；另有一个禁用副本。先前关联的请求者 PID `24664` 当前不存在，本轮也没有存活的 Aggregate 请求进程，因此不能确认该提示对应一个仍有效的 Host 请求。未输入密码、未选“允许”或“始终允许”，没有更改 Keychain 条目或 ACL。
 - **清理尝试与结论：**对该隐藏请求执行一次语义“拒绝”后，工具返回 `delivered_unverified`；随后快照仍显示隐藏请求，故不认定其已关闭，也未重复操作。当前网络可达性已复核，但 Host 身份读取/授权、listener、生产 LAN WSS、配对与只读 RPC 均无新通过证据；A5.4/A5.5 保持开放。
+
+## 2026-11-26 `active-identity` Keychain 非交互读取复现
+
+- **探测方法：**只读查询登录 Keychain 中服务 `io.github.guog962464.aggregate.host.tls.v1`、账号 `active-identity`。属性查询仅请求 `kSecReturnAttributes`，在 3 ms 返回 `OSStatus=0`；没有读取或输出机密值。随后用 `kSecReturnData` 和 `LAContext.interactionNotAllowed=true` 执行同一服务/账号的非交互数据读取；进程分别在 25 秒和 2 秒超时被终止，没有弹出认证 UI，也没有输出或落盘条目内容。
+- **诊断范围：**这将现象收窄到 Keychain 条目数据读取/解密路径；通用条目定位及属性查询可快速返回，而取值路径即使禁止交互 UI 仍不返回。结合既有 Release 栈停在 `SecItemCopyMatching → CSSM_DecryptDataFinal → SecurityServer decrypt → mach_msg`，支持“阻塞发生在数据读取/解密路径”，但尚不能区分条目 ACL/数据状态、SecurityServer 内部等待或调用方代码签名访问策略。临时 Swift 探针不是 Aggregate 签名进程，因此不能单独证明产品进程的访问结果。
+- **状态与安全边界：**探针只读，没有修改 Keychain、ACL、Host identity 或配对数据；没有输入密码或触发 Touch ID。当前没有 Aggregate/Runner 进程、Host listener、ADB reverse、配对或 RPC 新证据；手机未操作。Touch ID 不能把本次数据读取挂起自动变成成功，不能据此认为迁移即可修复。A5.4/A5.5 仍开放。
