@@ -1,6 +1,6 @@
 # Aggregate Android 适配规划
 
-> 修订日期：2026-11-24。当前状态：A0–A2 已完成；A3 进行中，A3.6 的许可与法律审查、Android 原生依赖闭包、维护方发行资格仍未关闭，16 KB 真机缺失；A4 已完成 Debug 评估与能力边界，Android 本地 ncm-cli 判定不支持；A5 进行中，普通 applicationId Debug 身份轮换以及测试签名 Release 的 LAN/NSD 只读链路、产品主界面冷启动和 CAMERA 允许路径已在 LGE AN10 4 KB 真机通过，正式签名和签名升级路径仍开放；普通包名 Debug 首次 CAMERA 弹窗拒绝及 UI 回退也已实际通过，普通包名 Release 的 CAMERA 允许路径和 user-fixed 拒绝回退状态已验证；隔离 fixture 已覆盖 CLI/TUI/MCP/setup 等流程，production Host 当前未运行；最近启动仍停在登录 Keychain identity lookup，当前现场无 WSS/RPC；2026-11-23 21:24 在 LGE AN10 4 KB 真机同网段完成隔离配对，`host.hello` 成功，`connection.list` 返回 1 条 CLI 连接（不可用），临时 grant 已撤销且 Host 已停止；本轮未复验 NSD，也未做 production 业务写操作、网易云账号/播放；A6 代码与 4 KB 启动验收完成，production 网易云账号/播放未完成；A7 手机界面和自动化矩阵完成，无障碍/TalkBack 按用户决定排除；A8 当前 HEAD 的 arm64 Release APK/AAB 静态检查及普通/隔离包名测试签名 Release 4 KB 冷启动通过。Android 分发仍需正式签名、运行时许可/依赖闭包和 16 KB 真机验收。Node/npm 产品入口在 A3.6 关闭前保持受限；详见各阶段记录与 [A8 验收记录](android-a8-acceptance.md)。
+> 修订日期：2026-11-26。A0–A2 已完成；A3.6 仍缺维护方 Android 运行时发行、许可/法律审核、完整依赖闭包及 16 KB 真机；A4 已完成 Debug 能力评估，Android 本地 `ncm-cli` 不支持，任意 npm/CLI 仍未作为产品能力开放；A5 Host/配对/RPC 继续验收，4 KB 真机此前已通过隔离只读 RPC，当前 Mac 与手机同属 `192.168.8.0/24`，但本次 production Host 启动卡在 macOS Keychain 授权，未产生 LAN/WSS 新结果；A6 代码与基础启动验收完成，真实音乐账号/播放未验收；A7 手机界面完成，无障碍/TalkBack 按用户决定排除；A8 已提交产品输入具有 Release 静态 16 KB 对齐和 4 KB 冷启动证据，但正式签名与 16 KB 真机仍缺。Node/npm 生产入口在 A3.6 的运行时来源和许可门槛关闭前保持受限。阶段证据见 [A3.6 上游发行状态](android-a3-upstream-android-runtime-status-2026-11-20.md)、[A5 客户端记录](android-a5-android-client.md)和 [A8 验收记录](android-a8-acceptance.md)。
 > 最新 A5 实时回读（2026-11-23 23:27 Asia/Shanghai）：Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 同网段，双向 ping 均 2/2。临时 Apple Development 签名的 Debug 副本（TeamIdentifier 已存在、`codesign --verify --deep --strict` 通过）启动 Host 时仍出现登录钥匙串私钥导出提示；输入已提供凭据并选择“始终允许”/“允许”后提示仍在，最终拒绝。临时副本关闭并删除；原 Debug app 仍在待机，`47321/47322` 无 listener。稳定签名副本也重现提示，故 ad-hoc 签名不是已证实的唯一原因；没有生产 WSS、配对或 RPC。此前 21:24 隔离测试签名 WSS 与只读 RPC 结果保留为历史证据，不外推至当前 production Host 状态。
 > 本文响应本轮 Android 目标；[原 macOS 方案](architecture.md)中的“本版仅 macOS”是上一阶段范围，不限制本轮规划。桌面界面背景见 [UI 设计](ui-design.md)，当前连接首页见[阶段 5](phase5-contextual-ui.md)。
 
@@ -478,3 +478,8 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 ## 2026-11-26 A8 验收增量
 
 - **当前产品输入身份：**提交 `1658785` 的 Android 发布输入（`app/lib`、`app/android`、`app/pubspec.yaml`、提交锁文件）与 `a03e849` 完全一致；当前工作树未提交的 lock/UI 测试及设计变化已排除。沿用 `a03e849` 的 Release APK/AAB 与 16 KB 静态检查、`7c1fa64` 同一产品输入的 4 KB 冷启动证据，不声称本轮重建或重新运行真机。正式签名和 16 KB 实机仍为发布门槛。详见 [A8 当前 main 产品输入延续复核](android-a8-acceptance.md#2026-11-26-当前-main-1658785-a8-产品输入延续复核)。
+
+## 2026-11-26 A3.6 与 A5 现场复核
+
+- **A3.6 发行新鲜度：**官方当前安全线为 Node 26.13.1 与 24.22.3；已核对的 nodejs-mobile/fogtape 移动发行仍落后于对应安全线或处于预发布状态，Termux 24.22.3 包不是嵌入式 `libnode.so` SDK，Towartz 26.13.1 是无 npm 的独立可执行文件。没有找到可据此关闭 A3.6 的维护方 Android 嵌入发行；本轮仅复核公开发行元数据，没有下载、构建或运行设备。详见 [A3.6 发行复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-26-maintained-android-node-runtime-freshness-recheck)。
+- **A5 当前网络与 Host：**Mac `en0=192.168.8.4/24`、LGE AN10 `wlan0=192.168.8.7/24`，同属 `192.168.8.0/24`；4 KB 手机仍在用户新闻 App 前台。尝试启动本机已有的 Release Host 构建后，界面停在“正在启动”，系统出现 Keychain 授权请求；桌面自动化工具因安全限制拒绝操作 `SecurityAgent`，没有输入密码或点选“始终允许”。本轮只终止了自己启动的 Release 进程，Host 端口和 ADB reverse 均为空；未生成邀请、配对或调用 RPC。因此同网段已由当前读数确认，但当前 direct LAN/WSS 仍无新通过证据。详见 [A5 当前同网段 Host 启动记录](android-a5-android-client.md#2026-11-26-a5-当前同网段现场与-keychain-授权阻塞)。

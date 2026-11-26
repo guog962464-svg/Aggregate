@@ -664,3 +664,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **授权与 RPC：**控制端仅对唯一测试设备名、对应 deviceId、Android 平台和本次确认码自动批准 `readConnections`，且 `connectionPermissions` 为空。Android 完成真实签名配对与 Host 认证；`host.hello` 成功，`connection.list` 返回 1 条连接。没有执行写 RPC、向导、CLI/TUI、MCP、账号、终端或播放操作。
 - **结果与清理：**定向 Flutter analyze 无问题；`ORG_GRADLE_PROJECT_aggregateIsolatedIntegration=true PUB_HOSTED_URL=https://pub.dev flutter test --no-pub --no-uninstall integration_test/a5_current_host_readonly_probe_test.dart -d AEMN022427001360 --timeout=240s --reporter expanded` 通过（1 项）。验收脚本确认 Host 原有 3 条 grant 与测试后完全一致，测试 grant 已撤销，Host 已停止。首次探针曾因显式第二次 `host.hello` 漏传必需 `protocolVersion` 而被正确拒绝；修正探针参数后通过，产品代码未修改。ADB reverse 已清空、测试包已卸载、Mac 测试端口均无监听，手机前台恢复为用户原来的新闻 App。
 - **边界：**本轮证明当前 Host/Android 配对与只读 RPC 可经 USB reverse 完成；当前 Wi-Fi 直连、Bonjour/NSD、普通产品包 Release 配对 UI、CLI/TUI/MCP/向导/账号等业务闭环仍未在本轮验收。没有 16 KB 实体机，不能据此关闭 16 KB 运行门槛；A5 继续开放。
+
+## 2026-11-26 A5 当前同网段现场与 Keychain 授权阻塞
+
+- **网络与设备：**Mac `en0=192.168.8.4/24`，LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096` 真机 `wlan0=192.168.8.7/24`，同属 `192.168.8.0/24`。USB ADB 在线；手机验收前后均保持在用户原来的新闻 App 前台，没有启动 NodeProbe/testnode 或切换手机应用。
+- **Host 启动：**通过本机已有的 Release `Aggregate.app`（本轮未重建）的设置页启动 Mac Host，界面持续显示“正在启动”。系统启动 `SecurityAgent` 并出现 Keychain 访问请求；日志只确认 Aggregate 调用了 `SecItemCopyMatching`。桌面控制工具拒绝访问 `com.apple.SecurityAgent`（安全限制），没有输入密码、选择“始终允许”或修改 Keychain ACL。
+- **清理：**只终止本轮由 CUA 启动的 Release Aggregate 进程。复查 Mac `47321/47322/47323` 无监听、ADB reverse 为空；手机仍在原新闻 App。没有生成邀请、提交配对、改动任何 grant、执行 `host.hello`/`connection.list` 或其他 RPC。
+- **结论：**本轮读数确认两端同网段，但 Host 没有启动监听，故没有当前 direct TCP/WSS/Bonjour/NSD 或配对/RPC 证据。旧的 USB reverse 只读 RPC 仍按其范围有效；当前 LAN 验收受系统 Keychain 授权界面阻塞。
