@@ -2636,3 +2636,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 在 `app/` 执行 `flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart`，3 项全部通过。第一项检查五个生产页面的文字区域在六种窗口尺寸/DPR、深浅初始主题和临界切换相位中的对比度；第二项检查六种窗口/DPR下深浅主题中的玻璃按钮标签；第三项检查 101 个主题插值相位中的普通、主、危险、禁用、忙碌及参考按钮文字。
 - 本项使用 Flutter Widget 离屏绘制与像素采样，未启动 Aggregate 窗口或桌面截图；没有修改产品源码。
 - 边界：这是已存在矩阵的当前 checkout 复跑，不扩展生产按钮实例、全页面状态或原生 Profile/display-present 覆盖，也不验证 VoiceOver；UI-5.5 仍部分验收。
+
+### 2026-11-27 UI-0 实时主题开关逻辑冻结复核
+
+- 以 UI-0 表中 `glass_theme_switch.dart` 基线 SHA `4abf596b74a438620c886b7a4ad5784017a1790ecb54febfac792b68008ec012` 对照当前版本：当前 SHA 为 `657bfc2c238f4ce585a549edc457629e1f2e39a2a05c0c70924218aeb8f04a0c`，存在已提交的历史改动。代码对照显示 `_move`、`_finish`、`_select` 与设计坐标映射方法体未变；可见状态下的拖动方向、释放提交、取消回滚及回调路径保持。新增差异包含 GlassScene 坐标同步、焦点呈现、可配置高度，以及隐藏/暂停时取消未完成拖动的生命周期处理（`f28c0b1`）。
+- 两份校准文件仍与 UI-0 哈希一致：`theme_switch_calibration.dart`=`c0f9cc70fa69462434e62c4ca577576ae03b6dd242d4a2a8a3eb1909cf0cadbd`，`theme_switch_fitted_calibration.dart`=`11ffe7ea41b5ebd26d4a59f91dc2c7e98b18dcc794e054d89b6956b4c1febaa7`。本次检查时，这六个受保护文件均没有未提交改动。
+- 在 `app/` 执行 `flutter test --no-pub test/glass_theme_switch_test.dart`，11 项全部通过，包含实时拖动到释放才提交、取消回到端点、反向拖动、隐藏期间取消、可见 inactive 不取消、键盘焦点及 Reduce Motion。测试为 Widget 离屏验证；没有启动 Aggregate 窗口。
+- 限制：这项复核确认源码差异范围与正常交互回归，不证明原 MP4 逐帧 1:1、原生 display-present 或物理屏幕 FPS；UI-6.8 仍部分验收。
