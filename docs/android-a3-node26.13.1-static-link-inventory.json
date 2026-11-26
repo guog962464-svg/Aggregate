@@ -1042,7 +1042,7 @@
       ],
       "memberNamesWithLinkerMapOutputSectionCount": 5,
       "linkerMapOutputSectionRowsForMappedNames": 93,
-      "sourceObjectMapping": "not available in the packaged NDK; this record identifies archive member labels from the exact NDK archive and the linked output sections only"
+      "sourceObjectMapping": "reconstructed for all 296 members in docs/android-a3-node26.13.1-ndk-runtime-source-map.json from the exact Android LLVM source revision and CMake selection rules; the packaged NDK has no per-member build manifest or compile command record"
     },
     {
       "name": "libclang_rt.builtins-aarch64-android.a",
@@ -1110,7 +1110,7 @@
       ],
       "memberNamesWithLinkerMapOutputSectionCount": 55,
       "linkerMapOutputSectionRowsForMappedNames": 135,
-      "sourceObjectMapping": "not available in the packaged NDK; this record identifies archive member labels from the exact NDK archive and the linked output sections only"
+      "sourceObjectMapping": "reconstructed for all 296 members in docs/android-a3-node26.13.1-ndk-runtime-source-map.json from the exact Android LLVM source revision and CMake selection rules; the packaged NDK has no per-member build manifest or compile command record"
     }
   ],
   "directObjectInputs": [
@@ -1775,7 +1775,7 @@
     "This is an exact object/archive/link-map inventory from an existing patched build tree; it is not a clean source rebuild or signed build attestation.",
     "The source patch disables V8 trap-handler support and changes Android build configuration; security review and upstream-accepted patch review remain open.",
     "All 517 generated source outputs are hash-bound, but their generator executables, generator scripts, and complete source-data inputs are not closed here.",
-    "NDK compiler-rt and libunwind archive member names with mapped output sections are identified; the packaged NDK does not provide a per-member source-object list in this evidence set.",
+    "NDK compiler-rt/libunwind source associations are reconstructed for all archive members in docs/android-a3-node26.13.1-ndk-runtime-source-map.json; missing per-member build commands/flags and a reproducible NDK archive rebuild remain open.",
     "ncrypto has no standalone license file; mapping it to the Node.js root license remains an attribution inference.",
     "V8, OpenSSL, Node, SQLite, NDK runtime, and copied cpufeatures evidence has not received legal review; no composite libnode SPDX expression is asserted.",
     "Gradle runtime dependency closure, JNI bridge license attribution and NDK static-runtime component closure, Aggregate product integration, formal signing, V8 trap-handler security review, and 16 KB physical-device execution remain outside this inventory and open."

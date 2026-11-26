@@ -797,3 +797,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **Host 与钥匙串：**点击“启动 Host”后，SecurityAgent 请求访问现有登录钥匙串项 io.github.guog962464.aggregate.host.tls.v1。已将用户提供的凭据通过安全字段提交两次，并分别尝试一次性“允许”和“始终允许”。该 TLS 服务的提示仍可见，因此不能推断认证成功或持久 ACL 已生效。随后对残留请求点“拒绝”以关闭提示；没有回读 ACL。应用发起的 Keychain 访问结果不可见，因此本次不能确定身份字节是否已返回。本任务未检查身份值，也未请求轮换或修改身份、证书 pin、配对 grant 或配对记录。
 - **结果与清理：**Host 按钮回到“启动 Host”，Mac 47321-47323 均无 listener；没有 WSS、Bonjour、邀请、配对、host.hello 或 connection.list 新结果。SecurityAgent 提示已隐藏，当前 Debug Aggregate 进程已优雅退出，隔离 NodeProbe 包已卸载，ADB reverse 为空；手机仍在 HONOR Launcher，没有 testnode 或 NodeProbe 进程。
 - **supersedes 与阶段状态：**本节只更新本次当前工作树的重试结果，替代此前“本次未选择始终允许”的表述：本次确实尝试了该选项，但 ACL 是否持久生效仍未知。当前同网段路由前置条件满足；既有 Host 身份钥匙串访问结果仍未确认，生产 Host 未启动。A5.4/A5.5 保持开放；未实现 Touch ID 或钥匙串迁移。
+
+## 2026-11-27 A5 用户确认网络一致后的双向连通复核（06:52–07:03 Asia/Shanghai）
+
+- **网络状态：**Mac `en0=192.168.8.4/24`，Android LGE AN10 `wlan0=192.168.8.7/24`；Mac 路由到手机选择 `en0`，手机路由到 Mac 选择 `wlan0` 直连。Mac→手机和手机→Mac ping 均 2/2、0% 丢包。设备仍为 Android 15/API 35/arm64，`PAGE_SIZE=4096`。
+- **当前服务与设备状态：**Mac `47321/47322/47323` 无 listener，ADB reverse 为空；手机 `topResumedActivity` 为 HONOR Launcher，没有 Aggregate、NodeProbe 或 testnode 前台进程。本轮只读网络复核，没有启动 App/Host、触发 Keychain 请求或切换手机前台。
+- **结论与边界：**当前双向网络前置条件通过。最近一次同签名配置的 Host 重试仍停在现有 Keychain `active-identity` 读取/授权路径，授权完成结果未知；本轮没有新的签名、Keychain 或 Host 代码变化，因此不重复触发同一弹窗。未产生 WSS、Bonjour/NSD、邀请、配对、`host.hello` 或 `connection.list` 新证据；A5.4/A5.5 继续开放。
