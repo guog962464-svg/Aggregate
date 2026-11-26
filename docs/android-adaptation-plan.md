@@ -480,6 +480,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 - **当前产品输入身份：**提交 `1658785` 的 Android 发布输入（`app/lib`、`app/android`、`app/pubspec.yaml`、提交锁文件）与 `a03e849` 完全一致；当前工作树未提交的 lock/UI 测试及设计变化已排除。沿用 `a03e849` 的 Release APK/AAB 与 16 KB 静态检查、`7c1fa64` 同一产品输入的 4 KB 冷启动证据，不声称本轮重建或重新运行真机。正式签名和 16 KB 实机仍为发布门槛。详见 [A8 当前 main 产品输入延续复核](android-a8-acceptance.md#2026-11-26-当前-main-1658785-a8-产品输入延续复核)。
 - **当前 HEAD `fca0102` Release 与 4 KB 真机复验：**隔离构建基线 `2b288c3` 与当前 HEAD 的 Android 产品输入相同；arm64 APK/AAB 构建、zipalign、Bundletool `PAGE_ALIGNMENT_16K` 与 21 个 `PT_LOAD` 的 16 KB 静态检查通过。`flutter analyze` 无问题，动作编辑器定向测试 5/5 通过；隔离 `.integration` Release 在 LGE AN10 Android 15/4 KB 真机冷启动后 `MainActivity` top-resumed 且进程存活，验收包已卸载并恢复新闻 App。产品 APK/AAB 未签名；16 KB 真机、A3.6/A4/A5 剩余验收门槛仍开放。详见 [A8 当前 HEAD 验收](android-a8-acceptance.md#2026-11-26-当前-head-fca0102-a8-release-与-4-kb-真机复验-1821-asia-shanghai)。
 - **当前 HEAD `64e6a0d` 非无障碍 app/test 全量回归：**隔离 worktree 按提交锁运行 66 个 `app/test` 文件（跳过 `accessibility_test.dart`），370 项通过、5 项失败；5 项均为 macOS 目标的玻璃文字、减弱动态效果和布局断言。未纳入用户未提交测试更改，未运行无障碍/TalkBack 测试或操作手机。A8 测试集不能标记全绿；详细失败名见 [A8 验收记录](android-a8-acceptance.md)。
+- **当前 HEAD `5eba508` 输入连续性：**与 `2b288c3` 比较，`app/lib`、`app/android`、`app/pubspec.yaml`、`app/test` 和提交锁对象相同；此前 Release/4 KB 真机及 370/5 非无障碍套件结果适用于当前提交输入，本轮仅做身份比较未重跑。用户未提交的测试与 lock 改动未纳入。详见 [A8 当前 HEAD 输入连续性](android-a8-acceptance.md)。
 
 ## 2026-11-26 A3.6 与 A5 现场复核
 

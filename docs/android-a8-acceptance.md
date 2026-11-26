@@ -391,3 +391,8 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **输入与范围：**在隔离 worktree `/private/tmp/aggregate-a8-head-2b288c3` 的 `2b288c3` 源码上运行；当前 `64e6a0d` 相对该基线的应用代码、测试、Android 工程、pubspec 与提交锁均未变化。测试针对 `app/test` 下 67 个文件排除 `accessibility_test.dart` 后的 66 个文件；主工作区未提交测试和锁文件没有纳入，也没有修改。
 - **结果：**`find test -type f -name '*_test.dart' ! -name accessibility_test.dart -print0 | xargs -0 flutter test --no-pub --reporter expanded` 结束为 **370 项通过、5 项失败**。5 项均为 `TargetPlatform.macOS`：玻璃按钮标签对比度、玻璃文本 halo 对比度、减弱动态效果下切换玻璃开关后的文本检查（`StateError: No element`）、v3.5 macOS 工作区几何、宽屏主页面布局。其他用例通过；本轮未运行无障碍/TalkBack 测试，也未操作手机或生产 Host。
 - **验收范围：**这补充了当前已提交 Flutter 测试集的完整非无障碍结果，不能称为全套测试通过。失败均来自 macOS 目标；Android 适配的 Release/4 KB 证据见上一节。用户工作区里的 UI 测试更改仍未提交，不能混入本次结论。正式签名、16 KB 真机、A3.6/A4/A5 发布与业务门槛继续开放。
+
+## 2026-11-26 当前 HEAD `5eba508` A8 输入连续性复核
+
+- **输入身份：**当前 HEAD `5eba508b48278dd4dd1299abd510380417dfe69b` 与测试/构建基线 `2b288c3` 的 `app/lib` tree `6d5333503d4b7a0c2c9acfa8ac07d40c9321b4f4`、`app/android` tree `299e8a57fc45f8119dd0caa1b15b4fb3cc0a05f2`、`app/pubspec.yaml` blob `7a73244f5ce3c08e570eb9b92ced96a1bb3e69c7`、`app/test` 及 `pubspec.lock` blob `2e26f7d400ccc288b9f6b1e82a3969963af1383f` 完全一致。`2b288c3..HEAD` 的这些路径无差异，期间新增提交只涉及文档。
+- **证据沿用范围：**因此前两节 arm64 Release/16 KB 静态检查、LGE AN10 4 KB 冷启动与非无障碍 app/test 结果对应当前已提交应用输入。本次只做路径/tree/blob 身份比较，没有重建或重跑测试。主工作区未提交的 macOS 测试和 lock 更改不包括在内。
