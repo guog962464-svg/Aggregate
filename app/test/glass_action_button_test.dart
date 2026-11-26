@@ -384,6 +384,49 @@ void main() {
     expect(calls, 2);
   });
 
+  testWidgets('mouse hover reaches the shared button state controller', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => GlassMotionScope(child: child!),
+        home: Scaffold(
+          body: Center(
+            child: AggregateActionButton(
+              key: const ValueKey('quiet-export'),
+              label: '导出',
+              icon: Icons.save_alt,
+              style: AggregateActionStyle.quiet,
+              size: GlassButtonSize.compactAction,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final button = find.descendant(
+      of: find.byKey(const ValueKey('quiet-export')),
+      matching: find.byType(TextButton),
+    );
+    expect(button, findsOneWidget);
+    final statesController = tester
+        .widget<TextButton>(button)
+        .statesController!;
+    expect(statesController.value, isNot(contains(WidgetState.hovered)));
+
+    final mouse = await tester.createGesture(kind: ui.PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await tester.pump();
+    await mouse.moveTo(tester.getCenter(button));
+    await tester.pump();
+    expect(statesController.value, contains(WidgetState.hovered));
+
+    await mouse.removePointer();
+    await tester.pump();
+    expect(statesController.value, isNot(contains(WidgetState.hovered)));
+  }, variant: _macOS);
+
   testWidgets('Tab and Shift+Tab follow the visible glass action order', (
     tester,
   ) async {

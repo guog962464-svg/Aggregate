@@ -2255,6 +2255,14 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 证据：[按下反馈汇总与逐帧 SHA-256](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-pressed-revision/press-summary.json>) SHA-256 `87d7ba6b2eacc351dc634597808924f4b0157d37fbb3981d0015a9b72750013a`；汇总含候选源码 SHA、四组 timing、hover baseline 和全部 59 张窗口帧。
 - 限制：视觉判断是窗口整体图像的人工对照，不是按钮区域像素差分；ScreenCaptureKit 的时间戳不等于连续动画曲线、Flutter `FrameTiming` 或物理面板 FPS。此项只签收 B064 的共享按钮压下反馈与模拟取消路径，UI-6.7 其他实例仍需逐项验收；阶段 0–6 继续部分完成。
 
+### 2026-11-24 UI-6.7 B020 hover-only 玻璃面实窗复验
+
+- 环境与隔离：隔离 macOS Profile，独立 bundle `io.github.guog962464.aggregate.ui6b020hover`，PID 19693；暗色，窗口 800×632 logical px、DPR 2，ScreenCaptureKit 帧为 1600×1264 px。动作编辑器来自 `Ui6InspectionRuntime` 本地内存示例，没有调用真实 Host、设备、网络或文件写入。原始应用窗口未参与操作。
+- 输入与画面：从 fresh AX bounds `(654,343,89,40)` 读取“导出”按钮中心 `(698.5,363)`。同一次窗口采集中先记录指针在窗口空白处的静置基线，再只投递 `CGEvent mouseMoved`，等待 300 ms；未投递 mouseDown/mouseUp。WindowServer 帧回调 98 次，目标 `0 ms` 缺采，另 14 个目标时点均有帧且状态码为 0；约 `+45.186 ms` 的帧中，静置时无玻璃底的 quiet 按钮出现暖色圆角玻璃面。捕获结束时前台仍是隔离 bundle。
+- 回归：`test/glass_action_button_test.dart` 新增鼠标进入/离开共享按钮状态控制器的 Widget 检查；`flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart` 共 32 项通过，`flutter analyze --no-pub` 无问题，Dart 格式和 `git diff --check` 通过。没有改生产按钮或太阳/月亮主题切换逻辑。
+- 证据：[hover 时序和帧索引](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-hover-press-separated/hover-v2/hover-timing.json>) SHA-256 `498dcec648452ec91194b0113e8f83510416fdf85f43581886572d0b3c183c11`；[同次采集静置基线](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-hover-press-separated/hover-v2/hover-baseline.png>) SHA-256 `818b80600568b8997c45c3f4154ee61a4cc12d752e9ebab1f2bf873dcfa26091`；[约 +45 ms hover 帧](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-hover-press-separated/hover-v2/hover-0050ms.png>) SHA-256 `9bde86974a0f744c5d5ad5713d94c41bb0d8c939184e8a74d2debf4c7dd1a07c`；[采样 helper](</Users/guo/.codex/visualizations/2026/11/24/aggregate-ui6-b020-hover-press-separated/capture_hover_press_v2.swift>) SHA-256 `1440a34bbbdd05c320ba629d47d2dfbef4276490352cd7f2c075949d70ba75ab`。
+- 限制：本项只确认 B020 暗色 Profile 的 hover 进入后玻璃面可见；Widget 用例确认 hovered 状态可进入和清除，但物理 hover 离开画面的过渡仍未签收。离散 WindowServer 截图不代表完整 hover 动画、Flutter `FrameTiming` 或物理面板 FPS。UI-6.7 和阶段 0–6 继续部分完成。
+
 
 ### 2026-11-24 UI-6.7 B063/B065 按下反馈修订后复验
 
