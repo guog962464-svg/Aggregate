@@ -2649,3 +2649,9 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 在当前 checkout `00fa07a1144f28dba21d08bb1c6a170be9c9ea51` 的 `app/` 执行 `flutter test --no-pub test/glass_motion_test.dart test/glass_action_button_test.dart test/accessibility_test.dart`，36 项全部通过。覆盖文字缩放至 200% 的按钮可用性、两主题文字/焦点像素门槛、glyph 点阵映射、60 种 glyph 的共享动画配置、30/60/120 Hz 与不规则采样节奏、Reduce Motion 下保留点击功能、离屏按钮退出共享时钟及操作回调。
 - 本轮只运行 Flutter Widget tests，没有启动 Aggregate、打开桌面窗口或采集截图；产品源码未修改。系统前台仍为 Google Chrome，Aggregate 进程不存在。
 - 边界：结果只证明 Flutter Widget/共享组件层行为；不能替代 macOS AX 禁用状态、VoiceOver 控件朗读、110 个生产按钮实例逐项目视，或 WindowServer/display-present 帧率测量。UI-5.4、UI-5.7、UI-6.7 仍部分验收。
+
+### 2026-11-27 UI-4 与 UI-6.8 页面及开关几何离屏复跑
+
+- 在当前提交 `e107a039fa4caaa8ed8606dedf58ee97182aa52c` 的 `app/` 执行 `flutter test --no-pub test/phase4_common_ui_test.dart test/page_frame_test.dart test/page_state_layout_test.dart test/connections_page_lazy_test.dart test/music_design_geometry_test.dart test/macos_settings_theme_switch_geometry_test.dart`，18 项全部通过。覆盖公共页面骨架与状态区、桌面/紧凑连接列表懒构建、音乐设计几何，以及主题开关当前窗口尺寸约束。
+- 本轮只运行 Widget/布局回归；没有启动 Aggregate 或采集桌面截图，系统前台保持 Google Chrome。用户未提交的预览设计、`widget_test.dart`、锁文件和 `test/failures/` 未触碰。
+- 边界：通过结果确认所测 Flutter 布局和几何断言；不覆盖原生窗口像素、连续 resize/滚动帧时、VoiceOver 或网页参考同步逐帧对比。UI-4 既有完成状态不变，UI-6.8 仍部分验收。
