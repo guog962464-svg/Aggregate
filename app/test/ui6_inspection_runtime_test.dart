@@ -43,6 +43,26 @@ void main() {
   });
 
   test(
+    'paired Host B024 git lookup stays on the in-memory not-found path',
+    () async {
+      final runtime = Ui6InspectionRuntime();
+      final setup = await runtime.setupForTarget(
+        ExecutionTarget.host('ui6-preview-host'),
+      );
+      final executableSelection =
+          setup as ConnectionSetupExecutableSelectionPort;
+
+      expect(
+        await executableSelection.detectExecutableSelection(
+          'ui6-custom-cli',
+          executableName: 'git',
+        ),
+        isNull,
+      );
+    },
+  );
+
+  test(
     'v8.0 design fixture contains only its 12 user-facing sample actions',
     () async {
       final runtime = Ui6InspectionRuntime(

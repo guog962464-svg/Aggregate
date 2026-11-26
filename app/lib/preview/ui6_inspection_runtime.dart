@@ -479,8 +479,12 @@ final class Ui6InspectionRuntime
     String adapterId, {
     String? executableName,
   }) async {
+    final hostCommandName = executableName?.trim();
     if (_target.kind == ExecutionTargetKind.host &&
-        executableName?.isNotEmpty == true) {
+        hostCommandName?.isNotEmpty == true) {
+      // B024's paired Host is an in-memory fixture. Keep its `git` sample on
+      // the not-found path; never probe a real Host or the local PATH here.
+      if (hostCommandName == 'git') return null;
       return const DetectedExecutableSelection(
         displayLocation: '示例 Mac Host · 已确认',
         reference: 'ui6-inspection-executable-ref',
