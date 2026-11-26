@@ -396,3 +396,9 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 
 - **输入身份：**当前 HEAD `5eba508b48278dd4dd1299abd510380417dfe69b` 与测试/构建基线 `2b288c3` 的 `app/lib` tree `6d5333503d4b7a0c2c9acfa8ac07d40c9321b4f4`、`app/android` tree `299e8a57fc45f8119dd0caa1b15b4fb3cc0a05f2`、`app/pubspec.yaml` blob `7a73244f5ce3c08e570eb9b92ced96a1bb3e69c7`、`app/test` 及 `pubspec.lock` blob `2e26f7d400ccc288b9f6b1e82a3969963af1383f` 完全一致。`2b288c3..HEAD` 的这些路径无差异，期间新增提交只涉及文档。
 - **证据沿用范围：**因此前两节 arm64 Release/16 KB 静态检查、LGE AN10 4 KB 冷启动与非无障碍 app/test 结果对应当前已提交应用输入。本次只做路径/tree/blob 身份比较，没有重建或重跑测试。主工作区未提交的 macOS 测试和 lock 更改不包括在内。
+
+## 2026-11-26 当前 HEAD `452ffb0` A8 输入延续与非无障碍套件复验
+
+- **产品输入身份：**当前 HEAD `452ffb0dfd1dddfcb8fd8c52ba8f750efd38fa76` 的 `app/lib` tree `cd9b68db3cc4ce08a6cc0d49158c20c73a82ebde`、`app/android` tree `299e8a57fc45f8119dd0caa1b15b4fb3cc0a05f2`、`app/pubspec.yaml` blob `7a73244f5ce3c08e570eb9b92ced96a1bb3e69c7` 与根 `pubspec.lock` blob `2e26f7d400ccc288b9f6b1e82a3969963af1383f` 均与 Release/4 KB 验收基线 `25b405e` 相同；`25b405e..452ffb0` 没有 Android 产品代码、Gradle、manifest、pubspec 或锁文件变化。故 `25b405e` 的产品 APK/AAB（SHA-256 分别为 `3ab47d6ba74c9f7a8507f92cc6660e55a7567a46a7be684205d19ba6c5ca3d0c`、`f4c5fe7c1cad25c4e2fa6eedc3df83ac04356a07d7f721b2fdb605e4fe57b71d`）、16 KB ELF/ZIP 静态检查与 `.integration` 4 KB 真机冷启动证据仍适用于当前已提交 Android 产品输入；本节没有重新构建或安装手机包。
+- **当前非无障碍测试：**在提交 `452ffb0` 的隔离 worktree 排除 `test/accessibility_test.dart` 后运行 `app/test` 全集，**373 项通过、4 项失败**。失败包括一项玻璃 halo 对比阈值断言、`macos_reduce_motion_test.dart` 中 live glass switch 文案 `StateError: No element`、`widget_test.dart` 中 macOS 工作区期望宽度 299 实测 280，以及宽屏主页面断言。后三项明确使用 macOS 目标；halo 阈值项是共享 GlassSceneFrame 检查。结果不标记为全绿，也没有将 macOS 用户测试改动带入。
+- **边界：**本轮不运行 accessibility/TalkBack 测试，不操作手机或 NodeProbe/testnode。产品 APK/AAB 仍未正式签名；没有 16 KB 真机，不能声明 16 KB 系统运行通过。A3.6 来源/许可闭包与 A5 production Host/配对/RPC 继续开放。工作区未提交的 UI 测试、设计文件及 `pubspec.lock` 改动均不属于本记录。
