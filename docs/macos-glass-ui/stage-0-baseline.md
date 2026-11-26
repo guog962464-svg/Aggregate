@@ -32,8 +32,8 @@
 
 以下六个文件记录实施前基线。冻结的是实时控件逻辑，不能简单要求全部文件零 diff：`AppearanceSelector` 内还有需要统一样式的“跟随系统”按钮；主题 shader 当前又在局部 viewport 内绘制不透明背景。逐文件允许范围如下：
 
-- 三个模拟/校准文件 `theme_switch_simulation.dart`、`theme_switch_fitted_calibration.dart`、`theme_switch_calibration.dart` 保持不变。
-- `glass_theme_switch.dart` 的手势、坐标到状态映射、模拟调度、提交时机、光学状态与语义不变。尺寸优先在父层调整；若消除背景接缝确需渲染接线，仅可增加 UI-1 规定的可选背景场景参数。
+- 两个校准文件 `theme_switch_fitted_calibration.dart`、`theme_switch_calibration.dart` 保持基线参数。`theme_switch_simulation.dart` 有一项为网页参考明确记录的动画时钟例外：提交 `052a92d` 把固定 60 Hz 累积步改为按实际显示帧 delta 推进、每帧最多积分 `1/30 s`；提交 `b010bd7` 再移除暂停超过两秒后把未完成动画吸附到端点的规则。这改变动画时间推进方式，详见[阶段 6](stage-6-native-performance-and-delivery.md)及[验收记录](acceptance-record.md#2026-11-18-ui-68-长间隔恢复遵循网页单帧上限)，不能再笼统称模拟器源码未改。
+- `glass_theme_switch.dart` 与 UI-0 基线无差异；手势入口、坐标到状态映射、点击/拖动方向、提交时机、取消回滚、回调、光学状态与语义保持。动画帧积分例外仅在上一条所述的 `ThemeSwitchSimulation` 中。尺寸优先在父层调整；若消除背景接缝确需渲染接线，仅可增加 UI-1 规定的可选背景场景参数。
 - `glass_theme_switch.frag` 的玻璃几何、折射/散射、内部点阵、光弧公式及参数不变。仅允许原背景/颗粒的场景坐标与合成适配，保留默认参考路径；不能以改亮度或光效来掩盖接缝。
 - `appearance_selector.dart` 可调整布局及“跟随系统”按钮的材质/图案，继续复用 `GlassThemeSwitch`；主题映射、`onChanged`、跟随系统选择、可访问名称/选中语义及单次激活行为保持。基线阶段曾使用 `videoFittedThemeSwitch`；2026-11-19 用户指定网页参考后，macOS 设置页改用 `ThemeSwitchCalibration.reference`，Android 默认仍用 `videoFittedThemeSwitch`，详见[UI-6.8 网页与 macOS Profile 同屏双向对照](acceptance-record.md#2026-11-19-ui-68-网页与-macos-profile-同屏双向对照)。
 

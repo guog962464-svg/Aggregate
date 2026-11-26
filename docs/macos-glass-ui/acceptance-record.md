@@ -2426,3 +2426,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 真实生产 Shader 的离屏 Widget 相位矩阵在深色初始、800×600、DPR 1、daylight `0.545` 发现正文/背景最低 `4.4288:1`，低于项目 `4.5:1` 目标。将 `GlassSceneFrame` 的纯展示文字对比描边终点从 `0.54` 延至 `0.55`；太阳/月亮状态映射、拖动/点击、动画模拟和回调均未修改。
 - 完整 `flutter test --no-pub test/macos_dynamic_backdrop_text_contrast_test.dart` 三项通过：浅/深初始偏好各覆盖 800×600、1024×768、1440×900 的 1×/2× 共 12 组，以及 `0.46–0.56` 的 20 个临界相位（含描边关闭后的 `0.551`、`0.555`、`0.56`）。六类按钮标签在每组/相位各取 3 个同按钮面未覆盖像素，共 4,320 个直接文字/按钮面样本；正文矩阵同时覆盖音乐、工作台、连接、活动、设置标题及设置说明/快捷键等区域。`flutter analyze --no-pub`、v8 工作台几何定向回归、Dart format 检查和 `git diff --check` 均通过。
 - 边界：结果来自 Flutter Widget 离屏合成，不是原生 Profile/display-present 或物理面板帧；仍未覆盖全部生产按钮调用点和全部页面/状态。UI-5.5 因这些范围未验继续部分验收，UI-5 及阶段 0–6 未完成。
+
+### 2026-11-26 UI-0 原主题逻辑冻结范围复核
+
+- 以 UI-0 基线提交 `297762e82730b8a99f324b190796c80aae426a9` 对比当前源码：`glass_theme_switch.dart`、两个校准文件 `theme_switch_fitted_calibration.dart` 与 `theme_switch_calibration.dart` 无差异；`appearance_selector.dart` 的 macOS 视觉路由有后续设计改动，不在本次交互逻辑结论内。
+- `theme_switch_simulation.dart` 并非零差异。提交 `052a92d` 为匹配用户指定网页的 `requestAnimationFrame` 节奏，将固定 60 Hz 累积步改为按实际帧 delta 推进并限制每次最多 `1/30 s`；`b010bd7` 按同一参考移除长暂停后直接吸附端点的行为。它们改变时间积分方式，属于显式授权的动画时钟调整；控件手势入口、拖动映射、点击/拖动方向、端点与主题映射、只在释放时提交、取消回滚、反向拖动不在途中提交及回调语义保持。完整边界见 `stage-0-baseline.md` 与 UI-6.8 记录。
+- 离屏回归 `flutter test --no-pub test/glass_theme_switch_test.dart test/macos_reduce_motion_test.dart`：13/13 通过，覆盖实时拖动释放提交、途中反向、指针取消恢复端点、外部主题更新与取消、隐藏应用取消拖动及 Reduce Motion 状态。此次同时把 Reduce Motion 测试选择器更新为当前设置说明，并同步文字描边终点 `0.55`。
+- 验收限制：这些是 Flutter Widget/模拟器回归，不证明网页与应用共享时钟、原视频逐帧相位、display-present 物理帧或真实面板流畅度；UI-6.8 与阶段 0–6 仍未整体完成。本次复核没有启动应用窗口或截取屏幕。

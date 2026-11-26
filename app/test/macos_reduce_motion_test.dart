@@ -109,7 +109,7 @@ void main() {
       }
 
       final switchFinder = find.bySemanticsLabel('外观主题');
-      final pageTextFinder = find.text('拖动玻璃控件，在浅色和深色之间切换。');
+      final pageTextFinder = find.text('切换控件保持原始实时拖动、方向反转与太阳/月亮内部变化。');
       Future<void> verifyFrames() async {
         for (var frame = 0; frame < 40; frame++) {
           await tester.pump(const Duration(milliseconds: 16));
@@ -124,7 +124,7 @@ void main() {
               .widget<GlassSceneScope>(find.byType(GlassSceneScope))
               .frame;
           final expectedHalo =
-              switchFrame.theme >= 0.46 && switchFrame.theme <= 0.53;
+              switchFrame.theme >= 0.46 && switchFrame.theme <= 0.55;
           expect(
             DefaultTextStyle.of(pageText).style.color,
             expectedForeground,

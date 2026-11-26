@@ -77,7 +77,7 @@ Mac Profile 的多按钮浅/深静置、刷新/复制/添加、播放反向与�
 - [ ] **UI-6.4** 部分验证：2026-11-17 本轮新增 app-level 系统偏好绑定和 macOS `NSWorkspace` Reduce Motion 事件流；全量 `flutter test --no-pub` 298 项、`flutter analyze --no-pub` 和 macOS Profile 构建通过。独立 800×632 logical px Profile 窗口、macOS 27.2.1（Mac17,9 arm64）、Flutter 3.47.8 / Dart 3.13.7；系统设置开启时 `NSWorkspace.shared.accessibilityDisplayShouldReduceMotion=true`，窗口读到 `SYSTEM_REDUCE_MOTION true`，主题按钮切换至浅色、点阵动作按钮回调从 0 增至 1。另有 34 项定向测试覆盖 `TickerMode`、应用生命周期暂停/恢复、完全离屏注销、reduced-motion 点击功能及主题取消/反向；新增 app-level 回归验证系统值开关时 `MediaQuery` 更新且主题操作仍生效。Reduced Motion 运行时通知已接线。2026-11-18 在隔离原生 Profile 预览的运行期间，通过系统设置界面将该选项由关闭切为开启再关闭；临时 AX 标签同时观察 `MacReduceMotionPreference` 与根 `MediaQuery.disableAnimations`，两者在两秒内按 `false/false → true/true → false/false` 更新。仅此一项补验通过；隐藏恢复帧空档、102.132 ms 原始 raster 长帧根因和混合生命周期负载仍未完成。2026-11-17 原生隐藏/恢复拖动测试确认 `hidden` 生命周期会取消主题拖动；恢复后迟到的 mouseUp 不再提交，下一次点击正常；但系统没有发出 `PointerCancelEvent`。此前两轮隐藏恢复仍各有约 12.9 秒帧流空档，一次恢复帧为 102.132 ms；长帧根因与离屏/生命周期混合交互仍未完成。
 - [x] **UI-6.5** 通过（路由循环与 Dart VM 托管对象审计范围）：完成 20 轮页面往返（80 次导航）、进程 RSS 时间序列、源码资源所有权审阅及原生 macOS Profile 进程中的 Dart VM GC 后对象计数。第 1、5、10、20 轮的 `Ticker`（200）、`_WidgetTicker`（29）、`AnimationController`（222）、`ui.Image`（2）、`FragmentProgram`（2）、`FragmentShader`（2）与 `_NativePicture`（181）均持平；第 0 轮 `_NativePicture` 为 144。预热后没有观察到 Dart 管理对象持续增长。计数不代表 GPU/native 图片、纹理、Skia 分配，也不显示 controller 是否正在 tick；这些未测项作为范围限制记录，不扩展成该项的通过声明。
 
-静置装饰可有意按约 30 Hz 更新；这不等于页面只能响应 30 Hz。原主题的固定模拟步进不因显示器刷新率而修改。帧时门槛与真实显示流畅度需同时检查。
+静置装饰可有意按约 30 Hz 更新；这不等于页面只能响应 30 Hz。主题切换模型当前按显示回调的实际帧 delta 推进，每帧最多积分 `1/30 s`；这是 UI-6.8 为贴合指定网页参考而记录的时钟策略例外，不代表手势、状态映射或提交/取消逻辑改变。帧时门槛与真实显示流畅度需同时检查。
 
 ## 5. 视觉对照与质感验收
 
