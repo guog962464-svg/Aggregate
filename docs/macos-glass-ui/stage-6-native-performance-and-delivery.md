@@ -510,3 +510,7 @@ macOS 设置页实例把 `ThemeSwitchScene.scale` 校准到 `1.5`，模拟、点
 ### UI-6.7 补证：B020 同款无副作用共享按钮释放曲线（2026-11-27）
 
 在暗色 800×632pt macOS Profile fixture 中对 no-op `GlassActionButton` 实样做 CGEvent down/up；其 `navigation + save glyph + secondary` 配置与窄窗生产 B020 一致，不触发 `_export`/Save 面板。按住 87.487ms，release 采到 13/15 个目标帧；按钮 ROI 相对稳定 hover 帧的归一化 RGB 差在按下期升至 0.11817，mouse-up 后约 14.95ms 仍为 0.11801，约 106.84ms 后回到 0.01088。邻区约 0.0078。按钮/动效测试 32/32、fixture 分析和 Profile 构建通过。此项签收共享组件同款配置的有限实窗回弹片段，不代表触发原生 Save 面板的生产 B020 回调释放曲线，也不签收连续插值、FrameTiming 或面板 FPS；详情、采样限制与 SHA 见[验收记录](acceptance-record.md#ui-67-b020-noop-release-cycle-2026-11-27)。UI-6.7 与阶段 0–6 仍部分验收。
+
+### UI-6.8 补证：v8.4 设置页全尺寸几何修正与后台原生复核（2026-11-27）
+
+修正上一轮把设置开关宿主宽度停在 `466.667 pt` 的拟合值：macOS 设置页现在使用 `480×224 pt` 外框，`ThemeSwitchScene.scale=1.5`，高度系数为 `224/480`，映射为参考 `432×224` 设计轨道。共享开关、模拟、粒子、太阳/月亮状态、motion、optics 和交互逻辑均未改。新增设置页几何回归覆盖 `1360×900` 与 `800×632` 点窗口，`flutter test test/macos_settings_theme_switch_geometry_test.dart` 通过；隔离 Profile 原生设置页 AX 实测两种主题下均为 `480×224 pt`，辅助功能点击深→浅→深时窗口始终未获焦点。相同尺寸与场景缩放的纯开关夹具另有双向实时拖动配对证据。截图、AX 树与哈希见[验收记录](acceptance-record.md#ui-68-v84-settings-full-size-background-window-review-2026-11-27)。上一条 v8.4 记录中的 `466.667/467/422 pt` 是此前版本的几何数据，由本项取代；其余独立拖动与网页帧配对结果仍按各自当时尺寸保留，不据此签收逐帧 `1:1`。原 MP4 已删除，UI-6.8、UI-6 和阶段 0–6 仍部分完成。
