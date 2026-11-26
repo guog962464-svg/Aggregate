@@ -1,5 +1,8 @@
 import importlib.util
+import json
+import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 
@@ -45,6 +48,116 @@ class SpdxExpressionSyntaxTest(unittest.TestCase):
         ):
             with self.subTest(expression=expression):
                 self.assertFalse(GENERATOR.is_spdx_expression(expression))
+
+
+class BinaryLicenseInventoryTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.root = Path(self.temp_dir.name)
+        self.archive_path = self.root / "candidate.apk"
+        self.binary_path = "lib/arm64-v8a/libc++_shared.so"
+        self.evidence_path = "assets/NOTICE-NDK-toolchain"
+        self.binary = b"candidate native library"
+        self.evidence = b"libc++ is dual licensed under NCSA OR MIT"
+        with zipfile.ZipFile(self.archive_path, "w") as archive:
+            archive.writestr(self.binary_path, self.binary)
+            archive.writestr(self.evidence_path, self.evidence)
+        self.archive_hash = GENERATOR.sha256_file(self.archive_path)
+        self.inventory = {
+            "format": "aggregate-nodeprobe-binary-license-inventory-v1",
+            "archive": {
+                "sha256": self.archive_hash,
+                "sizeBytes": self.archive_path.stat().st_size,
+            },
+            "binaries": [
+                {
+                    "archivePath": self.binary_path,
+                    "sha256": GENERATOR.sha256(self.binary),
+                    "licenseCandidate": {
+                        "status": "candidate",
+                        "expression": "NCSA OR MIT",
+                    },
+                    "evidence": [
+                        {
+                            "path": self.evidence_path,
+                            "sha256": GENERATOR.sha256(self.evidence),
+                        }
+                    ],
+                    "provenance": {
+                        "source": "NDK arm64 sysroot libc++_shared.so",
+                        "sourceSha256": "a" * 64,
+                        "transform": "llvm-strip --strip-unneeded",
+                        "outputSha256": GENERATOR.sha256(self.binary),
+                    },
+                }
+            ],
+        }
+
+    def validate(self, inventory: dict[str, object] | None = None):
+        with zipfile.ZipFile(self.archive_path) as archive:
+            return GENERATOR.validate_binary_license_inventory(
+                inventory if inventory is not None else self.inventory,
+                archive.namelist(),
+                archive,
+                self.archive_hash,
+                self.archive_path.stat().st_size,
+                ("lib/", "base/lib/"),
+            )
+
+    def test_binds_license_candidate_to_archive_binary_and_notice(self) -> None:
+        mappings = self.validate()
+        mapping = mappings[self.binary_path]
+        self.assertEqual(mapping["_licenseEntries"], [{"expression": "NCSA OR MIT"}])
+        self.assertIn(
+            {
+                "name": "aggregate:license-candidate-status",
+                "value": "candidate; legal review pending",
+            },
+            mapping["_licenseProperties"],
+        )
+        self.assertEqual(
+            mapping["evidence"],
+            [{"path": self.evidence_path, "sha256": GENERATOR.sha256(self.evidence)}],
+        )
+
+    def test_rejects_wrong_archive_identity(self) -> None:
+        inventory = dict(self.inventory)
+        inventory["archive"] = {
+            "sha256": "0" * 64,
+            "sizeBytes": self.archive_path.stat().st_size,
+        }
+        with self.assertRaisesRegex(ValueError, "archive SHA-256"):
+            self.validate(inventory)
+
+    def test_rejects_wrong_packaged_binary_hash(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"][0]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "packaged binary hash"):
+            self.validate(inventory)
+
+    def test_rejects_wrong_embedded_notice_hash(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"][0]["evidence"][0]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "license evidence hash"):
+            self.validate(inventory)
+
+    def test_rejects_unsafe_archive_paths_and_duplicate_mappings(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"][0]["archivePath"] = "lib/../lib/arm64-v8a/libc++_shared.so"
+        with self.assertRaisesRegex(ValueError, "safe archive-relative path"):
+            self.validate(inventory)
+
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"].append(dict(inventory["binaries"][0]))
+        with self.assertRaisesRegex(ValueError, "duplicate binary-license mapping"):
+            self.validate(inventory)
+
+    def test_rejects_provenance_output_that_does_not_match_binary(self) -> None:
+        inventory = json.loads(json.dumps(self.inventory))
+        inventory["binaries"][0]["provenance"]["outputSha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "output hash"):
+            self.validate(inventory)
 
 
 if __name__ == "__main__":

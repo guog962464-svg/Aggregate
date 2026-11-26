@@ -531,6 +531,149 @@ def license_candidate_fields(
     raise ValueError(f"{owner} has an unsupported license-candidate status")
 
 
+def load_binary_license_inventory(path: Path) -> dict[str, object]:
+    inventory = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(inventory, dict):
+        raise ValueError("binary-license inventory must be a JSON object")
+    if inventory.get("format") != "aggregate-nodeprobe-binary-license-inventory-v1":
+        raise ValueError("unsupported binary-license inventory format")
+    if not isinstance(inventory.get("archive"), dict):
+        raise ValueError("binary-license inventory is missing its archive identity")
+    if not isinstance(inventory.get("binaries"), list) or not inventory["binaries"]:
+        raise ValueError("binary-license inventory must contain at least one binary")
+    return inventory
+
+
+def safe_archive_path(value: object, field: str) -> str:
+    if not isinstance(value, str) or not value or "\\" in value:
+        raise ValueError(f"{field} must be a safe archive-relative path")
+    parsed = PurePosixPath(value)
+    if (
+        parsed.is_absolute()
+        or parsed.as_posix() != value
+        or any(part in {"", ".", ".."} for part in parsed.parts)
+    ):
+        raise ValueError(f"{field} must be a safe archive-relative path")
+    return value
+
+
+def validate_binary_license_inventory(
+    inventory: dict[str, object],
+    names: list[str],
+    archive: zipfile.ZipFile,
+    archive_hash: str,
+    archive_size: int,
+    lib_prefixes: tuple[str, ...],
+) -> dict[str, dict[str, object]]:
+    archive_identity = inventory["archive"]
+    assert isinstance(archive_identity, dict)
+    expected_archive_hash = validate_inventory_digest(
+        archive_identity.get("sha256"), "binary-license archive sha256"
+    )
+    expected_archive_size = archive_identity.get("sizeBytes")
+    if expected_archive_hash != archive_hash:
+        raise ValueError("archive SHA-256 does not match the binary-license inventory")
+    if (
+        not isinstance(expected_archive_size, int)
+        or isinstance(expected_archive_size, bool)
+        or expected_archive_size != archive_size
+    ):
+        raise ValueError("archive size does not match the binary-license inventory")
+
+    result: dict[str, dict[str, object]] = {}
+    raw_binaries = inventory["binaries"]
+    assert isinstance(raw_binaries, list)
+    for index, raw_mapping in enumerate(raw_binaries):
+        owner = f"binary-license entry {index + 1}"
+        if not isinstance(raw_mapping, dict):
+            raise ValueError(f"{owner} must be a JSON object")
+        packaged_path = safe_archive_path(
+            raw_mapping.get("archivePath"), f"{owner} archivePath"
+        )
+        if (
+            not packaged_path.endswith(".so")
+            or not packaged_path.startswith(lib_prefixes)
+        ):
+            raise ValueError(f"{owner} must map a packaged native library")
+        if names.count(packaged_path) != 1:
+            raise ValueError(f"{owner} archive path must occur exactly once: {packaged_path}")
+        if packaged_path in result:
+            raise ValueError(f"duplicate binary-license mapping: {packaged_path}")
+
+        expected_binary_hash = validate_inventory_digest(
+            raw_mapping.get("sha256"), f"{owner} binary sha256"
+        )
+        if sha256(archive.read(packaged_path)) != expected_binary_hash:
+            raise ValueError(f"packaged binary hash mismatch for {packaged_path}")
+
+        raw_evidence = raw_mapping.get("evidence")
+        if not isinstance(raw_evidence, list) or not raw_evidence:
+            raise ValueError(f"{owner} must contain packaged license evidence")
+        evidence: list[dict[str, str]] = []
+        evidence_paths: set[str] = set()
+        for evidence_index, raw_evidence_item in enumerate(raw_evidence):
+            evidence_owner = f"{owner} evidence {evidence_index + 1}"
+            if not isinstance(raw_evidence_item, dict):
+                raise ValueError(f"{evidence_owner} must be a JSON object")
+            evidence_path = safe_archive_path(
+                raw_evidence_item.get("path"), f"{evidence_owner} path"
+            )
+            if evidence_path in evidence_paths:
+                raise ValueError(f"duplicate {evidence_owner} path: {evidence_path}")
+            evidence_paths.add(evidence_path)
+            if names.count(evidence_path) != 1:
+                raise ValueError(
+                    f"{evidence_owner} path must occur exactly once: {evidence_path}"
+                )
+            if not PurePosixPath(evidence_path).name.lower().startswith(
+                LICENSE_FILE_PREFIXES
+            ):
+                raise ValueError(f"{evidence_owner} is not a license or notice asset")
+            expected_evidence_hash = validate_inventory_digest(
+                raw_evidence_item.get("sha256"), f"{evidence_owner} sha256"
+            )
+            if sha256(archive.read(evidence_path)) != expected_evidence_hash:
+                raise ValueError(f"packaged license evidence hash mismatch: {evidence_path}")
+            evidence.append({"path": evidence_path, "sha256": expected_evidence_hash})
+
+        candidate = raw_mapping.get("licenseCandidate")
+        license_entries, license_properties = license_candidate_fields(
+            candidate, packaged_path, evidence
+        )
+        provenance = raw_mapping.get("provenance")
+        if not isinstance(provenance, dict):
+            raise ValueError(f"{owner} is missing binary source provenance")
+        source = provenance.get("source")
+        transform = provenance.get("transform")
+        if not isinstance(source, str) or not source.strip():
+            raise ValueError(f"{owner} provenance source must be non-empty")
+        if not isinstance(transform, str) or not transform.strip():
+            raise ValueError(f"{owner} provenance transform must be non-empty")
+        source_hash = validate_inventory_digest(
+            provenance.get("sourceSha256"), f"{owner} source sha256"
+        )
+        output_hash = validate_inventory_digest(
+            provenance.get("outputSha256"), f"{owner} output sha256"
+        )
+        if output_hash != expected_binary_hash:
+            raise ValueError(f"{owner} provenance output hash does not match the packaged binary")
+
+        mapping = dict(raw_mapping)
+        mapping["archivePath"] = packaged_path
+        mapping["sha256"] = expected_binary_hash
+        mapping["evidence"] = evidence
+        mapping["_licenseEntries"] = license_entries
+        mapping["_licenseProperties"] = license_properties
+        mapping["_provenanceProperties"] = [
+            property_item("aggregate:binary-source", source),
+            property_item("aggregate:binary-source-sha256", source_hash),
+            property_item("aggregate:binary-transform", transform),
+            property_item("aggregate:binary-output-sha256", output_hash),
+        ]
+        result[packaged_path] = mapping
+    return result
+
+
 def static_link_components(
     inventory: dict[str, object],
 ) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str], dict[str, int]]:
@@ -791,6 +934,14 @@ def main() -> int:
         help="candidate-specific JSON with Node source and linker archive evidence",
     )
     parser.add_argument(
+        "--binary-license-inventory",
+        type=Path,
+        help=(
+            "candidate-specific JSON binding selected packaged native-library license "
+            "evidence to this exact APK/AAB, without asserting static-link closure"
+        ),
+    )
+    parser.add_argument(
         "--gradle-runtime-manifest",
         type=Path,
         help=(
@@ -810,6 +961,9 @@ def main() -> int:
     static_archive_dependency_nodes: list[dict[str, object]] = []
     static_archive_refs: list[str] = []
     static_inventory_stats: dict[str, int] = {}
+    binary_license_inventory: dict[str, object] | None = None
+    binary_license_inventory_hash: str | None = None
+    binary_license_inventory_stats: dict[str, int] = {}
     if args.static_link_inventory is not None:
         static_inventory = load_static_link_inventory(args.static_link_inventory)
         candidate = static_inventory["candidate"]
@@ -843,6 +997,11 @@ def main() -> int:
         static_components, static_archive_dependency_nodes, static_archive_refs, static_inventory_stats = (
             static_link_components(static_inventory)
         )
+    if args.binary_license_inventory is not None:
+        binary_license_inventory = load_binary_license_inventory(
+            args.binary_license_inventory
+        )
+        binary_license_inventory_hash = sha256_file(args.binary_license_inventory)
 
     components: list[dict[str, object]] = []
     package_components: dict[str, dict[str, object]] = {}
@@ -1048,6 +1207,28 @@ def main() -> int:
                     "packaged native library paths do not match the binary license inventory"
                 )
 
+        if binary_license_inventory is not None:
+            external_binary_mappings = validate_binary_license_inventory(
+                binary_license_inventory,
+                names,
+                archive,
+                archive_hash,
+                args.archive.stat().st_size,
+                lib_prefixes,
+            )
+            duplicate_paths = (
+                set(binary_license_mappings_by_path) & set(external_binary_mappings)
+            )
+            if duplicate_paths:
+                raise ValueError(
+                    "binary-license inventory duplicates static-link mappings: "
+                    + ", ".join(sorted(duplicate_paths))
+                )
+            binary_license_mappings_by_path.update(external_binary_mappings)
+            binary_license_inventory_stats = {
+                "mappedBinaries": len(external_binary_mappings),
+            }
+
         for path in sorted(names):
             if path.endswith("/"):
                 continue
@@ -1080,6 +1261,9 @@ def main() -> int:
                 if binary_license_mapping is not None:
                     component["properties"].extend(
                         binary_license_mapping["_licenseProperties"]
+                    )
+                    component["properties"].extend(
+                        binary_license_mapping.get("_provenanceProperties", [])
                     )
                     component["properties"].append(
                         property_item(
@@ -1270,6 +1454,12 @@ def main() -> int:
         scope_limit = (
             "candidate-specific static archives and direct linker edges are included; source and license evidence is not legal approval; platform-provided dynamic libraries are named but not versioned; npm version-range satisfaction is not verified by this generator"
         )
+    if binary_license_inventory is not None:
+        scope_limit += (
+            "; binary license/provenance evidence is limited to "
+            f"{binary_license_inventory_stats['mappedBinaries']} explicitly mapped packaged "
+            "native libraries and does not establish full static-link closure or legal approval"
+        )
     if gradle_runtime_manifest is not None:
         scope_limit += "; Android Gradle runtime graph is limited to the supplied resolved configuration manifest"
     metadata_properties = [
@@ -1310,6 +1500,23 @@ def main() -> int:
                 property_item("aggregate:static-link-zero-retained-archives", static_inventory_stats["zeroRetainedArchives"]),
                 property_item("aggregate:static-link-implicit-ndk-archives", static_inventory_stats["implicitNdkArchives"]),
                 property_item("aggregate:static-link-libnode-archive-edges", static_inventory_stats["retainedArchiveEdges"]),
+            ]
+        )
+    if binary_license_inventory is not None:
+        metadata_properties.extend(
+            [
+                property_item(
+                    "aggregate:binary-license-inventory-format",
+                    binary_license_inventory["format"],
+                ),
+                property_item(
+                    "aggregate:binary-license-inventory-sha256",
+                    binary_license_inventory_hash or "unknown",
+                ),
+                property_item(
+                    "aggregate:binary-license-inventory-mapped-binaries",
+                    binary_license_inventory_stats["mappedBinaries"],
+                ),
             ]
         )
     if gradle_runtime_manifest is None:
@@ -1376,6 +1583,11 @@ def main() -> int:
             f"{static_inventory_stats['explicitArchives']} explicit archives, "
             f"{static_inventory_stats['implicitNdkArchives']} implicit NDK archives, and "
             f"{static_inventory_stats['retainedArchiveEdges']} direct libnode archive edges"
+        )
+    if binary_license_inventory is not None:
+        print(
+            "Recorded binary license/provenance evidence for "
+            f"{binary_license_inventory_stats['mappedBinaries']} packaged native libraries"
         )
     if gradle_runtime_manifest is not None:
         print(

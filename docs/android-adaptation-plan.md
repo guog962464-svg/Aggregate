@@ -581,3 +581,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 最终隔离 APK SHA-256 为 `ebbc373ce6690e6aa646872c12dd56fb81804350d17c82d17f14b304855a77e1`。Node 26.13.1 LICENSE、NDK 30 NOTICE/NOTICE.toolchain 和 npm 151 个许可证/notice 文件全部包含；按生成器的命名规则重命名 NDK notice 后，CycloneDX BOM 含 154 个 notice 文件组件。
 - BOM SHA-256 `236398befe82f07b392a1afb56fd81ad6622c547bc375798c983bb2d38af5fc2`，308 个组件、152 个依赖节点、362 条边，全部引用闭合；358 个 npm 必需依赖边解析，CycloneDX 1.6 Draft 7 schema 校验 0 errors。zipalign 与四个 arm64 DSO 的 16 KB 静态 `PT_LOAD` 检查通过。
 - BOM 仍标记 `composition=incomplete`：四个 native DSO 没有许可证字段，Node `libnode` 静态链接清单、Gradle runtime graph、15 个 Android/platform 动态库版本均未闭合，也未完成法律审查。最新 APK 未在设备运行；正式签名与 16 KB 真机门槛仍开放，A3.6/A4 不关闭。详见 [最终 NOTICE APK 与 CycloneDX 证据](android-a3-runtime-research.md#2026-11-27-node-26131-notice-package-cyclonedx-refresh)。
+
+## 2026-11-27 A3.6 libc++ 精确许可证候选映射
+
+- 新增独立于完整静态链接清单的 `--binary-license-inventory` 输入，将隔离 APK 精确哈希、NDK 30 `libc++_shared.so` 的来源/strip 输出哈希及包内 `NOTICE-NDK-30-toolchain` 证据映射到 CycloneDX；候选表达式为 `NCSA OR MIT`，仍待法律复核。固定输入见 [Node 26.13.1 libc++ 候选清单](android-a3-libcxx-license-inventory-node-26.13.1.json)，BOM 和逐项验证见 [A3.6 运行时研究记录](android-a3-runtime-research.md#2026-11-27-exact-libc-license-candidate-mapping-in-cyclonedx)。
+- 此更新只替换“4 个 native DSO 均无许可证字段”的旧 BOM 状态：libc++ 现有待审候选字段，另外 3 个 DSO 仍未映射。BOM 仍 incomplete；Node 静态依赖、平台库版本、法律审查、构建 attestation、产品集成、签名及 16 KB 真机门槛均未关闭，A3.6/A4.7 不关闭。

@@ -1,0 +1,29 @@
+{
+  "format": "aggregate-nodeprobe-binary-license-inventory-v1",
+  "archive": {
+    "sha256": "ebbc373ce6690e6aa646872c12dd56fb81804350d17c82d17f14b304855a77e1",
+    "sizeBytes": 36815259
+  },
+  "binaries": [
+    {
+      "archivePath": "lib/arm64-v8a/libc++_shared.so",
+      "sha256": "b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f",
+      "licenseCandidate": {
+        "status": "candidate",
+        "expression": "NCSA OR MIT"
+      },
+      "evidence": [
+        {
+          "path": "assets/a3-node-runtime/NOTICE-NDK-30-toolchain",
+          "sha256": "6b8633011d874b75629180e60de13ebfd546a10e56dc7d0380a35f6609f30617"
+        }
+      ],
+      "provenance": {
+        "source": "Android NDK 30.0.16248370 arm64 sysroot libc++_shared.so",
+        "sourceSha256": "7466ed097631a564ed6bff0b47768caa76bf03270d2047b5a65c03f497b824df",
+        "transform": "NDK 30.0.16248370 llvm-strip --strip-unneeded",
+        "outputSha256": "b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f"
+      }
+    }
+  ]
+}
