@@ -616,3 +616,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 用随机 Keychain 测试条目验证时，缺少 app identity entitlement 的已签名最小程序访问 Data Protection Keychain 得到 `errSecMissingEntitlement (-34018)`；手工注入身份 entitlement 的隔离探针未能被 Launch Services 启动。本机当前无 provisioning profile，Runner 配置为 ad-hoc 签名且没有 `DEVELOPMENT_TEAM`。因此还未证明产品可访问受 Touch ID 保护的 Data Protection Keychain 项。
 - 暂不把 Touch ID 迁移写进产品身份存储：旧 `active-identity` 读取已在 `SecItemCopyMatching`/SecurityServer 解密阶段等待，不能保证迁移能取回原私钥；存储 entitlement 也未闭合。先补齐有效产品签名与隔离 DPK+Touch ID 往返，再实现并回归身份保持/回滚。没有更改用户 Keychain 或 Host identity。A5.4/A5.5 继续开放。
+
+## 2026-11-27 A3.6 JNI bridge 构建来源子项复验
+
+- 使用当前仓库的 `node_probe.cpp` 与同一 CMakeLists，在 NDK 30.0.16248370 / API 24 / arm64-v8a 下清理并重建临时 JNI bridge；unstripped SHA-256 `df728da0d14de2c72b8227784db66e595b69304701d6a54a168b91c25a6684e9`。`llvm-strip --strip-unneeded` 得到 SHA-256 `20c28530ee1952e96a16bf49e85d975a24cf1742ec30d9f64a9064d42fcc4f0e`，与精确 Node 26.13.1 候选 APK 中的 bridge 字节一致。
++- 仅关闭该 APK 的 JNI bridge 源码/编译链接/strip 对应关系缺口；项目授权许可、NDK 静态运行库成员/许可、完整 Node/SBOM/法律闭包、V8 trap-handler 安全复核、正式签名、产品集成与 16 KB 真机仍开放，A3.6/A4.7 不关闭。详见 [JNI bridge 精确构建复现](android-a3-runtime-research.md#2026-11-27-node-26-jni-bridge-source-link-strip-byte-reproduction)。
+- 从同一 APK 及两份候选清单重新生成 CycloneDX：376 个组件、192 个依赖节点、443 条边；358 个必需 npm 边均解析，3 个 native license 状态仍 unresolved、composition 仍 incomplete。CycloneDX 1.6 schema/FormatChecker 0 errors、依赖引用闭合，SBOM 19 项定向测试通过。

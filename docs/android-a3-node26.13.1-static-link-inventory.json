@@ -1778,7 +1778,7 @@
     "NDK compiler-rt and libunwind archive member names with mapped output sections are identified; the packaged NDK does not provide a per-member source-object list in this evidence set.",
     "ncrypto has no standalone license file; mapping it to the Node.js root license remains an attribution inference.",
     "V8, OpenSSL, Node, SQLite, NDK runtime, and copied cpufeatures evidence has not received legal review; no composite libnode SPDX expression is asserted.",
-    "Gradle runtime dependency closure, JNI bridge source/link/license closure, Aggregate product integration, formal signing, V8 trap-handler security review, and 16 KB physical-device execution remain outside this inventory and open."
+    "Gradle runtime dependency closure, JNI bridge license attribution and NDK static-runtime component closure, Aggregate product integration, formal signing, V8 trap-handler security review, and 16 KB physical-device execution remain outside this inventory and open."
   ],
   "archiveObjectEntriesFile": {
     "path": "android-a3-node26.13.1-static-link-objects.jsonl",
