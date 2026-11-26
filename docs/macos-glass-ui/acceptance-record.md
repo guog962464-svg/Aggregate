@@ -2417,5 +2417,5 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 
 - 环境：独立 `ui6_inspection_main.dart` Profile 副本 `io.github.guog962464.aggregate.ui5shifttabprobe`，仅使用 `Ui6InspectionRuntime` 样例。为读 Flutter 收到的物理键和焦点变化，临时添加非消费型 `HardwareKeyboard` 日志入口并在测后删除；没有修改生产入口、提交临时探针或触发连接/业务回调。
 - 系统状态：测试前 System Settings「无障碍 → 键盘 → 全键盘控制」为关闭。为避免 Tab 被系统设置过滤，短暂打开后复测，再恢复关闭；AX 值和 `AppleKeyboardUIMode` 最终均读回 `0`。隔离 Profile 与 System Settings 均已正常退出。
-- 输入结果：agent-desktop 的普通 Tab 到达 Flutter，但当前探针窗口 AX 仍把焦点报告在根 group；agent-desktop 的 Shift-Tab 调用没有产生 Flutter Shift 键事件。CUA `pressKey("shift+Tab")` 后日志只出现 `Tab` 且 `HardwareKeyboard.isShiftPressed=false`，AX 焦点仍在根 group。故本轮没有实际验证 Shift-Tab 路径，既不判应用通过，也不判应用失败；UI-5.3 继续只保留既有的原生前向 Tab 证据和 Widget 双向测试。
-- 证据：[Flutter 键盘日志](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui5-shifttab/keyboard-events.log>) SHA-256 `2eaf21e3bf98c13eb34be2b0f6cce747d9cd82f0d26b877021e636f998979e8a`。当前工具输入仍无法稳定提供带 Shift 修饰符的原生事件，后续需要可信物理输入或可验证的系统键盘事件通道。
+- 输入结果：agent-desktop 的普通 Tab 到达 Flutter，但当前探针窗口 AX 仍把焦点报告在根 group；agent-desktop 的 Shift-Tab 调用没有产生 Flutter Shift 键事件。CUA `pressKey("shift+Tab")` 与 `pressKey("Shift_L+Tab")` 后日志都只出现 `Tab` 且 `HardwareKeyboard.isShiftPressed=false`，AX 焦点仍在根 group；`ISO_Left_Tab` 键名则被工具在发送前拒绝。故本轮没有实际验证 Shift-Tab 路径，既不判应用通过，也不判应用失败；UI-5.3 继续只保留既有的原生前向 Tab 证据和 Widget 双向测试。
+- 证据：[Flutter 键盘日志](</Users/guo/.codex/visualizations/2026/11/26/aggregate-ui5-shifttab/keyboard-events.log>) SHA-256 `0a701f9abe5a78ae4191d195b32e5a5df24164371b8a178efcf0337528269bc8`。当前工具输入仍无法稳定提供带 Shift 修饰符的原生事件，后续需要可信物理输入或可验证的系统键盘事件通道。
