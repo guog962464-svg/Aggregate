@@ -385,3 +385,9 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **Release 工件：**arm64 产品 APK/AAB Release 构建通过。未签名 APK SHA-256 `ee9c08d1f8f83724c14ff20673433d1349c9a6fe0f89c1e385de5154d06e4dba`；未签名 AAB SHA-256 `e5d6c06c3c0d7f9e0193201190a85ad0c0fe2b1c0a9ca9f453696738209db7fd`。APK `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过且报告 `PAGE_ALIGNMENT_16K`。APK/AAB 的 7 个 arm64 原生库逐一相同，21 个 `PT_LOAD` 均满足 16 KB 对齐与地址同余要求。产品工件保持未签名，不能视作可发布签名包。
 - **4 KB 真机冷启动：**仅为集成验收构建本地 debug key 签名的 `.integration` Release 包（证书 SHA-256 `55057a5288c78c7e42492db9141df637c17c606179b78cbb50972a822be89832`），安装到 LGE AN10 / Android 15 / API 35 / arm64 / `PAGE_SIZE=4096` 真机。启动后进程 PID `10203` 存活，`MainActivity` 为 top-resumed，日志未见 `FATAL EXCEPTION` 或 `AndroidRuntime` 崩溃。验收后已卸载隔离包、确认 ADB reverse 为空，并恢复原新闻 App 前台；未进入 testnode/NodeProbe，也未操作无障碍功能。
 - **范围与发布门槛：**这是 arm64 Release 构建、16 KB 二进制静态布局检查和 4 KB 设备冷启动证据；没有 16 KB 真机，不能宣称 16 KB 系统运行通过。正式签名、A3.6 受维护运行时的来源/许可闭包、A4 Node/npm/CLI 生产集成，以及 A5 production Host 完整业务闭环仍未完成。
+
+## 2026-11-26 当前 HEAD `64e6a0d` 非无障碍 app/test 全量回归（18:35 Asia/Shanghai）
+
+- **输入与范围：**在隔离 worktree `/private/tmp/aggregate-a8-head-2b288c3` 的 `2b288c3` 源码上运行；当前 `64e6a0d` 相对该基线的应用代码、测试、Android 工程、pubspec 与提交锁均未变化。测试针对 `app/test` 下 67 个文件排除 `accessibility_test.dart` 后的 66 个文件；主工作区未提交测试和锁文件没有纳入，也没有修改。
+- **结果：**`find test -type f -name '*_test.dart' ! -name accessibility_test.dart -print0 | xargs -0 flutter test --no-pub --reporter expanded` 结束为 **370 项通过、5 项失败**。5 项均为 `TargetPlatform.macOS`：玻璃按钮标签对比度、玻璃文本 halo 对比度、减弱动态效果下切换玻璃开关后的文本检查（`StateError: No element`）、v3.5 macOS 工作区几何、宽屏主页面布局。其他用例通过；本轮未运行无障碍/TalkBack 测试，也未操作手机或生产 Host。
+- **验收范围：**这补充了当前已提交 Flutter 测试集的完整非无障碍结果，不能称为全套测试通过。失败均来自 macOS 目标；Android 适配的 Release/4 KB 证据见上一节。用户工作区里的 UI 测试更改仍未提交，不能混入本次结论。正式签名、16 KB 真机、A3.6/A4/A5 发布与业务门槛继续开放。
