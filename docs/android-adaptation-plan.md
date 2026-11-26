@@ -474,3 +474,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
 
 - **A5 当前 Host 真机只读 RPC：**在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 真机通过 USB ADB reverse 完成当前 Android Keystore 配对与 production Host WSS 认证；`host.hello`、只读 `connection.list`（1 条）通过。临时授权仅含 `readConnections`，原有 3 条授权按验收前快照恢复，测试授权已撤销，Host、relay、ADB reverse 和隔离测试包已清理。当前提交 `c68d944` 与构建祖先 `e0fdc4a` 的 Host/Android 运行时代码相同；Android 端使用隔离 Debug 集成测试包，Mac Host 使用隔离 Release runner。该证据不覆盖直连 LAN/Bonjour/NSD、产品配对 UI、CLI/TUI/MCP/向导/账号业务，也不关闭无 16 KB 真机的运行门槛。详见 [A5 当前 Host 真机只读 RPC](android-a5-android-client.md#2026-11-26-a5-当前-host-真机只读-rpc-的-usb-reverse-验收)。
 - **A5 状态：**增加了当前 production WSS 的真实设备只读 RPC 证据；A5.4/A5.5 仍进行中，直连网络与完整业务验收保持开放。
+
+## 2026-11-26 A8 验收增量
+
+- **当前产品输入身份：**提交 `1658785` 的 Android 发布输入（`app/lib`、`app/android`、`app/pubspec.yaml`、提交锁文件）与 `a03e849` 完全一致；当前工作树未提交的 lock/UI 测试及设计变化已排除。沿用 `a03e849` 的 Release APK/AAB 与 16 KB 静态检查、`7c1fa64` 同一产品输入的 4 KB 冷启动证据，不声称本轮重建或重新运行真机。正式签名和 16 KB 实机仍为发布门槛。详见 [A8 当前 main 产品输入延续复核](android-a8-acceptance.md#2026-11-26-当前-main-1658785-a8-产品输入延续复核)。

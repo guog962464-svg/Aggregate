@@ -371,3 +371,9 @@ The current-main 4 KB test-signed Release cold start is accepted for this device
 - **静态门禁：**APK ZIP CRC 与 Build Tools 36.0.0 `zipalign -c -P 16 4` 通过；Bundletool 1.18.3 `validate` 通过，`dump config` 报 `PAGE_ALIGNMENT_16K`。APK/AAB 各含同样的 7 个 arm64 DSO；NDK r28.2.13676358 `llvm-readobj` 检查每件工件 21 个 `PT_LOAD`，共 42 段均有 `p_align >= 0x4000` 且 file offset/virtual address 对 16 KB 同余，最小对齐为 16 KB。两个 ZIP CRC 均通过，原生库 SHA-256 在 APK/AAB 间一致；没有 NodeProbe、NodeBridge、`libnode.so`、nodejs-mobile 或 npm 载荷。
 - **发布与设备边界：**APK 的 `apksigner verify` 因缺失签名 manifest 而失败，AAB 没有签名块；两件产品工件均未签名。本轮未安装或操作手机。因为已验收的 `app/lib`、Android Gradle、包清单及锁文件与 `7c1fa64` 的 4 KB 冷启动输入一致，可沿用该次 4 KB 真机证据作为相同产品输入的验收记录；这不是本轮的新设备运行。没有 16 KB 真机，不声明 16 KB 系统实机通过。
 - **范围：**此次只做隔离依赖恢复、arm64 Release 构建和静态工件检查；未运行测试、安装手机包、正式签名或 Node/npm 产品验证。隔离工件/worktree 在记录前清理；主工作区用户测试、设计及锁文件改动未带入。
+
+## 2026-11-26 当前 main 1658785 A8 产品输入延续复核
+
+- **输入身份：**当前已提交 HEAD `1658785466a575bea811ea2f15b6ca71ec9c4351` 与 A8 Release/静态基线 `a03e8497eb8c237520c3b6cd6a86dbfd5ebf00c5` 的 `app/lib` tree（`d0ebe510a651cd3d0e01c4465abfa98e0efe655b`）、`app/android` tree（`299e8a57fc45f8119dd0caa1b15b4fb3cc0a05f2`）、`app/pubspec.yaml` blob（`7a73244f5ce3c08e570eb9b92ced96a1bb3e69c7`）及提交内 `pubspec.lock` blob 完全一致，锁 SHA-256 仍为 `7f704955c1899793bc2f3bc5a5a71c6d27b8756e19b62e61f650a43e0bf05e87`。
+- **适用证据：**因此 `a03e849` 的 arm64 APK/AAB 构建、zipalign/Bundletool/42 个 PT_LOAD 静态 16 KB 检查及 `7c1fa64` 同一产品输入的 4 KB 冷启动记录仍适用于当前已提交产品输入。本轮只做 tree/blob 身份比较，没有重建 Release 工件、重跑静态工具或安装手机。
+- **工作区与发布边界：**当前工作树未提交的 `pubspec.lock`、UI 测试和设计文件不属于该结论。APK/AAB 仍未正式签名；没有 16 KB 实体设备，故仍无 16 KB 系统实机运行证据。该条只更新已提交产品输入的延续关系。
