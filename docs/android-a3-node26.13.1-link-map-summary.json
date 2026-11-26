@@ -391,8 +391,28 @@
     }
   ],
   "limits": [
-    "This reproduces the link stage from existing compiled archives and object files, not a clean source-to-binary build.",
-    "It does not produce a signed build attestation or prove the source-build toolchain/inputs were independently reproducible.",
-    "Archive-level source/license evidence, 15 platform dynamic library versions, JNI bridge closure, full NOTICE mapping, legal review, V8 trap-handler security review, product integration, formal signing, and 16 KB physical-device execution remain open."
-  ]
+    "This reproduces the link stage from existing compiled archives and object files, not a clean source-to-binary build or signed build attestation.",
+    "The linked explicit archive members now map byte-for-byte to their listed object files and hash-bound source/generated-source files. This does not close included headers, compiler inputs, generator inputs, or the NDK implicit archive source-object list.",
+    "The static inventory records candidate license text hashes but does not establish complete NOTICE coverage or legal approval; ncrypto attribution remains inferred. The composite libnode license, 15 platform dynamic-library versions, JNI bridge closure, V8 trap-handler review, product integration, formal signing, and 16 KB physical-device execution remain open."
+  ],
+  "sourceMapping": {
+    "inventoryPath": "android-a3-node26.13.1-static-link-inventory.json",
+    "inventorySha256": "1268758255c75c027a37f5d56b72462bf136e5fb1d09d05af6a810c5ee7be83e",
+    "inventorySizeBytes": 67783,
+    "sourceComponentsWithEvidence": 28,
+    "explicitArchiveObjectEntries": 3653,
+    "explicitArchiveMemberPayloadsByteMatchObjectFiles": true,
+    "generatedSourceObjectEntries": 517,
+    "distinctExplicitArchiveMemberLabelsWithOutputSections": 3644,
+    "duplicateArchiveMemberNameEntriesExplained": 9,
+    "duplicateMemberNameArchives": [
+      "libabseil.a",
+      "libbrotli.a",
+      "libv8_base_without_compiler.a"
+    ],
+    "implicitNdkMappedMemberLabels": 60,
+    "objectEntriesPath": "android-a3-node26.13.1-static-link-objects.jsonl",
+    "objectEntriesSha256": "815628553b0c5e617b04cae87d00224cbc1158d79eac1d990c38deefba9b6a46",
+    "objectEntriesSizeBytes": 2377514
+  }
 }

@@ -1,0 +1,1790 @@
+{
+  "format": "aggregate-node26.13.1-static-link-inventory-v1",
+  "candidate": {
+    "nodeVersion": "26.13.1",
+    "androidAbi": "arm64-v8a",
+    "androidApi": 24,
+    "ndkRevision": "30.0.16248370",
+    "sourceArchiveSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6",
+    "unstrippedLibnodeSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
+    "packagedLibnodeSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
+    "apkSha256": "ebbc373ce6690e6aa646872c12dd56fb81804350d17c82d17f14b304855a77e1",
+    "linkMapSha256": "55bfab80ebaf4932ec2ff793b94a1e87c2bba357f557df40e10af8339e682bd7",
+    "linkMapSizeBytes": 136916923,
+    "buildPatchScriptSha256": "7ed1af8812f3c4e7cb083af0ec289cc0bf26dbf8598c280ce838e0939ca723c2",
+    "buildScriptSha256": "9b7717a0b2011e71f9d8e508dc066a3d15f205af30e4c112e2443a458ea95aaa",
+    "evidenceBuildTreeAtObservation": "/private/tmp/aggregate-node-26.13.1-build-2026-11-27/node-v26.13.1"
+  },
+  "coverage": {
+    "explicitArchiveCount": 37,
+    "explicitArchiveMemberEntries": 3653,
+    "distinctExplicitArchiveMemberLabels": 3644,
+    "distinctExplicitMemberLabelsWithOutputSections": 3644,
+    "allDistinctExplicitMemberLabelsHaveOutputSections": true,
+    "duplicateMemberNameEntries": 9,
+    "archivesWithDuplicateMemberNames": [
+      "libabseil.a",
+      "libbrotli.a",
+      "libv8_base_without_compiler.a"
+    ],
+    "explicitArchiveMemberSequencesMatchObjectFileLists": true,
+    "all3653ArchiveMemberPayloadsMatchObjectFileBytes": true,
+    "explicitObjectEntryCount": 3653,
+    "sourceComponentCount": 28,
+    "generatedSourceObjectEntryCount": 517,
+    "vendoredOrProjectSourceObjectEntryCount": 3136,
+    "sourceHeaderAndCompilerDependencyClosure": "incomplete; this inventory binds each linked archive object to its build object and current source/generated-source file, not every included header, compiler builtin, or generator input"
+  },
+  "explicitWholeArchiveInputs": [
+    {
+      "name": "libada.a",
+      "path": "out/Release/obj.target/deps/ada/libada.a",
+      "sha256": "f368a04759b128e874919f30150c9c4916c82b15c34752deed80bb6514435590",
+      "sizeBytes": 619766,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "60d1b509988e2ec45040ef6cef573ba53928d4cf415417fadd3c31fc1031b974",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 196,
+      "sourceComponentEntryCounts": {
+        "ada": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/ada": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libbrotli.a",
+      "path": "out/Release/obj.target/deps/brotli/libbrotli.a",
+      "sha256": "53658223881bcf00e74be6947f63d886521cd64430702e0b5a882f8835075195",
+      "sizeBytes": 956808,
+      "archiveMemberEntries": 35,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "e28f87403b78c0fe96585af49f9eac0f29976e2ff275fb1a815a655f54054287",
+      "uniqueArchiveMemberNames": 34,
+      "duplicateMemberNameEntries": 1,
+      "duplicateMemberNames": {
+        "static_init.o": 2
+      },
+      "uniqueMemberNamesWithLinkerMapOutputSections": 34,
+      "linkerMapOutputSectionRows": 85,
+      "sourceComponentEntryCounts": {
+        "brotli": 35
+      },
+      "sourcePathPrefixCounts": {
+        "deps/brotli": 35
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libcares.a",
+      "path": "out/Release/obj.target/deps/cares/libcares.a",
+      "sha256": "eb212670d15fab4e856e46afc5971ff289dde9f49751e892f8b80476e5e1cba9",
+      "sizeBytes": 2852710,
+      "archiveMemberEntries": 91,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "43711fb1a5d37d141407872492bbc915bb24931f3b0ab8a7b06bc327f44e46a1",
+      "uniqueArchiveMemberNames": 91,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 91,
+      "linkerMapOutputSectionRows": 594,
+      "sourceComponentEntryCounts": {
+        "cares": 91
+      },
+      "sourcePathPrefixCounts": {
+        "deps/cares": 91
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libhistogram.a",
+      "path": "out/Release/obj.target/deps/histogram/libhistogram.a",
+      "sha256": "5d6dcc78d73e8ce9d2d5e2cdc0148d5edf4ad7ad358a1549bc6ccee6573ef9d3",
+      "sizeBytes": 23468,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "7af183f1ef85ea357d9abe7842bc724c3e0d8748bd7243f177aea5f2f1e0b2cb",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 3,
+      "sourceComponentEntryCounts": {
+        "histogram": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/histogram": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libcrdtp.a",
+      "path": "out/Release/obj.target/deps/inspector_protocol/libcrdtp.a",
+      "sha256": "be26bcd4ce5ed62ae71919885023ffe8a0733f1c832673ca4c7705467fa4c7fc",
+      "sizeBytes": 282382,
+      "archiveMemberEntries": 9,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "fae3f9edae2b2d353397432515a421fafed0bb1da79132775fd4a1484984e645",
+      "uniqueArchiveMemberNames": 9,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 9,
+      "linkerMapOutputSectionRows": 83,
+      "sourceComponentEntryCounts": {
+        "inspector_protocol": 9
+      },
+      "sourcePathPrefixCounts": {
+        "deps/inspector_protocol": 9
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libffi.a",
+      "path": "out/Release/obj.target/deps/libffi/libffi.a",
+      "sha256": "ad980b4c800a72c93b05839e8136c5695c78bad204c644467b01c5558cb1aa63",
+      "sizeBytes": 32076,
+      "archiveMemberEntries": 9,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "528d748ebc5c2becfb1c1fd62ae365ebc098f04d275baada0eda89d84d94c907",
+      "uniqueArchiveMemberNames": 9,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 9,
+      "linkerMapOutputSectionRows": 23,
+      "sourceComponentEntryCounts": {
+        "libffi": 9
+      },
+      "sourcePathPrefixCounts": {
+        "deps/libffi": 9
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libllhttp.a",
+      "path": "out/Release/obj.target/deps/llhttp/libllhttp.a",
+      "sha256": "19c948dc8db73360f5d675dbb8d1464dc2ae33277d465fa2e7cc97ae8bfe34df",
+      "sizeBytes": 104486,
+      "archiveMemberEntries": 3,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "9cd83067e2271b0e88c9e7f9660c5f58e156e32cc5741113fb1fc3be70c24e0b",
+      "uniqueArchiveMemberNames": 3,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 3,
+      "linkerMapOutputSectionRows": 10,
+      "sourceComponentEntryCounts": {
+        "llhttp": 3
+      },
+      "sourcePathPrefixCounts": {
+        "deps/llhttp": 3
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libmerve.a",
+      "path": "out/Release/obj.target/deps/merve/libmerve.a",
+      "sha256": "f8b02ef7e33c16f0be892ed9ce7cea440ac8f1b0fd2b674d497cac9c12331698",
+      "sizeBytes": 72786,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "5c462f6a1b1d928c7da8ba55fcbcc772234505846dc0686219a5d7ea44aca1ce",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 39,
+      "sourceComponentEntryCounts": {
+        "merve": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/merve": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libnbytes.a",
+      "path": "out/Release/obj.target/deps/nbytes/libnbytes.a",
+      "sha256": "fb5a90f1d1cb9cbcb886889cb38f8fbef7afb2f975f34dcbe029eb980b23cea7",
+      "sizeBytes": 6990,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "2d9bd976f70e4c0b2bc8aa2d0bf60a2e0b439025d509f4c3db27cec575113c4e",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 3,
+      "sourceComponentEntryCounts": {
+        "nbytes": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/nbytes": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libncrypto.a",
+      "path": "out/Release/obj.target/deps/ncrypto/libncrypto.a",
+      "sha256": "8669c125c44c3c1acf7feb5a4359eaf711b89fb9954a541ab4acc6fe45b94f10",
+      "sizeBytes": 388474,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "d0293baf4a8c925ab55bd4d48ecced5b43dd812e35bdfe5d128397220a936385",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 42,
+      "sourceComponentEntryCounts": {
+        "ncrypto": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/ncrypto": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libncrypto_engine.a",
+      "path": "out/Release/obj.target/deps/ncrypto/libncrypto_engine.a",
+      "sha256": "3fb2781b22f0a4c34c62aee3c15a1de9984ac23d594b68a5d69aa3e4dd34a6dd",
+      "sizeBytes": 6708,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "50838d29b7f70ac691159e0a31f16db794a5733cfbc4e3e2f004c5c84fdf8ff3",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 3,
+      "sourceComponentEntryCounts": {
+        "ncrypto": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/ncrypto": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libnghttp2.a",
+      "path": "out/Release/obj.target/deps/nghttp2/libnghttp2.a",
+      "sha256": "2601e11e0b29e81664c2911c0997fd2bf6a40458406657e60bc46bc47cfd354f",
+      "sizeBytes": 326688,
+      "archiveMemberEntries": 26,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "f4d5fb0119b3ff13459d9f1e10f5f51fd7ce50b3362c6d74860d381c51d59639",
+      "uniqueArchiveMemberNames": 26,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 26,
+      "linkerMapOutputSectionRows": 62,
+      "sourceComponentEntryCounts": {
+        "nghttp2": 26
+      },
+      "sourcePathPrefixCounts": {
+        "deps/nghttp2": 26
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libopenssl.a",
+      "path": "out/Release/obj.target/deps/openssl/libopenssl.a",
+      "sha256": "50599fdd080498b538664b5419cf4397ae79b927709bb9d94eab5e603412d733",
+      "sizeBytes": 12683414,
+      "archiveMemberEntries": 1107,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "9ebf299904f418f78fa1b4b5e9843a4d8543361696d5f7758521dacfed2004d0",
+      "uniqueArchiveMemberNames": 1107,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1107,
+      "linkerMapOutputSectionRows": 2896,
+      "sourceComponentEntryCounts": {
+        "openssl": 1107
+      },
+      "sourcePathPrefixCounts": {
+        "deps/openssl": 1107
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libsimdjson.a",
+      "path": "out/Release/obj.target/deps/simdjson/libsimdjson.a",
+      "sha256": "439ec669a67dd46c1a1831759877c9cb4b594fd5dbdd65af1e18b28612180c77",
+      "sizeBytes": 180484,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "2f2da5dce15ac503bbf8f1ff4ed173ff3ae8bda5e7a82ff973cf46c7b2a569f1",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 42,
+      "sourceComponentEntryCounts": {
+        "simdjson": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/simdjson": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libsqlite.a",
+      "path": "out/Release/obj.target/deps/sqlite/libsqlite.a",
+      "sha256": "b264252dcb239c15f8eda21ef6f8c3f399b33ee9487dbea76a329875c5bd50b5",
+      "sizeBytes": 2987710,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "dc25e5ea8e51f2fc966861bedcd3521e67fcbb239e62542a07671bb105908a76",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 6,
+      "sourceComponentEntryCounts": {
+        "sqlite": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/sqlite": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libuv.a",
+      "path": "out/Release/obj.target/deps/uv/libuv.a",
+      "sha256": "932f2c10afaac499b6ee90b5ad87f0e84d43a25460d38ccf1c6ab1423631f22a",
+      "sizeBytes": 1749546,
+      "archiveMemberEntries": 36,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "42866025a5763034f1f75ce9856ac652ca3eb9ecde8157008ed4857535ed847a",
+      "uniqueArchiveMemberNames": 36,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 36,
+      "linkerMapOutputSectionRows": 265,
+      "sourceComponentEntryCounts": {
+        "uv": 36
+      },
+      "sourcePathPrefixCounts": {
+        "deps/uv": 36
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libuvwasi.a",
+      "path": "out/Release/obj.target/deps/uvwasi/libuvwasi.a",
+      "sha256": "445355739a68e4cf4f62bc5e3e36173aa2911fb8d97830b3e4204a6c5b79350a",
+      "sizeBytes": 88372,
+      "archiveMemberEntries": 9,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "b8a2079884b73e7732aa9d9e6860b2b953f5d9c0bff9e6eb075b426a3e51c863",
+      "uniqueArchiveMemberNames": 9,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 9,
+      "linkerMapOutputSectionRows": 21,
+      "sourceComponentEntryCounts": {
+        "uvwasi": 9
+      },
+      "sourcePathPrefixCounts": {
+        "deps/uvwasi": 9
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libzlib.a",
+      "path": "out/Release/obj.target/deps/zlib/libzlib.a",
+      "sha256": "c589f2d9fd204c32a1c7471aa59669df790c6eec66f676598fcb68231aafa3cf",
+      "sizeBytes": 127018,
+      "archiveMemberEntries": 16,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "ca3e257bf489130cf90c8542f6a6997638ed2d01ef31dc1b008a9f566ef46b9b",
+      "uniqueArchiveMemberNames": 16,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 16,
+      "linkerMapOutputSectionRows": 43,
+      "sourceComponentEntryCounts": {
+        "ndk_cpufeatures": 1,
+        "zlib": 15
+      },
+      "sourcePathPrefixCounts": {
+        "deps/android": 1,
+        "deps/zlib": 15
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libzlib_adler32_simd.a",
+      "path": "out/Release/obj.target/deps/zlib/libzlib_adler32_simd.a",
+      "sha256": "3f492dfb5ff2255819abcc4b619cc6d44e3f264e3e0ff356370e3488caa9c5f2",
+      "sizeBytes": 2638,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "c340c31f6f8aefc7080d04d9bf4234a4435ecbcc38c985147e6f6de999b3c777",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 2,
+      "sourceComponentEntryCounts": {
+        "zlib": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/zlib": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libzlib_arm_crc32.a",
+      "path": "out/Release/obj.target/deps/zlib/libzlib_arm_crc32.a",
+      "sha256": "1c03b58fbb9f9bdf4556d00f56d24d7ef052f5f0e73434eee1fe03ec38e6abfd",
+      "sizeBytes": 2832,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "9ec5de5a86713d612c969d2368709eed7cec074396fed5347024bfff084b79a5",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 2,
+      "sourceComponentEntryCounts": {
+        "zlib": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/zlib": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libzlib_data_chunk_simd.a",
+      "path": "out/Release/obj.target/deps/zlib/libzlib_data_chunk_simd.a",
+      "sha256": "f958b68d082aaabf5c1df636a9244ec583a29ae45dfb663ce8fa6cb7f5d6605a",
+      "sizeBytes": 27626,
+      "archiveMemberEntries": 2,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "cbda489309454dca04b5acdc6b64f691e0075235bb07acf7777d3e6d5270d3b4",
+      "uniqueArchiveMemberNames": 2,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 2,
+      "linkerMapOutputSectionRows": 5,
+      "sourceComponentEntryCounts": {
+        "zlib": 2
+      },
+      "sourcePathPrefixCounts": {
+        "deps/zlib": 2
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libzstd.a",
+      "path": "out/Release/obj.target/deps/zstd/libzstd.a",
+      "sha256": "a2c56cfd935405db39c8a5f25c50294cdb45c91b0154856427f5a0c7a30420fe",
+      "sizeBytes": 648424,
+      "archiveMemberEntries": 26,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "b2a842fd9321b3876abee1c17b9cc319a588e4770c66a1a29e6ea4afc755abef",
+      "uniqueArchiveMemberNames": 26,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 26,
+      "linkerMapOutputSectionRows": 68,
+      "sourceComponentEntryCounts": {
+        "zstd": 26
+      },
+      "sourcePathPrefixCounts": {
+        "deps/zstd": 26
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libnode_base.a",
+      "path": "out/Release/obj.target/libnode_base.a",
+      "sha256": "c142206add59a3569f88bbe5668ccfda8fe83291dd5df7a1638073f45161aece",
+      "sizeBytes": 36232662,
+      "archiveMemberEntries": 200,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "33e15e85a1d00b6f2e58a395319ba99cda2a12e761dbb101790cc7769888c300",
+      "uniqueArchiveMemberNames": 200,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 200,
+      "linkerMapOutputSectionRows": 9135,
+      "sourceComponentEntryCounts": {
+        "node": 200
+      },
+      "sourcePathPrefixCounts": {
+        "gen": 10,
+        "src": 190
+      },
+      "generatedSourceObjectEntries": 10
+    },
+    {
+      "name": "libicudata.a",
+      "path": "out/Release/obj.target/tools/icu/libicudata.a",
+      "sha256": "845aae296ffdfb89621fe4795cde73a86330b1186ad14b95a9280b2f5294b9f4",
+      "sizeBytes": 3907366,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "e2f80a4d57ec3c786a8959f2c2ee2ea618b7a226f7402422937f363184b3f9ec",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 2,
+      "sourceComponentEntryCounts": {
+        "icu": 1
+      },
+      "sourcePathPrefixCounts": {
+        "gen": 1
+      },
+      "generatedSourceObjectEntries": 1
+    },
+    {
+      "name": "libicui18n.a",
+      "path": "out/Release/obj.target/tools/icu/libicui18n.a",
+      "sha256": "dabcff78092a46a58ed76dc130548cf5afc2bfc55d0427b30869244e9188fbcb",
+      "sizeBytes": 6614758,
+      "archiveMemberEntries": 254,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "d7cb5ad1022db0c29aa424c6fa8448e24a50e48323f471f90587c4cac3c5c34f",
+      "uniqueArchiveMemberNames": 254,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 254,
+      "linkerMapOutputSectionRows": 1818,
+      "sourceComponentEntryCounts": {
+        "icu": 254
+      },
+      "sourcePathPrefixCounts": {
+        "deps/icu-small": 253,
+        "tools": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libicustubdata.a",
+      "path": "out/Release/obj.target/tools/icu/libicustubdata.a",
+      "sha256": "37b78015072e4ddcd8cc30dbe19d95c0c59ae993225f8e812abd133b0e0f9d9f",
+      "sizeBytes": 1204,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "e8a4f5b29ba76801fbcef3daa4725a09c3ff6f3c078aa5ae913ce3dd17963e71",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 2,
+      "sourceComponentEntryCounts": {
+        "icu": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/icu-small": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libicuucx.a",
+      "path": "out/Release/obj.target/tools/icu/libicuucx.a",
+      "sha256": "973dbd625f0021ba1054296195965636e523064fe7dbad1398faa3e2f15b831a",
+      "sizeBytes": 3452890,
+      "archiveMemberEntries": 202,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "37c895800eecdd96695730e6a512dc42ed1cad6158b997eedc7322d5785371e0",
+      "uniqueArchiveMemberNames": 202,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 202,
+      "linkerMapOutputSectionRows": 826,
+      "sourceComponentEntryCounts": {
+        "icu": 202
+      },
+      "sourcePathPrefixCounts": {
+        "deps/icu-small": 202
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libabseil.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libabseil.a",
+      "sha256": "d3be5ede9ef312da009e3d4e584d6093e65c6b121fe3412535c1c9dce886f6f7",
+      "sizeBytes": 1922064,
+      "archiveMemberEntries": 110,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "779c49e7932bff992e8f6aa89ab4467c9d0cbf1700daa394c596ddc4686b66a8",
+      "uniqueArchiveMemberNames": 109,
+      "duplicateMemberNameEntries": 1,
+      "duplicateMemberNames": {
+        "escaping.o": 2
+      },
+      "uniqueMemberNamesWithLinkerMapOutputSections": 109,
+      "linkerMapOutputSectionRows": 1750,
+      "sourceComponentEntryCounts": {
+        "abseil": 110
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 110
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libhighway.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libhighway.a",
+      "sha256": "000e8fd18dc68a0a5f53e7ebc8ed14293be3fffdb0bbbe1d4edbd907077c38ce",
+      "sizeBytes": 64704,
+      "archiveMemberEntries": 7,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "ac0f17ce9d3ba8706f9091757291f774af47d0683908661dd7f6d823dce6ddb8",
+      "uniqueArchiveMemberNames": 7,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 7,
+      "linkerMapOutputSectionRows": 97,
+      "sourceComponentEntryCounts": {
+        "highway": 7
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 7
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libsimdutf.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libsimdutf.a",
+      "sha256": "fef9735b3c2bf64b34369e19598f18819008ca52ef23078014d872a52e8ab2f3",
+      "sizeBytes": 435358,
+      "archiveMemberEntries": 1,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "ca9b0080a5906806374600f7e1a5dfd2c61ac80da0d45023d9bd43e04b13584f",
+      "uniqueArchiveMemberNames": 1,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 1,
+      "linkerMapOutputSectionRows": 417,
+      "sourceComponentEntryCounts": {
+        "simdutf": 1
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 1
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libv8_base_without_compiler.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_base_without_compiler.a",
+      "sha256": "6f4cbd400e882c5bd710efa9a19e3ca8e88040ada42fc2c9d17b2b438db2cf9b",
+      "sizeBytes": 58331052,
+      "archiveMemberEntries": 946,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "90e414bc2e7263cb6fb23490b7be8b523c3ce19e0652077180f59de55c436524",
+      "uniqueArchiveMemberNames": 939,
+      "duplicateMemberNameEntries": 7,
+      "duplicateMemberNames": {
+        "objects-printer.o": 2,
+        "factory.o": 2,
+        "free-list.o": 2,
+        "heap.o": 2,
+        "sweeper.o": 2,
+        "testing.o": 2,
+        "allocation.o": 2
+      },
+      "uniqueMemberNamesWithLinkerMapOutputSections": 939,
+      "linkerMapOutputSectionRows": 55961,
+      "sourceComponentEntryCounts": {
+        "v8": 946
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 689,
+        "gen": 257
+      },
+      "generatedSourceObjectEntries": 257
+    },
+    {
+      "name": "libv8_compiler.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_compiler.a",
+      "sha256": "efd3970e665139bf91f955fa1369e44714d7cfb112059e1cd113056c0bb4ddea",
+      "sizeBytes": 53311114,
+      "archiveMemberEntries": 184,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "8343b83636b88820f6ff327006c49bc1ed53daf24ca97d5815b5ebd9e4e70405",
+      "uniqueArchiveMemberNames": 184,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 184,
+      "linkerMapOutputSectionRows": 35414,
+      "sourceComponentEntryCounts": {
+        "v8": 184
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 184
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libv8_initializers.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_initializers.a",
+      "sha256": "19c71c548e6c764b526cf0a87e501abebc66dea8c8622bf04523d2b92005ff5f",
+      "sizeBytes": 41579562,
+      "archiveMemberEntries": 295,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "186d9c59a0c7d92457db7746003fd9b4e326ad07b9f14ab3bda47623ab24b98b",
+      "uniqueArchiveMemberNames": 295,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 295,
+      "linkerMapOutputSectionRows": 19143,
+      "sourceComponentEntryCounts": {
+        "v8": 295
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 48,
+        "gen": 247
+      },
+      "generatedSourceObjectEntries": 247
+    },
+    {
+      "name": "libv8_libbase.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_libbase.a",
+      "sha256": "5366ac330a23c1508739ef76730d5e8ff90098952863257725ab19ebf38a09f4",
+      "sizeBytes": 517522,
+      "archiveMemberEntries": 40,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "130c574a404b62527b45b54e9e6f5e4934ffbf601af035d389dc0f7bf2b35477",
+      "uniqueArchiveMemberNames": 40,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 40,
+      "linkerMapOutputSectionRows": 674,
+      "sourceComponentEntryCounts": {
+        "v8": 40
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 40
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libv8_libplatform.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_libplatform.a",
+      "sha256": "3e8cb540ab0b188c6fba098b3df733d198480ac3c548c9ddc589df98909d0752",
+      "sizeBytes": 264504,
+      "archiveMemberEntries": 13,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "1a7158c2e19009fc1e5eb8714d8c8c9e7924c59d094a311105da05f013ace0cf",
+      "uniqueArchiveMemberNames": 13,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 13,
+      "linkerMapOutputSectionRows": 288,
+      "sourceComponentEntryCounts": {
+        "v8": 13
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 13
+      },
+      "generatedSourceObjectEntries": 0
+    },
+    {
+      "name": "libv8_snapshot.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_snapshot.a",
+      "sha256": "24b471bc793f126390ee0f91637a54e2885e6706ff39a7a0051975da3a749df6",
+      "sizeBytes": 2734534,
+      "archiveMemberEntries": 3,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "90dded2199d43e317d708e1bc368cfc67109483632dd25254aaa50f22d89728c",
+      "uniqueArchiveMemberNames": 3,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 3,
+      "linkerMapOutputSectionRows": 17,
+      "sourceComponentEntryCounts": {
+        "v8": 3
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 1,
+        "geni": 2
+      },
+      "generatedSourceObjectEntries": 2
+    },
+    {
+      "name": "libv8_zlib.a",
+      "path": "out/Release/obj.target/tools/v8_gypfiles/libv8_zlib.a",
+      "sha256": "d72b399abd8184f669ad4522c6c4271dd90e2a145122ceea443836876586ce0b",
+      "sizeBytes": 165184,
+      "archiveMemberEntries": 17,
+      "archiveMemberNamesInOrderMatchObjectFileList": true,
+      "allArchiveMemberPayloadsByteMatchListedObjectFiles": true,
+      "arFileListSha256": "1156cf988e4791e51bb64640fb19891daa1fe3db442c34e5b7cd2028f19977f0",
+      "uniqueArchiveMemberNames": 17,
+      "duplicateMemberNameEntries": 0,
+      "duplicateMemberNames": {},
+      "uniqueMemberNamesWithLinkerMapOutputSections": 17,
+      "linkerMapOutputSectionRows": 208,
+      "sourceComponentEntryCounts": {
+        "v8_zlib": 17
+      },
+      "sourcePathPrefixCounts": {
+        "deps/v8": 17
+      },
+      "generatedSourceObjectEntries": 0
+    }
+  ],
+  "duplicateArchiveMemberNameEvidence": [
+    {
+      "archive": "libbrotli.a",
+      "memberName": "static_init.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        12,
+        34
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/brotli/deps/brotli/c/dec/static_init.o",
+        "out/Release/obj.target/brotli/deps/brotli/c/enc/static_init.o"
+      ],
+      "sourceComponentIds": [
+        "brotli"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libabseil.a",
+      "memberName": "escaping.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        49,
+        64
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/abseil/deps/v8/third_party/abseil-cpp/absl/strings/escaping.o",
+        "out/Release/obj.target/abseil/deps/v8/third_party/abseil-cpp/absl/strings/internal/escaping.o"
+      ],
+      "sourceComponentIds": [
+        "abseil"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "objects-printer.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        113,
+        634
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/diagnostics/objects-printer.o",
+        "out/Release/obj.target/v8_base_without_compiler/gen/torque-generated/objects-printer.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "factory.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        167,
+        633
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/factory.o",
+        "out/Release/obj.target/v8_base_without_compiler/gen/torque-generated/factory.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "free-list.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        169,
+        905
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/free-list.o",
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/cppgc/free-list.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "heap.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        178,
+        917
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/heap.o",
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/cppgc/heap.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "sweeper.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        214,
+        940
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/sweeper.o",
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/cppgc/sweeper.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "testing.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        431,
+        941
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/sandbox/testing.o",
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/cppgc/testing.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    },
+    {
+      "archive": "libv8_base_without_compiler.a",
+      "memberName": "allocation.o",
+      "duplicateEntryCount": 2,
+      "archiveOrdinals": [
+        469,
+        900
+      ],
+      "sourceObjectPaths": [
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/utils/allocation.o",
+        "out/Release/obj.target/v8_base_without_compiler/deps/v8/src/heap/cppgc/allocation.o"
+      ],
+      "sourceComponentIds": [
+        "v8"
+      ],
+      "mapLabelAmbiguity": "LLD map uses the repeated archive member basename; archive order and byte-exact member/object comparison disambiguate source object inputs, but the map does not identify which duplicate entry contributed each section row."
+    }
+  ],
+  "implicitNdkArchives": [
+    {
+      "name": "libunwind.a",
+      "path": "toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21/lib/linux/aarch64/libunwind.a",
+      "sha256": "bfbe474acf75b59fd2f19f0b7210588aa662410d5d8d0996812fe50e9e0143ab",
+      "sizeBytes": 92456,
+      "archiveMemberEntries": 9,
+      "distinctMemberNames": 9,
+      "memberNamesWithLinkerMapOutputSections": [
+        "UnwindLevel1-gcc-ext.c.o",
+        "UnwindLevel1.c.o",
+        "UnwindRegistersRestore.S.o",
+        "UnwindRegistersSave.S.o",
+        "libunwind.cpp.o"
+      ],
+      "memberNamesWithLinkerMapOutputSectionCount": 5,
+      "linkerMapOutputSectionRowsForMappedNames": 93,
+      "sourceObjectMapping": "not available in the packaged NDK; this record identifies archive member labels from the exact NDK archive and the linked output sections only"
+    },
+    {
+      "name": "libclang_rt.builtins-aarch64-android.a",
+      "path": "toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-aarch64-android.a",
+      "sha256": "7e900bcdd0bb6f05824fd7e96c9309ee9c47c22751a1b3c98242d1f4902e4632",
+      "sizeBytes": 517438,
+      "archiveMemberEntries": 287,
+      "distinctMemberNames": 287,
+      "memberNamesWithLinkerMapOutputSections": [
+        "aarch64.c.o",
+        "addtf3.c.o",
+        "clear_cache.c.o",
+        "clzti2.c.o",
+        "comparetf2.c.o",
+        "fixtfdi.c.o",
+        "fixunstfdi.c.o",
+        "floatsitf.c.o",
+        "floattidf.c.o",
+        "floatunditf.c.o",
+        "fp_mode.c.o",
+        "outline_atomic_cas1_1.S.o",
+        "outline_atomic_cas1_4.S.o",
+        "outline_atomic_cas2_1.S.o",
+        "outline_atomic_cas4_1.S.o",
+        "outline_atomic_cas4_2.S.o",
+        "outline_atomic_cas4_3.S.o",
+        "outline_atomic_cas4_4.S.o",
+        "outline_atomic_cas8_1.S.o",
+        "outline_atomic_cas8_2.S.o",
+        "outline_atomic_cas8_3.S.o",
+        "outline_atomic_cas8_4.S.o",
+        "outline_atomic_ldadd4_1.S.o",
+        "outline_atomic_ldadd4_3.S.o",
+        "outline_atomic_ldadd4_4.S.o",
+        "outline_atomic_ldadd8_1.S.o",
+        "outline_atomic_ldadd8_2.S.o",
+        "outline_atomic_ldadd8_3.S.o",
+        "outline_atomic_ldadd8_4.S.o",
+        "outline_atomic_ldclr1_1.S.o",
+        "outline_atomic_ldclr1_4.S.o",
+        "outline_atomic_ldclr4_1.S.o",
+        "outline_atomic_ldclr4_3.S.o",
+        "outline_atomic_ldclr8_1.S.o",
+        "outline_atomic_ldclr8_4.S.o",
+        "outline_atomic_ldeor8_4.S.o",
+        "outline_atomic_ldset1_1.S.o",
+        "outline_atomic_ldset1_4.S.o",
+        "outline_atomic_ldset4_1.S.o",
+        "outline_atomic_ldset8_1.S.o",
+        "outline_atomic_ldset8_3.S.o",
+        "outline_atomic_ldset8_4.S.o",
+        "outline_atomic_swp1_1.S.o",
+        "outline_atomic_swp1_2.S.o",
+        "outline_atomic_swp1_3.S.o",
+        "outline_atomic_swp1_4.S.o",
+        "outline_atomic_swp4_1.S.o",
+        "outline_atomic_swp4_3.S.o",
+        "outline_atomic_swp4_4.S.o",
+        "outline_atomic_swp8_1.S.o",
+        "outline_atomic_swp8_4.S.o",
+        "subtf3.c.o",
+        "udivmodti4.c.o",
+        "udivti3.c.o",
+        "umodti3.c.o"
+      ],
+      "memberNamesWithLinkerMapOutputSectionCount": 55,
+      "linkerMapOutputSectionRowsForMappedNames": 135,
+      "sourceObjectMapping": "not available in the packaged NDK; this record identifies archive member labels from the exact NDK archive and the linked output sections only"
+    }
+  ],
+  "directObjectInputs": [
+    {
+      "objectPath": "out/Release/obj.target/libnode/src/node_snapshot_stub.o",
+      "objectSha256": "2cc335d2758cf225ceedd628287d0c5cca8f22a540a0cd37490bd869a35dc671",
+      "sourcePaths": [
+        "src/node_snapshot_stub.cc"
+      ],
+      "sourceSha256": "f54cd587e6a47e3d37cac2a64c03812d30bde217ba76ae30b864180ff25c3e89",
+      "sourceComponentId": "node",
+      "linkerMapSectionRows": 2
+    }
+  ],
+  "dynamicNeededLibraries": [
+    "libm.so",
+    "libdl.so",
+    "liblog.so",
+    "libc++_shared.so",
+    "libc.so"
+  ],
+  "explicitDynamicSystemLinkInputs": [
+    "-lm",
+    "-ldl",
+    "-llog"
+  ],
+  "sourceComponents": [
+    {
+      "id": "abseil",
+      "name": "Abseil C++",
+      "sourceRoot": "deps/v8/third_party/abseil-cpp",
+      "linkedArchiveNames": [
+        "libabseil.a"
+      ],
+      "linkedObjectEntryCount": 110,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/third_party/abseil-cpp/LICENSE",
+          "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "ada",
+      "name": "Ada URL parser",
+      "sourceRoot": "deps/ada",
+      "linkedArchiveNames": [
+        "libada.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/ada/LICENSE-MIT",
+          "sha256": "af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "brotli",
+      "name": "Brotli",
+      "sourceRoot": "deps/brotli",
+      "linkedArchiveNames": [
+        "libbrotli.a"
+      ],
+      "linkedObjectEntryCount": 35,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/brotli/LICENSE",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "cares",
+      "name": "c-ares",
+      "sourceRoot": "deps/cares",
+      "linkedArchiveNames": [
+        "libcares.a"
+      ],
+      "linkedObjectEntryCount": 91,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/cares/LICENSE.md",
+          "sha256": "460f5e768fda3752ca2169a95df062578a10fb126bfd65f3b9b1a1bed2f84807",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "highway",
+      "name": "Highway",
+      "sourceRoot": "deps/v8/third_party/highway",
+      "linkedArchiveNames": [
+        "libhighway.a"
+      ],
+      "linkedObjectEntryCount": 7,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/third_party/highway/LICENSE",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "histogram",
+      "name": "HdrHistogram C",
+      "sourceRoot": "deps/histogram",
+      "linkedArchiveNames": [
+        "libhistogram.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/histogram/LICENSE.txt",
+          "sha256": "c124afa369aae960fa33f6944c82e161e482f2e998d6f07b37ae2c018f3c6c69",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "icu",
+      "name": "ICU4C small-icu",
+      "sourceRoot": "deps/icu-small",
+      "linkedArchiveNames": [
+        "libicudata.a",
+        "libicui18n.a",
+        "libicustubdata.a",
+        "libicuucx.a"
+      ],
+      "linkedObjectEntryCount": 458,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/icu-small/LICENSE",
+          "sha256": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "inspector_protocol",
+      "name": "Chromium Inspector Protocol / CRDTP",
+      "sourceRoot": "deps/inspector_protocol",
+      "linkedArchiveNames": [
+        "libcrdtp.a"
+      ],
+      "linkedObjectEntryCount": 9,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/inspector_protocol/LICENSE",
+          "sha256": "c3ed274b3ee226cd391aae43edd5ecccfb6e3cf39f0026d4df1200c1e9bbc097",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "libffi",
+      "name": "libffi",
+      "sourceRoot": "deps/libffi",
+      "linkedArchiveNames": [
+        "libffi.a"
+      ],
+      "linkedObjectEntryCount": 9,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/libffi/LICENSE",
+          "sha256": "17b64dc60f3b6897a60f971e288b973f655c2edcdf08b25f3c3dd5549857881c",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "llhttp",
+      "name": "llhttp",
+      "sourceRoot": "deps/llhttp",
+      "linkedArchiveNames": [
+        "libllhttp.a"
+      ],
+      "linkedObjectEntryCount": 3,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/llhttp/LICENSE",
+          "sha256": "628168d68bb5a8a17e0bbefb3bd74e326e1edc20583d76f52f457c82c921867d",
+          "note": "vendored license text"
+        },
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/llhttp/LICENSE-MIT",
+          "sha256": "ebca854e0134cd256d673627c20499f42577eb74bacf08b9f25b626a73c91277",
+          "note": "additional vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "merve",
+      "name": "merve",
+      "sourceRoot": "deps/merve",
+      "linkedArchiveNames": [
+        "libmerve.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/merve/LICENSE-MIT",
+          "sha256": "cd7b1dbf8003a68f06d4fc84afa797d6e7a5d5d64b2ccd381485f711620dd60a",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "nbytes",
+      "name": "Node.js nbytes",
+      "sourceRoot": "deps/nbytes",
+      "linkedArchiveNames": [
+        "libnbytes.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/nbytes/LICENSE",
+          "sha256": "782ab5b8ae1540c1a2b102fdd00990ed268d4a3a98e90ad7fe724b489d7bb0f2",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "ncrypto",
+      "name": "Node.js ncrypto internal implementation",
+      "sourceRoot": "deps/ncrypto",
+      "linkedArchiveNames": [
+        "libncrypto.a",
+        "libncrypto_engine.a"
+      ],
+      "linkedObjectEntryCount": 2,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "LICENSE",
+          "sha256": "8e603aa87c70d36e497004f0dec63111511cb61b7d65ace12e10ea791599286c",
+          "note": "project-level attribution inference; no standalone ncrypto license file"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "ndk_compiler_rt",
+      "name": "Android NDK compiler-rt builtins",
+      "sourceRoot": "NDK 30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21",
+      "linkedArchiveNames": [
+        "libclang_rt.builtins-aarch64-android.a"
+      ],
+      "linkedObjectEntryCount": 0,
+      "linkedImplicitArchiveMemberLabelCount": 55,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "toolchains/llvm/prebuilt/darwin-x86_64/NOTICE",
+          "sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1",
+          "note": "toolchain notice; component-to-notice completeness not independently established"
+        },
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "NOTICE",
+          "sha256": "a3c12eee897f63991da71464b690433a15d0d74a508ce0e275436279bdcaff58",
+          "note": "NDK package notice"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "ndk_cpufeatures",
+      "name": "Android NDK cpufeatures",
+      "sourceRoot": "NDK 30.0.16248370/sources/android/cpufeatures",
+      "linkedArchiveNames": [
+        "libzlib.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "sources/android/cpufeatures/NOTICE",
+          "sha256": "c870d52f42a8f93023b99a85fe68d02637d6b04e5f35bbcd7f98759adb4e4d49",
+          "note": "component notice"
+        },
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "sources/android/cpufeatures/cpu-features.c",
+          "sha256": "1b8a88eb7d3a5437d17e12475539398d3e1c5eef13d85941679841254af0a8f5",
+          "note": "source contains embedded copyright and license terms"
+        },
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "sources/android/cpufeatures/cpu-features.h",
+          "sha256": "f4989fabece7ea538e3c1272dca47f8a9a4423a87c79a1344a2611e884cb7319",
+          "note": "source contains embedded copyright and license terms"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "ndk_libunwind",
+      "name": "Android NDK libunwind",
+      "sourceRoot": "NDK 30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21/lib/linux/aarch64",
+      "linkedArchiveNames": [
+        "libunwind.a"
+      ],
+      "linkedObjectEntryCount": 0,
+      "linkedImplicitArchiveMemberLabelCount": 5,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "toolchains/llvm/prebuilt/darwin-x86_64/NOTICE",
+          "sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1",
+          "note": "toolchain notice; component-to-notice completeness not independently established"
+        },
+        {
+          "evidenceRoot": "NDK 30.0.16248370",
+          "path": "NOTICE",
+          "sha256": "a3c12eee897f63991da71464b690433a15d0d74a508ce0e275436279bdcaff58",
+          "note": "NDK package notice"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "nghttp2",
+      "name": "nghttp2",
+      "sourceRoot": "deps/nghttp2",
+      "linkedArchiveNames": [
+        "libnghttp2.a"
+      ],
+      "linkedObjectEntryCount": 26,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/nghttp2/COPYING",
+          "sha256": "6b94f3abc1aabd0c72a7c7d92a77f79dda7c8a0cb3df839a97890b4116a2de2a",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "node",
+      "name": "Node.js",
+      "sourceRoot": ".",
+      "linkedArchiveNames": [
+        "libnode_base.a"
+      ],
+      "linkedObjectEntryCount": 200,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "LICENSE",
+          "sha256": "8e603aa87c70d36e497004f0dec63111511cb61b7d65ace12e10ea791599286c",
+          "note": "Node.js root license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "openssl",
+      "name": "OpenSSL",
+      "sourceRoot": "deps/openssl/openssl",
+      "linkedArchiveNames": [
+        "libopenssl.a"
+      ],
+      "linkedObjectEntryCount": 1107,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/openssl/openssl/LICENSE.txt",
+          "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "simdjson",
+      "name": "simdjson",
+      "sourceRoot": "deps/simdjson",
+      "linkedArchiveNames": [
+        "libsimdjson.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/simdjson/LICENSE",
+          "sha256": "5fa8894e890bd77958f93b165433e0fb0dffa5bc982bfb147e4748e95bad24e5",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "simdutf",
+      "name": "simdutf",
+      "sourceRoot": "deps/v8/third_party/simdutf",
+      "linkedArchiveNames": [
+        "libsimdutf.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/third_party/simdutf/LICENSE",
+          "sha256": "fc8dbc04e03ad4efc08a647ffe7f995b811a95bc04c0e85a56d5277c6593fa5f",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite",
+      "sourceRoot": "deps/sqlite",
+      "linkedArchiveNames": [
+        "libsqlite.a"
+      ],
+      "linkedObjectEntryCount": 1,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/sqlite/sqlite3.c",
+          "sha256": "0c657666d819f261cc4007526ad57e1669de9949df7a8ea847aa284a2bf0ee52",
+          "note": "license dedication is embedded in source; whole-file hash only"
+        },
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/sqlite/sqlite3.h",
+          "sha256": "d6c84557261893439b341d2e6c35187ae3ea24fbfd843ad94616f72d89242b8c",
+          "note": "license dedication is embedded in source; whole-file hash only"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "uv",
+      "name": "libuv",
+      "sourceRoot": "deps/uv",
+      "linkedArchiveNames": [
+        "libuv.a"
+      ],
+      "linkedObjectEntryCount": 36,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/uv/LICENSE",
+          "sha256": "16de0c32b265cb7d46a6d3bd614f259dd4d693a5e26b3407b04aae8d73041f0c",
+          "note": "vendored license text"
+        },
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/uv/LICENSE-extra",
+          "sha256": "262c44bd2cdba037e6d2a82fba15f5800d292bc993a6f5d6b6ea487744d02836",
+          "note": "additional vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "uvwasi",
+      "name": "uvwasi",
+      "sourceRoot": "deps/uvwasi",
+      "linkedArchiveNames": [
+        "libuvwasi.a"
+      ],
+      "linkedObjectEntryCount": 9,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/uvwasi/LICENSE",
+          "sha256": "3a94b84af77767e64afdf5fc31d4196810c9717ce2ac2be089f06fec4bfc0e99",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "v8",
+      "name": "V8",
+      "sourceRoot": "deps/v8",
+      "linkedArchiveNames": [
+        "libv8_base_without_compiler.a",
+        "libv8_compiler.a",
+        "libv8_initializers.a",
+        "libv8_libbase.a",
+        "libv8_libplatform.a",
+        "libv8_snapshot.a"
+      ],
+      "linkedObjectEntryCount": 1481,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/LICENSE",
+          "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+          "note": "vendored license text"
+        },
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/LICENSE.fdlibm",
+          "sha256": "e7115e18444dae09d17f361ddc365fb1d342640fe500796209c63f7c80dfae10",
+          "note": "additional V8-related license text"
+        },
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/LICENSE.strongtalk",
+          "sha256": "6a585a9f466654abc8fc0829d56b1bc987e3a073d31faa03bba37d33640a23cd",
+          "note": "additional V8-related license text"
+        },
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/LICENSE.v8",
+          "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca",
+          "note": "additional V8-related license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "v8_zlib",
+      "name": "V8 third-party zlib",
+      "sourceRoot": "deps/v8/third_party/zlib",
+      "linkedArchiveNames": [
+        "libv8_zlib.a"
+      ],
+      "linkedObjectEntryCount": 17,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/v8/third_party/zlib/LICENSE",
+          "sha256": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "zlib",
+      "name": "Node.js zlib fork",
+      "sourceRoot": "deps/zlib",
+      "linkedArchiveNames": [
+        "libzlib.a",
+        "libzlib_adler32_simd.a",
+        "libzlib_arm_crc32.a",
+        "libzlib_data_chunk_simd.a"
+      ],
+      "linkedObjectEntryCount": 19,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/zlib/LICENSE",
+          "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    },
+    {
+      "id": "zstd",
+      "name": "Zstandard",
+      "sourceRoot": "deps/zstd",
+      "linkedArchiveNames": [
+        "libzstd.a"
+      ],
+      "linkedObjectEntryCount": 26,
+      "linkedImplicitArchiveMemberLabelCount": 0,
+      "licenseEvidence": [
+        {
+          "evidenceRoot": "Node v26.13.1 source/build tree",
+          "path": "deps/zstd/LICENSE",
+          "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8",
+          "note": "vendored license text"
+        }
+      ],
+      "spdxExpression": null,
+      "legalReview": "not performed; evidence is not a legal conclusion"
+    }
+  ],
+  "unresolved": [
+    "This is an exact object/archive/link-map inventory from an existing patched build tree; it is not a clean source rebuild or signed build attestation.",
+    "The source patch disables V8 trap-handler support and changes Android build configuration; security review and upstream-accepted patch review remain open.",
+    "All 517 generated source outputs are hash-bound, but their generator executables, generator scripts, and complete source-data inputs are not closed here.",
+    "NDK compiler-rt and libunwind archive member names with mapped output sections are identified; the packaged NDK does not provide a per-member source-object list in this evidence set.",
+    "ncrypto has no standalone license file; mapping it to the Node.js root license remains an attribution inference.",
+    "V8, OpenSSL, Node, SQLite, NDK runtime, and copied cpufeatures evidence has not received legal review; no composite libnode SPDX expression is asserted.",
+    "Gradle runtime dependency closure, JNI bridge source/link/license closure, Aggregate product integration, formal signing, V8 trap-handler security review, and 16 KB physical-device execution remain outside this inventory and open."
+  ],
+  "archiveObjectEntriesFile": {
+    "path": "android-a3-node26.13.1-static-link-objects.jsonl",
+    "format": "JSON Lines; one self-describing object-source record per line",
+    "entryCount": 3653,
+    "sha256": "815628553b0c5e617b04cae87d00224cbc1158d79eac1d990c38deefba9b6a46",
+    "sizeBytes": 2377514
+  }
+}
