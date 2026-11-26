@@ -565,3 +565,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 使用 Node 官方发布签名和固定提交的 `nodejs/release-keys` keyring，验证 `SHASUMS256.txt.asc` 的 EdDSA 签名；签名指纹与官方 release-key README 相符。Node `v26.13.1` 源码归档实际 SHA-256 与签名清单条目一致。
 - 该结果只关闭该源码归档的签名/哈希核验缺口，不为本机构建的 Android `libnode.so` 提供构建证明。手工构建复现、二进制来源、许可/SBOM、正式签名和 16 KB 真机门槛仍未关闭，A3.6/A4 产品门槛不变。详见 [源码归档 PGP 核验](android-a3-runtime-research.md#2026-11-27-node-26131-source-archive-pgp-verification)。
+
+## 2026-11-27 A3.6 隔离候选 NOTICE 包装复核
+
+- 隔离 NodeProbe APK 的 151 个 npm `LICENSE`/`NOTICE`/`COPYING` 文件与输入树逐路径、逐字节匹配；原 APK 缺少 Node 26.13.1 聚合 `LICENSE` 和 NDK 30 聚合 `NOTICE`。已在临时 NodeProbe 工程中补入这两份原文并离线重打包，新 APK 为 36,681,081 字节，新增 NOTICE 的 SHA-256 与 Node 源码/NDK 30 源文件一致。4 个 arm64 DSO 的 `PT_LOAD` 对齐均为 16 KB，APK `zipalign -P 16` 通过。
+- 这是隔离 Debug APK 的 NOTICE 资产包装检查；没有修改 Aggregate 产品代码，也没有在手机安装或运行新 APK。候选 `libc++_shared.so` 的精确来源与许可覆盖仍无法确认，完整二进制 SBOM、可复现构建、法律审查、正式签名与 16 KB 真机执行均开放，A3.6/A4 不关闭，产品端 npm/CLI 边界保持不变。详见 [NOTICE 与二进制许可证边界](android-a3-runtime-research.md#2026-11-27-isolated-node-26131-probe-notice-payload-follow-up)。
