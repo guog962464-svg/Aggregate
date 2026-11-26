@@ -469,3 +469,9 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 ### UI-6.7 补证：B022/B023 浅色 Profile 按下态与保存回读（2026-11-26）
 
 B022“取消”真实 CGEvent 按住 84.611 ms，hover 14/15（缺 +0 ms）、press 15/15；+55.204/+72.091 ms 按住帧比 hover 更中性、暖光收敛，释放后 fresh AX 回到管理连接详情且三条示例连接未变。B023“保存动作”真实 CGEvent 按住 81.407 ms，hover 14/15（缺 +0 ms）、press 15/15；+52.708/+70.990 ms 按住帧也比 hover 更中性。保存只更新 `Ui6InspectionRuntime` 的进程内清单；重开后 JSON AX value 含 `version` 与 `action1`，原生菜单截图同时显示两个选项；隔离 PIDs 16498 与 16992 均优雅退出。两按钮浅色按下期选定帧、B022 取消路径及 B023 内存保存回读通过；释放回弹、完整连续动画、Flutter FrameTiming 和物理面板 FPS 未签收。完整环境、截图和 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b022b023-浅色-profile-按下态与保存回读)。UI-6.7 与阶段 0–6 继续部分验收。
+
+### UI-6.7 补证：96dp 运行、刷新、搜索暗色按下帧（2026-11-26）
+
+在独立 `io.github.guog962464.aggregate.ui6glyphfixture` macOS Profile（1512×949pt、DPR 2）中用真实 CGEvent 分别点击运行、刷新和搜索图案。按住时间为 85.080/84.256/80.631 ms；WindowServer 目标帧分别命中 4/5、5/5、4/5，漏帧为运行 `0 ms`、搜索 `66.7 ms`，有效帧状态码均为 0。按钮局部并排图可见按下初段出现暖光并在后续采样中收敛。
+
+该样本只观察共享组件的暗色离散按压帧，按钮回调为空；没有映射到生产调用点，也不证明连续动画、松开回弹、Flutter `FrameTiming` 或物理显示 FPS。截图和 timing JSON 的 SHA、隔离边界见[验收记录](acceptance-record.md#2026-11-26-ui-67-96dp-运行刷新搜索暗色按下帧补验)。UI-6.7 与阶段 0–6 继续部分验收。
