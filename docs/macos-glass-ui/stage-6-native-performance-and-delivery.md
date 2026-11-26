@@ -449,3 +449,5 @@ macOS Widget 测试使用 fake Host/邀请，将生产 `Clipboard.setData` 截�
 首次 B021 复验发现 800×632pt macOS 紧凑编辑器在点击检查后把预览数组与提示放在滚动视口之外。本轮改为仅在 macOS 的紧凑编辑器中，生成成功或错误反馈后将结果滚入视口；普通状态使用 180 ms ease-out，Reduce Motion 使用即时定位。Flutter Widget 定向测试、静态分析和隔离 Profile 构建均通过；真实 Profile AXPress 后 AX 读到结果数组高度 81pt、提示高度 20pt，两者在视口内，实窗截图完整可见。主题切换组件和逻辑未改。AXPress 首验只覆盖暗色 800×632pt 隔离 Ui6InspectionRuntime；浅色未覆盖。真实物理滚入后续补验见下节。完整环境与 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b021-窄窗参数预览结果自动可见修正)。
 
 后续在全新无预览结果的隔离 Profile 中用 CGEvent 实鼠标复验：按住 83.074 ms，14/15 离散目标帧有效（漏 down +0 ms，状态码均为 0）；相对 down +100 ms 结果尚未露出、+167 ms 开始露出、+333/+650 ms 数组与安全提示完整。fresh AX 再确认两项反馈均位于滚动视口内；取消动作后没有保存样例，隔离进程已优雅关闭。从初始空状态触发自动滚入的物理路径现有离散帧证据，仍不等同于完整连续动画或面板 FPS。此前结果已可见状态的 press 83.359 ms、15/15 采样和 hover 13/15（另有 hover 14/15 样本）保留为补充数据。详情与 SHA 见[验收记录](acceptance-record.md#2026-11-26-ui-67-b021-窄窗参数预览结果自动可见修正)。
+
+另在浅色 800×632pt 隔离 Profile 以 CGEvent 首次触发，按住 82.680 ms、15/15 个离散目标帧有效；+100 ms 仍无结果，+167 ms 开始滚入，+333/+650 ms 数组和安全提示完整，fresh AX bounds 在视口内。样例未保存，隔离进程已优雅退出。浅深两套首次露出样本现已具备，连续曲线、FrameTiming、物理面板 FPS 与其他按钮仍未验。详情与 SHA 见[浅色物理复验](acceptance-record.md#2026-11-26-ui-67-b021-窄窗参数预览浅色物理复验)。
