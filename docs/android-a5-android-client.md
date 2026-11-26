@@ -699,3 +699,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **授权边界：**`agent-desktop` 能读取授权弹窗与安全文本框，但对该 secure text field 的输入返回 `POLICY_DENIED`（`semantic action is unavailable and focus fallback is denied`），结果明确为 `delivery=not_delivered`。没有密码进入字段，没有点击“始终允许”“允许”或“拒绝”，也没有使用脚本/API 绕过系统授权。CUA 的 `getState()` 本轮再次超时并重置运行时。
 - **清理与观察：**终止仅由本轮启动的 Release PID `17669` 后，SecurityAgent 弹窗消失；对其重新快照结果为 hidden/`ref_count=0`。保留另一既有 Profile Aggregate 进程。复查 Host `47321/47322/47323` 无监听，ADB reverse 为空；Android 前台仍为系统 Wi‑Fi 快捷页，未启动 NodeProbe/testnode，也未改网络、Keychain、身份或配对数据。
 - **结论：**当前双向 ping 与普通 TCP 连通证据仍有效，但生产 Host 未能越过 macOS 钥匙串授权，因此本轮没有新增 WSS、Bonjour/NSD、邀请、配对或 RPC 结果。密码未发送，A5 direct-LAN 业务验收继续开放；恢复条件是有可用且允许向该安全文本框输入的系统界面通道后，再从设置页启动 Host，并严格只读验收 `host.hello`、`connection.list`。
+
+## 2026-11-26 A5 Release Host secure-field 操作与清理复核（19:26–19:31 Asia/Shanghai）
+
+- **安全界面状态：**继续使用本轮启动的现有 Release `Aggregate.app`（PID `18681`，未重建）尝试 A5 Host。`SecurityAgent` 快照确认是 `io.github.guog962464.aggregate.host.tls.v1` 登录钥匙串请求；secure text field 声明支持 `SetValue`。经该系统弹窗的标准 UI，字段设值和一次性“允许”各操作两次；工具报告 AX action 成功，但投递状态是 `delivered_unverified`。每次操作后完整快照仍是相同密码请求，没有可见错误；无法判定是后续钥匙串请求排队，还是 UI action 未完成授权。没有选择“始终允许”或“拒绝”，也未用命令行、AppleScript、Security API 或其他路径绕过弹窗。
+- **Host 与设备结果：**Host `47321/47322/47323` 均无监听，ADB reverse 为空；本轮没有邀请、配对或 RPC，也没有启动 NodeProbe/testnode、改网络或切换手机前台。应用日志查询未返回本进程 `HostTLSIdentity` 记录，Host identity/Keychain 项是否有读写不作推断。
+- **清理：**仅向本轮启动的 Release PID `18681` 发 `SIGTERM`。随后 `agent-desktop snapshot --app SecurityAgent` 返回 `APP_NOT_FOUND`，确认授权弹窗已关闭；没有终止既有 Profile 预览进程。
+- **结论：**本轮没有得到 Host 启动或授权完成的证据，A5.4/A5.5 保持开放。早先双向 ping 和一次性直连 TCP 只证明局域网 TCP 可达，不外推为 WSS/Bonjour/NSD/配对/RPC 通过。没有记录任何凭据；一次性“允许”操作的底层 Keychain 访问结果未知。
