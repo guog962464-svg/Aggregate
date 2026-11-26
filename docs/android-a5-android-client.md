@@ -759,3 +759,10 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络状态：**Mac `en0=192.168.8.4/24`，LGE AN10 `wlan0=192.168.8.7/24`，手机 `PAGE_SIZE=4096`。两端互 ping 均为 2/2、0% 丢包。
 - **TCP 证据：**Mac 临时 listener 仅绑定 `192.168.8.4:56260`，Android 通过 ADB shell 的 `toybox nc` 连接，Mac 实际收到来源 `192.168.8.7` 的 `AGGREGATE_A5_TCP_PREFLIGHT_V1`，并返回 `AGGREGATE_A5_TCP_ACK_V1`；客户端退出码 0。一次性 listener 随后退出，端口不再监听；ADB reverse 为空，没有 Aggregate、NodeProbe 或 testnode 进程。
 - **范围与结论：**这确认当前手机到 Mac 的局域网 TCP 路径可达，且不依赖 USB reverse。连接由 Android shell 发起，不是 Aggregate App；本轮没有启动生产 Host，因此不证明 WSS/TLS pin、Bonjour/NSD、配对或 RPC 通过，也没有读取/修改 Keychain。A5.4/A5.5 继续开放，当前生产 Host 身份读取仍需解决。
+
+## 2026-11-27 A5 用户确认网络一致后的现场回读
+
+- **设备与网络：**Mac `en0=192.168.8.4/24`；LGE AN10 / Android 15 / API 35 / arm64 真机 `wlan0=192.168.8.7/24`，`PAGE_SIZE=4096`。Mac 到手机和手机到 Mac 的 ping 各 2/2、无丢包，确认两端目前同网段且双向 ICMP 可达。
+- **Host 状态：**Android ADB shell 访问 `192.168.8.4:47321` 返回 `Connection refused`；本机该端口无 listener、ADB reverse 为空。Aggregate 当前无运行进程/可见窗口，手机前台仍是系统 Launcher；本轮未启动应用或再次触发已复现的 `active-identity` Keychain 读取挂起。
+- **Touch ID 问题：**Apple 文档确认可以为 Keychain 项配置 Touch ID，但须在创建项时使用生物识别 `SecAccessControl`，并通过 LocalAuthentication/认证上下文读取。当前普通登录钥匙串项及现有查询没有此配置，现有密码/ACL 提示不能现场切成指纹。该改造不能据此视为当前 `SecItemCopyMatching` 挂起的修复；迁移还须保留 Host ID、证书 pin 和现有配对 grant，并解决无前台认证时 Host 的行为。参见[2026-11-26 Touch ID 可行性核对](#2026-11-26-keychain-touch-id-可行性核对)及 [Apple Keychain Touch ID 文档](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id)。
+- **结论：**网络前置条件本轮通过复核，但 Host 尚无 listener，未产生 WSS、Bonjour/NSD、邀请、配对或 RPC 新证据。A5.4/A5.5 仍开放；当前实际阻塞仍是 production Host 身份 Keychain 数据读取路径。

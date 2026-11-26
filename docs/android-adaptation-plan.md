@@ -538,3 +538,12 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 在 detached 基线 `b7d2a26` 的临时 arm64 APK 中，fellow99 Node 26.13.0 runtime 与匹配 CLI AAR 的 Gradle 集成构建通过；APK 79,830,343 B，SHA-256 `ab0a6883f786e3a16387f78eb1e639026e4728e6b1d57f2be3dff4eee5253438`。4 个 ELF 的全部 `PT_LOAD` 静态 16 KB 对齐及 `zipalign -c -P 16 4` 通过。
 - LGE AN10 Android 15/API 35、arm64、4 KB 真机上，JNI `node::Start`、standalone Node CLI、npm 11.20.0，以及一项预置本地 fixture + 精确 `file:` allowlist lifecycle 均成功。结果只适用于临时 probe、该固定 fixture 和该设备；不构成 Aggregate 产品集成，也没有验证 16 KB 系统运行。
 - 候选仍比 Node 官方 26.13.1 安全发行落后一补丁；provenance、NOTICE/许可证/SBOM 闭包、正式签名、包体成本审查及 16 KB 真机仍开放。**A3.6/A4 不关闭，A4.7 的产品端 npm/CLI 能力边界不变。**详见 [A4 详细记录](android-a4-progress.md) 和 [运行时调查](android-a3-maintained-runtime-survey-2026-11-20.md)。
+
+## 2026-11-27 A5 Touch ID 问题与现场网络回读
+
+- 用户询问可否在需要密码时改用指纹。Apple 提供 Keychain Touch ID 支持，但须在项目创建时配置生物识别访问控制并用 LocalAuthentication 读取；当前 Host identity 使用普通登录 Keychain 项，没有 `kSecAttrAccessControl`/`kSecUseAuthenticationContext`，所以现有授权提示无法直接切换为 Touch ID。迁移需要保留既有 Host ID、证书 pin 和 grants，也不能保证修复已复现的 `active-identity` 数据解密挂起。详见 [A5 Touch ID 与网络回读](android-a5-android-client.md#2026-11-27-a5-用户确认网络一致后的现场回读)及 [Apple 文档](https://developer.apple.com/documentation/localauthentication/accessing-keychain-items-with-face-id-or-touch-id)。
+- 本轮 Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；Android 到 Mac Host 端口 `47321` 返回 `Connection refused`，Mac 无 Host listener，ADB reverse 为空，手机仍在 Launcher。网络可达，不代表 Host/WSS/NSD/配对/RPC 已通过；未重复触发同一 Keychain 读取挂起，A5.4/A5.5 继续开放。
+
+## 2026-11-27 A3.6 fellow99 runtime 与 CLI 发行刷新
+
+- 复核 Node 官方安全公告与 fellow99 两个 Release 页：Node 官方 26.13.1 仍是比较基线；Android arm64 runtime `libnode.so` 与匹配 CLI 仍以 26.13.0 为 Latest，没有 26.13.1 成对发行。没有下载、构建或运行新工件。此前 4 KB 隔离 JNI/npm 样本仍有效，但候选的安全版本、provenance、NOTICE/许可证/SBOM、产品集成与 16 KB 实机门槛继续开放；详见[发行复核](android-a3-upstream-android-runtime-status-2026-11-20.md#2026-11-27-fellow99-android-runtime-and-cli-release-recheck)。
