@@ -58,6 +58,13 @@ class GlassButtonsFixturePage extends StatelessWidget {
         kind: GlassButtonKind.secondary,
       ),
       _ButtonSample(
+        title: '动作编辑器 · 导出',
+        label: '导出',
+        glyph: GlassGlyph.save,
+        kind: GlassButtonKind.navigation,
+        size: GlassButtonSize.secondary,
+      ),
+      _ButtonSample(
         title: '图标按钮',
         label: '搜索',
         glyph: GlassGlyph.search,
@@ -151,7 +158,7 @@ class GlassButtonsFixturePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '12 类静置/点击样本 · 同一圆角点阵工厂 · 无业务回调',
+                            '13 个静置/点击样本 · 同一圆角点阵工厂 · 无业务回调',
                             style: textTheme.bodyMedium?.copyWith(
                               color: tokens.muted,
                             ),

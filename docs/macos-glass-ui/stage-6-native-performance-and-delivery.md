@@ -503,3 +503,7 @@ macOS 设置页实例把 `ThemeSwitchScene.scale` 校准到 `1.5`，模拟、点
 ### UI-6.7 补证：B020 深色 hover 离场与释放限制（2026-11-27）
 
 隔离 `Ui6InspectionRuntime` 深色 Profile 的 B020“导出”使用真实 CGEvent hover-leave 采样：14/15 个指定目标帧有效（缺 +0 ms），按钮在离场后约 +14.988 ms 仍接近 hover 外观，+48.066 ms 回到离场前静置基线。真实按下约 88.728 ms 能打开原生 Save 面板；其覆盖/挂起使父窗口后续帧不能代表清晰的释放回弹，所以不签收 B020 release。原生面板已取消，没有选路径或写文件。`glass_action_button_test.dart` 16/16 通过，其中无副作用按钮测试了按下与释放后的几何回位；它不能代替 B020 的原生连续帧证据。详情与 SHA 见[验收记录](acceptance-record.md#ui-67-b020-dark-release-hover-leave-2026-11-27)。UI-6.7 与阶段 0–6 继续部分验收。
+
+### UI-6.7 补证：B020 同款无副作用共享按钮释放曲线（2026-11-27）
+
+在暗色 800×632pt macOS Profile fixture 中对 no-op `GlassActionButton` 实样做 CGEvent down/up；其 `navigation + save glyph + secondary` 配置与窄窗生产 B020 一致，不触发 `_export`/Save 面板。按住 87.487ms，release 采到 13/15 个目标帧；按钮 ROI 相对稳定 hover 帧的归一化 RGB 差在按下期升至 0.11817，mouse-up 后约 14.95ms 仍为 0.11801，约 106.84ms 后回到 0.01088。邻区约 0.0078。按钮/动效测试 32/32、fixture 分析和 Profile 构建通过。此项签收共享组件同款配置的有限实窗回弹片段，不代表触发原生 Save 面板的生产 B020 回调释放曲线，也不签收连续插值、FrameTiming 或面板 FPS；详情、采样限制与 SHA 见[验收记录](acceptance-record.md#ui-67-b020-noop-release-cycle-2026-11-27)。UI-6.7 与阶段 0–6 仍部分验收。
