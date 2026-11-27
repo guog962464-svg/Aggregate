@@ -825,3 +825,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **当前地址：**Mac Wi-Fi `192.168.8.4/24`；LGE AN10 `wlan0=192.168.31.136/24`。手机到 `192.168.8.4` 的路由选择 `192.168.31.1` 网关，因此当前不是同一 IPv4 子网。此前 A5 隔离 LAN/WSS fixture 在手机地址 `192.168.8.7` 时通过；该历史结果不代表本轮的新路由可达。
 - **Host 与设备：**Mac `47321/47322/47323` 无 listener，ADB reverse 为空；手机 top-resumed 仍为用户新闻 App `LiveRoomActivity`。本轮只读取状态，没有启动 Host、触发 Keychain、尝试配对/RPC 或改变手机前台。
 - **结论：**用户此前确认网络一致，但此刻读取到的两端 IPv4 地址属于不同子网。尚未验证跨子网直连 TCP/WSS；A5 production Host/identity 启动问题仍按前述记录保持开放。
+
+## 2026-11-27 A5 live network recheck (14:22 Asia/Shanghai)
+
+- Mac `en0` 当前为 `192.168.8.4`；macOS 的 AirPort 状态为“not associated with an AirPort network”。LGE AN10 的 `wlan0` 为 `192.168.31.136/24`，手机默认路由经 `192.168.31.1`；Mac 到手机地址的路由经 `192.168.8.1`。从手机到 `192.168.8.4` 的 ICMP 探测为 `0/1`，本轮读取仍显示两端没有可达的同网段路径。
+- Mac `47321–47323` 无 TCP listener。没有启动 Host、读取 Keychain identity、尝试配对/RPC 或切换手机前台。随后 ADB 设备连接消失，因此没有继续做手机侧操作。
+- 这次状态回读不推翻 08:06 已通过的隔离 LAN fixture；它只说明该历史通过不能外推为当前网络连通。生产 Host 与 A5.4/A5.5 验收仍开放。
