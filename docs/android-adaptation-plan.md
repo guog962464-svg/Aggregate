@@ -666,3 +666,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 从 PGP 核验过的 Node 26.13.1 官方归档重新构建成功；518 个生成源码路径全部匹配。全量静态链接清单 3,653 个对象里 3,378 个字节完全一致、275 个哈希不同（V8 Torque 152、c-ares 85、libuv 36、OpenSSL 2），每对差异对象都含各自绝对构建根。新旧 strip 后 `libnode.so` 大小相同但 SHA 不同，所以本次不记为可复现构建通过。
 - 单对象 `-ffile-prefix-map` 诊断从 GYP 内层 make 直接调用时撞上 macOS `-arch x86_64` 与 Android clang 目标冲突；试验对象已逐字节恢复。这不是产品构建失败，也没有证实该映射可以修复差异。
 - **A3.6/A4.7 继续开放。**准确工件哈希、工具/补丁指纹、差异范围及限制见[clean rebuild 比较报告](android-a3-node26.13.1-clean-rebuild-comparison.json)和[Node 26.13.1 运行时研究](android-a3-runtime-research.md#2026-11-27-node-26131-clean-source-rebuild-comparison)。下一步仍需解决 Node/NDK/SBOM 与法律闭包、构建 attestation、V8 signal-chain 复核、产品集成和正式签名；16 KB 真机缺失继续记为外部发布门槛。
+
+## 2026-11-27 A4.7 Android Runtime capability boundary regression
+
+- `app/test/android_runtime_port_test.dart` 7/7 passed：Android 本机只开放 HTTP MCP，拒绝本地 CLI 连接；配对 Host 的 CLI 能力保持 `ExecutionTarget.host` 并通过 Host 路由。本次只确认既有 ADR 0003 的代码回归，没有新增 Node/npm 产品适配器。
+- 此项不关闭 A3.6 运行时来源/复现/许可门槛、A5 production Host 或 A6 真实音乐流程；测试范围是本机 Flutter fake/runtime-port，无设备、正式签名或 16 KB 真机证据。详见 [A4.7 回归记录](android-a4-progress.md#2026-11-27-a47-android-runtime-boundary-regression)与 [ADR 0003](decisions/0003-android-local-execution.md)。
