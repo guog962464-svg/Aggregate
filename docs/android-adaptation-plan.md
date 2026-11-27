@@ -362,7 +362,7 @@ A3/A4 是手机本地 Node 路线，A5/A6 是通用 CLI 的 Host 路线；A5 可
   - 2026-11-20 在当前应用代码（`86aab89`；本次检验提交 `4c76011` 仅更改文档）上，以隔离 `.integration` Debug 包重跑 `android_http_mcp_test.dart`；使用公开只读 HTTPS MCP endpoint 验证 setup、保存、能力发现和 `get_site_info` 调用，整文件 5 项通过。普通 Aggregate 包测试前后均未安装，隔离 `.integration` 包测试后清理，ADB reverse 为空。未设置 `A2_WIFI_SWITCH_TEST`，不覆盖 Wi-Fi 切换/恢复；不代表生产服务验收。详见 [A8 当前 UI 提交后的 Release/HTTPS 复验](android-a8-acceptance.md#2026-11-20-当前-ui-提交后的-https-mcp-集成复验)。
   - 2026-11-20 Host operation ledger 单测新增临时文件容量保护场景（`maxEntries=1`）：满额后 `operationLedgerFull` 拒绝第二 mutation 且账本内容不变；重开后保留原操作为 `outcomeUnknown`，不生成拒绝操作。`host_rpc_protocol_test.dart` 全文件 22 项通过。该测试不演练生产 Host 管理员撤权/换钥/归档流程；详见 [A8 ledger 容量保护单测](android-a8-acceptance.md#2026-11-20-host-operation-ledger-容量保护单测)。
 
-**交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成；当前源码的 Release 静态门禁与 LGE AN10 4 KB test-signed 冷启动均通过。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
+**交付物：**A8 验收记录、能力/限制说明和用户/故障指南已完成；Release APK/AAB 可构建但未签名，不是分发候选包。**阶段状态：**A8.4 安全缓解与构建检查完成，A8.5 文档完成；2026-11-27 在 HEAD `ae407a8` 的隔离干净 worktree 按提交锁文件重建，APK/AAB 静态门禁与 LGE AN10 4 KB test-signed 冷启动均通过；66 个非无障碍 app 测试文件中 376 项通过、7 项 Mac Host/macOS UI 测试失败，详情见 [A8 验收记录](android-a8-acceptance.md#2026-11-27-committed-lock-release-build-4-kb-cold-start-and-app-test-status)。Android 分发验收仍等正式签名、16 KB 实机和 production Host/音乐端到端验证；Mac 测试失败也需复核；未通过的 npm/CLI/本地播放能力不进入发布说明或可操作入口。
 
 ## 5. UI 验收矩阵
 
