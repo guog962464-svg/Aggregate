@@ -626,8 +626,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 ## 2026-11-27 A3.6 V8 WebAssembly bounds-check smoke
 
-- 源码复核确认 Node 26.13.1 候选在关闭 trap-handler 后回退到 V8 显式 Wasm 边界检查；一台 Android 15 / 4 KB 真机上的隔离运行确认越界访问抛出 WebAssembly.RuntimeError。Node 在 Android 上的 POSIX 信号包装路径仍只有静态分析，尚未实机验证。
-- 这只关闭本次限定的 Wasm bounds-check 问题。Android signal chain、Node 全量干净构建与 attestation、NDK implicit archive 和许可闭包、法律审查、正式签名、产品集成及 16 KB runtime 仍未完成；A3.6/A4.7 不关闭。证据见 [A3.6 V8 review and 4 KB smoke](android-a3-runtime-research.md#2026-11-27-node-26131-v8-webassembly-bounds-check-review-and-4-kb-smoke-0617-asiashanghai)。
+- 源码与一台 Android 15 / 4 KB 真机上的隔离运行确认候选关闭 trap-handler 后使用显式 Wasm 边界检查，越界访问抛出 WebAssembly.RuntimeError。后续静态复核发现 Node 默认 POSIX 启动仍可能安装独立 SIGSEGV wrapper：它未保留原信号处理器；对照 pinned AOSP Android 15 `libsigchain` 源码，存在覆盖保存 debuggerd action 的风险。该风险尚未在 LGE vendor 系统上复现，不把它描述为设备运行结果。
+- **A3.6 信号链门槛保持未通过。**在 Android 启动路径跳过该 wrapper、重建并绑定新候选哈希后，还要在 Android arm64 上检查 `node::Start()` 前后的 SIGSEGV/SIGBUS action、验证显式 Wasm OOB，再在隔离可丢弃进程中检查原生故障及 debuggerd/tombstone。详见 [V8 trap-handler / Android signal-chain review](android-a3-node26.13.1-v8-trap-handler-review.md)。
+- 上述仅关闭本次限定的显式 Wasm bounds-check 逻辑/4 KB smoke 子项；Android signal chain、Node 全量干净构建与 attestation、NDK implicit archive 和许可闭包、法律审查、正式签名、产品集成及 16 KB runtime 仍未完成；A3.6/A4.7 不关闭。原 smoke 证据见 [A3.6 V8 review and 4 KB smoke](android-a3-runtime-research.md#2026-11-27-node-26131-v8-webassembly-bounds-check-review-and-4-kb-smoke-0617-asiashanghai)。
 
 ## 2026-11-27 A5 same-subnet Host retry remains blocked
 
