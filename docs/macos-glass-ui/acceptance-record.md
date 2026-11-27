@@ -2696,3 +2696,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - Profile 原生截图：17 为 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board17-v8-profile-1360x900-light-git.png`，SHA-256 `9a5bd292c4ee673c08581fd9e328ffa05455177ab03eef197c5eceeb72a890db`；21 为 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board21-v8-profile-1360x900-light-mcp.png`，SHA-256 `918304007c1530d3f75a24efbba9bccd0f31ceecbd3f295afee42c07fb035cb6`。两个 PNG 均为 `2944×2024 px`（DPR 2，包含窗口捕获边缘）。静态设计参考 `17-connection-home.svg` SHA-256 `2ed425573e016e411b49b5d1c518153bc1b7b762d697d2997144d081cff52c3c`，`21-mcp-home.svg` SHA-256 `9b8d6788fb09a9299df60c583739ffaa435ed581d24621528e96021878c88030`，均为 1360×900 viewBox；人工核对页面状态、主要区块和几何关系。静态 SVG 无动态材质，不能作为逐像素基准。
 - 隔离边界：`Ui6InspectionRuntime` 提供内存样例，`UI6_INCLUDE_INSPECTION_CAPABILITIES=false` 且限定 Git/MCP 范围；未连接真实 Host、账号、网络或外部 Runtime。关闭本轮 Profile 后，原 Google Chrome/GitLab 窗口 `w-54526` 已恢复前台。
 - 结论：补足 17 与 21 两个同态浅色原生 Profile 截图与可访问性状态核验。仍未覆盖深色、其他窗口尺寸、缩放状态和 54 张金样逐项审阅，DPR 1 基线差异未解决；UI-5.2 保持部分验收。
+
+<a id="2026-11-27-ui-5-2-01-工作台-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 01 工作台 Profile 原生复核
+
+- 入口：`cd app && flutter build macos --profile --no-pub --target=lib/preview/ui7_design_preview_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=false --dart-define=UI6_CAPABILITY_SCOPE=all`。Flutter 3.47.8 Profile 构建成功，窗口经 `agent-desktop` 回读为 `(76,49)`、`1360×900 pt`、DPR 2；进入“所有功能”并选中“两整数相加”后取 AX 和截图。
+- AX 状态：能力目录共 12 项，前 7 项顺序为「上一首、下一首、两个整数相加、停止播放、刷新播放状态、搜索歌曲、播放歌曲」；「两个整数相加」被选中，详情目标显示“运行位置：此设备”，权限为只读；参数字段为空，结果区为尚无调用。底部同一音乐样例迷你播放器显示“示例歌曲 / 示例歌手 / 0:12 / 3:20”。侧栏顺序为示例 Git CLI、示例 MCP、示例网易云音乐。
+- Profile 原生截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board01-v8-profile-1360x900-light-workspace.png`，SHA-256 `f44811fd27a87cdb5ea674c8cf373da5d1c4fe1f5683d65a1a1fa3907e696c93`；PNG 为 `2944×2024 px`（DPR 2，含窗口捕获边缘）。对照 v8 `01-workspace.svg` SHA-256 `dc89e1d4290353f87b3f77b7714321ac91696048497e222412682f7225295e29`，原尺寸栅格 PNG SHA-256 `3153edf72abfb9097eb1e98267987f760e9c2cd97ab3d5a9e90d597f2cbc0368`。人工核对同一选中项、首屏内容与主区/目录/详情/迷你播放器几何；SVG 只作结构参考，不是材质像素或动画 oracle。
+- 隔离边界：能力和音乐状态来自 `Ui6InspectionRuntime` 进程内样例；未运行能力，未连接真实 Host、账号、网络、音频或外部 Runtime。截图后关闭本轮 Profile，并确认 Google Chrome/GitLab 窗口 `w-54526` 恢复前台。
+- 结论：补足 v8 01 工作台一种浅色 1360×900pt 的原生 Profile 同态证据。深色、其他窗口尺寸与 DPR、54 张金样逐图审阅、DPR 1 基线差异及材质逐像素比较仍未完成；UI-5.2 保持部分验收。
