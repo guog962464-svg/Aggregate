@@ -2714,3 +2714,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - Profile 原生截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board03-v8-profile-1360x900-light-connections.png`，SHA-256 `90bd06cede590ffbe22085a71377ac9044664e84dedb273086210930384f2200`；PNG 为 `2944×2024 px`。设计参考 `03-connections.svg` SHA-256 `6c7108f99ad3af9b9bf5679bea727ea51bb7ef5913bd05250e529dcfd8e4ede4`，viewBox 为 1360×900；栅格参考 PNG SHA-256 `08bc5b1172482d438e394e62b27f0a6131b0c9aa57c616f1dbd71af458790f58`。人工对照选中连接卡、右侧详情/诊断、操作按钮与播放器几何及文案；不签收材质像素或动态帧。
 - 隔离边界：使用 `Ui6InspectionRuntime` 与 `Ui6InspectionHost` 内存样例；未执行连接测试、Git 命令、写入确认、网络、Host 或账号操作。截图后退出 Profile，Google Chrome/GitLab `w-54526` 恢复前台，Aggregate 进程不存在。
 - 结论：补足 v8 03 的浅色 1360×900pt 原生静态状态证据。未覆盖深色、其他尺寸/DPR、完整 17 个能力视图及 54 张金样逐项复核；UI-5.2 保持部分验收。
+
+<a id="2026-11-27-ui-5-2-04-活动页-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 04 活动页 Profile 原生复核
+
+- 入口：`cd app && flutter build macos --profile --no-pub --target=lib/preview/ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true --dart-define=UI6_SEED_ACTIVITY=true --dart-define=UI6_SEED_ACTIVITY_FILTER_STATES=true`。Flutter 3.47.8 构建成功；先进入音乐样例以建立 `MusicSession`，再进入活动页。窗口经 `agent-desktop` 回读为 `(76,49)`、`1360×900 pt`、DPR 2。
+- AX 确认活动列表含五种状态，顺序为超时、结果待确认、已取消、失败、成功；选中“查看 Git 状态 / 超时 / 2026-11-21 12:00:00”。详情显示来源示例 Git CLI、运行 ID `ui6-inspection-timed-out`，并明确“参数和结果正文未写入活动记录”；底部迷你播放器为“示例歌曲 / 示例歌手 / 0:12 / 3:20”。刷新、筛选、重新打开和复制诊断控件均可见；本轮未点击它们。
+- Profile 截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board04-v8-profile-1360x900-light-activity.png`，SHA-256 `9880a911bb41333377ab69abbb045cbf00193a615e5fd5af978661b0e0bc23c4`，PNG 为 `2944×2024 px`。设计参考 `04-activity.svg` SHA-256 `7c1de4cc548f5b33442d5ee842bf7f3b1e057e16a82beb360014efe7ac3e1138`，viewBox 为 1360×900；栅格 PNG SHA-256 `9a3291c81702825969b0a17c2d8f5cb6f7be16e3b6ec98e637e241a3effd20ef`。人工比对列表、筛选、选中项、详情区与播放器的状态/内容/几何；不据静态 SVG 验收材质像素或动态帧。
+- 隔离边界：五条记录由 `Ui6InspectionRuntime` 进程内种子生成；未访问真实活动库、Host、网络、账号或外部 Runtime，未触发真实命令。截图后关闭 Profile，Chrome/GitLab `w-54526` 恢复前台。
+- 结论：补足 v8 04 一种浅色、1360×900pt、超时详情样例态的原生 Profile 证据。深色、其他尺寸/DPR、动态控件与 54 张状态逐图审阅仍未完成；UI-5.2 保持部分验收。
