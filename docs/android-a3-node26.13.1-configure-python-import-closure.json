@@ -1,0 +1,4565 @@
+{
+  "buildInputs": {
+    "buildScriptSha256": "9b7717a0b2011e71f9d8e508dc066a3d15f205af30e4c112e2443a458ea95aaa",
+    "hostLinkerWrapperSha256": "fcd57a3f2bb9b31a6b1f968d527e70ad9561798b25fd9fd736da2b5312d008ad",
+    "hostOsMacPatchSha256": "380ec226a34c5ada3b887162b6b9cf7d273a41dc379a59636fd93fc79a317151",
+    "libuvHostOsPatchSha256": "fca28b83b1eac9ad652f8a2659844c58a15caf90e3032e7b115ae8b0680b19f4",
+    "ndkRevision": "30.0.16248370",
+    "nodePatchScriptSha256": "7ed1af8812f3c4e7cb083af0ec289cc0bf26dbf8598c280ce838e0939ca723c2",
+    "regularArchivePatchSha256": "76bb9de1dc93ee5f155f9f40b607c5a32d635c3e58feea6ac026e1d6bccafaa4",
+    "v8HostOsPatchSha256": "6f9566c3fb15c90a1a335134b9c4bb1b29074808822ef942ca65aabd5eae4ab6"
+  },
+  "candidate": {
+    "androidAbi": "arm64-v8a",
+    "androidApi": 24,
+    "candidateLibnodeSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
+    "configuredCandidateSourceTree": "Existing Node candidate source tree copied to a fresh temporary tree with build outputs omitted; the Android patch script was rerun idempotently before configure.",
+    "ndkRevision": "30.0.16248370",
+    "nodeVersion": "26.13.1",
+    "officialSourceArchiveSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6",
+    "priorBuildComparisonDocumentSha256": "08eceded3901334dfaf919d17ca52c85151ee3d74ec931c8b0a43ee9e6db523c"
+  },
+  "configureRun": {
+    "compiledObjectsFound": 0,
+    "configureArguments": [
+      "--dest-cpu=arm64",
+      "--dest-os=android",
+      "--v8-disable-temporal-support",
+      "--openssl-no-asm",
+      "--with-intl=small-icu",
+      "--cross-compiling",
+      "--shared"
+    ],
+    "configureLogContainsSuccess": "INFO: configure completed successfully",
+    "configureLogSha256": "9edf58d75862e844c1114692c6eb4ade4c44e5d3016bd55822c298de0c520975",
+    "entrypoint": "./android-configure <NDK 30 path> 24 arm64",
+    "freshOutputFiles": [
+      {
+        "path": "config.gypi",
+        "sha256": "58a478da7552978e601ad132764c9ad8e88a1396a5ed7f383b5c4af00c6b51a6",
+        "sizeBytes": 23129
+      },
+      {
+        "path": "config.mk",
+        "sha256": "9376fb6dcfed5a1fbc32214935fd7f9d90b45d899304ebe5894614650f6c7a41",
+        "sizeBytes": 290
+      },
+      {
+        "path": "config.status",
+        "sha256": "75636fa0e8ddee9b4eab11c5f09206b8b70d4ae295b3343498f16b0963b27cb9",
+        "sizeBytes": 165
+      },
+      {
+        "path": "out/Makefile",
+        "sha256": "7a8e4dd9e82f63c7e11cc37e84f3a9084006a6cdae86e4dce2c9d2b179327d4a",
+        "sizeBytes": 56271
+      },
+      {
+        "path": "out/libnode.target.mk",
+        "sha256": "d95562547d803504224e8c2d5441a32109b0af4b849dcddc4bc706d4ddaed665",
+        "sizeBytes": 13418
+      },
+      {
+        "path": "out/node.target.mk",
+        "sha256": "69203ff92593db9a9c93b38e49668c0d9eb2da90a4598fa6a0bb6b60298f4bcd",
+        "sizeBytes": 17775
+      }
+    ],
+    "outTreeFileCount": 143,
+    "outTreeManifestSha256": "1311acefedc67d5fe284507a342fbcfbb43142b6b725355918cfb9e7208068f3",
+    "outTreeTotalBytes": 1828671,
+    "processExitCode": 0,
+    "pythonProcesses": [
+      {
+        "argv": [
+          "./android-configure",
+          "$NDK_ROOT",
+          "24",
+          "arm64"
+        ],
+        "hashedModuleFileCount": 58,
+        "pythonVersion": "3.15.2 (v3.15.2:5e58eaad7c5, Oct 25 2026, 14:19:34)",
+        "sysPath": [
+          "nodeSourceRoot",
+          "pythonFramework/lib/python315.zip",
+          "pythonFramework/lib/python3.15",
+          "pythonFramework/lib/python3.15/lib-dynload",
+          "userSitePackages",
+          "pythonFramework/lib/python3.15/site-packages"
+        ]
+      },
+      {
+        "argv": [
+          "./configure",
+          "--dest-cpu=arm64",
+          "--dest-os=android",
+          "--v8-disable-temporal-support",
+          "--openssl-no-asm",
+          "--with-intl=small-icu",
+          "--cross-compiling",
+          "--shared"
+        ],
+        "hashedModuleFileCount": 179,
+        "pythonVersion": "3.15.2 (v3.15.2:5e58eaad7c5, Oct 25 2026, 14:19:34)",
+        "sysPath": [
+          "nodeSource/tools/v8_gypfiles",
+          "nodeSource/tools/gyp/pylib",
+          "tools",
+          "tools/configure.d",
+          "tools/gyp/pylib",
+          "nodeSourceRoot",
+          "pythonFramework/lib/python315.zip",
+          "pythonFramework/lib/python3.15",
+          "pythonFramework/lib/python3.15/lib-dynload",
+          "userSitePackages",
+          "pythonFramework/lib/python3.15/site-packages"
+        ]
+      },
+      {
+        "argv": [
+          "-c"
+        ],
+        "hashedModuleFileCount": 44,
+        "pythonVersion": "3.15.2 (v3.15.2:5e58eaad7c5, Oct 25 2026, 14:19:34)",
+        "sysPath": [
+          "",
+          "pythonFramework/lib/python315.zip",
+          "pythonFramework/lib/python3.15",
+          "pythonFramework/lib/python3.15/lib-dynload",
+          "userSitePackages",
+          "pythonFramework/lib/python3.15/site-packages"
+        ]
+      }
+    ]
+  },
+  "format": "aggregate-node-android-configure-python-import-closure/v1",
+  "host": {
+    "macOSVersion": "27.2.1",
+    "machine": "arm64",
+    "pythonExecutable": "pythonFramework/bin/python3.15",
+    "pythonExecutableSha256": "a35b08329e2ecf79a151f8954695d43d6f584ee8483c890295200eaad99c14b7",
+    "pythonFrameworkRoot": "/Library/Frameworks/Python.framework/Versions/3.15",
+    "pythonVersion": "3.15.2 (v3.15.2:5e58eaad7c5, Oct 25 2026, 14:19:34) [Clang 21.0.0 (clang-2100.1.1.101)]"
+  },
+  "imports": {
+    "files": [
+      {
+        "class": "node-source",
+        "modules": [
+          "android_configure"
+        ],
+        "path": "nodeSource/android_configure.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ]
+        ],
+        "sha256": "73665363df44a2adf81b6924b283cbbb69861c5ba38e12d783394c50cd9d2641",
+        "sizeBytes": 3076
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "configure"
+        ],
+        "path": "nodeSource/configure.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1237f185de628bf45d9e773168ec4dec6f77d4e776c89932bbf3a8f8dd9bf792",
+        "sizeBytes": 112387
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "nodedownload"
+        ],
+        "path": "nodeSource/tools/configure.d/nodedownload.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1d2e91f17af0c715cbf83c5ad8696208ce80666408555a2fae7de803e8214da2",
+        "sizeBytes": 4729
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "getmoduleversion"
+        ],
+        "path": "nodeSource/tools/getmoduleversion.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e11929df4fb1ca7b97ab869dbdc941ec3e4a30705dbb008c080d6ca9e97e8f3d",
+        "sizeBytes": 477
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "getnapibuildversion"
+        ],
+        "path": "nodeSource/tools/getnapibuildversion.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "294d8e56a5a258d6d9cf0826a7addcc2038746eaf14aea4169da364946e11f0c",
+        "sizeBytes": 505
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "0bc04e8561199ae81da51e7f45fdf271fd2d6025c3bda411d622d59f54ee3429",
+        "sizeBytes": 24614
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp.common"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/common.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "cbbc59947402ff878a121a6d95034e8b04016486154502beb9f9b84c4b2d8db8",
+        "sizeBytes": 25313
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp.generator"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/generator/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sizeBytes": 0
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp.generator.make"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/generator/make.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "09c3614ddb8a8819a726bcfff6abb6e37326dc941856413810b8c1716fcaf3dc",
+        "sizeBytes": 111759
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp.input"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/input.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4030bc4af92103bd4fa31412185e0a647871042a5f0b0705f30e9499f33f20c9",
+        "sizeBytes": 126437
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp.simple_copy"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/simple_copy.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ba81d910a604bc32b3b26a05a79a3d413bb9b1e6ac6adcaefc17b5d8c3d43ce1",
+        "sizeBytes": 1295
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp.xcode_emulation"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/gyp/xcode_emulation.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "153b5cdec70c1875efbfb391df371d9650e55effaf572fc500dba14289f7cf01",
+        "sizeBytes": 82454
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "packaging"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/packaging/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2a00427c7cfdbe084df43b72682531c9ec1f7b956b8d50ed89ab40d66e8287b4",
+        "sizeBytes": 501
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "packaging._structures"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/packaging/_structures.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ab77953666d62461bf4b40e2b7f4b7028f2a42acffe4f6135c500a0597b9cabe",
+        "sizeBytes": 1431
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "packaging.version"
+        ],
+        "path": "nodeSource/tools/gyp/pylib/packaging/version.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5e34412cd2b5ed430380b78ff141e7ab0898dd37528b4df1150511b5e736d750",
+        "sizeBytes": 16236
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "gyp_node"
+        ],
+        "path": "nodeSource/tools/gyp_node.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4293e35aa547ef439f3112e6f504ab534abdc851488f1bba4eb6222e3ca14a64",
+        "sizeBytes": 1699
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "utils"
+        ],
+        "path": "nodeSource/tools/utils.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "642abee051e8862c963a893eb1d87661e3121db3a72e225c5938bb9707a29384",
+        "sizeBytes": 3718
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "ForEachFormat"
+        ],
+        "path": "nodeSource/tools/v8_gypfiles/ForEachFormat.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4a4d7f88301094d525a5a1b2e390e13da58cb3b412b8572471ec11466691bcf4",
+        "sizeBytes": 234
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "ForEachReplace"
+        ],
+        "path": "nodeSource/tools/v8_gypfiles/ForEachReplace.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "b5d8156c5e8858b51598c4cde9e633867fdd72d305576221d24d404b13b32390",
+        "sizeBytes": 252
+      },
+      {
+        "class": "node-source",
+        "modules": [
+          "GN-scraper"
+        ],
+        "path": "nodeSource/tools/v8_gypfiles/GN-scraper.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "8fd482b9c3cfdcf9cf2891c1765eeae01bc8d421a1e7d6e494b4266c004e0752",
+        "sizeBytes": 886
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "__future__"
+        ],
+        "path": "pythonFramework/lib/python3.15/__future__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "981d4c398849f9ebcab72300d9c1fe288fd6d7f28957b3b3fa3a493a5836d95c",
+        "sizeBytes": 5218
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_collections_abc",
+          "collections.abc"
+        ],
+        "path": "pythonFramework/lib/python3.15/_collections_abc.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "db8e671d51f932adbb0cb303934a603232f04f359bb66b275cb577912d059d63",
+        "sizeBytes": 32543
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_compat_pickle"
+        ],
+        "path": "pythonFramework/lib/python3.15/_compat_pickle.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "c05d6fe432dccba616ee61e61356d1ca796121c905bc7cc876a14722ee9acd4b",
+        "sizeBytes": 8625
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_missing_stdlib_info"
+        ],
+        "path": "pythonFramework/lib/python3.15/_missing_stdlib_info.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3aa8d8da010665bf882d2f0f4f03796c88611c38dd6b8046a3d5b7ca7d965072",
+        "sizeBytes": 985
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_py_warnings"
+        ],
+        "path": "pythonFramework/lib/python3.15/_py_warnings.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "cee96b0b1d025884d88904b84f3c1982910693dcf84ef41920f7359435c86694",
+        "sizeBytes": 32810
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_sitebuiltins"
+        ],
+        "path": "pythonFramework/lib/python3.15/_sitebuiltins.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "90f81ebf8ec61dd3f79d642cbab7c6e92c6dfd746cbd121fb11f83cf5647d47c",
+        "sizeBytes": 3007
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_weakrefset"
+        ],
+        "path": "pythonFramework/lib/python3.15/_weakrefset.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2dd7cb459d654fe78b00c5c47ee8e786c037ee77763304603f5e976dd62cbf81",
+        "sizeBytes": 3962
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "abc"
+        ],
+        "path": "pythonFramework/lib/python3.15/abc.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e558702a95cdce3febd289da021715d2b92bc43995b8a1bc58dfa1c3d8010287",
+        "sizeBytes": 6538
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "annotationlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/annotationlib.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "6d56359e05c4995b23ee5a4c105702bad67925eae076f9950dd9522fe2fcfe76",
+        "sizeBytes": 45491
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "argparse"
+        ],
+        "path": "pythonFramework/lib/python3.15/argparse.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4857acfc44ee2339b2ae856df66fadda22cf7a437395d9c792db7bf66998e154",
+        "sizeBytes": 114307
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "ast"
+        ],
+        "path": "pythonFramework/lib/python3.15/ast.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "573d22fefb010c4f2b0d848d74f2599a414f3c767d34164876532c4ba0375b1f",
+        "sizeBytes": 26585
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "base64"
+        ],
+        "path": "pythonFramework/lib/python3.15/base64.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "93319e370390777e2b0a14dcb02b53d61e1bc83719c088e760eb5ab74eafa978",
+        "sizeBytes": 19446
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "bisect"
+        ],
+        "path": "pythonFramework/lib/python3.15/bisect.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f1cf7b85fc36b5da249813fc5ab97d9464f8cc1bc817f7146206fa2713e35999",
+        "sizeBytes": 3423
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "bz2"
+        ],
+        "path": "pythonFramework/lib/python3.15/bz2.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "368b9ee55f0b6dbfc81b15e1a17c51cccddb009389eae8e9a7acf2402ca4109a",
+        "sizeBytes": 11978
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "codecs"
+        ],
+        "path": "pythonFramework/lib/python3.15/codecs.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "718f39b3ea68fe934214d789c5bce3005fa828040b03a72d2f715fc5e2647b7e",
+        "sizeBytes": 36840
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "codeop"
+        ],
+        "path": "pythonFramework/lib/python3.15/codeop.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "439aee4fb7caea581d11fdcaeb5cba9fcf98ebc1407e72e95970defac16c3e04",
+        "sizeBytes": 5892
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "collections"
+        ],
+        "path": "pythonFramework/lib/python3.15/collections/__init__.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "7a9fbd993f9d43231729980689ec0860fd560690a3399571f216331c32e37abd",
+        "sizeBytes": 54918
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "compression"
+        ],
+        "path": "pythonFramework/lib/python3.15/compression/__init__.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sizeBytes": 0
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "compression._common"
+        ],
+        "path": "pythonFramework/lib/python3.15/compression/_common/__init__.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sizeBytes": 0
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "compression._common._streams"
+        ],
+        "path": "pythonFramework/lib/python3.15/compression/_common/_streams.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "8b8e943815c748d030e540a023400cb87fb13f75c2f0615a63ec42ef9f156c92",
+        "sizeBytes": 5670
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "compression.zstd"
+        ],
+        "path": "pythonFramework/lib/python3.15/compression/zstd/__init__.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4575544839872594ad5c9be284d062384dd5abdd0ddcc0258f6d66dac2c51d60",
+        "sizeBytes": 8769
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "compression.zstd._zstdfile"
+        ],
+        "path": "pythonFramework/lib/python3.15/compression/zstd/_zstdfile.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "84da3160987a2ee10f3b99813a68e70f16ec42a52612fef32581eb628aabc720",
+        "sizeBytes": 12325
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "contextlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/contextlib.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5338a9678ac868e56b08fb55200788521ff437e69d7e1ca3f712fc52972ede5a",
+        "sizeBytes": 29298
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "copy"
+        ],
+        "path": "pythonFramework/lib/python3.15/copy.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "120238f795fdb0364d7a29450ce5494b3e32dc7f6367e0076138f77663ecf086",
+        "sizeBytes": 9049
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "copyreg"
+        ],
+        "path": "pythonFramework/lib/python3.15/copyreg.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "6376eb5722806396f5842997ac18add369ea9ac3ff4fcfe1460c41a088cac425",
+        "sizeBytes": 7716
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "dataclasses"
+        ],
+        "path": "pythonFramework/lib/python3.15/dataclasses.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "85284c01e378472f3f431bb699c73cf1ccaaff10d122d72c3bd1b75b548dd813",
+        "sizeBytes": 71617
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "datetime"
+        ],
+        "path": "pythonFramework/lib/python3.15/datetime.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "742884b0c8e7dc69911858245db4f34d42e8ec0f769d580c570bd56032b0866c",
+        "sizeBytes": 331
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "dafca994154b9a6eb2b69d0e6e69e7596f397c2aec9bc62702259f4b39bd111a",
+        "sizeBytes": 1759
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email._encoded_words"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/_encoded_words.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a3c3de0ee744eef46a351d6b1eb21abd6c47aa1a534a52339bca4c6100c357d7",
+        "sizeBytes": 8542
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email._parseaddr"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/_parseaddr.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ab5eb0af4e62eec9fbbf23db36c35d85ecdae49e1a653604d4af286a7daaab13",
+        "sizeBytes": 18121
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email._policybase"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/_policybase.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2ec3466accb39a185a34af2d82022b3c0f7612a03dea4e79239187fa53e984fe",
+        "sizeBytes": 15955
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.base64mime"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/base64mime.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3a6e4cd4112fc25e2f0ee7fccc7526131b3bbecaeb1329312e3153bd247b95e5",
+        "sizeBytes": 3437
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.charset"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/charset.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ebdc7a46a5bc0afa759d338482bb9097ad3e8317970c3ed90b1a2548126fcdeb",
+        "sizeBytes": 18275
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.encoders"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/encoders.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "cc09bd113246fd8084162298948bdf64c3684ed2c8780f03814c7897ce32dca3",
+        "sizeBytes": 1773
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.errors"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/errors.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3982311f9f0d3e0057196df9ad104b7fabd92c565cf826cc3f22629a1775cc3f",
+        "sizeBytes": 3894
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.feedparser"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/feedparser.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2e68e34c6e956e94bdbd5077d75f1fff3e0d2423726914555f5695fc5cb2bacd",
+        "sizeBytes": 22864
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.header"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/header.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a816f57626b0555399407369c7484bd2e1f2a5884a425801ec65afa31822ba74",
+        "sizeBytes": 24423
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.iterators"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/iterators.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3fa231c15961a6cf3f61ef8362d9558417b23ab93ce43ab5fc66cb5847e5fcf2",
+        "sizeBytes": 2124
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.message"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/message.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a1ba779c997dd5cbef3266c26787416527a593b67b35d744fb1b8c49e8436289",
+        "sizeBytes": 48428
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.parser"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/parser.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5af6ef2ef9eb5aed6cae264ec2418ac466fe4316b41fd3f7ece4b149d521a1ee",
+        "sizeBytes": 4970
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.quoprimime"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/quoprimime.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "d5cadc6903aa0e977d44b46d21608ed7dc4ba99ab6d910a052826402bbda8e14",
+        "sizeBytes": 9866
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "email.utils"
+        ],
+        "path": "pythonFramework/lib/python3.15/email/utils.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5d11b79625396853b83605ab88e5cea3cb2ede41b4c2b53228b13e38fbb557ea",
+        "sizeBytes": 16602
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "encodings"
+        ],
+        "path": "pythonFramework/lib/python3.15/encodings/__init__.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "849a5e31effe6c647b6d526b92f2f063a67fac36e7750267f721f15e3693de08",
+        "sizeBytes": 5916
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "encodings.aliases"
+        ],
+        "path": "pythonFramework/lib/python3.15/encodings/aliases.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "b831396bf208ed70dd74498c582f2313d6a43f7e8e6cf01c163673a90ebdd310",
+        "sizeBytes": 18396
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "encodings.ascii"
+        ],
+        "path": "pythonFramework/lib/python3.15/encodings/ascii.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "578aa1173f7cc60dad2895071287fe6182bd14787b3fbf47a6c7983dfe3675e3",
+        "sizeBytes": 1248
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "encodings.utf_8"
+        ],
+        "path": "pythonFramework/lib/python3.15/encodings/utf_8.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ba0cac060269583523ca9506473a755203037c57d466a11aa89a30a5f6756f3d",
+        "sizeBytes": 1005
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "enum"
+        ],
+        "path": "pythonFramework/lib/python3.15/enum.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f77c8a439a02ea294f465310449b567e0ad82331ce9bec6ea284e9b4d87cca26",
+        "sizeBytes": 86648
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "filecmp"
+        ],
+        "path": "pythonFramework/lib/python3.15/filecmp.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f895d4defb64409dd31f860e8af58f3d2877bfc17aed4f93217d1417c791c28a",
+        "sizeBytes": 10652
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "fnmatch"
+        ],
+        "path": "pythonFramework/lib/python3.15/fnmatch.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ce582bc266922e4c682e2a85d72095124430a6bf58716c6f2537103480eae742",
+        "sizeBytes": 6791
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "functools"
+        ],
+        "path": "pythonFramework/lib/python3.15/functools.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "18bf706edd1852f95a3a1dffec05bf543a022a890e18f8079ca6c360c84d488b",
+        "sizeBytes": 44739
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "genericpath"
+        ],
+        "path": "pythonFramework/lib/python3.15/genericpath.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "fd97c8ac5b229e804bace69540cf8a62ea3e415be420b7d059c7fc4adbc9d5a1",
+        "sizeBytes": 6838
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "gettext"
+        ],
+        "path": "pythonFramework/lib/python3.15/gettext.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5883d7898b8b0600bdc817ac054b54612e19659485f6cb3ddfc42a912ad45ffd",
+        "sizeBytes": 21784
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "glob"
+        ],
+        "path": "pythonFramework/lib/python3.15/glob.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "0ab5c8629500211f0e09d2855afda42e6df5a02702e80afd7241427df2dc4360",
+        "sizeBytes": 20083
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "hashlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/hashlib.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "0378e0b986a11d171ee50ee6dc94913df574ae15a58b0c606c4b60599b58a4dd",
+        "sizeBytes": 11903
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "http"
+        ],
+        "path": "pythonFramework/lib/python3.15/http/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ff5f3d443b9174909975e1c9c67573cf2ffd5fbff9fc2e28529c0601cd17ed9b",
+        "sizeBytes": 9259
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "http.client"
+        ],
+        "path": "pythonFramework/lib/python3.15/http/client.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f4506633b5fe4fe06add63d9e32ab5e6e7cda84ec1df365da7faa5c1315fdbc5",
+        "sizeBytes": 60477
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "72b07de4133a7e39b2f6a7920465669aa04626f217e800779587bc0713fe002e",
+        "sizeBytes": 4767
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib._abc"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/_abc.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "c32797a975a00558737e9a8ae622d805100a88df6638022f7ea8be3021a0e634",
+        "sizeBytes": 714
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_frozen_importlib",
+          "importlib._bootstrap"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/_bootstrap.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "c9781100756b2d1f79e9cb52390c473fef9defdcbe44436226378b9fbf403465",
+        "sizeBytes": 57893
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_frozen_importlib_external",
+          "importlib._bootstrap_external"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/_bootstrap_external.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "12645e50f67f8743825adc03c129429c9e4ee99e7d679c2410e6d2fc045327ac",
+        "sizeBytes": 58607
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.abc"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/abc.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "622aedcc567d79c4d872272fa293d4ed95834bc61f12f2470f9f3e0565490de0",
+        "sizeBytes": 8172
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.machinery"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/machinery.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "611da9b9c777d56552ea5b1c5b8fc8dc68f57a124deaf9bdffaa65262a6c1d05",
+        "sizeBytes": 2213
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "253487d7bed74182b36b950bb7fb6867e1afe31adc9fd7d49705a181077736e4",
+        "sizeBytes": 38204
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata._collections"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/_collections.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "0b1021ce5177835af0bbf7cc881e7726d450894161d11822329a0ebe62bfa1c8",
+        "sizeBytes": 760
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata._context"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/_context.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f90c0a260f5ff19a908409c8e1f6f990470d8924346657257332e608e59efd29",
+        "sizeBytes": 2672
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata._functools"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/_functools.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "8553c3fb141917af095c08503b30eaa6c0fe81abf6f066b4a754ffc03ccbbb07",
+        "sizeBytes": 3537
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata._itertools"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/_itertools.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "9ccbe9f527c7010fc96302b82f68bae25af71915c69589629064d5cd66f2b3f1",
+        "sizeBytes": 5351
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata._meta"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/_meta.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "12d1f2889e641b35850df2b24365d0a7a56ed75dc279a74a5b555fe9a19cd41e",
+        "sizeBytes": 1765
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.metadata._typing"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/metadata/_typing.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1102a186c120cff49af859de3c8f9f682ef6acd38e430a298c0d62e691bc1435",
+        "sizeBytes": 367
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "importlib.util"
+        ],
+        "path": "pythonFramework/lib/python3.15/importlib/util.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "7bdfadad42664ba169ffac8160765673cd79937f74324f4664de8d820c35b863",
+        "sizeBytes": 11414
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "io"
+        ],
+        "path": "pythonFramework/lib/python3.15/io.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1b75584d4efcc612dc0db2ae98619408276585a106f0544879edb5e25b55430a",
+        "sizeBytes": 4736
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "ipaddress"
+        ],
+        "path": "pythonFramework/lib/python3.15/ipaddress.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "66bccdc23e14565cab738aadc3a1b16e8657668229aacb89dcc3e32172e0b3d9",
+        "sizeBytes": 81703
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "json"
+        ],
+        "path": "pythonFramework/lib/python3.15/json/__init__.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4cc35eb04b789ce4890cffa944829c946e4c5dd032aaa6dc01f53449b250985a",
+        "sizeBytes": 15446
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "json.decoder"
+        ],
+        "path": "pythonFramework/lib/python3.15/json/decoder.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "6a06aad3e054e600b06959e93fe1713f88a4665348ee4a82f553ae5104038329",
+        "sizeBytes": 13584
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "json.encoder"
+        ],
+        "path": "pythonFramework/lib/python3.15/json/encoder.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2d3ded41ec1251b6334ee2d8a53b3fbb22a05202b7085636c749f99a38d00902",
+        "sizeBytes": 17116
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "json.scanner"
+        ],
+        "path": "pythonFramework/lib/python3.15/json/scanner.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "b8ca5e22d0f8d6a9ade7574f3f7c9dfa9eea2f848a6c0123f96eb454112f854a",
+        "sizeBytes": 2482
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "keyword"
+        ],
+        "path": "pythonFramework/lib/python3.15/keyword.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "c19283cfc26952b350c9dfb75c51bd7d2670c08587dd19b8c63f71179e836ea2",
+        "sizeBytes": 1085
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_bisect"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_bisect.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "dc945a05aa442bee9ec2b20f98a27f9a388b13379c2990175c4b270591e50e09",
+        "sizeBytes": 137792
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_blake2"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_blake2.cpython-315-darwin.so",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3e51370113abd0edd61042a12d89ac50b1777aafdac352b0adccaa8bdcbbc9da",
+        "sizeBytes": 206784
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_bz2"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_bz2.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3b7bc653a2997a7eedcdbe8aa47eb05d29a00ff329ac112c7e13d8e3a5db607e",
+        "sizeBytes": 140384
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_hashlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_hashlib.cpython-315-darwin.so",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f68c1f059c15d75e949b6eb9f014384f8294bb49f04bf8d090c6828ba658015f",
+        "sizeBytes": 221824
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_json"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_json.cpython-315-darwin.so",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4848421110c326976341a92f8b5d2dc0c9bde2c7efb9c776cc232cce45ec5d22",
+        "sizeBytes": 192480
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_lzma"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_lzma.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "14569c4a10e20be9a83d545f5b9b998b64484553e4b7e6e4f91303a4d3cbbbe3",
+        "sizeBytes": 537088
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_math_integer",
+          "math.integer"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_math_integer.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "356903b4380307712a7f73452dd5e7393604ad9127ced8d3bacd9b580bd4f2e5",
+        "sizeBytes": 138624
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_pickle"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_pickle.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "824050df1953f5d2392f9145e4259b5cb7fdc571aa5ae7d62cc64d28a955e687",
+        "sizeBytes": 358400
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_posixsubprocess"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_posixsubprocess.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "c594df5448ae66c8747c3efff499f608ce841d6ee22eb3558a24e9657e748c67",
+        "sizeBytes": 139232
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_random"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_random.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e40f5abe18edcdde1b777d59550ccb5cc5aa83d14929f11375813fa42f6fd9bb",
+        "sizeBytes": 139040
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_scproxy"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_scproxy.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e87eaa62467fee16855162c7c6612eafc41c8384c2e780d50630a94e2e2650e2",
+        "sizeBytes": 137536
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_socket"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_socket.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "bbd9ba5e1ac787792f5c9af42a7e2d86575138428277a500cc80e544dec062ef",
+        "sizeBytes": 290432
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_ssl"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_ssl.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "df9893155ad349118cae894d7e1d355e475481575d39a5c293f1775fea3a77f9",
+        "sizeBytes": 505584
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_struct"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_struct.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "d3160ecf0d30a159cff9bb2b902db63e451854e3220691f3bb3c16b20b612c87",
+        "sizeBytes": 219808
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "_zstd"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_zstd.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "d8e3081bfdabe0ea69d7fdb0e2a30aaa77e565708f4af40c1251c1e82ea08f7a",
+        "sizeBytes": 201968
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "array"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/array.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "b90e0e685728ea56e998f31917cd362f2a6dcb01adf7910c823a71734f549fb8",
+        "sizeBytes": 237888
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "binascii"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/binascii.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "52209df9bbccd0a32f728ba003a74a896515a1db901fae74a2863fb51bf14164",
+        "sizeBytes": 209168
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "fcntl"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/fcntl.cpython-315-darwin.so",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a4956521cd3a68ef33008cf2de4bbb78bda4bb92ea02646e725a22a335d3b5ed",
+        "sizeBytes": 138144
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "grp"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/grp.cpython-315-darwin.so",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1dcd4e492b8a0b173ef54290b952e62b460399674f1e345e5cfddb5300684a3b",
+        "sizeBytes": 138064
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "math"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/math.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "dcc84ba829007aadf6aff41ec029c48024426db80eb0f322460267e24ad37bb6",
+        "sizeBytes": 230816
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "select"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/select.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "88156b2f82ec9f762e896a47fd16334df899f3dffefbaf0f710b645b2e80f091",
+        "sizeBytes": 178048
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "zlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/lib-dynload/zlib.cpython-315-darwin.so",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5c37cc5e5db5280965a39ce99cff22943c3065b3079f5c15d0608420520b0a1d",
+        "sizeBytes": 198800
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "linecache"
+        ],
+        "path": "pythonFramework/lib/python3.15/linecache.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "62debf7c0f2cb51e0cab874af033aa53518cdb76ea16b39499a79d1db8eddfbf",
+        "sizeBytes": 10737
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "locale"
+        ],
+        "path": "pythonFramework/lib/python3.15/locale.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "95fcbdfe551ee96930369721788a07b3f707e8bf381a69345dd3c31fb925475e",
+        "sizeBytes": 87460
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "lzma"
+        ],
+        "path": "pythonFramework/lib/python3.15/lzma.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "b01a78a04c6a9ba6c645758cace78ed53a53871ea3ff88744e23f6263613d507",
+        "sizeBytes": 13426
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "multiprocessing"
+        ],
+        "path": "pythonFramework/lib/python3.15/multiprocessing/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a5a42976033c7d63ee2740acceef949a3582dcb0e0442845f9717e1be771c68b",
+        "sizeBytes": 916
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "multiprocessing.context"
+        ],
+        "path": "pythonFramework/lib/python3.15/multiprocessing/context.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e49d49a7807ecd0957c195acee3f066fb276c807a79ea65d2027456fb1a3bd92",
+        "sizeBytes": 13246
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "multiprocessing.process"
+        ],
+        "path": "pythonFramework/lib/python3.15/multiprocessing/process.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "9cad9791c8ff9aba8f688c4e7ad9f620384231f8d0dfcc88dbc1e4c947ec28bc",
+        "sizeBytes": 12233
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "multiprocessing.reduction"
+        ],
+        "path": "pythonFramework/lib/python3.15/multiprocessing/reduction.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "7cd1652f08e4685f380f2484ad3441d363fe58fe5b328f50050fb0f281a535f9",
+        "sizeBytes": 9630
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "ntpath"
+        ],
+        "path": "pythonFramework/lib/python3.15/ntpath.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "dd1dd79af505c9324fe455fa766a48c0fa7d91ac6e08d99f4e73a375c2fa6c83",
+        "sizeBytes": 31962
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "operator"
+        ],
+        "path": "pythonFramework/lib/python3.15/operator.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a9f9910965c31f841caad0447ee47299ac539a371422aefe200c86c60f3b4697",
+        "sizeBytes": 11158
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "os"
+        ],
+        "path": "pythonFramework/lib/python3.15/os.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ccbdcea8e4a40a2dd8b1c205a025e45dcf39c9cd269ddc194d9518640aad70af",
+        "sizeBytes": 42893
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "pathlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/pathlib/__init__.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "5aa0c2ede47406f28d38c02c82fc573270fd6fab2744c1d9b3ff9b28d8f0d8fd",
+        "sizeBytes": 54405
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "pathlib._os"
+        ],
+        "path": "pythonFramework/lib/python3.15/pathlib/_os.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "dd6ab97af30fe5e1714c5a0e23404324821404abe352a50bb83a465e2284c53b",
+        "sizeBytes": 9517
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "pickle"
+        ],
+        "path": "pythonFramework/lib/python3.15/pickle.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "d4c01f696a404b966032c0ac3589b54f226ab76c447d127a4598e51737cbe1b7",
+        "sizeBytes": 70866
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "platform"
+        ],
+        "path": "pythonFramework/lib/python3.15/platform.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "6eea3ae748e936f61d298469b77086c07c0387117809f4864dfd48002648463c",
+        "sizeBytes": 46704
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "os.path",
+          "posixpath"
+        ],
+        "path": "pythonFramework/lib/python3.15/posixpath.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "fb385aa49b97674cd1eb2b71b2407874e4a3579e3bcb7b31e0cb89a00de373df",
+        "sizeBytes": 19088
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "pprint"
+        ],
+        "path": "pythonFramework/lib/python3.15/pprint.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "fa053614940cf0021d688cf30bef1cdf6bd571887340931cea98b0ab3824f0fa",
+        "sizeBytes": 35949
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "quopri"
+        ],
+        "path": "pythonFramework/lib/python3.15/quopri.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "744ae69027b180e7155b8be70ea2bb264c2358f7ea4e3af986a215d4c743390f",
+        "sizeBytes": 7159
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "random"
+        ],
+        "path": "pythonFramework/lib/python3.15/random.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "6a0439b76a1050cd86d2bcf7e121f9ddd57be389d37fd9ba87ee4f86b4330e52",
+        "sizeBytes": 37551
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "re"
+        ],
+        "path": "pythonFramework/lib/python3.15/re/__init__.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4884aa60c267974b51e372b547bf13dc0315d7d75fe1f2a9ebd01ddfed24a14b",
+        "sizeBytes": 18511
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "re._casefix"
+        ],
+        "path": "pythonFramework/lib/python3.15/re/_casefix.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1b12d9136f23db6c3f6f26053fefc15ca964b886838c7b9c1fabf8d2efc1e5c8",
+        "sizeBytes": 5444
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "re._compiler"
+        ],
+        "path": "pythonFramework/lib/python3.15/re/_compiler.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "170f7ff5432b78cdcd2227a01cf8e42110d2184426ebea7395177e9fe7b088ea",
+        "sizeBytes": 26861
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "re._constants"
+        ],
+        "path": "pythonFramework/lib/python3.15/re/_constants.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "42253b3181b81aad6c46392f44a0ab26dcfa31feea411296f43ba16616a1ab0b",
+        "sizeBytes": 6036
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "re._parser"
+        ],
+        "path": "pythonFramework/lib/python3.15/re/_parser.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a3ae4b5e8442b39d82ac611a11bec6a7367fb47a95b3b5bceaee6e7e9c39883a",
+        "sizeBytes": 40327
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "reprlib"
+        ],
+        "path": "pythonFramework/lib/python3.15/reprlib.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "b04872e10d76252e44eae50cc785eb0fe478491afc4d7f0825a93f82b2eaba5f",
+        "sizeBytes": 8064
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "selectors"
+        ],
+        "path": "pythonFramework/lib/python3.15/selectors.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "4b8a60cfbb619d080f87dffe1578372e56e8c0ac826f043224a154cf7b77606d",
+        "sizeBytes": 19457
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "shlex"
+        ],
+        "path": "pythonFramework/lib/python3.15/shlex.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "aeda1c54188363d907654a19d338e5961416ebec2e2f506afab19be61ada8120",
+        "sizeBytes": 13756
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "shutil"
+        ],
+        "path": "pythonFramework/lib/python3.15/shutil.py",
+        "processes": [
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "98e55751e02872a25e35cc39798accffc272044d7551643a26fcc731470adc44",
+        "sizeBytes": 60689
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "signal"
+        ],
+        "path": "pythonFramework/lib/python3.15/signal.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "0363c964c90ac0b3e515de5749205e6e6454051a1211058375d84d91eab6071a",
+        "sizeBytes": 2495
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "site"
+        ],
+        "path": "pythonFramework/lib/python3.15/site.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "687f54712e5df424dccdb399cd2b73be88507797801db7ee38f17dd79de62666",
+        "sizeBytes": 42915
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "socket"
+        ],
+        "path": "pythonFramework/lib/python3.15/socket.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "463dc951122dff8a378862e32461d020a457ef4d80697b3396adca80c87f9e79",
+        "sizeBytes": 37785
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "ssl"
+        ],
+        "path": "pythonFramework/lib/python3.15/ssl.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "1cdaab9afcc26ea540d12444916421357a1fc55da4ad784cb0cd01352bb09db8",
+        "sizeBytes": 54714
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "stat"
+        ],
+        "path": "pythonFramework/lib/python3.15/stat.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f83dea46958993c0e4b2a83b7d635d79a60c999b15805649195337eff774ba18",
+        "sizeBytes": 6753
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "string"
+        ],
+        "path": "pythonFramework/lib/python3.15/string/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "76fa02fa29f029cf1b0a25ab635fe0d5b859c6981d8be9832636fd8d2a565ba5",
+        "sizeBytes": 12659
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "struct"
+        ],
+        "path": "pythonFramework/lib/python3.15/struct.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "50c14e55f94957804c1e45e975fedbe8e86f7e1dbb745b150370ff681155370a",
+        "sizeBytes": 285
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "subprocess"
+        ],
+        "path": "pythonFramework/lib/python3.15/subprocess.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "18b3f766e34f183a7bef17975238feb1fa35defaa694877a5a86b1b2e63984c2",
+        "sizeBytes": 100433
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "tarfile"
+        ],
+        "path": "pythonFramework/lib/python3.15/tarfile.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2e54eb6be69fe49c5019d186398990ea07562d89d35de9410696544853ba7543",
+        "sizeBytes": 122539
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "tempfile"
+        ],
+        "path": "pythonFramework/lib/python3.15/tempfile.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "27d249cdc722ec6a574bd068962a09d50d52976b24a02e59aa4b4033f3d04d07",
+        "sizeBytes": 36141
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "textwrap"
+        ],
+        "path": "pythonFramework/lib/python3.15/textwrap.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "7f05d89c983f5aa8cefcff707a9cc561ed60c51fc8a68e2e3ab61cc6dfa84544",
+        "sizeBytes": 19382
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "threading"
+        ],
+        "path": "pythonFramework/lib/python3.15/threading.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "634407c1b2d16f0204359fca189e2b6d1c1c3fc0a4e863a27f03ad09f102c725",
+        "sizeBytes": 60838
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "token"
+        ],
+        "path": "pythonFramework/lib/python3.15/token.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "61d4270311099c8a0c0b2e45fb363fd1c4e347a720bcc25f682b63dc28c34234",
+        "sizeBytes": 2584
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "tokenize"
+        ],
+        "path": "pythonFramework/lib/python3.15/tokenize.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "3253bdce27b31649cc31c04e9bae6a74f5a59abd89077153f405aa77c792dfcb",
+        "sizeBytes": 23365
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "traceback"
+        ],
+        "path": "pythonFramework/lib/python3.15/traceback.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "ce0e28269675d3558725ef6ef1b0e32d7060d70318d566fa25926f5a67877528",
+        "sizeBytes": 84371
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "types"
+        ],
+        "path": "pythonFramework/lib/python3.15/types.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "9343ae6ff9c982d6b0a017f1a2750a11f478dfe2298ab3d73e51f98b88f4ca58",
+        "sizeBytes": 11744
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "typing"
+        ],
+        "path": "pythonFramework/lib/python3.15/typing.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "c94d236aeec98160988fb70a04a724b09920bf16d4da4e241dbb4b8c092a63f9",
+        "sizeBytes": 139193
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "urllib"
+        ],
+        "path": "pythonFramework/lib/python3.15/urllib/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sizeBytes": 0
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "urllib.error"
+        ],
+        "path": "pythonFramework/lib/python3.15/urllib/error.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "90d331bf4720fb538b121fd3893dece0067e0483ec3c820f2dde6d9027f8f924",
+        "sizeBytes": 2410
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "urllib.parse"
+        ],
+        "path": "pythonFramework/lib/python3.15/urllib/parse.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "178fce6bb504b9e544ac22015778554234c63865d94374913f988bb731e0d825",
+        "sizeBytes": 51074
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "urllib.request"
+        ],
+        "path": "pythonFramework/lib/python3.15/urllib/request.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "f6d78eb641e716a8e9ca0093d0969547089d36e67e2bae9022c55b4f99788c02",
+        "sizeBytes": 77559
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "urllib.response"
+        ],
+        "path": "pythonFramework/lib/python3.15/urllib/response.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "7e6c3b6d7a95f0d74f5968f51a87adae8a51bf42390cdfec98c7a99203e7bb76",
+        "sizeBytes": 2361
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "warnings"
+        ],
+        "path": "pythonFramework/lib/python3.15/warnings.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "142225786de63c593f1c9abdacf5b4fc0b05dd847f6bed0ebb4b4aa2d4d93b02",
+        "sizeBytes": 1966
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "weakref"
+        ],
+        "path": "pythonFramework/lib/python3.15/weakref.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2526b21ff722b7ad6defd5df81bf32889e3f08c52cdc11cc24d6cdae9e5417b3",
+        "sizeBytes": 17893
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "zipfile"
+        ],
+        "path": "pythonFramework/lib/python3.15/zipfile/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "a09d7de3e46e0fa3cc8d57e4edfb175b80c3bb01cc555fc4945098af908ad6bc",
+        "sizeBytes": 92318
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "zipfile._path"
+        ],
+        "path": "pythonFramework/lib/python3.15/zipfile/_path/__init__.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "fee319dde0f23390fa0fb549dffd88f186cd227ec1cab91e213325c88ac8e630",
+        "sizeBytes": 12002
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "zipfile._path._functools"
+        ],
+        "path": "pythonFramework/lib/python3.15/zipfile/_path/_functools.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "2d9aeab7a6eed08e1bc7101b0ec36cd3b7dbe5a779fc835d1b583349d8532eff",
+        "sizeBytes": 789
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "zipfile._path.glob"
+        ],
+        "path": "pythonFramework/lib/python3.15/zipfile/_path/glob.py",
+        "processes": [
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "d84da9b313d40544a87657a0ea2f9cf719416fd3c3450724c5d2dde5b475d2b5",
+        "sizeBytes": 3314
+      },
+      {
+        "class": "python-framework",
+        "modules": [
+          "zipimport"
+        ],
+        "path": "pythonFramework/lib/python3.15/zipimport.py",
+        "processes": [
+          [
+            "-c"
+          ],
+          [
+            "./android-configure",
+            "$NDK_ROOT",
+            "24",
+            "arm64"
+          ],
+          [
+            "./configure",
+            "--dest-cpu=arm64",
+            "--dest-os=android",
+            "--v8-disable-temporal-support",
+            "--openssl-no-asm",
+            "--with-intl=small-icu",
+            "--cross-compiling",
+            "--shared"
+          ]
+        ],
+        "sha256": "fca4f4acd029d97c62d65eef4ae2c518216293209bf4174bf31ca2d832e0c5ce",
+        "sizeBytes": 34684
+      }
+    ],
+    "nodeSourceFiles": 20,
+    "pythonFrameworkFiles": 155,
+    "uniqueHashedModuleFiles": 175
+  },
+  "limits": [
+    "This is an observed configure-time import and native-linkage inventory on macOS, not a clean source build or a Node binary build attestation.",
+    "The capture instrument was supplied through PYTHONPATH and excluded from imported-file hashes; user site-packages were present on sys.path but no imported module origin resolved there.",
+    "Python extension linkage is captured through direct install names and recursively resolved Python.framework dylibs. OS-provided dependencies are named but not content-hashed.",
+    "No compiler build was run; no Node objects, archives or binary were produced. No APK, phone, Host, or Keychain was operated.",
+    "This does not close Node/NDK/Gradle/Android platform licensing or SBOM, legal review, V8 signal-chain review, product integration/signing, or 16 KB physical-device execution. A3.6 and A4.7 remain open."
+  ],
+  "nativeRuntimeClosure": {
+    "externalSystemDependencies": [
+      "macOSSystem/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+      "macOSSystem/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration",
+      "macOSSystem/usr/lib/libSystem.B.dylib",
+      "macOSSystem/usr/lib/libbz2.1.0.dylib",
+      "macOSSystem/usr/lib/libz.1.dylib"
+    ],
+    "files": [
+      {
+        "dependencies": [
+          "pythonFramework/Python",
+          "macOSSystem/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-framework-dylib",
+        "path": "pythonFramework/Python",
+        "sha256": "020aed5774ec6ccba7b4522e32c9d11958e6ef83e89030890d04053e443fc2e4",
+        "sizeBytes": 16263616
+      },
+      {
+        "dependencies": [
+          "pythonFramework/Python",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-interpreter",
+        "path": "pythonFramework/bin/python3.15",
+        "sha256": "a35b08329e2ecf79a151f8954695d43d6f584ee8483c890295200eaad99c14b7",
+        "sizeBytes": 135696
+      },
+      {
+        "dependencies": [
+          "pythonFramework/lib/libcrypto.3.dylib",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-framework-dylib",
+        "path": "pythonFramework/lib/libcrypto.3.dylib",
+        "sha256": "47affe1427e26c2dbfcba5b9f4a3ca0e2b2daf13a94099cf3a9a7c57d86ff9b7",
+        "sizeBytes": 10773888
+      },
+      {
+        "dependencies": [
+          "pythonFramework/lib/libcrypto.3.dylib",
+          "pythonFramework/lib/libssl.3.dylib",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-framework-dylib",
+        "path": "pythonFramework/lib/libssl.3.dylib",
+        "sha256": "094e30cb83b0d2cf720a56168f53bd734e7818022ba12a0128168193af4b80aa",
+        "sizeBytes": 2113680
+      },
+      {
+        "dependencies": [
+          "pythonFramework/lib/libzstd.1.dylib",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-framework-dylib",
+        "path": "pythonFramework/lib/libzstd.1.5.7.dylib",
+        "sha256": "e37fa2febdd29978c22d2b6acc67cb28b9518c377ac8ac11d687e3bf2f36f8c7",
+        "sizeBytes": 4325776
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_bisect.cpython-315-darwin.so",
+        "sha256": "dc945a05aa442bee9ec2b20f98a27f9a388b13379c2990175c4b270591e50e09",
+        "sizeBytes": 137792
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_blake2.cpython-315-darwin.so",
+        "sha256": "3e51370113abd0edd61042a12d89ac50b1777aafdac352b0adccaa8bdcbbc9da",
+        "sizeBytes": 206784
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib",
+          "macOSSystem/usr/lib/libbz2.1.0.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_bz2.cpython-315-darwin.so",
+        "sha256": "3b7bc653a2997a7eedcdbe8aa47eb05d29a00ff329ac112c7e13d8e3a5db607e",
+        "sizeBytes": 140384
+      },
+      {
+        "dependencies": [
+          "pythonFramework/lib/libcrypto.3.dylib",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_hashlib.cpython-315-darwin.so",
+        "sha256": "f68c1f059c15d75e949b6eb9f014384f8294bb49f04bf8d090c6828ba658015f",
+        "sizeBytes": 221824
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_json.cpython-315-darwin.so",
+        "sha256": "4848421110c326976341a92f8b5d2dc0c9bde2c7efb9c776cc232cce45ec5d22",
+        "sizeBytes": 192480
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_lzma.cpython-315-darwin.so",
+        "sha256": "14569c4a10e20be9a83d545f5b9b998b64484553e4b7e6e4f91303a4d3cbbbe3",
+        "sizeBytes": 537088
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_math_integer.cpython-315-darwin.so",
+        "sha256": "356903b4380307712a7f73452dd5e7393604ad9127ced8d3bacd9b580bd4f2e5",
+        "sizeBytes": 138624
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_pickle.cpython-315-darwin.so",
+        "sha256": "824050df1953f5d2392f9145e4259b5cb7fdc571aa5ae7d62cc64d28a955e687",
+        "sizeBytes": 358400
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_posixsubprocess.cpython-315-darwin.so",
+        "sha256": "c594df5448ae66c8747c3efff499f608ce841d6ee22eb3558a24e9657e748c67",
+        "sizeBytes": 139232
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_random.cpython-315-darwin.so",
+        "sha256": "e40f5abe18edcdde1b777d59550ccb5cc5aa83d14929f11375813fa42f6fd9bb",
+        "sizeBytes": 139040
+      },
+      {
+        "dependencies": [
+          "macOSSystem/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+          "macOSSystem/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_scproxy.cpython-315-darwin.so",
+        "sha256": "e87eaa62467fee16855162c7c6612eafc41c8384c2e780d50630a94e2e2650e2",
+        "sizeBytes": 137536
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_socket.cpython-315-darwin.so",
+        "sha256": "bbd9ba5e1ac787792f5c9af42a7e2d86575138428277a500cc80e544dec062ef",
+        "sizeBytes": 290432
+      },
+      {
+        "dependencies": [
+          "pythonFramework/lib/libcrypto.3.dylib",
+          "pythonFramework/lib/libssl.3.dylib",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_ssl.cpython-315-darwin.so",
+        "sha256": "df9893155ad349118cae894d7e1d355e475481575d39a5c293f1775fea3a77f9",
+        "sizeBytes": 505584
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_struct.cpython-315-darwin.so",
+        "sha256": "d3160ecf0d30a159cff9bb2b902db63e451854e3220691f3bb3c16b20b612c87",
+        "sizeBytes": 219808
+      },
+      {
+        "dependencies": [
+          "pythonFramework/lib/libzstd.1.dylib",
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/_zstd.cpython-315-darwin.so",
+        "sha256": "d8e3081bfdabe0ea69d7fdb0e2a30aaa77e565708f4af40c1251c1e82ea08f7a",
+        "sizeBytes": 201968
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/array.cpython-315-darwin.so",
+        "sha256": "b90e0e685728ea56e998f31917cd362f2a6dcb01adf7910c823a71734f549fb8",
+        "sizeBytes": 237888
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib",
+          "macOSSystem/usr/lib/libz.1.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/binascii.cpython-315-darwin.so",
+        "sha256": "52209df9bbccd0a32f728ba003a74a896515a1db901fae74a2863fb51bf14164",
+        "sizeBytes": 209168
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/fcntl.cpython-315-darwin.so",
+        "sha256": "a4956521cd3a68ef33008cf2de4bbb78bda4bb92ea02646e725a22a335d3b5ed",
+        "sizeBytes": 138144
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/grp.cpython-315-darwin.so",
+        "sha256": "1dcd4e492b8a0b173ef54290b952e62b460399674f1e345e5cfddb5300684a3b",
+        "sizeBytes": 138064
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/math.cpython-315-darwin.so",
+        "sha256": "dcc84ba829007aadf6aff41ec029c48024426db80eb0f322460267e24ad37bb6",
+        "sizeBytes": 230816
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/select.cpython-315-darwin.so",
+        "sha256": "88156b2f82ec9f762e896a47fd16334df899f3dffefbaf0f710b645b2e80f091",
+        "sizeBytes": 178048
+      },
+      {
+        "dependencies": [
+          "macOSSystem/usr/lib/libSystem.B.dylib",
+          "macOSSystem/usr/lib/libz.1.dylib"
+        ],
+        "kind": "python-extension",
+        "path": "pythonFramework/lib/python3.15/lib-dynload/zlib.cpython-315-darwin.so",
+        "sha256": "5c37cc5e5db5280965a39ce99cff22943c3065b3079f5c15d0608420520b0a1d",
+        "sizeBytes": 198800
+      }
+    ],
+    "importedPythonExtensionCount": 22,
+    "inspectedNativeFileCount": 27,
+    "method": "otool -L on the interpreter and all imported native extensions; recursively inspected existing dependencies within the Python 3.15 framework. macOS system libraries are recorded by install name but not hashed because they are OS-provided.",
+    "unresolvedAtDependencies": []
+  },
+  "observedDate": "2026-11-27"
+}

@@ -658,8 +658,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 ## 2026-11-27 A3.6 Python 生成器运行闭包补验
 
 - 在 Node 26.13.1 当前候选的 GYP 动作树中重放 6 个 Python 生成动作，41 个输出都与现有构建树逐字节一致；Python 3.15.2 运行路径及 189 个已加载 Python 文件已哈希归档。
-- 同时发现 49 个实际加载的 Node Python 源文件和 3 个直接调用的脚本不在 GYP 动作声明输入中。它们已进入单独的动态导入清单，但当前构建规则仍不会因这些文件变化而自动重建生成结果；configure 的 Python 运行闭包也未补验。
-- 该结果缩小了 A3.6 的观察缺口，不等同于干净重建或 source-to-binary attestation。许可/法律审查、正式签名、产品集成及 16 KB 真机仍开放；详见 [A3.6 Python import/replay 记录](android-a3-runtime-research.md)与[哈希清单](android-a3-node26.13.1-python-import-closure.json)。
+- 同时发现 49 个实际加载的 Node Python 源文件和 3 个直接调用的脚本不在 GYP 动作声明输入中。它们已进入单独的动态导入清单，但当前构建规则仍不会因这些文件变化而自动重建生成结果。
+- 后续在隔离源码副本中成功重放 Android `configure`，哈希记录了 20 个 Node Python 源文件、155 个 Python framework 文件、22 个 Python 原生扩展及递归解析到的 27 个原生文件。详见 [configure Python import/native linkage 记录](android-a3-node26.13.1-configure-python-import-closure.json) 和 [A3.6 runtime 研究](android-a3-runtime-research.md)。
+- 以上都是观察到的输入/依赖及配置输出清单，不是 Node 干净编译或构建 attestation。Node/NDK/Gradle/Android 平台许可与 SBOM/法律审查、V8 signal-chain 审查、正式签名、产品集成及 16 KB 真机仍开放；A3.6/A4.7 不关闭。
 
 ## 2026-11-27 A3.6 Node 26.13.1 clean source rebuild
 
