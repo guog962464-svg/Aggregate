@@ -2761,3 +2761,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 背景差异：设计参考背景仍显示播放中及两条搜索结果；切换账号的既有流程先调用 `MusicPlayerPage._beforeAccountChange()` 停止播放，再由 `_accountChanged()` 重置会话并清空查询和结果，因此本次等待态截图的背景显示“尚未播放”且无结果。该状态差异由既有账号切换流程产生；未更改业务行为。
 - 隔离与前台：`Ui6InspectionRuntime.logoutAccount()` 只将预览账号状态置为 signed-out；`beginAccountLogin()` 传入 `preview-login` 后，`openTerminal()` 只创建进程内 session/固定输出，没有启动 shell/进程、真实账号、网络或连接端。按用户最新许可短暂将 Profile 置于前台；截图后用 `agent-desktop close-app` 优雅退出并验证 Aggregate 进程消失，随后把 ChatGPT 窗口 `w-50832` 恢复为聚焦。用户未发送草稿未作任何编辑。未运行测试。
 - 结论：补足 v8 14 浅色 1360×900pt 等待扫码画板的原生 Profile 证据。取消扫码路径未获本轮验收，真实二维码/账号登录、其他主题/尺寸/DPR、材质像素与动态帧及 54 张金样逐项审阅仍未完成；UI-5.2 继续部分验收。
+
+<a id="2026-11-27-ui-5-2-15-设置快捷键-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 15 设置快捷键 Profile 原生复核
+
+- 入口：复用 Flutter 3.47.8、`ui6_inspection_main.dart` 浅色 Profile，构建参数为 `PREVIEW_APPEARANCE=light`、`UI6_MUSIC_PREVIEW=false`、`UI6_INCLUDE_INSPECTION_CAPABILITIES=true`。在设置页滚动到快捷键分区；窗口 bounds `(76,49)`、`1360×900 pt`、DPR 2，页面无迷你播放器，与画板状态一致。
+- 实窗截图可见“快捷键 / 名称与组合键沿用当前快捷键配置”，分组“导航 / 运行”，四行“所有功能 `⌘ K`、设置 `⌘ ,`、返回 `Esc`、运行当前功能 `⌘ ↵`”。与 `15-settings-shortcuts.svg` 的分组、文案、行序及主要相对几何人工对照一致；当前辅助树摘要呈现所有功能、返回和运行项，但没有呈现“设置 / ⌘ ,”行，该行只由截图确认，原生 AX 可读性仍待核实。静态画板不作为材质像素或动画验收依据。
+- Profile 前台截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board15-v8-profile-1360x900-light-shortcuts-foreground.png`，SHA-256 `3371eb113556e5911ecc76b34a5e297b2c781ad8aa3401a4eadbfa83e374ad3e`，PNG `2944×2024 px`（scale factor 2，包含窗口采集边缘）。参考 SVG SHA-256 `c85f753f21a5d752c5852993ca235a1ccf3fc6a4edc879282d2af33175648fce`，viewBox 1360×900；同尺寸栅格参考 `/tmp/board15-v8-reference.png` SHA-256 `792228b9449573b24dae226e07d9394d1a34af22776ee1a0ce677b414b53576f`。截图前后主窗口 `is_focused=true`；采集后 `agent-desktop close-app` 验证 Profile 进程退出，并将 ChatGPT 窗口 `w-50832` 恢复聚焦。
+- 结论：补足 v8 15 浅色 1360×900pt 快捷键页的一种原生 Profile 静态状态。仅完成布局、内容和分组对照；原生 AX 行可读性、其他主题/尺寸/DPR、材质像素、按钮动效及 54 张金样逐图审阅仍未完成。未运行测试；UI-5.2 继续部分验收。
