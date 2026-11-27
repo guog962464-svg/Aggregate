@@ -654,3 +654,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 当前提交在隔离 worktree 完成 arm64 Release APK/AAB 重建、Bundletool `PAGE_ALIGNMENT_16K`、APK zipalign 与全部 arm64 ELF `PT_LOAD` 16 KB 静态检查；`flutter analyze` 通过。排除无障碍后的测试套件为 386 通过、4 个 macOS UI 失败，不记为全绿。
 - 同一源码的隔离 `.integration` Release 在 LGE AN10 / Android 15 / 4 KB 页真机冷启动通过；验后只卸载隔离包，普通 Aggregate 包保留，手机回到 Launcher。
 - 这不代表 16 KB 系统实机运行或正式签名通过；A3.6/A4 运行时来源与产品接入、A5 production Host、A6 真实音乐闭环、正式签名及 16 KB 真机仍是开放门槛。无障碍/TalkBack 依用户决定排除。工件、哈希和验证边界见 [A8 当前 HEAD `85863f3` 验收记录](android-a8-acceptance.md)。
+
+## 2026-11-27 A3.6 Python 生成器运行闭包补验
+
+- 在 Node 26.13.1 当前候选的 GYP 动作树中重放 6 个 Python 生成动作，41 个输出都与现有构建树逐字节一致；Python 3.15.2 运行路径及 189 个已加载 Python 文件已哈希归档。
+- 同时发现 49 个实际加载的 Node Python 源文件和 3 个直接调用的脚本不在 GYP 动作声明输入中。它们已进入单独的动态导入清单，但当前构建规则仍不会因这些文件变化而自动重建生成结果；configure 的 Python 运行闭包也未补验。
+- 该结果缩小了 A3.6 的观察缺口，不等同于干净重建或 source-to-binary attestation。许可/法律审查、正式签名、产品集成及 16 KB 真机仍开放；详见 [A3.6 Python import/replay 记录](android-a3-runtime-research.md)与[哈希清单](android-a3-node26.13.1-python-import-closure.json)。
