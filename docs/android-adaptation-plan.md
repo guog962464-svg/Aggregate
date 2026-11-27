@@ -648,3 +648,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 为 5 个 Node/V8/ICU host 生成器补齐了当前构建树的链接输入与编译头文件映射：13 个静态库的 2,154 个归档成员全部按序与对象字节匹配；连同 19 个直接对象，共覆盖 2,173 个对象。完整 `-M` 图包含 3,016,847 个依赖关系与 6,457 个唯一哈希输入。详见 [host generator source/link map](android-a3-node26.13.1-generator-tool-source-map.json) 和 [A3.6 研究记录](android-a3-runtime-research.md#2026-11-27-node-26131-host-generator-executable-source-and-link-map)。
 - **supersedes：**前一生成源码 map 中“五个 native generator 可执行文件的 compile/link closure 未映射”这一未完成项。现在这些工具的现存二进制、GYP 链接输入、对象及编译器依赖均已哈希；没有 clean relink/rebuild，因而仍无二进制构建 attestation。Python 解释器动态导入、法务/许可、产品集成与签名以及 16 KB 真机门槛仍开放，A3.6/A4.7 不关闭。
+
+## 2026-11-27 A8 当前 HEAD `85863f3` Release 与 4 KB 真机复验
+
+- 当前提交在隔离 worktree 完成 arm64 Release APK/AAB 重建、Bundletool `PAGE_ALIGNMENT_16K`、APK zipalign 与全部 arm64 ELF `PT_LOAD` 16 KB 静态检查；`flutter analyze` 通过。排除无障碍后的测试套件为 386 通过、4 个 macOS UI 失败，不记为全绿。
+- 同一源码的隔离 `.integration` Release 在 LGE AN10 / Android 15 / 4 KB 页真机冷启动通过；验后只卸载隔离包，普通 Aggregate 包保留，手机回到 Launcher。
+- 这不代表 16 KB 系统实机运行或正式签名通过；A3.6/A4 运行时来源与产品接入、A5 production Host、A6 真实音乐闭环、正式签名及 16 KB 真机仍是开放门槛。无障碍/TalkBack 依用户决定排除。工件、哈希和验证边界见 [A8 当前 HEAD `85863f3` 验收记录](android-a8-acceptance.md)。
