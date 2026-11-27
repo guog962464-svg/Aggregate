@@ -1,0 +1,75 @@
+{
+  "format": "aggregate-node-clean-rebuild-comparison-v1",
+  "observedAt": "2026-11-27",
+  "candidate": {
+    "nodeVersion": "26.13.1",
+    "androidAbi": "arm64-v8a",
+    "androidApi": 24,
+    "ndkRevision": "30.0.16248370",
+    "sourceArchiveSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6"
+  },
+  "build": {
+    "cleanSourceRoot": "/private/tmp/aggregate-node26.13.1-clean-rebuild-repro-2026-11-27/source/node-v26.13.1",
+    "priorCandidateSourceRoot": "/private/tmp/aggregate-node-26.13.1-build-2026-11-27/node-v26.13.1",
+    "result": "Release make completed with exit code 0 from a fresh official source archive extraction and the recorded Android/macOS host patches.",
+    "tools": {
+      "buildScriptSha256": "9b7717a0b2011e71f9d8e508dc066a3d15f205af30e4c112e2443a458ea95aaa",
+      "nodePatchScriptSha256": "7ed1af8812f3c4e7cb083af0ec289cc0bf26dbf8598c280ce838e0939ca723c2",
+      "hostOsMacPatchSha256": "380ec226a34c5ada3b887162b6b9cf7d273a41dc379a59636fd93fc79a317151",
+      "libuvHostOsPatchSha256": "fca28b83b1eac9ad652f8a2659844c58a15caf90e3032e7b115ae8b0680b19f4",
+      "v8HostOsPatchSha256": "6f9566c3fb15c90a1a335134b9c4bb1b29074808822ef942ca65aabd5eae4ab6",
+      "regularArchivePatchSha256": "76bb9de1dc93ee5f155f9f40b607c5a32d635c3e58feea6ac026e1d6bccafaa4",
+      "hostLinkerWrapperSha256": "fcd57a3f2bb9b31a6b1f968d527e70ad9561798b25fd9fd736da2b5312d008ad"
+    },
+    "unstrippedLibnode": {
+      "priorSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
+      "priorSizeBytes": 117870048,
+      "cleanRebuildSha256": "532738bf7920337c6b411724bd63c297d07809036b8b805793d69c5447fa3510",
+      "cleanRebuildSizeBytes": 117869984,
+      "loadSegmentCount": 3,
+      "minimumLoadAlignmentBytes": 16384
+    },
+    "strippedLibnode": {
+      "priorSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
+      "cleanRebuildSha256": "0a4a28abfd503fd3355ee16278b33cee9ee17986a2cdb1580834aada6fe2a92f",
+      "bothSizeBytes": 87724464,
+      "stripCommand": "NDK 30 llvm-strip --strip-unneeded"
+    }
+  },
+  "comparison": {
+    "generatedSourceMap": "android-a3-node26.13.1-generated-source-map.json",
+    "generatedSourcePaths": {
+      "count": 518,
+      "missing": 0,
+      "sha256Mismatches": 0
+    },
+    "generatedTargetObjects": {
+      "entries": 517,
+      "exactObjectMatches": 365,
+      "differentObjectHashes": 152,
+      "missing": 0,
+      "allDifferentObjectsUnder": "out/Release/obj.target/v8_initializers/gen/torque-generated",
+      "eachDifferentPairContainsItsBuildRootOnce": true
+    },
+    "buildRootEvidence": {
+      "priorRootByteLength": 66,
+      "cleanRootByteLength": 86,
+      "configGypiByteIdentical": true,
+      "v8InitializersTargetMakefileByteIdentical": true,
+      "patchedSourceTreeDifferencesOutsideOutAndBuild": 0
+    }
+  },
+  "disposition": {
+    "sourceToBinaryByteReproduction": false,
+    "a3_6Closed": false,
+    "reason": "All mapped generated source outputs match, but 152 Torque target objects contain the respective absolute build root and the stripped libnode hashes differ. The path change is a strong explanation for the object deltas, but the ELF object layout was not normalized and the clean build has not been byte-reproduced at the original source path.",
+    "remainingGates": [
+      "Complete Node, NDK, Gradle and Android platform license/SBOM closure and legal review",
+      "Build provenance/attestation and exact source-to-binary reproduction",
+      "V8 trap-handler and Android signal-chain security review",
+      "Aggregate product integration and formal signing",
+      "16 KB page-size physical-device execution"
+    ],
+    "deviceOperation": "No device or Host was operated during this comparison."
+  }
+}

@@ -660,3 +660,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 在 Node 26.13.1 当前候选的 GYP 动作树中重放 6 个 Python 生成动作，41 个输出都与现有构建树逐字节一致；Python 3.15.2 运行路径及 189 个已加载 Python 文件已哈希归档。
 - 同时发现 49 个实际加载的 Node Python 源文件和 3 个直接调用的脚本不在 GYP 动作声明输入中。它们已进入单独的动态导入清单，但当前构建规则仍不会因这些文件变化而自动重建生成结果；configure 的 Python 运行闭包也未补验。
 - 该结果缩小了 A3.6 的观察缺口，不等同于干净重建或 source-to-binary attestation。许可/法律审查、正式签名、产品集成及 16 KB 真机仍开放；详见 [A3.6 Python import/replay 记录](android-a3-runtime-research.md)与[哈希清单](android-a3-node26.13.1-python-import-closure.json)。
+
+## 2026-11-27 A3.6 Node 26.13.1 clean source rebuild
+
+- 从 PGP 核验过的 Node 26.13.1 官方归档重新构建成功；518 个生成源码路径全部匹配，517 个目标对象中 365 个字节完全一致，152 个 V8 Torque 对象含各自绝对构建根并出现哈希差异。新旧 strip 后 `libnode.so` 大小相同但 SHA 不同，所以本次不记为可复现构建通过。
+- **A3.6/A4.7 继续开放。**准确工件哈希、工具/补丁指纹、差异范围及限制见[clean rebuild 比较报告](android-a3-node26.13.1-clean-rebuild-comparison.json)和[Node 26.13.1 运行时研究](android-a3-runtime-research.md#2026-11-27-node-26131-clean-source-rebuild-comparison)。下一步仍需解决 Node/NDK/SBOM 与法律闭包、构建 attestation、V8 signal-chain 复核、产品集成和正式签名；16 KB 真机缺失继续记为外部发布门槛。
