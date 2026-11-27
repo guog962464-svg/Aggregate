@@ -1,0 +1,8 @@
+diff --git a/src/node.cc b/src/node.cc
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -87 +87,3 @@
+-#if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
++// Android relies on explicit Wasm bounds checks and leaves SIGSEGV chaining to ART.
++#if defined(__APPLE__) || defined(_WIN32) || \
++    (defined(__linux__) && !defined(__ANDROID__))

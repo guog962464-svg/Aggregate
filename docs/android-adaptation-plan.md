@@ -630,6 +630,12 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - **A3.6 信号链门槛保持未通过。**在 Android 启动路径跳过该 wrapper、重建并绑定新候选哈希后，还要在 Android arm64 上检查 `node::Start()` 前后的 SIGSEGV/SIGBUS action、验证显式 Wasm OOB，再在隔离可丢弃进程中检查原生故障及 debuggerd/tombstone。详见 [V8 trap-handler / Android signal-chain review](android-a3-node26.13.1-v8-trap-handler-review.md)。
 - 上述仅关闭本次限定的显式 Wasm bounds-check 逻辑/4 KB smoke 子项；Android signal chain、Node 全量干净构建与 attestation、NDK implicit archive 和许可闭包、法律审查、正式签名、产品集成及 16 KB runtime 仍未完成；A3.6/A4.7 不关闭。原 smoke 证据见 [A3.6 V8 review and 4 KB smoke](android-a3-runtime-research.md#2026-11-27-node-26131-v8-webassembly-bounds-check-review-and-4-kb-smoke-0617-asiashanghai)。
 
+## 2026-11-27 A3.6 Android signal-wrapper guard candidate
+
+- 已新增 Node 26 Android guard patch，避免 V8 trap-handler 关闭时编入 Node 的 `TrapWebAssemblyOrContinue` SIGSEGV wrapper；在现有 NDK 30 arm64/API 24 构建树上定向重编译 `node.o` 并重链 `libnode.so`。新 `node.o` SHA-256 `07e9f98f31bfc718c57abd29f30b80b8e3a220b2ab8e0a93a30e618e508ca7c5`，unstripped DSO `bd565d18e9b9533d8350a0527e64277ba95ab398982c1e4679cb77fb12f3f65b`，APK 中 stripped DSO `53f042c7497b29b9fd15c5b413c30ace01a97dc3b26c1b6caebc7630dd4aff13`；新调试 APK SHA-256 `56e8eedeef4193fde0b6b754f8bda3d5c7676c484de67011a772548fdf401490`，16 KB `PT_LOAD` 与 APK ZIP 静态对齐、Debug v2 签名检查通过。
+- 该 APK 尚未在真机运行：ADB 当前没有设备或 mDNS 项，已知手机地址 `192.168.8.7` 不可达，`adb connect` 报 `Host is down`。因此没有取得新候选的 `node::Start()` 前后 SIGSEGV/SIGBUS action、Wasm 越界或原生故障/tombstone 运行结果；补丁及二进制仍属静态验证，**A3.6 信号链门槛保持未通过**。需在 4 KB Android 真机恢复 ADB 后完成上述单次隔离验收；16 KB 实机仍是单独门槛。
+- 完整补丁、增量构建限制及产物绑定见 [V8 trap-handler / Android signal-chain review](android-a3-node26.13.1-v8-trap-handler-review.md#android-guard-implementation-and-incremental-candidate-relink)。整库重新配置副本曾因 Apple `ld` 不支持 `--start-group/--end-group` 而失败，成功产物来自原构建树的定向对象重编译与重链，不代表 clean build 或 attestation。
+
 ## 2026-11-27 A5 same-subnet Host retry remains blocked
 
 - 复核 Mac 192.168.8.4/24 与手机 192.168.8.7/24 及 wlan0 直连路由后，构建并启动当前工作树的 Debug Host UI。安全字段凭据提交后，现有 TLS 登录钥匙串提示在尝试“允许”和“始终允许”后仍未消失。没有观察到 Host listener、WSS、NSD、配对或只读 RPC；提示随后关闭，持久 ACL 状态未知。
