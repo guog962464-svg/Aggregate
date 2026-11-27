@@ -715,3 +715,8 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - Mac `en0=192.168.8.4`，macOS reports no AirPort association；LGE AN10 `wlan0=192.168.31.136/24`，手机默认路由经 `192.168.31.1`，Mac 到手机地址的路由经 `192.168.8.1`。手机到 Mac 的 ICMP 为 `0/1`。本轮状态仍不满足当前同网段/直连验收前置。
 - Mac `47321–47323` 无 TCP listener。未启动生产 Host、触发 Keychain、配对/RPC 或切换手机前台；随后 ADB 设备连接消失。此前隔离 LAN fixture 结果仍只适用于其当时网络。A5.4/A5.5 保持开放。
+
+## 2026-11-27 A8 current committed UI Release static rebuild
+
+- At HEAD `22d23ff7531a2165e0a05613c6d569be5fdeb4fe`, shared Flutter `PageFrame`/Settings code passed `flutter analyze --no-pub lib`; arm64 product APK/AAB Release builds succeeded. APK SHA-256 `00baf783215d9ff1424fd92d8dbab7d564045264d496a4cef2b6888de69052d6`; AAB SHA-256 `79d5c07c3a93786436e1b66d7a01f044b5032cb1fd2fcb11023b0a135042b07b`.
+- ZIP CRC, APK 16 KB zipalign, all 42 ELF LOAD segments across APK/AAB, official Bundletool 1.18.3 validation and `PAGE_ALIGNMENT_16K` passed. Both product artifacts remain unsigned and contain no Node/npm runtime. `--no-pub` left the modified root lockfile untouched. ADB was disconnected, so there was no new 4 KB device run; no 16 KB physical runtime or formal signing result. A8 static Release gate is current; signed distribution and 16 KB device runtime remain open. See [A8 current Flutter shared UI Release rebuild](android-a8-acceptance.md#2026-11-27-a8-current-flutter-shared-ui-release-rebuild-head-22d23ff).
