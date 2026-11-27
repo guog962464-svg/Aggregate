@@ -794,9 +794,9 @@ final class AndroidHostPairingClient {
         AndroidHostPairingFailure.invitationExpired,
         rpcCode: -32010,
       ),
-      -32011 || -32002 => AndroidHostPairingException(
+      -32011 => AndroidHostPairingException(
         AndroidHostPairingFailure.approvalRequired,
-        rpcCode: code,
+        rpcCode: -32011,
       ),
       -32012 => const AndroidHostPairingException(
         AndroidHostPairingFailure.alreadyPaired,

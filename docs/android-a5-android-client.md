@@ -803,3 +803,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **网络状态：**Mac `en0=192.168.8.4/24`，Android LGE AN10 `wlan0=192.168.8.7/24`；Mac 路由到手机选择 `en0`，手机路由到 Mac 选择 `wlan0` 直连。Mac→手机和手机→Mac ping 均 2/2、0% 丢包。设备仍为 Android 15/API 35/arm64，`PAGE_SIZE=4096`。
 - **当前服务与设备状态：**Mac `47321/47322/47323` 无 listener，ADB reverse 为空；手机 `topResumedActivity` 为 HONOR Launcher，没有 Aggregate、NodeProbe 或 testnode 前台进程。本轮只读网络复核，没有启动 App/Host、触发 Keychain 请求或切换手机前台。
 - **结论与边界：**当前双向网络前置条件通过。最近一次同签名配置的 Host 重试仍停在现有 Keychain `active-identity` 读取/授权路径，授权完成结果未知；本轮没有新的签名、Keychain 或 Host 代码变化，因此不重复触发同一弹窗。未产生 WSS、Bonjour/NSD、邀请、配对、`host.hello` 或 `connection.list` 新证据；A5.4/A5.5 继续开放。
+
+## 2026-11-27 A5 Android 真机直连 LAN WSS 与隔离 Host setup 验收（08:06 Asia/Shanghai）
+
+- **入口与网络：**执行 `python3 tool/run_android_host_setup_e2e.py --device AEMN022427001360 --host-address 192.168.8.4`。协调器先确认 `192.168.8.4` 是当前 Mac `en0` 私有 IPv4，再启动只绑定此地址的临时 WSS TCP 代理；Android 邀请端点直接指向该 LAN 地址。ADB reverse 只用于 loopback drop-control 控制端口，WSS 数据没有通过 USB reverse。真机为 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页。
+- **通过范围：**`Mac LAN WSS fixture: PASS`、`Android physical Keystore + WSS setup flow: PASS`。Mac 侧运行 Flutter macOS 集成夹具，使用临时 TLS 测试证书和实际 CryptoKit 签名校验；隔离 `HOME` 与临时 `MacRuntime` 数据包含假 Node/npm/mpv/CLI。Android 使用独立 `.integration` 包、真实 Android Keystore、WSS 证书 pin、设备签名、配对审批及 setup 流程；随后覆盖 Host 连接/能力查询、受权限控制的 CLI/MCP 调用、stdio/HTTP MCP 与 TUI 终端交互、断链与自动重连。夹具 secret 不出现在两侧日志或连接索引中。
+- **协议错误映射修复：**客户端此前把 Host `-32011 approval required` 与 `-32002 unauthorized` 都报告成“等待审批”，导致真实拒绝可能被当作审批等待重试。现在仅 `-32011` 映射为 `approvalRequired`，`-32002` 保持为 `pairingRejected`；新增定向回归，Android 配对客户端单测 12 项通过。
+- **验证与清理：**`flutter analyze --no-pub` 对本次涉及的 Dart 源码无问题；真机 runner 成功退出。复核时 ADB reverse 列表为空，`.integration` 包路径无输出，手机回到 HONOR Launcher，`PAGE_SIZE=4096`；Mac 没有本夹具监听端口。没有切换到 testnode，也没有启动生产 Aggregate Host。
+- **不覆盖与阶段状态：**这里的“LAN WSS”是手机通过真实 Wi‑Fi 到达临时代理，再转发到 loopback 上的隔离 Host fixture；没有验证生产 Host 的 `active-identity` Keychain 读取/启动、生产端口 `47321`、Bonjour/Android NSD、生产证书/grant、真实账号或任意用户数据。此验收也没有 16 KB 真机。A5 的隔离真机联调子项通过，A5.4/A5.5 生产 Host、发现、配对与业务验收仍开放。

@@ -11,8 +11,12 @@ final class AndroidHostTcpTunnelProxy {
 
   static Future<AndroidHostTcpTunnelProxy> start({
     required int targetPort,
+    InternetAddress? bindAddress,
   }) async {
-    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await ServerSocket.bind(
+      bindAddress ?? InternetAddress.loopbackIPv4,
+      0,
+    );
     final proxy = AndroidHostTcpTunnelProxy._(server, targetPort);
     server.listen(proxy._accept);
     return proxy;

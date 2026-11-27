@@ -142,6 +142,33 @@ void main() {
     },
   );
 
+  test(
+    'maps pairing approval and unauthorized RPC errors distinctly',
+    () async {
+      for (final (code, failure) in [
+        (-32011, AndroidHostPairingFailure.approvalRequired),
+        (-32002, AndroidHostPairingFailure.pairingRejected),
+      ]) {
+        final connector = _FakeConnector(pairingErrorCode: code);
+        final client = AndroidHostPairingClient(
+          identity: _FakeIdentity(),
+          connector: connector,
+          now: () => _now,
+        );
+
+        await expectLater(
+          client.requestPairing(invitation: _invitation(), displayName: '测试手机'),
+          throwsA(
+            isA<AndroidHostPairingException>()
+                .having((error) => error.failure, 'failure', failure)
+                .having((error) => error.rpcCode, 'rpcCode', code),
+          ),
+        );
+        expect(connector.sockets.single.isClosed, isTrue);
+      }
+    },
+  );
+
   test('rotates the device identity through the identity port', () async {
     final identity = _FakeIdentity();
     final client = AndroidHostPairingClient(identity: identity);
@@ -411,6 +438,9 @@ final class _FakeIdentity implements AndroidHostIdentityPort {
 }
 
 final class _FakeConnector implements AndroidHostSocketConnector {
+  _FakeConnector({this.pairingErrorCode});
+
+  final int? pairingErrorCode;
   final sockets = <_FakeSocket>[];
 
   @override
@@ -421,6 +451,9 @@ final class _FakeConnector implements AndroidHostSocketConnector {
     expect(uri.host, '192.168.1.20');
     expect(certificateSha256, _pin);
     final socket = _FakeSocket();
+    if (pairingErrorCode != null) {
+      socket.rpcErrorCodes['host.pair.request'] = pairingErrorCode!;
+    }
     sockets.add(socket);
     return socket;
   }
@@ -461,6 +494,11 @@ final class _FakeSocket implements AndroidHostSocket {
       switch (method) {
         case 'host.pair.request':
           _deviceId = params['deviceId']! as String;
+          final pairingErrorCode = rpcErrorCodes['host.pair.request'];
+          if (pairingErrorCode != null) {
+            _respondError(id, pairingErrorCode);
+            return;
+          }
           _respond(id, {
             'state': 'pendingApproval',
             'deviceId': _deviceId,

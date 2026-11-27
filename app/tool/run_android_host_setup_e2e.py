@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -127,9 +128,32 @@ def main() -> int:
         default=os.environ.get("ANDROID_SERIAL"),
         help="ADB serial of a connected physical Android device",
     )
+    parser.add_argument(
+        "--host-address",
+        help=(
+            "optional current en0 private IPv4 address; when set, the WSS "
+            "fixture is reached directly over Wi-Fi instead of ADB reverse"
+        ),
+    )
     options = parser.parse_args()
     if not options.device:
         parser.error("pass --device or set ANDROID_SERIAL")
+
+    host_address: ipaddress.IPv4Address | None = None
+    if options.host_address:
+        try:
+            host_address = ipaddress.IPv4Address(options.host_address)
+        except ipaddress.AddressValueError:
+            parser.error("--host-address must be an IPv4 address")
+        if not host_address.is_private or host_address.is_loopback:
+            parser.error("--host-address must be a private LAN IPv4 address")
+        current_en0 = subprocess.run(
+            ["ipconfig", "getifaddr", "en0"],
+            capture_output=True,
+            text=True,
+        )
+        if current_en0.returncode or current_en0.stdout.strip() != str(host_address):
+            parser.error("--host-address must match the current en0 IPv4 address")
 
     device = options.device
     devices = run(["adb", "devices", "-l"], capture_output=True, text=True).stdout
@@ -204,6 +228,14 @@ def main() -> int:
                     "-d",
                     "macos",
                     f"--dart-define=aggregateHostSetupFixtureDirectory={fixture_dir}",
+                    *(
+                        [
+                            "--dart-define=aggregateHostSetupFixtureTcpBindAddress="
+                            + str(host_address)
+                        ]
+                        if host_address is not None
+                        else []
+                    ),
                 ],
                 cwd=APP_DIR,
                 env=mac_environment,
@@ -230,7 +262,7 @@ def main() -> int:
                 )
             time.sleep(0.25)
         else:
-            raise TimeoutError("timed out waiting for the loopback invitation")
+            raise TimeoutError("timed out waiting for the isolated Host invitation")
 
         payload = invitation_file.read_text()
         invitation = json.loads(payload)
@@ -245,7 +277,12 @@ def main() -> int:
         parsed = urlsplit(endpoint or "")
         if (
             parsed.scheme != "wss"
-            or parsed.hostname not in {"127.0.0.1", "localhost"}
+            or parsed.hostname
+            not in (
+                {"127.0.0.1", "localhost"}
+                if host_address is None
+                else {str(host_address)}
+            )
             or parsed.path != "/host"
             or parsed.port is None
             or parsed.query
@@ -253,7 +290,7 @@ def main() -> int:
             or parsed.username
             or parsed.password
         ):
-            raise RuntimeError("fixture invitation is not loopback-only WSS")
+            raise RuntimeError("fixture invitation has an unexpected WSS endpoint")
         if (
             mcp_invitation.get("hostId") != invitation.get("hostId")
             or mcp_invitation.get("certificateSha256")
@@ -276,7 +313,13 @@ def main() -> int:
             capture_output=True,
             text=True,
         ).stdout
-        reverse_ports = [reverse_port, drop_control_port]
+        # WSS traverses the explicit private en0 address in LAN mode. The
+        # control port remains loopback-only and is the only reverse mapping.
+        reverse_ports = (
+            [drop_control_port]
+            if host_address is not None
+            else [reverse_port, drop_control_port]
+        )
         if any(
             re.search(rf"(?:^|\s)tcp:{port}(?:\s|$)", existing_reverse)
             for port in reverse_ports
@@ -345,9 +388,18 @@ def main() -> int:
             if fixture_secret in log_path.read_text(errors="replace"):
                 raise RuntimeError("fixture private key appeared in an integration log")
         success = True
-        print("Mac loopback Host fixture: PASS")
+        print(
+            "Mac LAN WSS fixture: PASS"
+            if host_address is not None
+            else "Mac loopback Host fixture: PASS"
+        )
         print("Android physical Keystore + WSS setup flow: PASS")
-        print("Scope: test certificate, fake Node/npm/mpv/CLI, isolated HOME and MacRuntime data")
+        print(
+            "Scope: direct private-LAN WSS proxy, test certificate, fake "
+            "Node/npm/mpv/CLI, isolated HOME and MacRuntime data"
+            if host_address is not None
+            else "Scope: test certificate, fake Node/npm/mpv/CLI, isolated HOME and MacRuntime data"
+        )
     except Exception as error:
         print(f"INTEGRATION FAILURE: {type(error).__name__}: {error}")
         print("--- Mac fixture (last 100 lines) ---")

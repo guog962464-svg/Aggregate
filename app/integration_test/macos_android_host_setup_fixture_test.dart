@@ -23,13 +23,23 @@ import 'fixtures/android_host_tcp_tunnel.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
+  test(
     'serves an isolated WSS setup fixture for a real Android Keystore client',
-    (_) async {
+    () async {
       const fixtureDirectoryPath = String.fromEnvironment(
         'aggregateHostSetupFixtureDirectory',
       );
       expect(fixtureDirectoryPath, isNotEmpty);
+      const tcpBindAddressValue = String.fromEnvironment(
+        'aggregateHostSetupFixtureTcpBindAddress',
+      );
+      final tcpBindAddress = tcpBindAddressValue.isEmpty
+          ? InternetAddress.loopbackIPv4
+          : InternetAddress.tryParse(tcpBindAddressValue) ??
+                (throw FormatException(
+                  'Fixture bind address must be an IPv4 literal',
+                ));
+      expect(tcpBindAddress.type, InternetAddressType.IPv4);
       final fixtureDirectory = Directory(fixtureDirectoryPath);
       await fixtureDirectory.create(recursive: true);
 
@@ -63,9 +73,7 @@ void main() {
       final androidResultFile = File(
         '${fixtureDirectory.path}/android-result.txt',
       );
-      final cliManifestFile = File(
-        '${fixtureDirectory.path}/cli-manifest.json',
-      );
+      final cliManifestFile = File('${fixtureDirectory.path}/cli-manifest.json');
       await cliManifestFile.writeAsString(
         jsonEncode({
           'schemaVersion': 1,
@@ -186,8 +194,7 @@ void main() {
           stdioMcpConnection.status,
           ConnectionStatus.ready,
           reason:
-              stdioMcpConnection.diagnostic ??
-              'stdio MCP fixture is unavailable',
+              stdioMcpConnection.diagnostic ?? 'stdio MCP fixture is unavailable',
         );
         await transport.start();
         approvalTimer = Timer.periodic(const Duration(milliseconds: 100), (
@@ -247,6 +254,7 @@ void main() {
         ).port;
         final proxy = await AndroidHostTcpTunnelProxy.start(
           targetPort: hostPort,
+          bindAddress: tcpBindAddress,
         );
         tcpTunnelProxy = proxy;
         final controlServer = await HttpServer.bind(
@@ -276,10 +284,12 @@ void main() {
         final invitationPayload = _routeInvitationThroughProxy(
           issuedInvitation.qrPayload,
           proxy.port,
+          address: tcpBindAddress,
         );
         final mcpInvitationPayload = _routeInvitationThroughProxy(
           issuedMcpInvitation.qrPayload,
           proxy.port,
+          address: tcpBindAddress,
         );
         await File('${fixtureDirectory.path}/invitation.json')
             .writeAsString(invitationPayload, flush: true);
@@ -337,14 +347,15 @@ void main() {
         await httpMcpServer.stop();
       }
     },
-    // This test hosts services for Android and does not build or inspect a
-    // widget tree; enabling semantics only creates an unused live-test handle.
-    semanticsEnabled: false,
     timeout: const Timeout(Duration(minutes: 15)),
   );
 }
 
-String _routeInvitationThroughProxy(String payload, int port) {
+String _routeInvitationThroughProxy(
+  String payload,
+  int port, {
+  required InternetAddress address,
+}) {
   final invitation = jsonDecode(payload) as Map<String, Object?>;
   final endpoints = invitation['endpoints']! as List<Object?>;
   for (var index = 0; index < endpoints.length; index++) {
@@ -353,7 +364,7 @@ String _routeInvitationThroughProxy(String payload, int port) {
     );
     endpoint['uri'] = Uri(
       scheme: 'wss',
-      host: InternetAddress.loopbackIPv4.address,
+      host: address.address,
       port: port,
       path: '/host',
     ).toString();
