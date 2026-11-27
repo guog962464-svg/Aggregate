@@ -51,18 +51,38 @@
       "allDifferentObjectsUnder": "out/Release/obj.target/v8_initializers/gen/torque-generated",
       "eachDifferentPairContainsItsBuildRootOnce": true
     },
+    "staticLinkObjects": {
+      "sidecar": "android-a3-node26.13.1-static-link-objects.jsonl",
+      "sidecarSha256": "815628553b0c5e617b04cae87d00224cbc1158d79eac1d990c38deefba9b6a46",
+      "entries": 3653,
+      "exactObjectMatches": 3378,
+      "differentObjectHashes": 275,
+      "missing": 0,
+      "differentByArchive": {
+        "libv8_initializers.a": 152,
+        "libcares.a": 85,
+        "libuv.a": 36,
+        "libopenssl.a": 2
+      },
+      "eachDifferentPairContainsItsBuildRootOnce": true
+    },
     "buildRootEvidence": {
       "priorRootByteLength": 66,
       "cleanRootByteLength": 86,
       "configGypiByteIdentical": true,
       "v8InitializersTargetMakefileByteIdentical": true,
       "patchedSourceTreeDifferencesOutsideOutAndBuild": 0
+    },
+    "prefixMapTrial": {
+      "attempted": true,
+      "result": "not validated",
+      "reason": "A direct single-object invocation of the generated inner GYP make rule used macOS -arch x86_64 flags with the Android clang target and failed. The trial object was restored byte-for-byte; this was not a product build failure."
     }
   },
   "disposition": {
     "sourceToBinaryByteReproduction": false,
     "a3_6Closed": false,
-    "reason": "All mapped generated source outputs match, but 152 Torque target objects contain the respective absolute build root and the stripped libnode hashes differ. The path change is a strong explanation for the object deltas, but the ELF object layout was not normalized and the clean build has not been byte-reproduced at the original source path.",
+    "reason": "All mapped generated source outputs match, but 275 of 3,653 linked object files contain the respective absolute build root and have different hashes; the stripped libnode hashes also differ. The path change is a strong explanation for these deltas, but the object layout was not normalized and the clean build has not been byte-reproduced at the original source path.",
     "remainingGates": [
       "Complete Node, NDK, Gradle and Android platform license/SBOM closure and legal review",
       "Build provenance/attestation and exact source-to-binary reproduction",

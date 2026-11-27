@@ -663,5 +663,6 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 ## 2026-11-27 A3.6 Node 26.13.1 clean source rebuild
 
-- 从 PGP 核验过的 Node 26.13.1 官方归档重新构建成功；518 个生成源码路径全部匹配，517 个目标对象中 365 个字节完全一致，152 个 V8 Torque 对象含各自绝对构建根并出现哈希差异。新旧 strip 后 `libnode.so` 大小相同但 SHA 不同，所以本次不记为可复现构建通过。
+- 从 PGP 核验过的 Node 26.13.1 官方归档重新构建成功；518 个生成源码路径全部匹配。全量静态链接清单 3,653 个对象里 3,378 个字节完全一致、275 个哈希不同（V8 Torque 152、c-ares 85、libuv 36、OpenSSL 2），每对差异对象都含各自绝对构建根。新旧 strip 后 `libnode.so` 大小相同但 SHA 不同，所以本次不记为可复现构建通过。
+- 单对象 `-ffile-prefix-map` 诊断从 GYP 内层 make 直接调用时撞上 macOS `-arch x86_64` 与 Android clang 目标冲突；试验对象已逐字节恢复。这不是产品构建失败，也没有证实该映射可以修复差异。
 - **A3.6/A4.7 继续开放。**准确工件哈希、工具/补丁指纹、差异范围及限制见[clean rebuild 比较报告](android-a3-node26.13.1-clean-rebuild-comparison.json)和[Node 26.13.1 运行时研究](android-a3-runtime-research.md#2026-11-27-node-26131-clean-source-rebuild-comparison)。下一步仍需解决 Node/NDK/SBOM 与法律闭包、构建 attestation、V8 signal-chain 复核、产品集成和正式签名；16 KB 真机缺失继续记为外部发布门槛。
