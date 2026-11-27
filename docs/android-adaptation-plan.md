@@ -671,3 +671,5 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - `app/test/android_runtime_port_test.dart` 7/7 passed：Android 本机只开放 HTTP MCP，拒绝本地 CLI 连接；配对 Host 的 CLI 能力保持 `ExecutionTarget.host` 并通过 Host 路由。本次只确认既有 ADR 0003 的代码回归，没有新增 Node/npm 产品适配器。
 - 此项不关闭 A3.6 运行时来源/复现/许可门槛、A5 production Host 或 A6 真实音乐流程；测试范围是本机 Flutter fake/runtime-port，无设备、正式签名或 16 KB 真机证据。详见 [A4.7 回归记录](android-a4-progress.md#2026-11-27-a47-android-runtime-boundary-regression)与 [ADR 0003](decisions/0003-android-local-execution.md)。
+
+> 2026-11-27 A3.6 同路径重建验收：Node 26.13.1 的全新官方源码在原 66 字节构建路径完成 Android arm64-v8a / API 24 / NDK 30 Release 重建；3,653 个静态链接对象、517 个映射目标对象、518 个生成源输出、未剥离 `libnode.so` 及 `llvm-strip --strip-unneeded` 结果均与候选逐字节一致，3 个 `PT_LOAD` 均按 16 KB 对齐。这关闭本地 source-to-binary 可复现性，但不等于正式构建证明；Node/NDK/Gradle/Android 平台许可与 SBOM/法律审核、V8 signal-chain 安全审查、产品集成与签名及 16 KB 真机仍未闭合。A3.6/A4.7 保持开放，产品 npm/CLI 入口继续受限。详见 [A3.6 runtime 研究](android-a3-runtime-research.md)。

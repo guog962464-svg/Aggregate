@@ -9,9 +9,9 @@
     "sourceArchiveSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6"
   },
   "build": {
-    "cleanSourceRoot": "/private/tmp/aggregate-node26.13.1-clean-rebuild-repro-2026-11-27/source/node-v26.13.1",
-    "priorCandidateSourceRoot": "/private/tmp/aggregate-node-26.13.1-build-2026-11-27/node-v26.13.1",
-    "result": "Release make completed with exit code 0 from a fresh official source archive extraction and the recorded Android/macOS host patches.",
+    "cleanSourceRoot": "/private/tmp/aggregate-node-26.13.1-build-2026-11-27/node-v26.13.1",
+    "priorCandidateSourceRoot": "/private/tmp/aggregate-node-26.13.1-build-2026-11-27/node-v26.13.1-original-baseline",
+    "result": "Fresh official Node 26.13.1 source extraction was configured and built at the original candidate source path with the recorded Android/macOS host patches. The first make invocation at -j2 was intentionally terminated during V8 heap compilation; make resumed from retained build outputs at -j4 and completed with exit code 0.",
     "tools": {
       "buildScriptSha256": "9b7717a0b2011e71f9d8e508dc066a3d15f205af30e4c112e2443a458ea95aaa",
       "nodePatchScriptSha256": "7ed1af8812f3c4e7cb083af0ec289cc0bf26dbf8598c280ce838e0939ca723c2",
@@ -24,16 +24,52 @@
     "unstrippedLibnode": {
       "priorSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
       "priorSizeBytes": 117870048,
-      "cleanRebuildSha256": "532738bf7920337c6b411724bd63c297d07809036b8b805793d69c5447fa3510",
-      "cleanRebuildSizeBytes": 117869984,
+      "cleanRebuildSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
+      "cleanRebuildSizeBytes": 117870048,
+      "exactMatch": true,
       "loadSegmentCount": 3,
       "minimumLoadAlignmentBytes": 16384
     },
     "strippedLibnode": {
       "priorSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
-      "cleanRebuildSha256": "0a4a28abfd503fd3355ee16278b33cee9ee17986a2cdb1580834aada6fe2a92f",
+      "cleanRebuildSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
       "bothSizeBytes": 87724464,
-      "stripCommand": "NDK 30 llvm-strip --strip-unneeded"
+      "exactMatch": true,
+      "stripCommand": "NDK 30 llvm-strip --strip-unneeded on a separate copy"
+    },
+    "samePathRebuild": {
+      "performed": true,
+      "sourceRoot": "/private/tmp/aggregate-node-26.13.1-build-2026-11-27/node-v26.13.1",
+      "sourceArchiveSha256": "a7f6204ff63b6a2cd274d48903285abb86ed53a99070e532d4c2fd787457d9e6",
+      "makeInvocations": [
+        {
+          "jobs": 2,
+          "result": "intentionally terminated during V8 heap compilation"
+        },
+        {
+          "jobs": 4,
+          "result": "completed",
+          "exitCode": 0
+        }
+      ],
+      "staticLinkObjects": {
+        "entries": 3653,
+        "exactObjectMatches": 3653,
+        "differentObjectHashes": 0,
+        "missing": 0
+      },
+      "generatedSourceOutputs": {
+        "distinctPaths": 518,
+        "exactMatches": 518,
+        "sha256Mismatches": 0,
+        "missing": 0
+      },
+      "unstrippedLibnodeSha256": "fc606ca7a3bf162e36aacdf6d9bd93d06dc8a1fbc69d04148abbe1b6205a127e",
+      "strippedLibnodeSha256": "84030ab41a5c6cdf4e413d41d81b3f8fe8e4c441a8fa0361ddfacd2911fe986a",
+      "loadSegments": {
+        "count": 3,
+        "minimumAlignmentBytes": 16384
+      }
     }
   },
   "comparison": {
@@ -45,30 +81,24 @@
     },
     "generatedTargetObjects": {
       "entries": 517,
-      "exactObjectMatches": 365,
-      "differentObjectHashes": 152,
+      "exactObjectMatches": 517,
+      "differentObjectHashes": 0,
       "missing": 0,
-      "allDifferentObjectsUnder": "out/Release/obj.target/v8_initializers/gen/torque-generated",
-      "eachDifferentPairContainsItsBuildRootOnce": true
+      "samePathRebuildExact": true
     },
     "staticLinkObjects": {
       "sidecar": "android-a3-node26.13.1-static-link-objects.jsonl",
       "sidecarSha256": "815628553b0c5e617b04cae87d00224cbc1158d79eac1d990c38deefba9b6a46",
       "entries": 3653,
-      "exactObjectMatches": 3378,
-      "differentObjectHashes": 275,
+      "exactObjectMatches": 3653,
+      "differentObjectHashes": 0,
       "missing": 0,
-      "differentByArchive": {
-        "libv8_initializers.a": 152,
-        "libcares.a": 85,
-        "libuv.a": 36,
-        "libopenssl.a": 2
-      },
-      "eachDifferentPairContainsItsBuildRootOnce": true
+      "samePathRebuildExact": true
     },
     "buildRootEvidence": {
       "priorRootByteLength": 66,
-      "cleanRootByteLength": 86,
+      "cleanRootByteLength": 66,
+      "sourceRootSameDuringRebuild": true,
       "configGypiByteIdentical": true,
       "v8InitializersTargetMakefileByteIdentical": true,
       "patchedSourceTreeDifferencesOutsideOutAndBuild": 0
@@ -80,12 +110,12 @@
     }
   },
   "disposition": {
-    "sourceToBinaryByteReproduction": false,
+    "sourceToBinaryByteReproduction": true,
     "a3_6Closed": false,
-    "reason": "All mapped generated source outputs match, but 275 of 3,653 linked object files contain the respective absolute build root and have different hashes; the stripped libnode hashes also differ. The path change is a strong explanation for these deltas, but the object layout was not normalized and the clean build has not been byte-reproduced at the original source path.",
+    "reason": "A fresh official-source rebuild at the original candidate path exactly reproduced all 3,653 linked object hashes, all 518 generated source outputs, the unstripped libnode.so and its NDK-stripped output. This closes local byte-for-byte source-to-binary reproduction for this candidate. A3.6 remains open for formal build provenance/attestation, complete license/SBOM and legal review, V8 signal-chain security review, Aggregate integration/signing, and physical 16 KB-device execution.",
     "remainingGates": [
       "Complete Node, NDK, Gradle and Android platform license/SBOM closure and legal review",
-      "Build provenance/attestation and exact source-to-binary reproduction",
+      "Formal build provenance/attestation beyond the local reproducibility evidence",
       "V8 trap-handler and Android signal-chain security review",
       "Aggregate product integration and formal signing",
       "16 KB page-size physical-device execution"
