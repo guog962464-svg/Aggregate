@@ -2676,3 +2676,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 将 `tool/ui_review_test.dart` 临时复制到 `app/tool/ui_review_capture_test.dart`，只把金样目标改到独立目录，并执行 `flutter test --no-pub --update-goldens --reporter expanded tool/ui_review_capture_test.dart --plain-name 'review 1x'`。六组尺寸/主题流程全部通过；在 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/golden-current-matrix/` 产生 54 张 1× 当前页面截图。临时测试文件已删除，现有 `work/ui-review/` 的 54 张基线未更改。
 - 六张对照表覆盖 800×600、1024×768、1440×900 × 浅/深主题 × 九种页面状态，位于 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/contact-sheets/`。缩略图目视发现各组有一致的大范围布局/材质差异；原始 800×600 浅色首页仍报告 77.47% 差异。Git 历史显示 `work/ui-review/` 最后在 `ca68afc`（2026-11-20，v3.5 音乐界面）更新，音乐页源码其后由 `ed0e833`（2026-11-21，v9.0.2）变更。这支持“旧基线已漂移”的判断，不证明新实现已逐张符合当前设计稿。
 - 没有将这 54 张当前输出直接复制到正式基线：六张表只用于分类，尚未把每张全尺寸页面与同一 Profile 入口/状态的设计参考逐项核对。Widget test 使用测试字体，中文字形也不能作为材质验收。未启动桌面 App；UI-5.2 继续部分验收。
+
+<a id="2026-11-27-ui-5-2-02-音乐页-profile-样例加载完成后补拍"></a>
+### 2026-11-27 UI-5.2 02 音乐页 Profile 样例加载完成后补拍
+
+- 更正前一条 Profile 样例态截图依据：旧文件 `1360x900-light-player-preview-sample.png` 的画面实际显示「从搜索开始播放」空播放器，因此不再用作示例歌曲播放态的画面证据。新的复核在 `MusicPlayerPage` 异步挂接与样例加载后读取 AX，再拍截图。
+- 入口：`flutter build macos --profile --no-pub --target=lib/preview_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=PREVIEW_MUSIC=true`；使用 `createPreviewRuntime()`，所有播放与搜索内容都在内存中。无真实 Host、账号、音频输出、网络、命令或 Runtime 调用。
+- Profile 窗口 `1360×900 pt`，位于 `(76,49)`，窗口尺寸和位置经 `agent-desktop` 回读确认；DPR 2。完整 AX 树读到「播放中」「示例歌曲」「示例歌手」「0:12 / 3:20」和两条结果（第一首可播放、第二首不可播放）。AX 树与截图均无音乐账号入口或跨页迷你播放器。将 02 SVG 以 `sips` 按其原始 `1360×900` viewBox 栅格化后，人工对照确认页面结构、样例内容和双栏几何一致；不据静态 SVG 签收材质或逐像素差异。
+- 正式窗口截图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board02-v8-profile-1360x900-light-sample.png`，SHA-256 `196c9d809e4e984d29b06c49fcb059e1d3ffa72955a2af3a0e3f362229c91136`；PNG 为 `2944×2024 px`，`agent-desktop` 回报 scale factor 2，含窗口捕获边缘。设计参考 `docs/macos-glass-ui/design-draft-v8/02-music.svg` SHA-256 `d6ab331b1428d7e2960ae675a57a72b2780c7ddbfdf40b5069f8f8d4a096e0fa`，栅格对照 PNG SHA-256 `a81a46bb128cf62d77b37642fd7da159d868b3030675369426c63ca48797e770`。
+- v8 第 9 节 02 行的原命令没有传 `PREVIEW_MUSIC=true`，而 `preview_main.dart` 将该布尔量默认设为 `false`；已修正文档命令以保证能复现画板状态。截图后优雅退出本轮 Profile PID `97594`，并确认原 Google Chrome/GitLab 窗口 `w-54526` 恢复前台。产品逻辑、页面代码和正式金样均未改。
+- 结论：此项补齐 02 音乐主页的一种浅色原生 Profile 样例态与可复现入口。54 张页面状态尚未逐张与同态 Profile 参考配对，DPR 1 当前基线仍有差异；UI-5.2 保持部分验收。
