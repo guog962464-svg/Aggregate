@@ -2769,3 +2769,11 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 实窗截图可见“快捷键 / 名称与组合键沿用当前快捷键配置”，分组“导航 / 运行”，四行“所有功能 `⌘ K`、设置 `⌘ ,`、返回 `Esc`、运行当前功能 `⌘ ↵`”。与 `15-settings-shortcuts.svg` 的分组、文案、行序及主要相对几何人工对照一致；当前辅助树摘要呈现所有功能、返回和运行项，但没有呈现“设置 / ⌘ ,”行，该行只由截图确认，原生 AX 可读性仍待核实。静态画板不作为材质像素或动画验收依据。
 - Profile 前台截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board15-v8-profile-1360x900-light-shortcuts-foreground.png`，SHA-256 `3371eb113556e5911ecc76b34a5e297b2c781ad8aa3401a4eadbfa83e374ad3e`，PNG `2944×2024 px`（scale factor 2，包含窗口采集边缘）。参考 SVG SHA-256 `c85f753f21a5d752c5852993ca235a1ccf3fc6a4edc879282d2af33175648fce`，viewBox 1360×900；同尺寸栅格参考 `/tmp/board15-v8-reference.png` SHA-256 `792228b9449573b24dae226e07d9394d1a34af22776ee1a0ce677b414b53576f`。截图前后主窗口 `is_focused=true`；采集后 `agent-desktop close-app` 验证 Profile 进程退出，并将 ChatGPT 窗口 `w-50832` 恢复聚焦。
 - 结论：补足 v8 15 浅色 1360×900pt 快捷键页的一种原生 Profile 静态状态。仅完成布局、内容和分组对照；原生 AX 行可读性、其他主题/尺寸/DPR、材质像素、按钮动效及 54 张金样逐图审阅仍未完成。未运行测试；UI-5.2 继续部分验收。
+
+<a id="2026-11-27-ui-5-2-22-本机数据-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 22 本机数据 Profile 原生复核
+
+- 入口：复用 Flutter 3.47.8、`ui6_inspection_main.dart` 浅色 Profile；窗口 bounds `(76,49)`、`1360×900 pt`、DPR 2，设置页无迷你播放器。通过侧栏进入设置并滚动至本机数据区；截图所用 Profile 二进制为现有隔离构建，没有重建或改动产品逻辑。
+- AX 确认“本机数据”“连接配置和活动记录保存在本机”“活动保留时长”“仅保存脱敏后的运行状态信息”“保留最近”“30 天”“清空活动记录”“删除后无法恢复。”“只删除本机保存的调用历史，不移除连接。”和“清空记录”均在设置树中；30 天值保持原样，未点击清空按钮。`关于 Aggregate` 位于视口下缘。页面内容及顺序对应 `22-settings-local-data.svg`，但纵向几何不一致：实际 AX 标题框屏幕 y=705pt，相对窗口顶端 y=656pt；SVG 标题文字基线 y=238pt。语义 `ScrollTo` 只把清空按钮滚入视口，进一步向下滚轮没有改变布局，标题无法移到参考锚点；因此本轮不验收 1:1 几何。
+- Profile 前台截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board22-v8-profile-1360x900-light-local-data-foreground.png`，SHA-256 `b4ea4db271be3790a417f7cd47fee3d4a091ba3acbdd66638e7ead430d0a7c60`，PNG `2812×1892 px`（DPR 2，包含窗口采集边缘）。参考 `22-settings-local-data.svg` SHA-256 `5688333b693e33f1ee24e2ae727f3b71b69c7bcaf1a18f0500bee5a48726f921`，viewBox 1360×900。截图前确认 Profile 主窗口聚焦；之后 `agent-desktop close-app` 已验证进程退出。原 ChatGPT 窗口 `w-50832` 当时对辅助功能工具不可见，无法验证已恢复前台；未关闭或修改其他用户应用。未运行测试。
+- 结论：补足 v8 22 浅色 Profile 本机数据内容与非破坏状态证据；纵向锚点明显偏离画板，不能据此签收精确几何、材质像素、动效或其他主题/窗口尺寸/DPR。UI-5.2 继续部分验收。
