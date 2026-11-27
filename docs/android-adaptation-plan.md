@@ -734,5 +734,5 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 ## 2026-11-27 A5 live network recheck after user confirmation
 
-- This recheck does not show a shared Wi-Fi connection: macOS `networksetup -getairportnetwork en0` reports no AirPort association while `en0` retains `192.168.10.239`; the phone reports SSID `ws-5g` and `wlan0=192.168.31.136/24`. Mac routing to the phone address goes through `192.168.10.1`, and the earlier ping attempt lost all packets.
-- No Host was started, no Keychain prompt was triggered, and no pairing/RPC was attempted. A5 direct-LAN and production Host acceptance remain open until the current network path is reachable; the previously passed isolated WSS fixture remains limited to its recorded network and identity.
+- Initially macOS `en0` retained `192.168.10.239` while reporting no AirPort association; `ws-5g` was in the saved-network list and Wi-Fi power was on. Attempting to join the phone's SSID returned `-3900 tmpErr` without a Keychain prompt. A fresh read then showed `en0=192.168.8.4`, still not associated; the phone remained on SSID `ws-5g`, `wlan0=192.168.31.136/24`. Mac routing to the phone went through `192.168.8.1`.
+- Final bidirectional ICMP recheck lost all packets (Mac-to-phone `0/2`; phone-to-Mac `0/2`). No Host was started, no Keychain prompt was triggered, and no pairing/RPC was attempted. A5 direct-LAN and production Host acceptance remain open until the current network path is reachable; the previously passed isolated WSS fixture remains limited to its recorded network and identity.
