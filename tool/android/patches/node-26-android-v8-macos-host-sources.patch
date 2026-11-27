@@ -1,0 +1,14 @@
+--- a/tools/v8_gypfiles/v8.gyp
++++ b/tools/v8_gypfiles/v8.gyp
+@@ -1598,6 +1598,10 @@
+         ['OS == "mac" or (_toolset=="host" and host_os=="mac")', {
+           'sources': [
+             '<(V8_ROOT)/src/base/debug/stack_trace_posix.cc',
+             '<(V8_ROOT)/src/base/platform/platform-darwin.cc',
+-          ]
++          ],
++          'sources!': [
++            '<(V8_ROOT)/src/base/debug/stack_trace_android.cc',
++            '<(V8_ROOT)/src/base/platform/platform-linux.cc',
++          ],
+         }],

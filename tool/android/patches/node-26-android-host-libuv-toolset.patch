@@ -1,0 +1,25 @@
+--- a/deps/uv/uv.gyp
++++ b/deps/uv/uv.gyp
+@@ -405,7 +405,21 @@
+             'src/unix/os390-syscalls.c'
+           ]
+         }],
+-      ]
++      ],
++      'target_conditions': [
++        ['_toolset=="host" and host_os=="mac" and OS=="android"', {
++          'sources!': [ '<@(uv_sources_android)' ],
++          'sources': [
++            '<@(uv_sources_apple)',
++            '<@(uv_sources_bsd_common)',
++          ],
++          'defines!': [ '_GNU_SOURCE' ],
++          'defines': [
++            '_DARWIN_USE_64_BIT_INODE=1',
++            '_DARWIN_UNLIMITED_SELECT=1',
++          ],
++        }],
++      ],
+     },
+   ]
+ }
