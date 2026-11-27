@@ -2705,3 +2705,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - Profile 原生截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board01-v8-profile-1360x900-light-workspace.png`，SHA-256 `f44811fd27a87cdb5ea674c8cf373da5d1c4fe1f5683d65a1a1fa3907e696c93`；PNG 为 `2944×2024 px`（DPR 2，含窗口捕获边缘）。对照 v8 `01-workspace.svg` SHA-256 `dc89e1d4290353f87b3f77b7714321ac91696048497e222412682f7225295e29`，原尺寸栅格 PNG SHA-256 `3153edf72abfb9097eb1e98267987f760e9c2cd97ab3d5a9e90d597f2cbc0368`。人工核对同一选中项、首屏内容与主区/目录/详情/迷你播放器几何；SVG 只作结构参考，不是材质像素或动画 oracle。
 - 隔离边界：能力和音乐状态来自 `Ui6InspectionRuntime` 进程内样例；未运行能力，未连接真实 Host、账号、网络、音频或外部 Runtime。截图后关闭本轮 Profile，并确认 Google Chrome/GitLab 窗口 `w-54526` 恢复前台。
 - 结论：补足 v8 01 工作台一种浅色 1360×900pt 的原生 Profile 同态证据。深色、其他窗口尺寸与 DPR、54 张金样逐图审阅、DPR 1 基线差异及材质逐像素比较仍未完成；UI-5.2 保持部分验收。
+
+<a id="2026-11-27-ui-5-2-03-连接管理-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 03 连接管理 Profile 原生复核
+
+- 入口：`cd app && flutter build macos --profile --no-pub --target=lib/preview/ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true`。Flutter 3.47.8 Profile 构建成功。初始进入音乐样例页以建立会话，再进入“管理连接”；窗口经 `agent-desktop` 回读为 `(76,49)`、`1360×900 pt`、DPR 2。
+- AX 状态：三条样例连接均显示就绪，连接顺序为 Git CLI、MCP、网易云音乐；选中 Git CLI。详情显示本机执行、就绪、仅内存预览，并列出 3 项能力“打开预览终端 / 查看 Git 状态 / 演示写入权限确认”。随后切到“所有功能”读取根窗口摘要“17 项”，与 v8 总目录数量相符。音乐迷你播放器保留“示例歌曲 / 示例歌手 / 0:12 / 3:20”。
+- Profile 原生截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board03-v8-profile-1360x900-light-connections.png`，SHA-256 `90bd06cede590ffbe22085a71377ac9044664e84dedb273086210930384f2200`；PNG 为 `2944×2024 px`。设计参考 `03-connections.svg` SHA-256 `6c7108f99ad3af9b9bf5679bea727ea51bb7ef5913bd05250e529dcfd8e4ede4`，viewBox 为 1360×900；栅格参考 PNG SHA-256 `08bc5b1172482d438e394e62b27f0a6131b0c9aa57c616f1dbd71af458790f58`。人工对照选中连接卡、右侧详情/诊断、操作按钮与播放器几何及文案；不签收材质像素或动态帧。
+- 隔离边界：使用 `Ui6InspectionRuntime` 与 `Ui6InspectionHost` 内存样例；未执行连接测试、Git 命令、写入确认、网络、Host 或账号操作。截图后退出 Profile，Google Chrome/GitLab `w-54526` 恢复前台，Aggregate 进程不存在。
+- 结论：补足 v8 03 的浅色 1360×900pt 原生静态状态证据。未覆盖深色、其他尺寸/DPR、完整 17 个能力视图及 54 张金样逐项复核；UI-5.2 保持部分验收。
