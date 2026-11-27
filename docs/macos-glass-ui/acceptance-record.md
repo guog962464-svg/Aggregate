@@ -2733,3 +2733,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 交互细节：辅助功能 `SetValue` 虽回报文本值已改变，但 Flutter 表单仍校验为必填；清空后改用实际文本输入，成功打开同一确认弹窗。这只记录本轮 Profile 输入通道差异，不据此改变应用逻辑。
 - 隔离边界：`Ui6InspectionRuntime` 的能力、参数和音乐播放状态仅存在于进程内；没有连接真实 Git CLI、Host、网络、账号或外部 Runtime。截图后关闭 Profile，确认 Aggregate 进程退出、Google Chrome/GitLab 窗口 `w-54526` 恢复前台。未运行测试。
 - 结论：补足 v8 09 的浅色 1360×900pt 原生 Profile 弹窗与同背景选中行证据。其他主题、尺寸/DPR、材质像素、动效和 54 张金样逐图审阅未完成；UI-5.2 保持部分验收。
+
+<a id="2026-11-27-ui-5-2-08-交互终端-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 08 交互终端 Profile 原生复核
+
+- 入口：复用当前 Flutter 3.47.8、`ui6_inspection_main.dart`、浅色与 `UI6_MUSIC_PREVIEW=true` / `UI6_INCLUDE_INSPECTION_CAPABILITIES=true` 配置下已成功构建的 Profile 二进制，使用 `open -n app/build/macos/Build/Products/Profile/Aggregate.app` 启动。`agent-desktop` 回读窗口 `(76,49)`、`1360×900 pt`、DPR 2；进入“所有功能”，选择“打开预览终端”，提交参数 `{"argv":["git","status","--short"]}` 并从只读确认弹窗进入终端。
+- AX 确认终端标题、示例 Git CLI 命令、目标“本机 Mac”、权限“读取连接”、交互会话和中断按钮；Ctrl、Esc、Tab、四向方向键、复制、粘贴控件均可见。原生画面显示黄色本机模拟提示、`$ git status --short`、` M README.md`、`?? draft.md` 和光标。素材来自 `Ui6InspectionRuntime.openTerminal()` 的进程内固定输出，没有连接或启动真实 shell/PTY；确认只进入此模拟页，不产生外部命令或磁盘改动。键盘/复制/粘贴动作本轮未逐项操作。
+- Profile 截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board08-v8-profile-1360x900-light-terminal.png` SHA-256 `060b6ae9c694fc1f9391c9959c75f90fb66ef54772be99f1e9e78d9c1f7e3eb8`，PNG `2944×2024 px`。设计参考 `08-terminal-running.svg` SHA-256 `fd29a92db899cd36dff164faadfaa7e8d491232ad2b5a8dfefd26e111e0bae6a`，viewBox 1360×900；栅格 PNG SHA-256 `ab5c023ea6014e9c7fe5f1165be8405d307e8ce4be37cb25b0605f98049cf349`。人工对照命令/输出、终端主面与工具按钮。排除画板模拟标题栏并对齐客户端区域后，终端面与工具栏整体纵向位置仍有可见偏差；未据此签收精确几何、材质像素或动态帧。
+- 输入与前台边界：数组参数编辑器预填 `[]`；`SetValue`/清空并未同步 Flutter 控制器，开始输入时发生追加。实际聚焦后用 macOS 文本导航选中整行并删除，再输入完整 JSON 数组；AX 回读参数正确后才进入预览终端。按用户最新许可短暂使用前台采集 Profile 截图；关闭后确认 Aggregate 进程退出、Google Chrome/GitLab `w-54526` 恢复前台。未运行测试。
+- 结论：补足浅色 1360×900pt Profile 下 v8 08 的安全终端输出与控件状态证据。命令输入、对话框以及终端显示都限于当前进程内存 fixture；真实终端的 PTY 生命周期、键盘输入和复制粘贴尚未验证，UI-5.2 保持部分验收。
