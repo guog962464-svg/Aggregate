@@ -2686,3 +2686,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 正式窗口截图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board02-v8-profile-1360x900-light-sample.png`，SHA-256 `196c9d809e4e984d29b06c49fcb059e1d3ffa72955a2af3a0e3f362229c91136`；PNG 为 `2944×2024 px`，`agent-desktop` 回报 scale factor 2，含窗口捕获边缘。设计参考 `docs/macos-glass-ui/design-draft-v8/02-music.svg` SHA-256 `d6ab331b1428d7e2960ae675a57a72b2780c7ddbfdf40b5069f8f8d4a096e0fa`，栅格对照 PNG SHA-256 `a81a46bb128cf62d77b37642fd7da159d868b3030675369426c63ca48797e770`。
 - v8 第 9 节 02 行的原命令没有传 `PREVIEW_MUSIC=true`，而 `preview_main.dart` 将该布尔量默认设为 `false`；已修正文档命令以保证能复现画板状态。截图后优雅退出本轮 Profile PID `97594`，并确认原 Google Chrome/GitLab 窗口 `w-54526` 恢复前台。产品逻辑、页面代码和正式金样均未改。
 - 结论：此项补齐 02 音乐主页的一种浅色原生 Profile 样例态与可复现入口。54 张页面状态尚未逐张与同态 Profile 参考配对，DPR 1 当前基线仍有差异；UI-5.2 保持部分验收。
+
+<a id="2026-11-27-ui-5-2-17-git-cli-与-21-mcp-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 17 Git CLI 与 21 MCP Profile 原生复核
+
+- 入口：`cd app && flutter build macos --profile --no-pub --target=lib/preview/ui7_design_preview_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=false --dart-define=UI6_CAPABILITY_SCOPE=git`；21 MCP 仅将最后一项改为 `mcp`。Flutter 3.47.8 构建成功，Profile 窗口经 `agent-desktop` 设置并回读为 `(76,49)`、`1360×900 pt`、DPR 2。
+- 17 Git CLI：AX 显示能力目录中仅有“查看 Git 状态”；详情目标“示例 Git CLI · 此设备”；页面保留音乐样例迷你播放器“示例歌曲 / 示例歌手 / 0:12 / 3:20”。没有执行能力，最近结果为空。
+- 21 MCP：AX 显示 1 个工具“两个整数相加”、1 个资源“读取项目说明”和 1 个提示“生成摘要提示”；详情目标“示例 MCP · 此设备”；页面保留同一音乐样例迷你播放器。没有运行工具或读取资源，最近结果为空。
+- Profile 原生截图：17 为 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board17-v8-profile-1360x900-light-git.png`，SHA-256 `9a5bd292c4ee673c08581fd9e328ffa05455177ab03eef197c5eceeb72a890db`；21 为 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board21-v8-profile-1360x900-light-mcp.png`，SHA-256 `918304007c1530d3f75a24efbba9bccd0f31ceecbd3f295afee42c07fb035cb6`。两个 PNG 均为 `2944×2024 px`（DPR 2，包含窗口捕获边缘）。静态设计参考 `17-connection-home.svg` SHA-256 `2ed425573e016e411b49b5d1c518153bc1b7b762d697d2997144d081cff52c3c`，`21-mcp-home.svg` SHA-256 `9b8d6788fb09a9299df60c583739ffaa435ed581d24621528e96021878c88030`，均为 1360×900 viewBox；人工核对页面状态、主要区块和几何关系。静态 SVG 无动态材质，不能作为逐像素基准。
+- 隔离边界：`Ui6InspectionRuntime` 提供内存样例，`UI6_INCLUDE_INSPECTION_CAPABILITIES=false` 且限定 Git/MCP 范围；未连接真实 Host、账号、网络或外部 Runtime。关闭本轮 Profile 后，原 Google Chrome/GitLab 窗口 `w-54526` 已恢复前台。
+- 结论：补足 17 与 21 两个同态浅色原生 Profile 截图与可访问性状态核验。仍未覆盖深色、其他窗口尺寸、缩放状态和 54 张金样逐项审阅，DPR 1 基线差异未解决；UI-5.2 保持部分验收。
