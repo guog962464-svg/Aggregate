@@ -2669,3 +2669,10 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 原生 AX 树确认音乐页显示「播放中 / 示例歌曲 / 示例歌手 / 0:12 / 3:20」和两条搜索结果（第一首可播放，第二首不可播放）。1360×900pt Retina 预览截图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/1360x900-light-player-preview-sample.png`；去除窗口阴影后的对照图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/player-preview-sample-window.png`。目视确认主卡片、两栏起点和结果区与 02 音乐页版式一致。
 - 这只覆盖一个浅色、1360×900pt、DPR 2 的原生样例态。`PreviewRuntime` 不含账号管理端口；现存 02 SVG 仍绘有音乐账号按钮，不能作为此预览入口的同态视觉 oracle。没有用 SVG 判定材质，也没有重录或替代旧金样。
 - 结论：本次补足一个原生 Profile 状态截图并确认样例数据与交互入口可见；54 张金样仍未逐张设计审阅，DPR 1 现有金样仍有失败，所以 UI-5.2 继续部分验收。测试后仅退出本轮 Profile PID 92134，并恢复原 Google Chrome GitLab 窗口为前台。
+
+<a id="ui-5-2-54-current-screenshots-baseline-comparison-2026-11-27"></a>
+### 2026-11-27 UI-5.2 54 张 1× 现状截图与旧基线对照
+
+- 将 `tool/ui_review_test.dart` 临时复制到 `app/tool/ui_review_capture_test.dart`，只把金样目标改到独立目录，并执行 `flutter test --no-pub --update-goldens --reporter expanded tool/ui_review_capture_test.dart --plain-name 'review 1x'`。六组尺寸/主题流程全部通过；在 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/golden-current-matrix/` 产生 54 张 1× 当前页面截图。临时测试文件已删除，现有 `work/ui-review/` 的 54 张基线未更改。
+- 六张对照表覆盖 800×600、1024×768、1440×900 × 浅/深主题 × 九种页面状态，位于 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/contact-sheets/`。缩略图目视发现各组有一致的大范围布局/材质差异；原始 800×600 浅色首页仍报告 77.47% 差异。Git 历史显示 `work/ui-review/` 最后在 `ca68afc`（2026-11-20，v3.5 音乐界面）更新，音乐页源码其后由 `ed0e833`（2026-11-21，v9.0.2）变更。这支持“旧基线已漂移”的判断，不证明新实现已逐张符合当前设计稿。
+- 没有将这 54 张当前输出直接复制到正式基线：六张表只用于分类，尚未把每张全尺寸页面与同一 Profile 入口/状态的设计参考逐项核对。Widget test 使用测试字体，中文字形也不能作为材质验收。未启动桌面 App；UI-5.2 继续部分验收。
