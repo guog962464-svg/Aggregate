@@ -692,3 +692,15 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - NDK r30 toolchain NOTICE 对 compiler_rt 给出 NCSA/MIT 双许可说明；固定 revision 的 `libunwind/LICENSE.TXT` 也给出 NCSA/MIT 双许可说明。与此同时，21 个保留源文件头部均标记 `Apache-2.0 WITH LLVM-exception`；libunwind 专属 `LICENSE.TXT` 未进入候选 APK。保留这些并列证据，等待法务判断适用范围/发行表达式，不修改 `libnode.so` 的 unresolved 状态。A3.6 仍开放。详见 [NDK 30 隐式运行库许可来源复核](android-a3-node26.13.1-ndk-license-research.md)。
 
 > 2026-11-27 A3.6 同路径重建验收：Node 26.13.1 的全新官方源码在原 66 字节构建路径完成 Android arm64-v8a / API 24 / NDK 30 Release 重建；3,653 个静态链接对象、517 个映射目标对象、518 个生成源输出、未剥离 `libnode.so` 及 `llvm-strip --strip-unneeded` 结果均与候选逐字节一致，3 个 `PT_LOAD` 均按 16 KB 对齐。这关闭本地 source-to-binary 可复现性，但不等于正式构建证明；Node/NDK/Gradle/Android 平台许可与 SBOM/法律审核、V8 signal-chain 安全审查、产品集成与签名及 16 KB 真机仍未闭合。A3.6/A4.7 保持开放，产品 npm/CLI 入口继续受限。详见 [A3.6 runtime 研究](android-a3-runtime-research.md)。
+
+## 2026-11-27 A3.6 Node 26.13.1 guarded runtime 4 KB 真机补验
+
+- USB 恢复后，在 LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 页安装并运行隔离 NodeProbe 一次。Node v26.13.1、文件读写、loopback、显式 WebAssembly 越界异常及 `node::Start()` 前后可见 SIGSEGV/SIGBUS action 一致均有真机结果。APK SHA `56e8eedeef4193fde0b6b754f8bda3d5c7676c484de67011a772548fdf401490`；包内 guarded `libnode.so` SHA `53f042c7497b29b9fd15c5b413c30ace01a97dc3b26c1b6caebc7630dd4aff13`。
+- 测试注入 `raise(SIGSEGV)` 后观察到两次 `SI_TKILL` native crash；Android 自动重启仍绑定的测试 Service，第二轮再次执行了无条件注入。系统日志确认一次 tombstone 写入 DropBox。该结果没有覆盖同步内存访问故障的 `SEGV_MAPERR/SEGV_ACCERR`，不据此断言 vendor `libsigchain` 符号解析或普通故障必然保留 debuggerd 链。
+- 探针已 force-stop 并卸载；用户新闻 App 回到测试前的 `LiveRoomActivity`。测试没有使用 Aggregate 产品包，亦没有操作 Host、Keychain 或配对数据。临时 crash/system 日志路径与细节见 [V8 signal-chain review](android-a3-node26.13.1-v8-trap-handler-review.md#2026-11-27-usb-device-follow-up-patched-node-runtime-smoke) 和 [运行时研究](android-a3-runtime-research.md#2026-11-27-node-26131-guarded-candidate-usb-real-device-follow-up-1404-asiashanghai)。
+- **A3.6 继续开放：**此轮补上了 guard 候选的 4 KB Android 15 启动/探针证据；仍需 supported-minimum API、动态 `libsigchain`/`sigaction` 绑定、实际同步内存 fault、guarded binary clean rebuild/正式 attestation、许可证与 SBOM 法务审核、产品集成/正式签名及 16 KB 真机。没有 16 KB 真机，不标记该项通过。
+
+## 2026-11-27 A5 live network reread during A3 device follow-up
+
+- 14:04 Asia/Shanghai 实时读取 Mac Wi-Fi `192.168.8.4/24` 与 LGE AN10 `wlan0=192.168.31.136/24`；手机到 Mac 的路由选择 `192.168.31.1` 网关。因此当前地址不在同一个 IPv4 子网。此前 08:06 的隔离 LAN/WSS fixture 结果仍限于当时手机 `192.168.8.7` 的环境，不外推到此刻路由；本轮没有测试跨子网 TCP/WSS。
+- Mac `47321/47322/47323` 无 listener，ADB reverse 列表为空；手机仍在用户新闻 App `LiveRoomActivity`。本轮没有启动生产 Host、触发 Keychain 或切换手机前台。A5 production Host/身份读取/发现/RPC 的既有门槛不变。

@@ -819,3 +819,9 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **对照与清理：**探针临时创建了独立的 8 字节 generic-password 测试项；同样禁用认证 UI 后读取 `status=0`、`2 ms` 完成，并立即删除 `status=0`。随后清理复核返回 `errSecItemNotFound (-25300)`，未留下测试项。没有更新、删除、轮换或导出 Aggregate 的 identity、证书、私钥或 grants，也没有输入凭据或触发授权提示。
 - **结论边界：**现象已收窄为默认 Keychain 搜索路径中这个现有条目的数据读取/解密路径；临时条目和属性查询正常，说明不是所有 generic-password 读取都卡住。此证据仍不能区分该条目的访问控制/密文状态与 SecurityServer 对该项的内部等待，也不能证明条目损坏。Flutter 单测没有模拟系统 Keychain 解密等待的正确 seam；对生产 identity 做删除/重建或迁移会改变 Host 身份，当前没有安全回滚路径，因此本轮不实施。
 - **阶段状态：**本轮没有新的生产 Host listener、WSS、Bonjour/Android NSD、邀请、配对、`host.hello` 或只读 `connection.list` 证据。A5.4/A5.5 继续开放；后续需先在保持原身份的前提下获得可返回的只读 identity 读取结果，或准备好经过验证的签名身份与显式可回滚迁移方案，再继续 production Host 验收。
+
+## 2026-11-27 A5 live network reread during A3 device follow-up (14:04 Asia/Shanghai)
+
+- **当前地址：**Mac Wi-Fi `192.168.8.4/24`；LGE AN10 `wlan0=192.168.31.136/24`。手机到 `192.168.8.4` 的路由选择 `192.168.31.1` 网关，因此当前不是同一 IPv4 子网。此前 A5 隔离 LAN/WSS fixture 在手机地址 `192.168.8.7` 时通过；该历史结果不代表本轮的新路由可达。
+- **Host 与设备：**Mac `47321/47322/47323` 无 listener，ADB reverse 为空；手机 top-resumed 仍为用户新闻 App `LiveRoomActivity`。本轮只读取状态，没有启动 Host、触发 Keychain、尝试配对/RPC 或改变手机前台。
+- **结论：**用户此前确认网络一致，但此刻读取到的两端 IPv4 地址属于不同子网。尚未验证跨子网直连 TCP/WSS；A5 production Host/identity 启动问题仍按前述记录保持开放。
