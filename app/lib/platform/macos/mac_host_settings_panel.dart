@@ -440,6 +440,18 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     HostGrantScope.contentTransfer => '内容传输',
   };
 
+  String _platformLabel(String platform) =>
+      switch (platform.trim().toLowerCase()) {
+        'android' => 'Android',
+        'macos' || 'mac' => 'macOS',
+        'ios' => 'iOS',
+        _ => platform,
+      };
+
+  String _formatTimeOfDay24h(DateTime value) =>
+      '${value.hour.toString().padLeft(2, '0')}:'
+      '${value.minute.toString().padLeft(2, '0')}';
+
   Color _statusColor(ThemeData theme) {
     final tokens =
         theme.extension<GlassDesignTokens>() ??
@@ -468,7 +480,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Mac Host', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 4),
+                const SizedBox(height: 0),
                 Text(
                   running ? '运行状态、配对邀请和已连接设备' : '让已配对设备连接到这台 Mac',
                   style: theme.textTheme.bodySmall,
@@ -579,9 +591,9 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         heading,
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         status,
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 11),
                         helper,
                       ],
                     ),
@@ -645,9 +657,9 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
           ),
         ],
         if (running) ...[
-          const SizedBox(height: 27),
+          const SizedBox(height: 16),
           const Divider(),
-          const SizedBox(height: 9),
+          const SizedBox(height: 3),
           LayoutBuilder(
             builder: (context, constraints) {
               final description = Column(
@@ -696,12 +708,12 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
             const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
-                final qrSize = constraints.maxWidth < 520 ? 104.0 : 112.0;
+                final qrSize = constraints.maxWidth < 520 ? 104.0 : 110.0;
                 final qr = Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: QrImageView(
                     data: invitation.qrPayload,
@@ -714,7 +726,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '邀请于 ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(invitation.invitation.expiresAt.toLocal()))} 到期',
+                      '邀请于 ${_formatTimeOfDay24h(invitation.invitation.expiresAt.toLocal())} 到期',
                     ),
                     const SizedBox(height: 8),
                     Text('${invitation.endpoints.length} 个本机网络地址'),
@@ -746,19 +758,22 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
                 }
                 return Container(
                   key: const Key('host-invitation-card'),
-                  padding: const EdgeInsets.fromLTRB(22, 20, 22, 6),
+                  padding: const EdgeInsets.fromLTRB(21, 14, 22, 14),
                   decoration: _hostPanelDecoration(theme),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       qr,
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 30),
                       Expanded(
-                        child: SizedBox(
-                          height: 112,
-                          child: Align(
-                            alignment: Alignment.topLeft,
-                            child: details,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: SizedBox(
+                            height: 112,
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: details,
+                            ),
                           ),
                         ),
                       ),
@@ -768,7 +783,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
               },
             ),
           ],
-          SizedBox(height: invitation == null ? 16 : 33),
+          SizedBox(height: invitation == null ? 16 : 11),
           const Divider(),
           if (invitation == null) const SizedBox(height: 12),
           Row(
@@ -795,6 +810,7 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
               ),
             ],
           ),
+          if (_pending.isNotEmpty) const SizedBox(height: 14),
           if (_pending.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -803,13 +819,14 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
           else
             for (final request in _pending) _pendingCard(request, theme),
           if (_paired.isNotEmpty) ...[
-            const SizedBox(height: 23),
+            const SizedBox(height: 20),
             Text(
               '已配对设备',
               key: _pairedDevicesKey,
               style: theme.textTheme.titleSmall,
             ),
             Text('权限可随时编辑或撤销', style: theme.textTheme.bodySmall),
+            const SizedBox(height: 12),
             for (final grant in _paired) _pairedCard(grant, theme),
           ],
         ],
@@ -817,13 +834,25 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
     );
   }
 
-  BoxDecoration _hostPanelDecoration(ThemeData theme) => BoxDecoration(
-    color: theme.colorScheme.surfaceContainerLow.withValues(alpha: .42),
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(
-      color: theme.colorScheme.outlineVariant.withValues(alpha: .58),
-    ),
-  );
+  BoxDecoration _hostPanelDecoration(ThemeData theme) {
+    final tokens =
+        theme.extension<GlassDesignTokens>() ??
+        GlassDesignTokens.forBrightness(theme.brightness);
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        stops: const [0, .46, 1],
+        colors: [
+          tokens.raised.withValues(alpha: .76),
+          tokens.raised.withValues(alpha: .65),
+          tokens.glassBottom.withValues(alpha: .78),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: tokens.glassTop.withValues(alpha: .88)),
+    );
+  }
 
   Widget _pendingCard(HostPendingPairing request, ThemeData theme) {
     final details = Column(
@@ -1001,27 +1030,12 @@ class _MacHostSettingsPanelState extends State<MacHostSettingsPanel> {
           ),
         );
         final actions = Wrap(spacing: 8, children: [editAction, revokeAction]);
-        final details = Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              grant.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              grant.scopes.map(_scopeLabel).join(' · '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-            ),
-          ],
+        final details = Text(
+          '${grant.displayName} · ${_platformLabel(grant.platform)} · '
+          '${grant.scopes.map(_scopeLabel).join(' · ')}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
         );
         if (constraints.maxWidth >= 892) {
           return SizedBox(

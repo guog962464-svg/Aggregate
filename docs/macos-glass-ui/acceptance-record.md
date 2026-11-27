@@ -2786,3 +2786,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - 本轮没有拖动主题控件、点击“跟随 macOS 系统”或更改系统外观。静态状态只覆盖浅色一帧，不验证太阳/月亮内部逐帧变化、实时拖动、主题插值、光效、动画节奏或材质像素；没有修改既有主题切换逻辑。
 - Profile 前台截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board05-v8-profile-1360x900-light-appearance-foreground.png`，SHA-256 `7cf4cedcbe90a309f5d0a3cfe92138564a1f68e487ebb904f5bdac30a15e8fb7`，PNG `2812×1892 px`（DPR 2，含窗口采集边缘）。参考 `05-settings-appearance.svg` SHA-256 `b2f7b87bdc4f22bc03c2849bd18481ba9cf5f82f12b1042172cac0042c24a4f9`，viewBox 1360×900。采集后窗口焦点状态没有保持为 true；随后 `agent-desktop close-app` 已优雅退出并确认 Profile 进程结束。ChatGPT 主窗 `w-50832` 对辅助功能工具不可见，无法验证恢复前台。
 - 结论：浅色外观设置的内容和模式状态获 Profile/AX 证据；控件可见边缘几何未签收，太阳/月亮动态、材质像素和其他主题状态仍未验收，UI-5.2 继续部分验收。
+
+<a id="2026-11-27-ui-9-6-06-mac-host-profile"></a>
+### 2026-11-27 UI-9.6 06 Mac Host v9.0.11 浅色 Profile 复核
+
+- 入口：Flutter 3.47.8 macOS Profile，`lib/preview_main.dart`，构建参数 `PREVIEW_APPEARANCE=light`、`PREVIEW_HOST_BOARD06=true`。窗口经 `agent-desktop` 回读为 `(76,49)`、`1360×900 pt`、DPR 2；按用户最新指示将 Aggregate 窗口置前截图，窗口仍保持打开。
+- 样例与 AX：Host 显示“运行中”；配对邀请为 16:30 到期、2 个本机网络地址；待处理设备为 Pixel 9 / Android / 确认码 `482 193`；已配对设备为 LGE AN10 / Android，列出读取连接、连接向导、连接管理。画板模式使用 TEST-NET 地址 `192.0.2.10` 和 `198.51.100.12`，只构造进程内数据，没有打开 socket 或连接真实设备。AX 相对窗口的关键 bounds：Mac Host `(316,219)`；邀请二维码 `(346,428,110,111)`；待处理标题 `(316,601)`、设备行 `(364,663)`；已配对标题 `(316,739)`、设备行 `(364,805)`。
+- 对照：以 `06-settings-host.svg` 原始 `1360×900` viewBox 栅格图并排人工核对。Host 标题、邀请卡片、待处理/已配对标题和卡片的宽度、层级与主要纵向位置接近；局部仍有数个显示像素的纵向偏移。邀请二维码使用实际动态 payload，故矩阵与示意画板不同；侧栏样例连接顺序也与画板不同。本轮仅记录静态布局，不据此宣称 1:1 像素匹配。
+- 截图：`/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board06-v9-profile-light-host-running-fixture.png`，SHA-256 `16b197a4989c07eaebc7ed24b88c8b49df18ca9982d9b5da3ec2af09175b3dbc`，PNG `1360×900 px`（从 DPR 2 的 `2944×2024 px` 原始屏幕捕获中按窗口边界裁切）。原始采集文件为同目录 `board06-v9-profile-light-host-running-fixture-raw.png`，SHA-256 `a40211853185d2876a0a739a938d6a7ee3b25e8f8e59fa7575858c169572eb36`。参考 SVG SHA-256 `0b4eac8c1e3a27975fc8494e66fe2ab8fb147b2ec2e8e279234225194487c9b4`。原始图左上角紫色窗口共享标识属于 macOS 采集环境，不是应用 UI。
+- 验证：`flutter analyze --no-pub` 无问题；`flutter build macos --profile --no-pub -t lib/preview_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=PREVIEW_HOST_BOARD06=true` 成功；`git diff --check` 通过；未运行测试。`glass_theme_switch.dart` 未修改。
+- 边界：仅覆盖 1360×900pt 浅色、Host 运行中并含邀请/待处理/已配对样例的静态 Profile 状态。未验证深色、其他尺寸/DPR、键盘/VoiceOver、焦点/点击/滚动动效、二维码逐像素内容、真实 Host/网络及太阳/月亮动态；UI-9.6 的全稿、全状态和双远端验收仍未完成。

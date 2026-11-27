@@ -15,6 +15,12 @@ final class Ui6InspectionHost
         HostControlPort,
         HostPairingControlPort,
         HostTlsIdentityRotationPort {
+  Ui6InspectionHost({this.matchBoard06 = false});
+
+  /// Uses only TEST-NET fixture addresses to reproduce the v9.0.11 Board 06
+  /// invitation details in a visual review. No socket is opened.
+  final bool matchBoard06;
+
   final StreamController<HostStatus> _changes =
       StreamController<HostStatus>.broadcast(sync: true);
   HostStatus _status = const HostStatus(HostPhase.stopped);
@@ -93,7 +99,11 @@ final class Ui6InspectionHost
 
   @override
   Future<HostWssPairingInvitation> createInvitation() async {
-    final now = DateTime.now().toUtc();
+    final localNow = DateTime.now();
+    final now = localNow.toUtc();
+    final expiresAt = matchBoard06
+        ? _board06Expiry(localNow).toUtc()
+        : now.add(const Duration(minutes: 5));
     return HostWssPairingInvitation(
       invitation: HostPairingInvitation(
         hostId: 'host-00000000000000000000000000000001',
@@ -101,16 +111,35 @@ final class Ui6InspectionHost
             '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
         nonce: 'ui6-inspection-nonce',
         issuedAt: now,
-        expiresAt: now.add(const Duration(minutes: 5)),
+        expiresAt: expiresAt,
       ),
-      endpoints: [
-        HostWssEndpoint(
-          address: InternetAddress.loopbackIPv4,
-          port: 44321,
-          interfaceIndex: 1,
-        ),
-      ],
+      endpoints: matchBoard06
+          ? [
+              HostWssEndpoint(
+                address: InternetAddress('192.0.2.10'),
+                port: 44321,
+                interfaceIndex: 1,
+              ),
+              HostWssEndpoint(
+                address: InternetAddress('198.51.100.12'),
+                port: 44321,
+                interfaceIndex: 2,
+              ),
+            ]
+          : [
+              HostWssEndpoint(
+                address: InternetAddress.loopbackIPv4,
+                port: 44321,
+                interfaceIndex: 1,
+              ),
+            ],
     );
+  }
+
+  DateTime _board06Expiry(DateTime localNow) {
+    var expiry = DateTime(localNow.year, localNow.month, localNow.day, 16, 30);
+    if (!expiry.isAfter(localNow)) expiry = expiry.add(const Duration(days: 1));
+    return expiry;
   }
 
   @override

@@ -12,6 +12,7 @@ const _previewAppearance = String.fromEnvironment(
   defaultValue: 'system',
 );
 const _previewMusic = bool.fromEnvironment('PREVIEW_MUSIC');
+const _previewHostBoard06 = bool.fromEnvironment('PREVIEW_HOST_BOARD06');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,7 @@ Future<void> main() async {
       ),
     );
   }
-  final host = Ui6InspectionHost();
+  final host = Ui6InspectionHost(matchBoard06: _previewHostBoard06);
   runApp(
     AggregateApp(
       runtime: runtime,

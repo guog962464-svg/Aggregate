@@ -15,6 +15,8 @@ class PageFrame extends StatelessWidget {
     required this.children,
     this.lazyChildren = false,
     this.fillWidth = false,
+    this.pinnedHeader = false,
+    this.pinnedContentTopOcclusion = 0,
   });
   final String title;
   final String? subtitle;
@@ -27,6 +29,8 @@ class PageFrame extends StatelessWidget {
   final List<Widget> children;
   final bool lazyChildren;
   final bool fillWidth;
+  final bool pinnedHeader;
+  final double pinnedContentTopOcclusion;
 
   @override
   Widget build(BuildContext context) => DefaultTextStyle.merge(
@@ -105,6 +109,71 @@ class PageFrame extends StatelessWidget {
       final contentWidth = constraints.maxWidth.isFinite
           ? constraints.maxWidth.clamp(0.0, 1080.0).toDouble()
           : 1080.0;
+      if (pinnedHeader) {
+        Widget constrainContent(Widget child) => Align(
+          alignment: Alignment.topLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: fillWidth ? contentWidth : 0,
+              maxWidth: 1080,
+            ),
+            child: child,
+          ),
+        );
+
+        final headerPadding = EdgeInsets.fromLTRB(
+          padding.left,
+          padding.top,
+          padding.right,
+          0,
+        );
+        final scrollPadding = EdgeInsets.fromLTRB(
+          padding.left,
+          headerSpacing,
+          padding.right,
+          padding.bottom,
+        );
+        final scrollContent = lazyChildren
+            ? CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: scrollPadding,
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => constrainContent(children[index]),
+                        childCount: children.length,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : SingleChildScrollView(
+                padding: scrollPadding,
+                child: constrainContent(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: children,
+                  ),
+                ),
+              );
+        final clippedScrollContent = pinnedContentTopOcclusion <= 0
+            ? scrollContent
+            : ClipRect(
+                clipper: _PageFrameTopInsetClipper(pinnedContentTopOcclusion),
+                child: scrollContent,
+              );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: headerPadding,
+              child: constrainContent(paddedHeader),
+            ),
+            Expanded(child: clippedScrollContent),
+          ],
+        );
+      }
       if (!lazyChildren) {
         return SingleChildScrollView(
           padding: padding,
@@ -155,4 +224,24 @@ class PageFrame extends StatelessWidget {
       );
     },
   );
+}
+
+/// Leaves the scene visible beneath a pinned header while scrolling content
+/// through the blank header-to-section gutter.
+class _PageFrameTopInsetClipper extends CustomClipper<Rect> {
+  const _PageFrameTopInsetClipper(this.topInset);
+
+  final double topInset;
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(
+    0,
+    topInset.clamp(0, size.height).toDouble(),
+    size.width,
+    size.height,
+  );
+
+  @override
+  bool shouldReclip(covariant _PageFrameTopInsetClipper oldClipper) =>
+      oldClipper.topInset != topInset;
 }

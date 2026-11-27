@@ -99,6 +99,8 @@ class SettingsPage extends StatelessWidget {
       // The Profile window adds a native 32pt title bar above the Flutter
       // surface; keep the body aligned to the full-window v9 artboards.
       headerSpacing: 26,
+      pinnedHeader: true,
+      pinnedContentTopOcclusion: 60,
       children: [
         _appearanceTab(context),
         const SizedBox(height: 24),
