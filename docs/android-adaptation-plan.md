@@ -678,4 +678,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - 对当前 `active-identity` 使用带 `LAContext.interactionNotAllowed=true` 的只读 Swift 探针：属性查询 5 ms 成功；数据读取连续 3 次各超过 6 秒。独立临时 Keychain 条目数据读取 2 ms 成功且已删除（删除复核 `errSecItemNotFound`）。探针未输出 identity 内容，没有授权弹窗、身份改动或 Host 启动。
 - 这将故障范围收窄到现有 identity 项的数据读取/解密路径，但不能判定 ACL、密文或 SecurityServer 的具体根因。没有安全的应用单测 seam 可以复现系统解密等待；删除/重建 identity 会破坏 Host 身份且当前无回滚方案，因此不执行。A5.4/A5.5 production Host、发现、配对与 RPC 仍开放；详见 [A5 active identity data-read probe](android-a5-android-client.md#2026-11-27-a5-active-identity-data-read-probe)。
 
+## 2026-11-27 A3.6 NDK 30 implicit runtime license evidence
+
+- 对 Node 26.13.1 / arm64-v8a / NDK 30 的两个隐式静态 archive，9 个 `libunwind.a` 成员中 5 个、287 个 compiler-rt 成员中 55 个出现在 `libnode.so` 的保留输出段；固定 Android LLVM revision 的来源映射分别归到 5 与 16 个唯一保留源文件，21/21 文件哈希匹配。
+- NDK r30 toolchain NOTICE 对 compiler_rt 给出 NCSA/MIT 双许可说明；固定 revision 的 `libunwind/LICENSE.TXT` 也给出 NCSA/MIT 双许可说明。与此同时，21 个保留源文件头部均标记 `Apache-2.0 WITH LLVM-exception`；libunwind 专属 `LICENSE.TXT` 未进入候选 APK。保留这些并列证据，等待法务判断适用范围/发行表达式，不修改 `libnode.so` 的 unresolved 状态。A3.6 仍开放。详见 [NDK 30 隐式运行库许可来源复核](android-a3-node26.13.1-ndk-license-research.md)。
+
 > 2026-11-27 A3.6 同路径重建验收：Node 26.13.1 的全新官方源码在原 66 字节构建路径完成 Android arm64-v8a / API 24 / NDK 30 Release 重建；3,653 个静态链接对象、517 个映射目标对象、518 个生成源输出、未剥离 `libnode.so` 及 `llvm-strip --strip-unneeded` 结果均与候选逐字节一致，3 个 `PT_LOAD` 均按 16 KB 对齐。这关闭本地 source-to-binary 可复现性，但不等于正式构建证明；Node/NDK/Gradle/Android 平台许可与 SBOM/法律审核、V8 signal-chain 安全审查、产品集成与签名及 16 KB 真机仍未闭合。A3.6/A4.7 保持开放，产品 npm/CLI 入口继续受限。详见 [A3.6 runtime 研究](android-a3-runtime-research.md)。
