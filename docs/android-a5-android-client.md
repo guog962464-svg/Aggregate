@@ -811,3 +811,11 @@ Mac Keychain TLS 身份轮换已在隔离临时 Keychain 完成真实集成验�
 - **协议错误映射修复：**客户端此前把 Host `-32011 approval required` 与 `-32002 unauthorized` 都报告成“等待审批”，导致真实拒绝可能被当作审批等待重试。现在仅 `-32011` 映射为 `approvalRequired`，`-32002` 保持为 `pairingRejected`；新增定向回归，Android 配对客户端单测 12 项通过。
 - **验证与清理：**`flutter analyze --no-pub` 对本次涉及的 Dart 源码无问题；真机 runner 成功退出。复核时 ADB reverse 列表为空，`.integration` 包路径无输出，手机回到 HONOR Launcher，`PAGE_SIZE=4096`；Mac 没有本夹具监听端口。没有切换到 testnode，也没有启动生产 Aggregate Host。
 - **不覆盖与阶段状态：**这里的“LAN WSS”是手机通过真实 Wi‑Fi 到达临时代理，再转发到 loopback 上的隔离 Host fixture；没有验证生产 Host 的 `active-identity` Keychain 读取/启动、生产端口 `47321`、Bonjour/Android NSD、生产证书/grant、真实账号或任意用户数据。此验收也没有 16 KB 真机。A5 的隔离真机联调子项通过，A5.4/A5.5 生产 Host、发现、配对与业务验收仍开放。
+
+## 2026-11-27 A5 active identity data-read probe
+
+- **网络与服务现场：**Mac `en0=192.168.8.4`，LGE AN10 `wlan0=192.168.8.7/24`；手机到 Mac 的目标路由走 `wlan0` 直连。手机位于 HONOR Launcher；Mac `47321/47322/47323` 均无 listener，ADB reverse 为空。本轮没有启动 Host 或切换手机前台。
+- **最小只读复现：**独立 Swift 探针按产品相同的 generic-password service/account 查询 `active-identity`，读取前设置 `LAContext.interactionNotAllowed=true`，只输出 OSStatus/耗时/数据长度，不输出数据。属性查询 `status=0`、`5 ms` 返回；读取数据的 3 次独立运行都超过 6 秒，由外层进程 watchdog 结束，没有遗留探针进程。
+- **对照与清理：**探针临时创建了独立的 8 字节 generic-password 测试项；同样禁用认证 UI 后读取 `status=0`、`2 ms` 完成，并立即删除 `status=0`。随后清理复核返回 `errSecItemNotFound (-25300)`，未留下测试项。没有更新、删除、轮换或导出 Aggregate 的 identity、证书、私钥或 grants，也没有输入凭据或触发授权提示。
+- **结论边界：**现象已收窄为默认 Keychain 搜索路径中这个现有条目的数据读取/解密路径；临时条目和属性查询正常，说明不是所有 generic-password 读取都卡住。此证据仍不能区分该条目的访问控制/密文状态与 SecurityServer 对该项的内部等待，也不能证明条目损坏。Flutter 单测没有模拟系统 Keychain 解密等待的正确 seam；对生产 identity 做删除/重建或迁移会改变 Host 身份，当前没有安全回滚路径，因此本轮不实施。
+- **阶段状态：**本轮没有新的生产 Host listener、WSS、Bonjour/Android NSD、邀请、配对、`host.hello` 或只读 `connection.list` 证据。A5.4/A5.5 继续开放；后续需先在保持原身份的前提下获得可返回的只读 identity 读取结果，或准备好经过验证的签名身份与显式可回滚迁移方案，再继续 production Host 验收。

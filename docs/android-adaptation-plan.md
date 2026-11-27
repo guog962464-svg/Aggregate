@@ -672,4 +672,10 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 - `app/test/android_runtime_port_test.dart` 7/7 passed：Android 本机只开放 HTTP MCP，拒绝本地 CLI 连接；配对 Host 的 CLI 能力保持 `ExecutionTarget.host` 并通过 Host 路由。本次只确认既有 ADR 0003 的代码回归，没有新增 Node/npm 产品适配器。
 - 此项不关闭 A3.6 运行时来源/复现/许可门槛、A5 production Host 或 A6 真实音乐流程；测试范围是本机 Flutter fake/runtime-port，无设备、正式签名或 16 KB 真机证据。详见 [A4.7 回归记录](android-a4-progress.md#2026-11-27-a47-android-runtime-boundary-regression)与 [ADR 0003](decisions/0003-android-local-execution.md)。
 
+## 2026-11-27 A5 existing Keychain identity read diagnosis
+
+- Mac `en0=192.168.8.4` 与 Android LGE AN10 `wlan0=192.168.8.7/24` 当前同网段；手机到 Mac 路由走 wlan0。Host 端口 `47321/47322/47323` 无 listener，手机在 Launcher。
+- 对当前 `active-identity` 使用带 `LAContext.interactionNotAllowed=true` 的只读 Swift 探针：属性查询 5 ms 成功；数据读取连续 3 次各超过 6 秒。独立临时 Keychain 条目数据读取 2 ms 成功且已删除（删除复核 `errSecItemNotFound`）。探针未输出 identity 内容，没有授权弹窗、身份改动或 Host 启动。
+- 这将故障范围收窄到现有 identity 项的数据读取/解密路径，但不能判定 ACL、密文或 SecurityServer 的具体根因。没有安全的应用单测 seam 可以复现系统解密等待；删除/重建 identity 会破坏 Host 身份且当前无回滚方案，因此不执行。A5.4/A5.5 production Host、发现、配对与 RPC 仍开放；详见 [A5 active identity data-read probe](android-a5-android-client.md#2026-11-27-a5-active-identity-data-read-probe)。
+
 > 2026-11-27 A3.6 同路径重建验收：Node 26.13.1 的全新官方源码在原 66 字节构建路径完成 Android arm64-v8a / API 24 / NDK 30 Release 重建；3,653 个静态链接对象、517 个映射目标对象、518 个生成源输出、未剥离 `libnode.so` 及 `llvm-strip --strip-unneeded` 结果均与候选逐字节一致，3 个 `PT_LOAD` 均按 16 KB 对齐。这关闭本地 source-to-binary 可复现性，但不等于正式构建证明；Node/NDK/Gradle/Android 平台许可与 SBOM/法律审核、V8 signal-chain 安全审查、产品集成与签名及 16 KB 真机仍未闭合。A3.6/A4.7 保持开放，产品 npm/CLI 入口继续受限。详见 [A3.6 runtime 研究](android-a3-runtime-research.md)。
