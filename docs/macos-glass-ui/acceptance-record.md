@@ -2777,3 +2777,12 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - AX 确认“本机数据”“连接配置和活动记录保存在本机”“活动保留时长”“仅保存脱敏后的运行状态信息”“保留最近”“30 天”“清空活动记录”“删除后无法恢复。”“只删除本机保存的调用历史，不移除连接。”和“清空记录”均在设置树中；30 天值保持原样，未点击清空按钮。`关于 Aggregate` 位于视口下缘。页面内容及顺序对应 `22-settings-local-data.svg`，但纵向几何不一致：实际 AX 标题框屏幕 y=705pt，相对窗口顶端 y=656pt；SVG 标题文字基线 y=238pt。语义 `ScrollTo` 只把清空按钮滚入视口，进一步向下滚轮没有改变布局，标题无法移到参考锚点；因此本轮不验收 1:1 几何。
 - Profile 前台截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board22-v8-profile-1360x900-light-local-data-foreground.png`，SHA-256 `b4ea4db271be3790a417f7cd47fee3d4a091ba3acbdd66638e7ead430d0a7c60`，PNG `2812×1892 px`（DPR 2，包含窗口采集边缘）。参考 `22-settings-local-data.svg` SHA-256 `5688333b693e33f1ee24e2ae727f3b71b69c7bcaf1a18f0500bee5a48726f921`，viewBox 1360×900。截图前确认 Profile 主窗口聚焦；之后 `agent-desktop close-app` 已验证进程退出。原 ChatGPT 窗口 `w-50832` 当时对辅助功能工具不可见，无法验证已恢复前台；未关闭或修改其他用户应用。未运行测试。
 - 结论：补足 v8 22 浅色 Profile 本机数据内容与非破坏状态证据；纵向锚点明显偏离画板，不能据此签收精确几何、材质像素、动效或其他主题/窗口尺寸/DPR。UI-5.2 继续部分验收。
+
+<a id="2026-11-27-ui-5-2-05-外观主题-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 05 外观主题 Profile 原生复核
+
+- 入口：复用 Flutter 3.47.8 `ui6_inspection_main.dart` 浅色 Profile，窗口 bounds `(76,49)`、`1360×900 pt`、DPR 2，设置页首屏无迷你播放器。Profile 主窗在截图前确认聚焦。
+- AX 确认设置标题、外观分区、“拖动控件切换浅色和深色；也可以跟随 macOS。”、“当前模式 / 浅色”、“跟随 macOS 系统”按钮及 `外观主题 / 浅色` 控件。主题控件 AX bounds 为屏幕坐标 `(894,254)`、`480×224 pt`，相对窗口为 `(818,205)`；SVG 画面框为 `(850,205)`、`448×224 pt`，右缘同为 x=1298。AX 命中框较画面框左扩 32pt，可能包含透明命中区域，不能单凭 AX bounds 断言可见玻璃边缘吻合。外观标题 AX 框相对窗口顶端 y=223pt，SVG 文字基线 y=238pt；文本位置在字体上缘/基线差范围内对应。
+- 本轮没有拖动主题控件、点击“跟随 macOS 系统”或更改系统外观。静态状态只覆盖浅色一帧，不验证太阳/月亮内部逐帧变化、实时拖动、主题插值、光效、动画节奏或材质像素；没有修改既有主题切换逻辑。
+- Profile 前台截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board05-v8-profile-1360x900-light-appearance-foreground.png`，SHA-256 `7cf4cedcbe90a309f5d0a3cfe92138564a1f68e487ebb904f5bdac30a15e8fb7`，PNG `2812×1892 px`（DPR 2，含窗口采集边缘）。参考 `05-settings-appearance.svg` SHA-256 `b2f7b87bdc4f22bc03c2849bd18481ba9cf5f82f12b1042172cac0042c24a4f9`，viewBox 1360×900。采集后窗口焦点状态没有保持为 true；Profile 后续仍在运行。
+- 结论：浅色外观设置的内容和模式状态获 Profile/AX 证据；控件可见边缘几何未签收，太阳/月亮动态、材质像素和其他主题状态仍未验收，UI-5.2 继续部分验收。
