@@ -2723,3 +2723,13 @@ B099“取消”在 B097 保存后重新打开的已配对权限弹窗中实际�
 - Profile 截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board04-v8-profile-1360x900-light-activity.png`，SHA-256 `9880a911bb41333377ab69abbb045cbf00193a615e5fd5af978661b0e0bc23c4`，PNG 为 `2944×2024 px`。设计参考 `04-activity.svg` SHA-256 `7c1de4cc548f5b33442d5ee842bf7f3b1e057e16a82beb360014efe7ac3e1138`，viewBox 为 1360×900；栅格 PNG SHA-256 `9a3291c81702825969b0a17c2d8f5cb6f7be16e3b6ec98e637e241a3effd20ef`。人工比对列表、筛选、选中项、详情区与播放器的状态/内容/几何；不据静态 SVG 验收材质像素或动态帧。
 - 隔离边界：五条记录由 `Ui6InspectionRuntime` 进程内种子生成；未访问真实活动库、Host、网络、账号或外部 Runtime，未触发真实命令。截图后关闭 Profile，Chrome/GitLab `w-54526` 恢复前台。
 - 结论：补足 v8 04 一种浅色、1360×900pt、超时详情样例态的原生 Profile 证据。深色、其他尺寸/DPR、动态控件与 54 张状态逐图审阅仍未完成；UI-5.2 保持部分验收。
+
+<a id="2026-11-27-ui-5-2-09-权限确认弹窗-profile-原生复核"></a>
+### 2026-11-27 UI-5.2 09 权限确认弹窗 Profile 原生复核
+
+- 入口：`cd app && flutter build macos --profile --no-pub --target=lib/preview/ui6_inspection_main.dart --dart-define=PREVIEW_APPEARANCE=light --dart-define=UI6_MUSIC_PREVIEW=true --dart-define=UI6_INCLUDE_INSPECTION_CAPABILITIES=true`。Flutter 3.47.8 Profile 构建成功；`agent-desktop` 回读窗口位置 `(76,49)`、尺寸 `1360×900 pt`，DPR 2。进入“所有功能”，选择“演示写入权限确认”，将该行滚入可见列表并输入备注后打开确认弹窗。
+- AX 确认弹窗标题“确认执行”，功能“演示写入权限确认”、来源“示例 Git CLI”、目标“此设备”、权限“外部写入”、提交参数 `{"note":"仅内存预览备注"}` 和不可撤回警告；取消与确认按钮均可见。底层仍显示 17 项能力目录与同一音乐样例播放器。没有按“确认执行”，没有生成调用结果。
+- Profile 原生截图 `/Users/guo/.codex/visualizations/2026/11/27/aggregate-ui52-player-native-review/board09-v8-profile-1360x900-light-permission-confirmation-selected-row.png`，SHA-256 `ebb24c6b160f1cfe8a2a39abdbbf3bef5e55f9ee2268245ef40ae81979b95a12`；PNG 为 `2944×2024 px`。对照 v8 `09-permission-confirmation.svg` SHA-256 `a996a07ef6af9d00b41397bc78b528b38ed4e8205bac178ff2c899094b0ac221`，viewBox 1360×900；栅格参考 PNG SHA-256 `790418c1d576de228c507e7445c3543661a27a05a01a9928b0e7cbe5b0f8560e`。人工核对确认卡片内容、参数、警告、操作按钮及滚动后的背景选中项；静态 SVG 只作结构、文案和几何参考，不作为材质像素或动画 oracle。
+- 交互细节：辅助功能 `SetValue` 虽回报文本值已改变，但 Flutter 表单仍校验为必填；清空后改用实际文本输入，成功打开同一确认弹窗。这只记录本轮 Profile 输入通道差异，不据此改变应用逻辑。
+- 隔离边界：`Ui6InspectionRuntime` 的能力、参数和音乐播放状态仅存在于进程内；没有连接真实 Git CLI、Host、网络、账号或外部 Runtime。截图后关闭 Profile，确认 Aggregate 进程退出、Google Chrome/GitLab 窗口 `w-54526` 恢复前台。未运行测试。
+- 结论：补足 v8 09 的浅色 1360×900pt 原生 Profile 弹窗与同背景选中行证据。其他主题、尺寸/DPR、材质像素、动效和 54 张金样逐图审阅未完成；UI-5.2 保持部分验收。
