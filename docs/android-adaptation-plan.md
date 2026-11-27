@@ -704,3 +704,9 @@ Mac `192.168.8.4/24` 与 LGE AN10 `192.168.8.7/24` 双向 ping 各 2/2；从 And
 
 - 14:04 Asia/Shanghai 实时读取 Mac Wi-Fi `192.168.8.4/24` 与 LGE AN10 `wlan0=192.168.31.136/24`；手机到 Mac 的路由选择 `192.168.31.1` 网关。因此当前地址不在同一个 IPv4 子网。此前 08:06 的隔离 LAN/WSS fixture 结果仍限于当时手机 `192.168.8.7` 的环境，不外推到此刻路由；本轮没有测试跨子网 TCP/WSS。
 - Mac `47321/47322/47323` 无 listener，ADB reverse 列表为空；手机仍在用户新闻 App `LiveRoomActivity`。本轮没有启动生产 Host、触发 Keychain 或切换手机前台。A5 production Host/身份读取/发现/RPC 的既有门槛不变。
+
+## 2026-11-27 A3.6 guarded Node synchronous memory-fault 4 KB 真机补验
+
+- 在隔离 Node 26.13.1 guarded 候选的临时 JNI 桥中，于 `node::Start()` 返回后映射并保护一个 `PROT_NONE` 页面，再执行 volatile 写入。LGE AN10 / Android 15 / API 35 / arm64 / 4 KB 日志记录一次 `SIGSEGV code 2 (SEGV_ACCERR)`；系统将 `tombstone_31` 复制到 DropBox，tag 为 `SYSTEM_TOMBSTONE`。这补齐了本候选在该 vendor OS 上同步内存 fault 的 debuggerd/tombstone 观察。
+- 为避免绑定 Service 自动重启后重复故障，临时 JNI 探针先持久化 app-private one-shot marker；日志确认 Android 重启 Service 一次，后续进程识别 marker 并跳过注入。窗口内一条 `SEGV_ACCERR`、一条 tombstone copy；包已卸载，用户 LiveRoomActivity 回到前台，用户 App 进程保持存活。临时源已恢复。
+- 该结果不验证动态 `libsigchain` 符号绑定、supported-minimum API、其他厂商、16 KB 页或产品构建。A3.6 仍需 guarded 候选 clean rebuild/attestation、许可/SBOM 法务审核、正式集成/签名与 16 KB 真机；A3.6/A4.7 不关闭。证据与哈希见 [A3.6 synchronous fault review](android-a3-node26.13.1-v8-trap-handler-review.md#2026-11-27-usb-device-follow-up-patched-node-runtime-smoke) 和 [runtime research](android-a3-runtime-research.md#2026-11-27-guarded-node-26131-synchronous-android-memory-fault-follow-up-1415-asiashanghai)。
